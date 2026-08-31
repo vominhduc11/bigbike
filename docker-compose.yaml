@@ -230,8 +230,6 @@ services:
       # Must equal INTERNAL_API_TOKEN on bigbike-web below. Empty in dev is fine (allow-open=true
       # in application-dev.properties); empty in prod = redirect feature silently disabled (401s, fail-open).
       BIGBIKE_INTERNAL_TOKEN: "${BIGBIKE_INTERNAL_TOKEN:-}"
-      # Admin maintenance lock kill switch. Admin panel only — never affects the storefront.
-      BIGBIKE_MAINTENANCE_LOCK_ENABLED: "${BIGBIKE_MAINTENANCE_LOCK_ENABLED:-true}"
       WEB_REVALIDATE_URL: "${WEB_REVALIDATE_URL:-http://bigbike-web:3000/api/revalidate/}"
       WEB_REVALIDATE_SECRET: "${WEB_REVALIDATE_SECRET:-dev-revalidate-secret}"
       WEB_REDIRECT_CACHE_CLEAR_URL: "${WEB_REDIRECT_CACHE_CLEAR_URL:-}"

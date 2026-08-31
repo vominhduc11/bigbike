@@ -64,9 +64,8 @@ public interface CatalogReadRepository {
     record ProductListingPage(List<Product> items, long totalItems) {}
 
     /**
-     * DB-level token-AND search against product identifiers: name, slug, SKU and
-     * their English equivalents. Each token must match at least one field —
-     * "ba lo" → ["ba","lo"] finds "balo". Product descriptions are excluded.
+     * Storefront typeahead search. Implementations apply the same customer search rules as the
+     * public catalog list (word boundaries, brand/category scope, partial coverage and ranking).
      */
     List<Product> searchPublishedProducts(java.util.List<String> tokens, String locale, int limit);
 

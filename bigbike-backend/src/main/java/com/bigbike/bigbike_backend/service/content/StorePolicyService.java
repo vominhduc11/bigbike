@@ -71,6 +71,8 @@ public class StorePolicyService {
         String hotline = settingValue("hotline", lang);
         String zalo = firstNonBlank(
                 settingValue("hotline_2", lang), settingValue("zalo_display", lang));
+        String messenger = firstNonBlank(
+                settingValue("messenger_display", lang), settingValue("messenger_url", lang));
         String address = settingValue("contact_address", lang);
         String hours = String.join(" · ", List.of(
                         settingValue("opening_hours_weekday", lang),
@@ -80,7 +82,7 @@ public class StorePolicyService {
 
         Document document = Jsoup.parseBodyFragment(html);
         if ("return-exchange".equals(keys.path())) {
-            hydrateReturnExchangeContact(document, hotline, zalo, address, hours, english);
+            hydrateReturnExchangeContact(document, hotline, zalo, messenger, address, hours, english);
             return document.body().html();
         }
 
@@ -88,7 +90,7 @@ public class StorePolicyService {
         if (!steps.isEmpty()) {
             Element body = steps.get(0).selectFirst("div.leading-body span");
             if (body != null) {
-                String channels = contactChannels(zalo, hotline, english);
+                String channels = contactChannels(zalo, hotline, messenger, english);
                 body.text(channels + (english
                         ? " — describe the issue and send photos or video of the product."
                         : " — mô tả lỗi và gửi ảnh hoặc video sản phẩm."));
@@ -111,6 +113,7 @@ public class StorePolicyService {
         if (emptyContactBody != null) {
             addContactRow(emptyContactBody, english ? "Hotline" : "Hotline", hotline);
             addContactRow(emptyContactBody, english ? "Zalo support" : "Zalo tư vấn", zalo);
+            addContactRow(emptyContactBody, "Messenger", messenger);
             addContactRow(emptyContactBody, english ? "Business hours" : "Giờ làm việc", hours);
             addContactRow(emptyContactBody, english ? "Address" : "Địa chỉ", address);
         }
@@ -121,6 +124,7 @@ public class StorePolicyService {
             Document document,
             String hotline,
             String zalo,
+            String messenger,
             String address,
             String hours,
             boolean english) {
@@ -133,7 +137,7 @@ public class StorePolicyService {
                         ? "Contact BigBike within the applicable period"
                         : "Liên hệ BigBike trong thời hạn");
                 cell.appendElement("br");
-                cell.appendText(contactChannels(zalo, hotline, english) + (english
+                cell.appendText(contactChannels(zalo, hotline, messenger, english) + (english
                         ? ". Describe the reason and send product photos or video."
                         : " — mô tả lý do và gửi ảnh hoặc video sản phẩm."));
             } else if (!address.isBlank() && (text.startsWith("gửi hàng về bigbike")
@@ -165,6 +169,7 @@ public class StorePolicyService {
         body.empty();
         addContactRow(body, "Hotline", hotline);
         addContactRow(body, english ? "Zalo support" : "Zalo tư vấn", zalo);
+        addContactRow(body, "Messenger", messenger);
         addContactRow(body, english ? "Business hours" : "Giờ làm việc", hours);
         addContactRow(body, english ? "Address" : "Địa chỉ", address);
     }
@@ -185,15 +190,29 @@ public class StorePolicyService {
         return first == null || first.isBlank() ? (second == null ? "" : second) : first;
     }
 
-    private static String contactChannels(String zalo, String hotline, boolean english) {
-        if (!zalo.isBlank() && !hotline.isBlank()) {
-            return english
-                    ? "Message Zalo " + zalo + " or call Hotline " + hotline
-                    : "Nhắn Zalo " + zalo + " hoặc gọi Hotline " + hotline;
+    private static String contactChannels(String zalo, String hotline, String messenger, boolean english) {
+        List<String> channels = new java.util.ArrayList<>();
+        if (hotline != null && !hotline.isBlank()) {
+            channels.add(english ? "call Hotline " + hotline : "gọi Hotline " + hotline);
         }
-        if (!zalo.isBlank()) return (english ? "Message Zalo " : "Nhắn Zalo ") + zalo;
-        if (!hotline.isBlank()) return (english ? "Call Hotline " : "Gọi Hotline ") + hotline;
-        return english ? "Choose Talk to staff" : "Bấm Gặp nhân viên";
+        if (zalo != null && !zalo.isBlank()) {
+            channels.add(english ? "message Zalo " + zalo : "nhắn Zalo " + zalo);
+        }
+        if (messenger != null && !messenger.isBlank()) {
+            channels.add(english ? "message Messenger " + messenger : "nhắn Messenger " + messenger);
+        }
+        if (channels.isEmpty()) {
+            return english
+                    ? "contact BigBike through Hotline, Zalo or Messenger"
+                    : "liên hệ BigBike qua Hotline, Zalo hoặc Messenger";
+        }
+        if (channels.size() == 1) return english ? "Please " + channels.get(0) : "Vui lòng " + channels.get(0);
+        String separator = english ? ", " : ", ";
+        int last = channels.size() - 1;
+        String joined = String.join(separator, channels.subList(0, last));
+        return english
+                ? "Please " + joined + " or " + channels.get(last)
+                : "Vui lòng " + joined + " hoặc " + channels.get(last);
     }
 
     private static void addContactRow(Element body, String label, String value) {

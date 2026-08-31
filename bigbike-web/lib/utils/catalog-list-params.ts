@@ -37,6 +37,8 @@ const ORDERBY_INVALID_MESSAGE = "orderby không hợp lệ.";
    * Khoá đọc từ khoá tìm kiếm. Mặc định `["q"]`; trang /tim-kiem dùng `["s", "q"]`.
    */
   queryParamKeys?: string[];
+  /** Search pages can keep relevance as the implicit sort while a keyword is present. */
+  defaultSortWhenQuery?: string;
 };
 
  type CatalogListFilters = {
@@ -132,12 +134,15 @@ export function parseCatalogListParams(
   }
   const orderbyParam = readSingleSearchParam(params.orderby);
   const orderbyError = orderbyParam && !isCatalogOrderbyValue(orderbyParam) ? ORDERBY_INVALID_MESSAGE : null;
-  const sortParsed = parseSortParam(params.sort, PRODUCT_SORT_VALUES, DEFAULT_SORT);
+  const defaultSort = qParsed.value && options.defaultSortWhenQuery
+    ? options.defaultSortWhenQuery
+    : DEFAULT_SORT;
+  const sortParsed = parseSortParam(params.sort, PRODUCT_SORT_VALUES, defaultSort);
   const orderbyCurrent = isCatalogOrderbyValue(orderbyParam)
     ? orderbyParam
-    : productSortToOrderby(sortParsed.value ?? DEFAULT_SORT);
+    : productSortToOrderby(sortParsed.value ?? defaultSort);
   const productSort = isCatalogOrderbyValue(orderbyParam)
-    ? wpOrderbyToProductSort(orderbyParam, DEFAULT_SORT)
+    ? wpOrderbyToProductSort(orderbyParam, defaultSort)
     : sortParsed.value;
 
   const category = includeCategory ? categoryParsed.value : undefined;

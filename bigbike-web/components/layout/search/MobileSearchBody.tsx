@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "@/i18n/StorefrontLink";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Clock, Search, X, Zap } from "lucide-react";
-import { toCategoryPath, toSearchPath } from "@/lib/utils/routes";
-import type { Locale } from "@/i18n/locale";
-import type { PopularCategory } from "./types";
+import { cn } from "@/lib/utils";
+import type { SearchShortcuts } from "./types";
 import {
   mBody,
   mChip,
@@ -17,29 +16,24 @@ import {
   mSection,
 } from "./styles";
 
-// Mobile (≤767) full-screen search body: recent OR quick searches, trending
-// chips, popular category grid. Shown when there are no live suggestions.
+// Mobile (≤767) full-screen search body: recent searches and inventory-backed
+// brand, product, and category shortcuts. Shown when there are no live suggestions.
 export function MobileSearchBody({
   recentSearches,
-  quickSearches,
-  trendingSearches,
-  resolvedCategories,
+  shortcuts,
   runSearch,
   removeSearch,
   clearAll,
   handleClose,
 }: {
   recentSearches: string[];
-  quickSearches: string[];
-  trendingSearches: string[];
-  resolvedCategories: PopularCategory[];
+  shortcuts: SearchShortcuts;
   runSearch: (value?: string) => void;
   removeSearch: (item: string) => void;
   clearAll: () => void;
   handleClose: () => void;
 }) {
   const t = useTranslations("Search");
-  const locale = useLocale() as Locale;
   return (
     <div className={mBody}>
       {recentSearches.length > 0 ? (
@@ -56,21 +50,20 @@ export function MobileSearchBody({
           </div>
           <div className={mList}>
             {recentSearches.map((item) => (
-              <div
-                key={item}
-                role="button"
-                tabIndex={0}
-                className="flex w-full items-center gap-3 text-left"
-                onClick={() => runSearch(item)}
-                onKeyDown={(e) => e.key === "Enter" && runSearch(item)}
-              >
-                <Clock size={16} aria-hidden />
-                <span className="min-w-0 flex-1 truncate">{item}</span>
+              <div key={item} className="flex items-center border-b border-border">
                 <button
                   type="button"
-                  className={mRecentRemove}
+                  className={cn(mListBtn, "flex-1 border-b-0")}
+                  onClick={() => runSearch(item)}
+                >
+                  <Clock size={16} aria-hidden />
+                  <span className="min-w-0 flex-1 truncate">{item}</span>
+                </button>
+                <button
+                  type="button"
+                  className={cn(mRecentRemove, "border-b-0")}
                   aria-label={t("removeRecentAria", { item })}
-                  onClick={(e) => { e.stopPropagation(); removeSearch(item); }}
+                  onClick={() => removeSearch(item)}
                 >
                   <X size={14} aria-hidden />
                 </button>
@@ -78,48 +71,51 @@ export function MobileSearchBody({
             ))}
           </div>
         </section>
-      ) : (
+      ) : null}
+
+      {shortcuts.trendingBrands.length > 0 && (
         <section className={mSection}>
-          <p className={mLabel}>{t("quickSearchesHeading")}</p>
-          <div className={mList}>
-            {quickSearches.map((item) => (
-              <button key={item} type="button" className={mListBtn} onClick={() => runSearch(item)}>
-                <Search size={16} aria-hidden />
-                <span>{item}</span>
-              </button>
+          <p className={mLabel}>{t("trendingHeading")}</p>
+          <div className="flex flex-wrap gap-2">
+            {shortcuts.trendingBrands.map((item) => (
+              <Link key={item.id} href={item.href} className={mChip} onClick={handleClose}>
+                <Zap size={13} aria-hidden />
+                {item.name}
+              </Link>
             ))}
           </div>
         </section>
       )}
 
-      <section className={mSection}>
-        <p className={mLabel}>{t("trendingHeading")}</p>
-        <div className="flex flex-wrap gap-2">
-          {trendingSearches.map((item) => (
-            <button key={item} type="button" className={mChip} onClick={() => runSearch(item)}>
-              <Zap size={13} aria-hidden />
-              {item}
-            </button>
-          ))}
-        </div>
-      </section>
+      {shortcuts.suggestedProducts.length > 0 && (
+        <section className={mSection}>
+          <p className={mLabel}>{t("suggestedProductsHeading")}</p>
+          <div className={mList}>
+            {shortcuts.suggestedProducts.map((item) => (
+              <Link key={item.id} href={item.href} className={mListBtn} onClick={handleClose}>
+                <Search size={16} aria-hidden />
+                <span className="min-w-0 flex-1 truncate">{item.name}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
-      <section className={mSection}>
-        <p className={mLabel}>{t("popularCategoriesHeading")}</p>
-        <div className="grid grid-cols-2 gap-2">
-          {resolvedCategories.map((cat) => (
-            <Link
-              key={cat.slug || cat.name}
-              href={cat.slug ? toCategoryPath(cat.slug, locale) : `${toSearchPath(locale)}?s=${encodeURIComponent(cat.name)}`}
-              className={mGridCard}
-              onClick={handleClose}
-            >
-              <span className="font-cta text-b5-label font-semibold uppercase">{cat.name}</span>
-              <small className="font-cta text-b5-label uppercase tracking-normal text-muted-foreground">BIGBIKE</small>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {shortcuts.popularCategories.length > 0 && (
+        <section className={mSection}>
+          <p className={mLabel}>{t("popularCategoriesHeading")}</p>
+          <div className="grid grid-cols-2 gap-2">
+            {shortcuts.popularCategories.map((item) => (
+              <Link key={item.id} href={item.href} className={mGridCard} onClick={handleClose}>
+                <span className="font-cta text-b5-label font-semibold uppercase">{item.name}</span>
+                <small className="font-cta text-b5-label uppercase tracking-normal text-muted-foreground">
+                  {t("categoryProductCount", { count: item.count ?? 0 })}
+                </small>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

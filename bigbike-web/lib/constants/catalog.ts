@@ -18,6 +18,7 @@ export const DEFAULT_PRODUCT_SORT = "createdAt:desc";
  * server-side) vào client bundle và gây lỗi runtime.
  */
 export const PRODUCT_SORT_VALUES = [
+  "relevance",
   "createdAt:desc",
   "createdAt:asc",
   "name:asc",

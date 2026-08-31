@@ -33,9 +33,10 @@ class ChatControllerStreamTest {
         UUID conversationId = UUID.randomUUID();
         ChatService service = mock(ChatService.class);
         when(service.send(any(ChatMessageRequest.class), isNull())).thenReturn(new ChatMessageResponse(
-                conversationId, "AI", "AI", "Em đã kiểm tra xong.", "PLAIN_TEXT", "ANSWER",
-                1, 12, 11, List.of(), false, List.of(),
-                new ChatContactResponse("", "", "", "", "")));
+                conversationId, UUID.randomUUID(), "AI", "AI", "Em đã kiểm tra xong.",
+                "PLAIN_TEXT", "ANSWER", 1, 40, 39, List.of(), null, List.of(),
+                new ChatContactResponse("", "", "", "", ""), List.of(), "BROWSING", null,
+                1, 40, 39, null));
         ChatController controller = new ChatController(
                 service, mock(ApiResponseFactory.class), mock(RateLimitService.class));
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller).build();

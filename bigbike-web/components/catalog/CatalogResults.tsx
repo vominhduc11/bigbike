@@ -33,6 +33,7 @@ export type CatalogResultsProps = {
   paginationBaseHref: string;
   isLoading?: boolean;
   isRefetching?: boolean;
+  searchRelevance?: boolean;
 };
 
 export function CatalogResults({
@@ -48,6 +49,7 @@ export function CatalogResults({
   paginationBaseHref,
   isLoading = false,
   isRefetching = false,
+  searchRelevance = false,
 }: CatalogResultsProps) {
   const t = useTranslations("Catalog");
   return (
@@ -59,7 +61,7 @@ export function CatalogResults({
               {pagination?.totalItems != null ? t("productCountLabel", { count: pagination.totalItems }) : null}
             </div>
             <div className="order-2 md:order-2">
-              <CatalogSort current={orderbyCurrent} />
+              <CatalogSort current={orderbyCurrent} searchRelevance={searchRelevance} />
             </div>
             <MobileFilterTrigger activeCount={activeFilterCount} />
           </div>

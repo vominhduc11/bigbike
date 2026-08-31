@@ -36,15 +36,11 @@ class ChatVisitorServiceTest {
         visitors = mock(ChatVisitorJpaRepository.class);
         conversations = mock(ChatConversationJpaRepository.class);
         jwt = mock(JwtService.class);
-        ChatPhase3Settings settings = mock(ChatPhase3Settings.class);
-        when(settings.memoryDays()).thenReturn(30);
         service = new ChatVisitorService(
                 visitors,
                 conversations,
                 mock(ChatMessageJpaRepository.class),
-                mock(ChatHandoffService.class),
-                jwt,
-                settings);
+                jwt);
         visitorId = UUID.randomUUID();
         visitor = new ChatVisitorEntity();
         visitor.setId(visitorId);

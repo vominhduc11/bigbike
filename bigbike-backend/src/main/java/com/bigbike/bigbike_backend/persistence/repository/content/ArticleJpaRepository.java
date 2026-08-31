@@ -20,48 +20,6 @@ public interface ArticleJpaRepository extends JpaRepository<ArticleEntity, Strin
      * checks (AdminContentMutationService). */
     Optional<ArticleEntity> findBySlugEn(String slugEn);
 
-    /** Public search: DB-level filter on title + excerpt to avoid full-table scan. */
-    @Query("""
-        SELECT a FROM ArticleEntity a
-        WHERE a.publishStatus = :status
-          AND (LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:term AS string), '%'))
-            OR LOWER(COALESCE(a.excerpt, '')) LIKE LOWER(CONCAT('%', CAST(:term AS string), '%')))
-        ORDER BY a.publishedAt DESC
-        """)
-    List<ArticleEntity> searchPublished(
-            @Param("term") String term,
-            @Param("status") PublishStatus status,
-            Pageable pageable);
-
-    /**
-     * Paginated article IDs for the public listing.
-     * Content-category filtering was removed in V368.
-     */
-    @Query(value = """
-            SELECT a.id FROM ArticleEntity a
-            WHERE a.publishStatus = :publishStatus
-            AND (:featured IS NULL OR a.featured = :featured)
-            AND (:homeExperience IS NULL OR a.homeExperience = :homeExperience)
-            AND (:q IS NULL
-                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
-                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
-            """,
-            countQuery = """
-            SELECT COUNT(a) FROM ArticleEntity a
-            WHERE a.publishStatus = :publishStatus
-            AND (:featured IS NULL OR a.featured = :featured)
-            AND (:homeExperience IS NULL OR a.homeExperience = :homeExperience)
-            AND (:q IS NULL
-                 OR LOWER(a.title) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%'))
-                 OR LOWER(a.excerpt) LIKE LOWER(CONCAT('%', CAST(:q AS string), '%')))
-            """)
-    Page<String> findPublishedArticleIds(
-            @Param("publishStatus") PublishStatus publishStatus,
-            @Param("q") String q,
-            @Param("featured") Boolean featured,
-            @Param("homeExperience") Boolean homeExperience,
-            Pageable pageable);
-
     /**
      * Paginated article IDs for admin listing (any publish status, no category filter).
      * Searches title, slug, and excerpt.

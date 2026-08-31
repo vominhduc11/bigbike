@@ -4,7 +4,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
-import { getCatalogFacets, listProducts, listPublicSettings } from "@/lib/api/public-api";
+import { ArticleCard } from "@/components/content/ArticleCard";
+import { getCatalogFacets, listArticles, listProducts, listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
@@ -42,6 +43,7 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
   const catalog = parseCatalogListParams(await searchParams, {
     includeCategoryParam: true,
     queryParamKeys: ["s", "q"],
+    defaultSortWhenQuery: "relevance",
   });
   setRequestLocale(locale);
   const tSearch = await getTranslations("Search");
@@ -56,7 +58,10 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
         inStock: catalog.filters.inStock, lang: locale,
       })
     : Promise.resolve({ data: [], pagination: null, error: null });
-  const [settingsResult, facetsResult, productsResult] = await Promise.all([
+  const articlePromise = catalog.filters.q
+    ? listArticles({ page: 1, size: 12, q: catalog.filters.q, lang: locale })
+    : Promise.resolve({ data: [], pagination: null, error: null });
+  const [settingsResult, facetsResult, productsResult, articlesResult] = await Promise.all([
     listPublicSettings(locale),
     getCatalogFacets({
       category: catalog.filters.category, brand: catalog.filters.brand, q: catalog.filters.q,
@@ -66,6 +71,7 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
       inStock: catalog.filters.inStock, lang: locale,
     }),
     productPromise,
+    articlePromise,
   ]);
 
   const heroTitle = tSearch("title");
@@ -107,11 +113,28 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
                 facets={facetsResult.data}
                 includeCategoryParam
                 queryParamKeys={["s", "q"]}
+                defaultSortWhenQuery="relevance"
                 requireQuery
                 initialProducts={productsResult.data}
                 initialPagination={productsResult.pagination}
               />
             </Suspense>
+            {catalog.filters.q && (
+              <section className="border-t border-border pt-8 pb-10" aria-labelledby="search-articles-heading">
+                <h2 id="search-articles-heading" className="m-0 mb-6 font-cta text-h3 font-bold uppercase text-foreground">
+                  {tSearch("sectionArticles")}
+                </h2>
+                {articlesResult.error ? (
+                  <p className="m-0 text-muted-foreground" role="status">{tSearch("articleLoadFailed")}</p>
+                ) : articlesResult.data.length > 0 ? (
+                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    {articlesResult.data.map((article) => <ArticleCard key={article.id} article={article} />)}
+                  </div>
+                ) : (
+                  <p className="m-0 text-muted-foreground">{tSearch("articleResultsEmpty")}</p>
+                )}
+              </section>
+            )}
           </Container>
         </div>
     </div>

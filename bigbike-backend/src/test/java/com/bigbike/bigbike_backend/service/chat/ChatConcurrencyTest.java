@@ -229,7 +229,7 @@ class ChatConcurrencyTest {
                 new AiChatClient.Answer(
                         "I can continue with " + question + ". "
                                 + "Please tell me the product type or exact detail you want help with.",
-                        false, false),
+                        false),
                 List.of(), List.of(), List.of(), java.util.Set.of(), 1,
                 "TOOL", null, null);
     }
@@ -239,13 +239,13 @@ class ChatConcurrencyTest {
                 true,
                 50,
                 true,
-                ChatAssistantSettings.defaultGreeting(lang),
-                ChatAssistantSettings.defaultQuickPrompts(lang),
                 new ChatContactResponse(null, null, null, null, null),
                 "",
                 "",
                 "",
-                0);
+                0,
+                ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty());
     }
 
     private void deleteFixtureData() {

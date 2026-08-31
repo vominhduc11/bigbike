@@ -13,7 +13,7 @@ final class ChatActionCatalog {
     private static final Set<String> ALLOWED = Set.of(
             "COMPARE_PRODUCTS", "CHECK_SIZE", "CHECK_STOCK", "CHANGE_BUDGET",
             "FIND_SIMILAR", "VIEW_POLICY", "FIND_PRODUCTS", "RELATED_ARTICLE_QUESTION",
-            "CHANGE_NEEDS", "CONTACT_STAFF", "LOGIN", "ORDER_HISTORY", "ORDER_LOOKUP",
+            "CHANGE_NEEDS", "LOGIN", "ORDER_HISTORY", "ORDER_LOOKUP",
             "CALL_HOTLINE", "OPEN_ZALO", "OPEN_MESSENGER");
 
     private ChatActionCatalog() {}
@@ -41,19 +41,24 @@ final class ChatActionCatalog {
         if ("CONTACT".equals(resultKind)) {
             addConfiguredContacts(types, contacts);
         } else if ("OUT_OF_SCOPE".equals(resultKind) || "REFUSAL".equals(resultKind)) {
-            add(types, "FIND_PRODUCTS", "VIEW_POLICY", "CONTACT_STAFF");
+            add(types, "FIND_PRODUCTS", "VIEW_POLICY");
+            addConfiguredContacts(types, contacts);
         } else if (productCount > 1) {
             add(types, "COMPARE_PRODUCTS", "CHECK_SIZE", "CHANGE_BUDGET");
         } else if (productCount == 1) {
             add(types, "CHECK_SIZE", "CHECK_STOCK", "FIND_SIMILAR");
         } else if (containsAny(normalized, "bao hanh", "doi tra", "giao hang", "thanh toan", "privacy", "chinh sach")) {
-            add(types, "VIEW_POLICY", "FIND_PRODUCTS", "CONTACT_STAFF");
+            add(types, "VIEW_POLICY", "FIND_PRODUCTS");
+            addConfiguredContacts(types, contacts);
         } else if (containsAny(normalized, "chon size", "huong dan size", "size nao")) {
-            add(types, "FIND_PRODUCTS", "VIEW_POLICY", "CONTACT_STAFF");
+            add(types, "FIND_PRODUCTS", "VIEW_POLICY");
+            addConfiguredContacts(types, contacts);
         } else if (containsAny(normalized, "bai viet", "tin tuc", "huong dan")) {
-            add(types, "FIND_PRODUCTS", "RELATED_ARTICLE_QUESTION", "CONTACT_STAFF");
+            add(types, "FIND_PRODUCTS", "RELATED_ARTICLE_QUESTION");
+            addConfiguredContacts(types, contacts);
         } else {
-            add(types, "CHANGE_NEEDS", "CHANGE_BUDGET", "CONTACT_STAFF");
+            add(types, "CHANGE_NEEDS", "CHANGE_BUDGET");
+            addConfiguredContacts(types, contacts);
         }
         return responses(types, 3);
     }

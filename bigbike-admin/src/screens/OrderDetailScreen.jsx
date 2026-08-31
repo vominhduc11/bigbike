@@ -91,19 +91,6 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     return unsubscribe
   }, [orderId, queryClient])
 
-  // Khi hệ thống mở lại, tải lại dữ liệu thật của đơn. Không khôi phục trạng thái
-  // lạc quan và không tự tải lại toàn bộ trang admin.
-  useEffect(() => {
-    const unsubscribe = subscribeAdminWs('/topic/admin/maintenance', (event) => {
-      if (event?.state === 'NORMAL') {
-        queryClient.invalidateQueries({ queryKey: ['order', orderId] })
-        queryClient.invalidateQueries({ queryKey: ['order-transitions', orderId] })
-        queryClient.invalidateQueries({ queryKey: ['order-audit', orderId] })
-      }
-    })
-    return unsubscribe
-  }, [orderId, queryClient])
-
   const order = orderQuery.data?.item ?? null
   const transitionsQuery = useQuery({
     queryKey: ['order-transitions', orderId, order?.orderStatus],
@@ -160,13 +147,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     } catch (err) {
       toast.error(getOrderMutationError(err, t))
       const errorStatus = Number(err?.status)
-      // 423 MAINTENANCE_ACTIVE: khoá bảo trì trang quản trị đã từ chối thao tác ghi.
-      // Cố ý KHÔNG dùng 503 — nginx nuốt thân phản hồi 503 nên mã lỗi không tới được đây.
-      const maintenanceFailure = err?.code === 'MAINTENANCE_ACTIVE'
-        || errorStatus === 423
-        || errorStatus === 0
+      const networkFailure = errorStatus === 0
         || err?.code === 'NETWORK_ERROR'
-      if (maintenanceFailure) {
+      if (networkFailure) {
         setUnsavedActionWarning(t('orders.detail.unsavedActionWarning'))
         setReasonModal(null)
         clearOrderReasonDraft()

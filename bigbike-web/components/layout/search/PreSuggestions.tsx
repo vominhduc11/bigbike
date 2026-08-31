@@ -1,35 +1,36 @@
 "use client";
 
 import Link from "@/i18n/StorefrontLink";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Clock, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toCategoryPath, toSearchPath } from "@/lib/utils/routes";
-import type { Locale } from "@/i18n/locale";
-import type { PopularCategory } from "./types";
+import type { SearchShortcuts } from "./types";
 import { preChip, preChips, preLabel, preLabelRow, sResults } from "./styles";
 
-// Desktop pre-suggestions dropdown (no query yet): recent searches + trending +
-// popular categories. Hidden ≤767 (mobile uses MobileSearchBody instead).
+// Desktop pre-suggestions dropdown (no query yet): recent searches plus shortcuts
+// generated from published inventory. Hidden ≤767 (mobile uses MobileSearchBody instead).
 export function PreSuggestions({
   recentSearches,
-  trendingSearches,
-  resolvedCategories,
+  shortcuts,
   runSearch,
   removeSearch,
   clearAll,
   handleClose,
 }: {
   recentSearches: string[];
-  trendingSearches: string[];
-  resolvedCategories: PopularCategory[];
+  shortcuts: SearchShortcuts;
   runSearch: (value?: string) => void;
   removeSearch: (item: string) => void;
   clearAll: () => void;
   handleClose: () => void;
 }) {
   const t = useTranslations("Search");
-  const locale = useLocale() as Locale;
+  const shortcutGroups = [
+    { label: t("trendingHeading"), items: shortcuts.trendingBrands, icon: true },
+    { label: t("suggestedProductsHeading"), items: shortcuts.suggestedProducts, icon: false },
+    { label: t("popularCategoriesHeading"), items: shortcuts.popularCategories, icon: false },
+  ];
+
   return (
     <div className={cn(sResults, "max-[767px]:hidden")} aria-label={t("suggestionsLabel")}>
       {recentSearches.length > 0 && (
@@ -62,32 +63,21 @@ export function PreSuggestions({
           ))}
         </>
       )}
-      <div className={preLabelRow}>
-        <span className={preLabel}>{t("trendingHeading")}</span>
-      </div>
-      <div className={preChips}>
-        {trendingSearches.slice(0, 5).map((item) => (
-          <button key={item} type="button" className={preChip} onClick={() => runSearch(item)}>
-            <Zap size={11} aria-hidden className="text-brand-on-dark" />
-            {item}
-          </button>
-        ))}
-      </div>
-      <div className={preLabelRow}>
-        <span className={preLabel}>{t("popularCategoriesHeading")}</span>
-      </div>
-      <div className={preChips}>
-        {resolvedCategories.map((cat) => (
-          <Link
-            key={cat.slug || cat.name}
-            href={cat.slug ? toCategoryPath(cat.slug, locale) : `${toSearchPath(locale)}?s=${encodeURIComponent(cat.name)}`}
-            className={preChip}
-            onClick={handleClose}
-          >
-            {cat.name}
-          </Link>
-        ))}
-      </div>
+      {shortcutGroups.map((group) => group.items.length > 0 && (
+        <div key={group.label}>
+          <div className={preLabelRow}>
+            <span className={preLabel}>{group.label}</span>
+          </div>
+          <div className={preChips}>
+            {group.items.map((item) => (
+              <Link key={item.id} href={item.href} className={preChip} onClick={handleClose}>
+                {group.icon && <Zap size={11} aria-hidden className="text-brand-on-dark" />}
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

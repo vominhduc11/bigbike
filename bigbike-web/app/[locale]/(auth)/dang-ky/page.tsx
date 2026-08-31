@@ -46,8 +46,8 @@ export default async function RegisterPage({ params }: RegisterPageProps) {
         imageAlt: t("imageAlt"),
       }}
     >
-      <AuthTitleBlock title={<Tr ns="Auth" k="tabRegister" />}>
-        <p className="m-0 text-a4-content text-muted-foreground">
+      <AuthTitleBlock title={<Tr ns="Auth" k="tabRegister" />} compact>
+        <p className="sr-only">
           <Tr ns="Auth" k="haveAccountPrompt" />{" "}
           <Link
             href={toLoginPath(undefined, locale)}

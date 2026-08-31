@@ -11,7 +11,7 @@ const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
  * `lazyScreen` returns `{ default: m[exportName] }`, so a screen written with `export default`
  * resolves to `undefined` and React throws the unreadable "Minified React error #306". It renders
  * fine in unit tests (which import it directly), so the mismatch only surfaces as a blank crashing
- * screen in production — which is exactly what happened to MaintenanceScreen on 2026-08-06.
+ * screen in production.
  */
 describe('lazyScreen registrations in App.jsx', () => {
   const app = readFileSync(resolve(SRC, 'App.jsx'), 'utf8')

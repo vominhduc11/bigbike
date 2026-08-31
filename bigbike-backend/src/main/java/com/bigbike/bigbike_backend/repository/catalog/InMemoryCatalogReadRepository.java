@@ -16,6 +16,7 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.catalog.VideoAsset;
+import com.bigbike.bigbike_backend.service.search.StorefrontSearchRules;
 import com.bigbike.bigbike_backend.util.AdminSearchText;
 import java.math.BigDecimal;
 import java.text.Normalizer;
@@ -455,9 +456,7 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                         || safeCategories(p).stream().anyMatch(category -> categorySlug.equals(category.slug())))
                 .filter(p -> brandSlug == null || brandSlug.isBlank()
                         || (p.brand() != null && brandSlug.equals(p.brand().slug())))
-                .filter(p -> ProductSearchTerms.matchesProductIdentifiers(
-                        p.name(), englishName(p), p.slug(), p.slugEn(), p.sku(),
-                        q == null ? List.of() : List.of(q)))
+                .filter(p -> q == null || q.isBlank() || StorefrontSearchRules.matchesProduct(p, q))
                 .filter(p -> matchesGender(p, genders))
                 .filter(p -> matchesSize(p, sizeFilter))
                 .filter(p -> matchesRetailPrice(p, minPrice, maxPrice))
@@ -473,13 +472,8 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         if (tokens == null || tokens.isEmpty() || limit <= 0) {
             return List.of();
         }
-        return products.stream()
-                .filter(p -> p.publishStatus() == PublishStatus.PUBLISHED)
-                .filter(p -> !p.discontinued())
-                .filter(p -> ProductSearchTerms.matchesProductIdentifiers(
-                        p.name(), englishName(p), p.slug(), p.slugEn(), p.sku(), tokens))
-                .limit(limit)
-                .toList();
+        return StorefrontSearchRules.rankMatchingProducts(
+                findAllPublishedProductsForListing(locale), String.join(" ", tokens), limit);
     }
 
     @Override

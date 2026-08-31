@@ -1,4 +1,15 @@
-export type PopularCategory = { name: string; slug: string };
+export type SearchShortcut = {
+  id: string;
+  name: string;
+  href: string;
+  count?: number;
+};
+
+export type SearchShortcuts = {
+  trendingBrands: SearchShortcut[];
+  suggestedProducts: SearchShortcut[];
+  popularCategories: SearchShortcut[];
+};
 
 export type SearchSuggestion = {
   id: string;

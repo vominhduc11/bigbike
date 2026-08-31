@@ -31,7 +31,7 @@ class ChatResponseGuardTest {
     @Test
     @DisplayName("English customer text cannot fall back to Vietnamese copy")
     void rejectsMixedLanguageText() {
-        assertThat(guard.check("I can help anh/chị. Please choose Talk to staff. We are here to help.", List.of(), "en"))
+        assertThat(guard.check("I can help anh/chị. Please contact BigBike through Hotline, Zalo or Messenger. We are here to help.", List.of(), "en"))
                 .isEmpty();
     }
 
@@ -222,33 +222,33 @@ class ChatResponseGuardTest {
                 new PreparedReply("en", "The products below come from a broader search than your original request. "
                         + "Please tell me a more specific name, category or budget so I can narrow the results."),
                 new PreparedReply("vi", "Dạ, Trợ lý BigBike đang tạm nghỉ. "
-                        + "Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp."),
+                        + "Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp."),
                 new PreparedReply("en", "BigBike Assistant is temporarily paused. "
-                        + "Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help."),
+                        + "Please contact BigBike through Hotline, Zalo or Messenger for direct help."),
                 new PreparedReply("vi", "Dạ, Trợ lý BigBike đã dùng hết lượt tư vấn tự động trong hôm nay. "
-                        + "Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp."),
+                        + "Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp."),
                 new PreparedReply("en", "BigBike Assistant has reached today's automated-chat limit. "
-                        + "Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help."),
-                new PreparedReply("vi", "Dạ, em đã nhận đủ 12 lượt hỏi trong hội thoại này. "
-                        + "Anh/chị bấm Gặp nhân viên để BigBike hỗ trợ tiếp nhé. Các kênh liên hệ vẫn luôn có sẵn."),
-                new PreparedReply("en", "This conversation has reached its 12-question limit. "
-                        + "Please choose Talk to staff to continue with BigBike. Your contact options remain available."),
+                        + "Please contact BigBike through Hotline, Zalo or Messenger for direct help."),
+                new PreparedReply("vi", "Dạ, em đã nhận đủ 40 lượt hỏi trong hội thoại này. "
+                        + "Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ tiếp nhé."),
+                new PreparedReply("en", "This conversation has reached its 40-question limit. "
+                        + "Please contact BigBike through Hotline, Zalo or Messenger for help."),
                 new PreparedReply("vi", "Dạ, em tóm tắt chính sách công bố của BigBike: yêu cầu đổi size hoặc đổi sản phẩm trong 7 ngày và hoàn tiền hoặc trả hàng trong 1 ngày, tùy điều kiện nguyên trạng đã nêu. "
-                        + "Hàng sale và phí vận chuyển có điều kiện riêng. Anh/chị vui lòng mở trang Chính sách đổi trả hoặc bấm Gặp nhân viên trước khi gửi hàng về."),
+                        + "Hàng sale và phí vận chuyển có điều kiện riêng. Anh/chị vui lòng mở trang Chính sách đổi trả hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger trước khi gửi hàng về."),
                 new PreparedReply("en", "BigBike's published policy allows a size or product exchange request within 7 days, and a refund or return request within 1 day, subject to the listed product-condition rules. "
-                        + "Sale items and shipping responsibility have separate conditions. Please open the Returns and Exchanges Policy or choose Talk to staff before sending anything back."),
+                        + "Sale items and shipping responsibility have separate conditions. Please open the Returns and Exchanges Policy or contact BigBike through Hotline, Zalo or Messenger before sending anything back."),
                 new PreparedReply("vi", "Dạ, em xác nhận BigBike bảo hành chính hãng theo chính sách từng thương hiệu; thời hạn cụ thể hiển thị trên trang sản phẩm. "
-                        + "Va đập, tự ý sửa đổi và hao mòn tự nhiên không mặc nhiên thuộc diện bảo hành. Trường hợp phức tạp, anh/chị bấm Gặp nhân viên và gửi ảnh hoặc video giúp shop kiểm tra."),
+                        + "Va đập, tự ý sửa đổi và hao mòn tự nhiên không mặc nhiên thuộc diện bảo hành. Trường hợp phức tạp, anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger và gửi ảnh hoặc video giúp shop kiểm tra."),
                 new PreparedReply("en", "BigBike provides genuine manufacturer warranty under each brand's policy, and the exact period is shown on each product page. "
-                        + "Impact damage, modification and normal wear are not automatically covered. For a complex warranty case, please choose Talk to staff and send photos or video."),
+                        + "Impact damage, modification and normal wear are not automatically covered. For a complex warranty case, please contact BigBike through Hotline, Zalo or Messenger and send photos or video."),
                 new PreparedReply("vi", "Dạ, em xác nhận BigBike hiện hỗ trợ hai hình thức thanh toán thủ công: nhận hàng trả tiền và chuyển khoản ngân hàng. "
                         + "Em không nhận tiền và không chốt đơn thay anh/chị. Anh/chị vui lòng đi qua Giỏ hàng để chọn hình thức và kiểm tra lại trước khi xác nhận."),
                 new PreparedReply("en", "BigBike currently supports two manual payment methods: cash on delivery and bank transfer. "
                         + "BigBike Assistant cannot take payment or place an order on your behalf. Please continue through the cart to choose a method and review the order before confirming."),
                 new PreparedReply("vi", "Đơn online hiện không cộng phí vận chuyển vào tổng tiền và không có bước chọn hãng giao hàng khi thanh toán. "
-                        + "Em không cam kết ngày giao vì hệ thống chưa có dữ liệu thời gian xác nhận. Anh/chị bấm Gặp nhân viên nếu cần ước tính theo địa chỉ cụ thể."),
+                        + "Em không cam kết ngày giao vì hệ thống chưa có dữ liệu thời gian xác nhận. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu cần ước tính theo địa chỉ cụ thể."),
                 new PreparedReply("en", "BigBike does not add a shipping fee to the current online order total, and there is no shipping-method selector at checkout. "
-                        + "I cannot promise a delivery date because no confirmed timing data is available. Choose Talk to staff for a destination-specific estimate.")
+                        + "I cannot promise a delivery date because no confirmed timing data is available. Contact BigBike through Hotline, Zalo or Messenger for a destination-specific estimate.")
         );
 
         List<String> rejectedReplies = replies.stream()
@@ -260,8 +260,8 @@ class ChatResponseGuardTest {
                 .toList();
 
         assertThat(rejectedReplies).isEmpty();
-        assertThat(guard.isSafeGreeting(ChatAssistantSettings.defaultGreeting("vi"), "vi")).isTrue();
-        assertThat(guard.isSafeGreeting(ChatAssistantSettings.defaultGreeting("en"), "en")).isTrue();
+        assertThat(guard.isSafeGreeting("Dạ, em là Trợ lý BigBike, trợ lý ảo AI của BigBike.", "vi")).isTrue();
+        assertThat(guard.isSafeGreeting("I am BigBike Assistant, BigBike's AI shopping assistant.", "en")).isTrue();
     }
 
     private record PreparedReply(String lang, String text) {}
@@ -280,12 +280,12 @@ class ChatResponseGuardTest {
                 "vi",
                 List.of())).isEmpty();
         assertThat(guard.checkModel(
-                "BigBike does not have any helmets. Please choose Talk to staff for help.",
+                "BigBike does not have any helmets. Please contact BigBike through Hotline, Zalo or Messenger for help.",
                 List.of(),
                 "en",
                 List.of())).isEmpty();
         assertThat(guard.checkModel(
-                "Dạ, BigBike không có bất kỳ sản phẩm mũ nào. Anh/chị bấm Gặp nhân viên để được hỗ trợ nhé.",
+                "Dạ, BigBike không có bất kỳ sản phẩm mũ nào. Anh/chị vui lòng liên hệ qua Hotline, Zalo hoặc Messenger để được hỗ trợ nhé.",
                 List.of(),
                 "vi",
                 List.of())).isEmpty();

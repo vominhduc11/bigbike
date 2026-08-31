@@ -51,7 +51,7 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 | Admin Users | `admin-users.read` | — | `admin-users.write` | role list/assignment: `roles.read` |
 | Roles | `roles.read` | — | `roles.write` | dependency-closed payload required |
 | Reports | `reports.read` | — | export: `reports.export` | export is sensitive and depends on `reports.read` |
-| Trợ lý BigBike | `chat.read` | — | `chat.reply` | `chat.reply` tiếp nhận/nhắn/bàn giao/kết thúc và phụ thuộc `chat.read`; không sửa transcript/ảnh |
+| Trợ lý BigBike | `chat.read` | — | — | Chỉ xem danh sách, transcript, ảnh và thống kê; không có quyền gửi, nhận hoặc điều khiển chat người thật |
 
 Media access is deliberately **not** an automatic dependency of Product/Content/Catalog/Settings write permissions. Missing `media.read` disables the picker and prevents media API calls; `media.write` is required only to upload.
 
@@ -91,9 +91,9 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 |---|---|---|---|
 | `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Hội thoại/detail, ảnh riêng tư, hàng chờ và stats quota/chất lượng không chứa transcript ngoài phạm vi | `CHAT_RULE_013`, `CHAT_RULE_040`–`047`, `PermissionCatalog`, migrations `V1016`/`V1052` |
 | `settings.read` | Theo ma trận settings hiện hành | Snapshot quota/chất lượng không chứa transcript/PII và các cài đặt Trợ lý còn được giữ | `CHAT_RULE_010`, `API_CONTRACT.md` §Admin chat history |
-| `chat.reply` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Claim/send/return/close handoff; dependency bắt buộc `chat.read` | `CHAT_RULE_040`, `CHAT_RULE_047`, `PermissionCatalog`, migration `V1056` |
+| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Xem danh sách, transcript, ảnh và thống kê hội thoại | `CHAT_RULE_013`, `CHAT_RULE_047`, `PermissionCatalog`, migration `V1056` |
 
-`chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role. `chat.reply` là quyền ghi hẹp, nhạy cảm, phụ thuộc `chat.read`; lưu đúng admin và thời điểm nhận/gửi/bàn giao nhưng không cho sửa/xoá transcript. Migration đổi mọi role-permission `chat.handle` hiện có sang `chat.reply` và không tự cấp role thường. Chỉ người đang nhận được gửi/bàn giao/đóng.
+`chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role. `chat.reply` đã bị xoá theo quyết định của chủ shop ngày 2026-08-30; không còn quyền nhận, gửi, bàn giao hoặc đóng chat người thật. Không thay đổi các quyền khác của các vai trò.
 
 Không có quyền chat mới. `settings.read/settings.write` chỉ đọc/sửa các cài đặt Trợ lý còn được giữ; chúng không cho đổi model cố định, chạy bộ đề hoặc xem chi phí đã gỡ. Dấu vân tay catalog là cục bộ. Nội dung ảnh khách là phần riêng tư của transcript: endpoint storefront/admin đều kiểm ownership/`chat.read` mỗi lần tải, không phát URL MinIO công khai. `settings.read` không cấp quyền xem ảnh; `chat.read` không cho đổi cài đặt.
 
@@ -268,19 +268,6 @@ Status: `CONFIRMED_FROM_CODE` — `AdminRolePermissions.java`, `AdminReportContr
 | `reports.read` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | Access analytics dashboard |
 | `reports.export` | `SUPER_ADMIN`, `ADMIN`, `SHOP_MANAGER` | CSV export from Reports and the filtered/selected/full Product catalog export (audit log gate); not required for the editable JSON round-trip file |
 
-## Maintenance Authority
+## Manual Maintenance Authority — removed 2026-08-30
 
-| Action | Allowed actor | Notes |
-|---|---|---|
-| Read maintenance state (`GET /api/v1/admin/maintenance`) | **Any** signed-in admin | Deliberately not permission-gated: every staff member must be able to see why the panel refuses to save. Also pushed over STOMP `/topic/admin/maintenance` |
-| Change the state (`PUT /api/v1/admin/maintenance`) | **`DEVELOPER` role only**, and the caller must hold `maintenance.manage` | `SUPER_ADMIN` is explicitly excluded (owner decision 2026-08-06) even though its wildcard grants the permission |
-| Edit the `DEVELOPER` role's permissions | **Nobody** — `AdminRoleService` refuses, like `SUPER_ADMIN` | Those permissions are what let a developer *release* the lock |
-| Write anything else under `/api/v1/admin/**` while `ACTIVE` | `DEVELOPER` only | Everyone else receives `423 MAINTENANCE_ACTIVE`. The backend does not block reads, but the admin UI covers the screen for non-developers, so in practice staff cannot look anything up either (owner decision) |
-| Regenerate the static outage pages | Dev/operator with VPS access | `deploy/maintenance/render-fallback-pages.sh`; unrelated to the lock |
-| Break-glass unlock | Dev/operator with DB or VPS access | `UPDATE maintenance_state SET state='NORMAL' WHERE id=1;` + restart backend, or `BIGBIKE_MAINTENANCE_LOCK_ENABLED=false` — see `DEPLOYMENT_GUIDE.md` |
-
-**The decisive gate is the role name, not the permission — and it has to be.** `DevAdminAuthService.hasAnyPermission` short-circuits `return true` for any role holding `*`, so *any* permission invented for this endpoint is automatically held by `SUPER_ADMIN`, including `maintenance.manage`. An exact comparison against `profile.roles()` is the only construct in this codebase that the wildcard cannot satisfy (same shape as `AdminReviewController.requireSuperAdminWithReviewsWrite`). If someone ever "tidies" the role check away and relies on the permission alone, the owner's requirement silently breaks; `MaintenanceLockIntegrationTest.superAdmin_cannotToggleMaintenance_despiteHoldingWildcard` exists to catch exactly that.
-
-**Why `maintenance.manage` exists anyway (V375).** A pure role-name gate left the capability invisible: the Roles screen lists permissions, so nothing there showed that `DEVELOPER` could lock the panel. Worse, the endpoint originally authenticated with `settings.write` — an unrelated permission that *is* editable in that screen, so un-ticking it would silently disable the maintenance toggle with no visible connection. The dedicated permission makes the capability appear where operators look for it and removes the accidental coupling. Granting it to any other role does nothing (the role gate still rejects them); the admin label states this outright. The `DEVELOPER` role's permissions are frozen so the pairing cannot be broken from the UI.
-
-Operational consequence, accepted by the owner: if the developer is unavailable, the owner cannot unlock from the admin UI and must use one of the break-glass paths above. Provision **two** `DEVELOPER` accounts — there is no admin self-service password reset, and `resend-invite` is itself blocked while the lock is `ACTIVE`.
+There is no admin-lock action, technical role or `maintenance.manage` permission to authorize. The remaining permission matrix applies normally to admin operations, and `ADMIN` remains an editable system role under the existing self-lockout safeguards. Static outage page generation is an infrastructure operation documented in `DEPLOYMENT_GUIDE.md`, not an admin permission.

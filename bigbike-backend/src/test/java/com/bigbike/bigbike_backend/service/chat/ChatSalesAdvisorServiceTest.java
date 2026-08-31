@@ -87,7 +87,7 @@ class ChatSalesAdvisorServiceTest {
 
     private static ChatAssistantSettings.Snapshot settings() {
         return new ChatAssistantSettings.Snapshot(
-                true, 400, true, "Xin chào", List.of("A", "B", "C"),
+                true, 400, true,
                 new ChatContactResponse("0900", "", "", "", ""),
                 "", "", "", 12,
                 ChatAssistantSettings.BankDetails.empty(),

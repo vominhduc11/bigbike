@@ -59,8 +59,10 @@ for (const route of KEY_ROUTES) {
         await expect(page.locator("main").first()).toBeVisible();
         if (route.auth) {
           await expect(page.locator("[data-auth-shell]")).toHaveCount(1);
-          await expect(page.locator("header[data-auth-header]")).toBeVisible();
-          await expect(page.locator("footer[data-auth-footer]")).toBeVisible();
+          await expect(
+            page.locator("header[data-auth-header], footer[data-auth-footer]"),
+          ).toHaveCount(0);
+          await expect(page.locator("[data-auth-guest-exit]")).toBeVisible();
           await expect(page.locator("header[data-bb-header], nav.bb-bottom-nav")).toHaveCount(0);
         } else {
           await expect(page.locator("footer").first()).toBeVisible();
@@ -68,11 +70,9 @@ for (const route of KEY_ROUTES) {
         }
 
         await expectNoHorizontalOverflow(page, `${route.name} @ ${vp.name}`);
-        await expectBarFits(
-          page,
-          route.auth ? "header[data-auth-header]" : ".bb-header-container, header",
-          `header @ ${vp.name}`,
-        );
+        if (!route.auth) {
+          await expectBarFits(page, ".bb-header-container, header", `header @ ${vp.name}`);
+        }
 
         if (vp.kind === "mobile") {
           const bottomNav = page.locator("nav.bb-bottom-nav");

@@ -21,6 +21,7 @@ type CatalogSortSelectProps = {
   sortLabel: string;
   disabled?: boolean;
   onValueChange?: (value: string) => void;
+  searchRelevance?: boolean;
 };
 
 function CatalogSortSelect({
@@ -28,6 +29,7 @@ function CatalogSortSelect({
   sortLabel,
   disabled = false,
   onValueChange,
+  searchRelevance = false,
 }: CatalogSortSelectProps) {
   const t = useTranslations("Catalog");
   const listboxId = useId();
@@ -35,9 +37,12 @@ function CatalogSortSelect({
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const selectedIndex = SORT_OPTIONS.findIndex((option) => option.value === selectedValue);
+  const sortOptions = searchRelevance
+    ? [{ ...SORT_OPTIONS[0], labelKey: "relevance" }, ...SORT_OPTIONS.slice(1)]
+    : SORT_OPTIONS;
+  const selectedIndex = sortOptions.findIndex((option) => option.value === selectedValue);
   const activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
-  const selectedOption = SORT_OPTIONS[activeIndex] ?? SORT_OPTIONS[0];
+  const selectedOption = sortOptions[activeIndex] ?? sortOptions[0];
   const interactive = Boolean(onValueChange) && !disabled;
   const menuOpen = open && interactive;
 
@@ -81,7 +86,7 @@ function CatalogSortSelect({
       openMenu();
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      openMenu(SORT_OPTIONS.length - 1);
+      openMenu(sortOptions.length - 1);
     }
   }
 
@@ -98,10 +103,10 @@ function CatalogSortSelect({
         event.key === "Home"
           ? 0
           : event.key === "End"
-            ? SORT_OPTIONS.length - 1
+            ? sortOptions.length - 1
             : event.key === "ArrowDown"
-              ? (index + 1) % SORT_OPTIONS.length
-              : (index - 1 + SORT_OPTIONS.length) % SORT_OPTIONS.length;
+              ? (index + 1) % sortOptions.length
+              : (index - 1 + sortOptions.length) % sortOptions.length;
       focusOption(nextIndex);
     }
   }
@@ -135,7 +140,7 @@ function CatalogSortSelect({
           aria-label={sortLabel}
           className="absolute right-0 top-full z-[var(--bb-z-dropdown)] mt-1 max-h-96 w-72 max-w-[calc(100vw-var(--bb-space-8))] min-w-full overflow-auto border border-border bg-popover p-1 text-popover-foreground shadow-[var(--bb-shadow-dropdown)]"
         >
-          {SORT_OPTIONS.map(({ value, labelKey }, index) => {
+          {sortOptions.map(({ value, labelKey }, index) => {
             const selected = value === selectedValue;
             const optionLabel = t(`sort.${labelKey}`);
             return (
@@ -170,7 +175,7 @@ function CatalogSortSelect({
   );
 }
 
-function CatalogSortStatic({ current }: { current: string }) {
+function CatalogSortStatic({ current, searchRelevance = false }: { current: string; searchRelevance?: boolean }) {
   const t = useTranslations("Catalog");
   const selectedValue = isCatalogOrderbyValue(current) ? current : productSortToOrderby(current);
   return (
@@ -178,11 +183,12 @@ function CatalogSortStatic({ current }: { current: string }) {
       selectedValue={selectedValue}
       sortLabel={t("sortLabel")}
       disabled
+      searchRelevance={searchRelevance}
     />
   );
 }
 
-function CatalogSortInner({ current }: { current: string }) {
+function CatalogSortInner({ current, searchRelevance = false }: { current: string; searchRelevance?: boolean }) {
   const t = useTranslations("Catalog");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -204,14 +210,15 @@ function CatalogSortInner({ current }: { current: string }) {
       selectedValue={selectedValue}
       sortLabel={t("sortLabel")}
       onValueChange={handleChange}
+      searchRelevance={searchRelevance}
     />
   );
 }
 
-export function CatalogSort({ current }: { current: string }) {
+export function CatalogSort({ current, searchRelevance = false }: { current: string; searchRelevance?: boolean }) {
   return (
-    <Suspense fallback={<CatalogSortStatic current={current} />}>
-      <CatalogSortInner current={current} />
+    <Suspense fallback={<CatalogSortStatic current={current} searchRelevance={searchRelevance} />}>
+      <CatalogSortInner current={current} searchRelevance={searchRelevance} />
     </Suspense>
   );
 }

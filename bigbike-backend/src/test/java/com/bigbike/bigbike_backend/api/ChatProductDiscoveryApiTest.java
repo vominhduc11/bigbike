@@ -418,7 +418,7 @@ public class ChatProductDiscoveryApiTest {
                 .thenAnswer(invocation -> {
                     AiChatClient.HybridAnswer base = executeSearchAnswer(invocation).orElseThrow();
                     return Optional.of(new AiChatClient.HybridAnswer(
-                            new AiChatClient.Answer("Giá là 12.000.000 VND.", false, false),
+                            new AiChatClient.Answer("Giá là 12.000.000 VND.", false),
                             base.products(), base.actions(), base.executedTools(), base.providerCallCount()));
                 });
 
@@ -456,7 +456,6 @@ public class ChatProductDiscoveryApiTest {
                                     "Em đã tìm thấy một số sản phẩm đang bán. "
                                             + "Anh/chị xem các thẻ bên dưới để cân nhắc. "
                                             + "Em có thể hỗ trợ lọc tiếp.",
-                                    false,
                                     false),
                             base.products(),
                             base.actions(),
@@ -487,7 +486,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
         assertThat(data.path("answer").asText())
-                .contains("chưa hoàn tất được lần kiểm tra này", "Gặp nhân viên")
+                .contains("chưa hoàn tất được lần kiểm tra này", "Hotline", "Zalo", "Messenger")
                 .doesNotContain("chưa có đúng mẫu", "shop không bán");
         assertThat(data.path("contacts").path("hotline").asText()).isEqualTo("0900 000 000");
         assertThat(data.path("contacts").path("zaloUrl").asText()).isEqualTo("https://zalo.example");
@@ -514,7 +513,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
         assertThat(data.path("answer").asText())
-                .contains("chưa hoàn tất được lần kiểm tra này", "Gặp nhân viên")
+                .contains("chưa hoàn tất được lần kiểm tra này", "Hotline", "Zalo", "Messenger")
                 .doesNotContain("chưa có đúng mẫu", "shop không bán");
         UUID conversationId = UUID.fromString(data.path("conversationId").asText());
         assertThat(messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId))
@@ -592,8 +591,7 @@ public class ChatProductDiscoveryApiTest {
             return Optional.of(new AiChatClient.HybridAnswer(
                     new AiChatClient.Answer(
                             terminal.answer(),
-                            terminal.offTopic(),
-                            terminal.handoffRecommended()),
+                            terminal.offTopic()),
                     execution.products(),
                     execution.actions(),
                     List.of(ChatToolRegistry.SEARCH_PRODUCTS),
@@ -605,16 +603,16 @@ public class ChatProductDiscoveryApiTest {
         }
         if (execution.products().isEmpty()) {
             String answer = "en".equals(lang)
-                    ? "I could not find a currently sold product matching that request. I will not guess product or stock information. Please choose Talk to staff for direct help."
-                    : "Em chưa tìm thấy sản phẩm đang bán phù hợp với yêu cầu này. Em không đoán tên hàng hoặc tình trạng kho. Anh/chị vui lòng bấm Gặp nhân viên để được hỗ trợ trực tiếp.";
+                    ? "I could not find a currently sold product matching that request. I will not guess product or stock information. Please contact BigBike through Hotline, Zalo or Messenger for direct help."
+                    : "Em chưa tìm thấy sản phẩm đang bán phù hợp với yêu cầu này. Em không đoán tên hàng hoặc tình trạng kho. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp.";
             return Optional.of(new AiChatClient.HybridAnswer(
-                    new AiChatClient.Answer(answer, false, true),
+                    new AiChatClient.Answer(answer, false),
                     List.of(), List.of(), List.of(ChatToolRegistry.SEARCH_PRODUCTS),
                     execution.requiredDisclosures(), 2, "AI",
                     execution.catalogTotals(), execution.searchScope()));
         }
         return Optional.of(new AiChatClient.HybridAnswer(
-                new AiChatClient.Answer(safeModelAnswer(lang), false, false),
+                new AiChatClient.Answer(safeModelAnswer(lang), false),
                 execution.products(), execution.actions(),
                 List.of(ChatToolRegistry.SEARCH_PRODUCTS), execution.requiredDisclosures(), 2, "AI",
                 execution.catalogTotals(), execution.searchScope()));
@@ -1027,10 +1025,11 @@ public class ChatProductDiscoveryApiTest {
         return new ChatAssistantSettings.Snapshot(
                 true,
                 10_000,
-                ChatAssistantSettings.defaultGreeting(lang),
-                ChatAssistantSettings.defaultQuickPrompts(lang),
+                true,
                 new ChatContactResponse("0900 000 000", "https://zalo.example", "https://messenger.example", "Zalo", "Messenger"),
-                "", "", "");
+                "", "", "", 12,
+                ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty());
     }
 
     private static String safeModelAnswer(String lang) {

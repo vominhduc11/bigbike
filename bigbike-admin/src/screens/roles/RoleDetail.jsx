@@ -19,11 +19,6 @@ export function RoleDetail({
   // Nhóm quyền mặc định thu gọn (chỉ mở nhóm đầu) để chống ngợp — trước đây tất cả mở cùng lúc.
   const [openGroups, setOpenGroups] = useState(() => new Set(catalog[0] ? [catalog[0].groupKey] : []))
   const isSuperAdmin = role.id === 'SUPER_ADMIN'
-  // Vai trò kỹ thuật: quyền của nó là thứ cho phép mở lại khoá bảo trì, nên backend từ chối
-  // sửa (AdminRoleService.PERMISSION_LOCKED_ROLES). Khác SUPER_ADMIN ở chỗ vẫn hiện đầy đủ
-  // bảng quyền để người xem thấy rõ nó gồm những gì — chỉ không cho sửa.
-  const isDeveloper = role.id === 'DEVELOPER'
-  const isPermissionLocked = isSuperAdmin || isDeveloper
   const activePerms = (editMode && draft) ? draft : new Set(role.permissions)
   const { knownKeys: KNOWN_PERM_KEYS, sensitiveKeys: SENSITIVE_PERMS } = buildCatalogHelpers(catalog)
   const descKey = `roles.roleDesc_${role.id}`
@@ -92,17 +87,6 @@ export function RoleDetail({
         <Alert tone="info" size="sm" className="mb-4">
           {t('roles.noEditPermission')}
         </Alert>
-      )}
-
-      {isDeveloper && (
-        <div className="flex items-start gap-2 px-4 py-3 mb-5 rounded-xs bg-primary/10 border border-primary/25">
-          <Shield size={14} className="text-primary shrink-0 mt-1" aria-hidden />
-          <p className="m-0 text-sm text-muted-foreground leading-relaxed">
-            {t('roles.developerBanner', {
-              defaultValue: 'Vai trò kỹ thuật. Quyền của vai trò này được khoá không cho sửa, vì đây là thứ cho phép mở lại trang quản trị sau khi bảo trì — bỏ nhầm một quyền là không ai mở khoá được nữa.',
-            })}
-          </p>
-        </div>
       )}
 
       {/* Super admin — business-friendly explanation */}
@@ -180,7 +164,7 @@ export function RoleDetail({
         </div>
       )}
 
-      {(!editMode && canUpdate && !isPermissionLocked) || editMode ? (
+      {(!editMode && canUpdate && !isSuperAdmin) || editMode ? (
         <StickyActionBar
           ariaLabel={t('common.actionBarLabel', { defaultValue: 'Thanh thao tác' })}
           info={editMode && isDirty ? t('common.dirty') : undefined}

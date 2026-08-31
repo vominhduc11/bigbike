@@ -177,8 +177,10 @@
           {
             "name": "q",
             "in": "query",
+            "description": "Customer search: accent-insensitive word-boundary matching across product identifiers, variant options, brand and category; all words rank before strict-majority matches.",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 100
             }
           },
           {
@@ -788,8 +790,10 @@
           {
             "name": "q",
             "in": "query",
+            "description": "Accent-insensitive literal article title/excerpt search; %, _ and backslash are not wildcards.",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 100
             }
           }
         ],
@@ -7514,8 +7518,10 @@
           {
             "name": "q",
             "in": "query",
+            "description": "Customer search query, up to 100 characters; uses the same relevance semantics as the public product list.",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 100
             }
           },
           {
@@ -8125,87 +8131,6 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/maintenance": {
-      "get": {
-        "tags": [
-          "Admin Maintenance"
-        ],
-        "summary": "Read the admin-panel maintenance state",
-        "operationId": "getAdminMaintenance",
-        "description": "Readable by any signed-in admin so every staff member can see why the panel refuses to save. `canToggle` reports whether THIS caller may change the state (DEVELOPER role only). `uploadCount` is the number of in-flight admin uploads. Admin-panel scope only — the storefront is never placed in maintenance and customers can always order.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Current maintenance state",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AdminMaintenanceResponse"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated"
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Admin Maintenance"
-        ],
-        "summary": "Change the admin-panel maintenance state",
-        "operationId": "updateAdminMaintenance",
-        "description": "Restricted to the DEVELOPER role by an exact role-name check, NOT by permission: SUPER_ADMIN's wildcard `*` satisfies every permission check, so a permission could not express this rule. SUPER_ADMIN therefore receives 403. While state=ACTIVE every other admin write returns 423 MAINTENANCE_ACTIVE (423, not 503, because nginx intercepts 503 and replaces the body).",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateMaintenanceRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated maintenance state",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/AdminMaintenanceResponse"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "state is not NORMAL or ACTIVE; legacy UPCOMING is no longer accepted"
-          },
-          "403": {
-            "description": "Caller is not the DEVELOPER role (includes SUPER_ADMIN)"
           }
         }
       }
@@ -13912,56 +13837,6 @@
           "sourcePattern": { "type": "string" },
           "targetUrl": { "type": "string" },
           "statusCode": { "type": "integer", "enum": [301, 410] }
-        }
-      },
-      "AdminMaintenanceResponse": {
-        "type": "object",
-        "properties": {
-          "state": {
-            "type": "string",
-            "enum": [
-              "NORMAL",
-              "ACTIVE"
-            ]
-          },
-          "staffNote": {
-            "type": "string",
-            "nullable": true,
-            "description": "Message shown to staff on the maintenance overlay"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "canToggle": {
-            "type": "boolean",
-            "description": "True only for the DEVELOPER role"
-          },
-          "uploadCount": {
-            "type": "integer",
-            "description": "In-flight admin uploads"
-          }
-        }
-      },
-      "UpdateMaintenanceRequest": {
-        "type": "object",
-        "required": [
-          "state"
-        ],
-        "properties": {
-          "state": {
-            "type": "string",
-            "enum": [
-              "NORMAL",
-              "ACTIVE"
-            ]
-          },
-          "staffNote": {
-            "type": "string",
-            "nullable": true,
-            "maxLength": 2000
-          }
         }
       }
     }

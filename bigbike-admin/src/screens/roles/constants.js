@@ -61,10 +61,6 @@ export const BUILTIN_CATALOG = [
       perm('audit-logs.read', 'audit-logs', 'READ', true),
       perm('chat.read', 'chat', 'READ', true),
       perm('chat.reply', 'chat', 'WRITE', true, ['chat.read']),
-      // V375. Giữ quyền này KHÔNG đủ để bật/tắt bảo trì — endpoint còn đòi đúng vai trò
-      // DEVELOPER, vì quyền '*' của Chủ hệ thống thoả mãn mọi permission. Cấp cho vai trò
-      // khác sẽ không có tác dụng; nhãn hiển thị đã nói rõ điều đó.
-      perm('maintenance.manage', 'maintenance', 'WRITE', true),
     ],
   },
 ]
@@ -108,7 +104,6 @@ export const PERM_LABEL_KEY_MAP = {
   'audit-logs.read':            'roles.permAuditLogsRead',
   'chat.read':                  'roles.permChatRead',
   'chat.reply':                 'roles.permChatReply',
-  'maintenance.manage':         'roles.permMaintenanceManage',
 }
 
 // Permissions an admin must never be able to strip from their OWN role —
@@ -145,7 +140,6 @@ export const MODULE_LABELS = {
   'admin-users': 'Tài khoản quản trị',
   roles: 'Vai trò & phân quyền',
   'audit-logs': 'Nhật ký hoạt động',
-  maintenance: 'Bảo trì hệ thống',
 }
 
 export function closePermissionDependencies(inputPermissions, catalog) {

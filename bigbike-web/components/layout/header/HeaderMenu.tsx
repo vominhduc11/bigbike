@@ -47,6 +47,7 @@ type HeaderMenuLinkProps = {
   current?: boolean;
   ariaHasPopup?: "menu";
   ariaExpanded?: boolean;
+  title?: string;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
@@ -61,6 +62,7 @@ function HeaderMenuLink({
   current,
   ariaHasPopup,
   ariaExpanded,
+  title,
   onClick,
 }: HeaderMenuLinkProps) {
   return (
@@ -71,6 +73,7 @@ function HeaderMenuLink({
       aria-current={current ? "page" : undefined}
       aria-haspopup={ariaHasPopup}
       aria-expanded={ariaExpanded}
+      title={title}
       onClick={onClick}
       className={className}
     >
@@ -206,7 +209,7 @@ function DesktopSubmenu({
       data-header-submenu
       data-header-submenu-depth={depth}
       className={cn(
-        "invisible absolute z-[var(--bb-z-dropdown)] m-0 w-92 list-none bg-white p-0 opacity-0 shadow-[var(--bb-shadow-dropdown)] transition-[opacity,transform,visibility] duration-200",
+        "invisible absolute z-[var(--bb-z-dropdown)] m-0 w-80 list-none bg-white p-0 opacity-0 shadow-[var(--bb-shadow-dropdown)] transition-[opacity,transform,visibility] duration-200",
         depth === 0 ? "left-0 top-full -translate-y-[10px]" : "left-full top-0 -translate-x-[10px]",
         depth === 0 && open && "visible translate-y-0 opacity-100",
         submenuReveal[Math.min(depth, submenuReveal.length - 1)],
@@ -230,10 +233,10 @@ function DesktopSubmenu({
               href={href}
               newWindowLabel={newWindowLabel}
               current={current}
+              title={node.label}
               onClick={onNavigate}
               className={cn(
-                // Keep the existing 44px desktop submenu row while the mask grows to 24px.
-                "flex items-center px-6 py-2.5 font-body text-a5-meta font-semibold normal-case no-underline! hover:text-brand-on-dark!",
+                "flex h-11 min-w-0 items-center px-6 font-body text-a5-meta font-semibold normal-case no-underline! hover:text-brand-on-dark!",
                 active ? "text-brand-on-dark!" : "text-muted-foreground!",
               )}
             >
@@ -249,7 +252,7 @@ function DesktopSubmenu({
                   aria-hidden
                 />
               ) : null}
-              <span data-header-menu-label className="min-w-0">
+              <span data-header-menu-label className="min-w-0 flex-1 truncate">
                 {node.label}
               </span>
             </HeaderMenuLink>

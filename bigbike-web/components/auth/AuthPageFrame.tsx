@@ -15,7 +15,7 @@ function AuthBenefitsPanel({ panel }: { panel: AuthBrandPanel }) {
   return (
     <aside
       data-auth-brand-panel
-      className="relative hidden min-h-0 overflow-hidden bg-surface-dark p-10 text-primary-foreground min-[1024px]:flex min-[1024px]:flex-col min-[1024px]:justify-end"
+      className="relative hidden min-h-0 overflow-hidden bg-surface-dark p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-end"
     >
       <Image
         src="/brand/page-title-bg.png"
@@ -56,7 +56,7 @@ function AuthBenefitsPanel({ panel }: { panel: AuthBrandPanel }) {
 
 export type AuthPageKind = "login" | "register" | "forgot" | "verify";
 
-/** Auth content frame. The surrounding header/main/footer belongs to AuthLayout. */
+/** Shared white canvas for the four authentication routes. */
 export function AuthPageFrame({
   children,
   wide = false,
@@ -74,14 +74,11 @@ export function AuthPageFrame({
     return (
       <section
         data-auth-page={authPage}
-        className="w-full px-4 py-8 sm:px-6 min-[1024px]:px-0 min-[1024px]:py-0"
+        className="flex min-h-full w-full flex-1 px-4 py-2 sm:p-6 lg:p-0"
       >
-        <div className="mx-auto grid w-full max-w-[1200px] bg-background min-[1024px]:grid-cols-2">
+        <div className="mx-auto grid min-h-full w-full max-w-[1200px] bg-background lg:grid-cols-2">
           <AuthBenefitsPanel panel={brandPanel} />
-          <div
-            data-auth-form-panel
-            className="flex min-w-0 justify-center py-10 min-[1024px]:items-center min-[1024px]:py-3"
-          >
+          <div data-auth-form-panel className="flex min-w-0 justify-center lg:items-center lg:py-3">
             <div className={cn("w-full", wide ? "max-w-xl" : "max-w-md")}>{children}</div>
           </div>
         </div>
@@ -90,7 +87,10 @@ export function AuthPageFrame({
   }
 
   return (
-    <section data-auth-page={authPage} className="w-full px-4 py-10 sm:px-6 md:py-15">
+    <section
+      data-auth-page={authPage}
+      className="flex min-h-full w-full flex-1 items-start p-4 sm:p-6 md:items-center"
+    >
       <div className={cn("mx-auto w-full", wide ? "max-w-screen-sm" : "max-w-92.5")}>
         {children}
       </div>

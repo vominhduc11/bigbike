@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import com.bigbike.bigbike_backend.domain.content.Article;
+import com.bigbike.bigbike_backend.service.search.StorefrontSearchRules;
 
 import java.time.Instant;
 import java.util.Comparator;
@@ -101,12 +102,13 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
 
     @Override
     public List<Article> searchPublishedArticles(java.util.List<String> tokens, String locale, int limit) {
+        if (tokens == null || tokens.isEmpty() || limit <= 0) {
+            return List.of();
+        }
         return articles.stream()
                 .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
-                .filter(a -> tokens == null || tokens.isEmpty() || tokens.stream().allMatch(t -> {
-                    String term = t.toLowerCase(Locale.ROOT);
-                    return containsLower(a.title(), term) || containsLower(a.excerpt(), term);
-                }))
+                .filter(a -> StorefrontSearchRules.matchesLiteralTerms(
+                        java.util.Arrays.asList(a.title(), a.excerpt()), tokens))
                 .limit(limit)
                 .toList();
     }
@@ -182,8 +184,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
 
     private static boolean matchesArticleQuery(Article a, String q) {
         if (q == null || q.isBlank()) return true;
-        String term = q.toLowerCase(Locale.ROOT);
-        return containsLower(a.title(), term) || containsLower(a.excerpt(), term);
+        return StorefrontSearchRules.matchesLiteralTerms(
+                java.util.Arrays.asList(a.title(), a.excerpt()), StorefrontSearchRules.literalTerms(q));
     }
 
     private static boolean matchesArticleAdminQuery(Article a, String q) {

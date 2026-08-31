@@ -158,9 +158,9 @@ class ChatClarificationDecisionTest {
         assertThat(thanks.products()).isEmpty();
         assertThat(thanks.localAnswer()).contains("rất vui được hỗ trợ");
 
-        ChatToolService.ToolOutcome staff = turn("tôi muốn gặp nhân viên", "vi", pending);
-        assertThat(staff.clarification()).isNull();
-        assertThat(staff.handoffRecommended()).isTrue();
+        ChatToolService.ToolOutcome contact = turn("tôi muốn gặp nhân viên", "vi", pending);
+        assertThat(contact.clarification()).isNull();
+        assertThat(contact.directContactRecommended()).isTrue();
 
         ChatToolService.ToolOutcome policy = turn("chính sách đổi trả thế nào", "vi", pending);
         assertThat(policy.clarification()).isNull();
@@ -392,8 +392,10 @@ class ChatClarificationDecisionTest {
 
     private static ChatAssistantSettings.Snapshot settings() {
         return new ChatAssistantSettings.Snapshot(
-                true, 60, "Xin chào", List.of("A", "B", "C"),
-                new ChatContactResponse("0900", "", "", "", ""), "", "", "");
+                true, 60, true,
+                new ChatContactResponse("0900", "", "", "", ""), "", "", "", 12,
+                ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty());
     }
 
     private static List<Category> categories() {

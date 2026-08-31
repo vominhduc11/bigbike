@@ -46,7 +46,7 @@ public class PublicSearchController {
      */
     @GetMapping("/search-suggest")
     public ApiDataResponse<SearchPayload> searchSuggest(
-            @RequestParam(value = "q", required = false) @Size(max = 200) String q,
+            @RequestParam(value = "q", required = false) @Size(max = 100) String q,
             @RequestParam(value = "limit", required = false) @Min(1) @Max(MAX_LIMIT) Integer limit,
             @RequestParam(defaultValue = "vi")
             @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,

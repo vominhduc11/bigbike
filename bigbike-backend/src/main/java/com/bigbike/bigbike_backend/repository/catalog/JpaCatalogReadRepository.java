@@ -32,6 +32,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
+import com.bigbike.bigbike_backend.service.search.StorefrontSearchRules;
 import com.bigbike.bigbike_backend.service.admin.BrandLogoValidationService;
 import com.bigbike.bigbike_backend.util.AdminSearchText;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -246,33 +247,8 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         if (tokens == null || tokens.isEmpty() || limit <= 0) {
             return List.of();
         }
-        boolean english = LOCALE_EN.equalsIgnoreCase(locale);
-        Specification<ProductEntity> spec = (root, query, cb) -> {
-            java.util.List<Predicate> preds = new ArrayList<>();
-            preds.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
-            preds.add(cb.isFalse(root.get("discontinued")));
-            preds.add(ProductFilterSpecifications.productTextSearch(
-                    root, cb, String.join(" ", tokens)));
-            Expression<String> name = english
-                    ? cb.<String>selectCase()
-                            .when(cb.or(cb.isNull(root.get("nameEn")), cb.equal(cb.trim(root.get("nameEn")), "")), root.get("name"))
-                            .otherwise(root.get("nameEn"))
-                    : root.get("name");
-            // Sort by name length ASC (shorter = more exact match), then alphabetically.
-            // Guard against count query (Long) which does not support orderBy.
-            if (!Long.class.equals(query.getResultType())) {
-                query.orderBy(
-                        cb.asc(cb.length(name)),
-                        cb.asc(name));
-            }
-            return cb.and(preds.toArray(new Predicate[0]));
-        };
-        return productJpaRepository
-                .findAll(spec, org.springframework.data.domain.PageRequest.of(0, limit))
-                .getContent()
-                .stream()
-                .map(entity -> toDomainPublicView(entity, locale))
-                .toList();
+        return StorefrontSearchRules.rankMatchingProducts(
+                findAllPublishedProductsForListing(locale), String.join(" ", tokens), limit);
     }
 
     @Override
@@ -518,7 +494,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 null,                       // suitabilitySection — detail only
                 null,                       // sizeGuideSection — detail only
                 null,                       // seo — detail only
-                null,                       // translations — admin detail read only
+                toTranslations(entity),     // internal search projection; stripped by toListView()
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

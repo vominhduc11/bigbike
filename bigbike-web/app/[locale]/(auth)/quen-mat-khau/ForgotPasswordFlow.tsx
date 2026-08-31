@@ -18,9 +18,11 @@ import { FormRootError } from "@/components/ui/FormRootError";
 import { Button } from "@/components/ui/button";
 import { AuthField } from "@/components/auth/AuthField";
 import { AuthTitleBlock } from "@/components/auth/AuthPageFrame";
+import { GuestStorefrontExit } from "@/components/auth/GuestStorefrontExit";
 
 type ForgotPasswordFlowProps = {
   token?: string | null;
+  returnTo?: string;
 };
 
 function RequestResetForm() {
@@ -191,6 +193,11 @@ function ResetPasswordForm({ token }: { token: string }) {
   );
 }
 
-export default function ForgotPasswordFlow({ token }: ForgotPasswordFlowProps) {
-  return token ? <ResetPasswordForm token={token} /> : <RequestResetForm />;
+export default function ForgotPasswordFlow({ token, returnTo }: ForgotPasswordFlowProps) {
+  return (
+    <div>
+      {token ? <ResetPasswordForm token={token} /> : <RequestResetForm />}
+      <GuestStorefrontExit returnTo={returnTo} />
+    </div>
+  );
 }

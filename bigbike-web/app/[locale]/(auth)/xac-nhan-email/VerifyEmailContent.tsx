@@ -9,7 +9,9 @@ import { useAuth } from "@/lib/auth/auth-store";
 import { useResendEmailVerification, useVerifyEmail } from "@/lib/query/hooks";
 import { Button } from "@/components/ui/button";
 import { AuthTitleBlock } from "@/components/auth/AuthPageFrame";
+import { GuestStorefrontExit } from "@/components/auth/GuestStorefrontExit";
 import type { Locale } from "@/i18n/locale";
+import { isSafeReturnTo } from "@/lib/utils/auth";
 import { toAccountPath, toHomePath, toLoginPath, translatePath } from "@/lib/utils/routes";
 
 type Status = "idle" | "loading" | "success" | "error" | "missing";
@@ -25,6 +27,8 @@ export function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+  const rawReturnTo = searchParams.get("tiep") ?? "";
+  const returnTo = isSafeReturnTo(rawReturnTo) ? rawReturnTo : undefined;
   const auth = useAuth();
   const verifyMutation = useVerifyEmail();
   const resendMutation = useResendEmailVerification();
@@ -170,6 +174,7 @@ export function VerifyEmailContent() {
           )}
         </>
       )}
+      <GuestStorefrontExit returnTo={returnTo} />
     </div>
   );
 }

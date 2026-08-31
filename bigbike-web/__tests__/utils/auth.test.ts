@@ -26,6 +26,12 @@ describe("isSafeReturnTo — login open-redirect guard", () => {
     expect(isSafeReturnTo("//evil.com/steal-cookies")).toBe(false);
   });
 
+  it("rejects encoded protocol-relative and backslash variants", () => {
+    expect(isSafeReturnTo("/%2F%2Fevil.com")).toBe(false);
+    expect(isSafeReturnTo("/%5Cevil.com")).toBe(false);
+    expect(isSafeReturnTo("/\\evil.com")).toBe(false);
+  });
+
   it("rejects empty string", () => {
     expect(isSafeReturnTo("")).toBe(false);
   });

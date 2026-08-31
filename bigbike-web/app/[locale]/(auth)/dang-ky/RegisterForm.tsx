@@ -13,6 +13,7 @@ import { createRegisterSchema, type RegisterFormValues } from "@/lib/schemas/aut
 import { toAccountPath, toLoginPath, translatePath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { AuthField } from "@/components/auth/AuthField";
+import { GuestStorefrontExit } from "@/components/auth/GuestStorefrontExit";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,7 @@ export function RegisterForm({
         <Button type="button" size="auth" onClick={() => router.push(resolvedReturnTo)}>
           {t("successCta")}
         </Button>
+        <GuestStorefrontExit returnTo={returnTo} />
       </div>
     );
   }
@@ -119,8 +121,8 @@ export function RegisterForm({
       />
 
       <form id="register-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="grid grid-cols-1 gap-x-6 md:grid-cols-2">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-2 gap-x-3 md:gap-x-6">
+          <div className="col-span-2">
             <AuthField
               id="reg-fullName"
               label={t("fullNameLabel")}
@@ -128,6 +130,7 @@ export function RegisterForm({
               placeholder={t("fullNamePlaceholder")}
               registration={register("fullName")}
               error={errors.fullName}
+              compact
             />
           </div>
           <AuthField
@@ -138,6 +141,7 @@ export function RegisterForm({
             placeholder={t("emailPlaceholder")}
             registration={register("email")}
             error={errors.email}
+            compact
           />
           <AuthField
             id="reg-phone"
@@ -147,6 +151,7 @@ export function RegisterForm({
             placeholder={t("phonePlaceholder")}
             registration={register("phone")}
             error={errors.phone}
+            compact
           />
           <AuthField
             id="reg-password"
@@ -158,6 +163,7 @@ export function RegisterForm({
             passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
             registration={register("password")}
             error={errors.password}
+            compact
           />
           <AuthField
             id="reg-confirm"
@@ -168,8 +174,9 @@ export function RegisterForm({
             passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
             registration={register("confirm")}
             error={errors.confirm}
+            compact
           />
-          <div className="md:col-span-2">
+          <div className="col-span-2">
             <PasswordStrengthMeter
               password={password}
               label={tPassword("strengthLabel")}
@@ -180,9 +187,10 @@ export function RegisterForm({
                 good: tPassword("strengthGood"),
                 strong: tPassword("strengthStrong"),
               }}
+              compact
             />
           </div>
-          <div className="mb-5 md:col-span-2">
+          <div className="col-span-2 mb-1 md:mb-5 lg:mb-3">
             <Controller
               name="privacyConsent"
               control={control}
@@ -204,7 +212,7 @@ export function RegisterForm({
                     />
                     <div
                       id="reg-privacy-consent-label"
-                      className="min-h-11 pt-3 text-a5-meta leading-body"
+                      className="min-h-11 pt-2 text-a5-meta leading-body"
                     >
                       <Label htmlFor="reg-privacy-consent" className="cursor-pointer">
                         {t("privacyConsentPrefix")}{" "}
@@ -248,17 +256,27 @@ export function RegisterForm({
         <Button type="submit" size="auth" disabled={isSubmitting} className="hidden md:inline-flex">
           {isSubmitting ? t("submitting") : t("submit")}
         </Button>
-        <Button type="submit" size="auth" disabled={isSubmitting} className="mt-3 w-full md:hidden">
+        <Button
+          type="submit"
+          size="auth"
+          disabled={isSubmitting}
+          className="mt-2 min-h-11 w-full md:hidden"
+        >
           {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>
 
-      <Button asChild variant="secondary" size="auth" className="mt-3 w-full">
+      <Button
+        asChild
+        variant="secondary"
+        size="auth"
+        className="mt-2 min-h-11 w-full md:mt-3 md:min-h-13"
+      >
         <Link href={toLoginPath(undefined, locale)}>{t("loginCta")}</Link>
       </Button>
 
       <div
-        className="my-6 flex items-center gap-3"
+        className="my-3 flex items-center gap-3 md:my-6 lg:my-3"
         role="separator"
         aria-label={tSocial("divider")}
       >
@@ -276,6 +294,7 @@ export function RegisterForm({
           onRequired: requirePrivacyAgreement,
         }}
       />
+      <GuestStorefrontExit returnTo={returnTo} />
     </div>
   );
 }

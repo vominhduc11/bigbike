@@ -18,7 +18,7 @@ export function HeaderSearchButton() {
       type="button"
       variant="ghost"
       size="icon"
-      onClick={() => openPanel("search")}
+      onClick={(event) => openPanel("search", event.currentTarget)}
       aria-label={t("search")}
       aria-expanded={open}
       className={cn(

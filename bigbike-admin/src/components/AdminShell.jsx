@@ -12,7 +12,6 @@ import { GlobalSearch } from './GlobalSearch'
 import { LanguageSwitcher } from './LanguageSwitcher'
 import { NotificationBell } from './NotificationBell'
 import { ThemeToggle } from './ThemeToggle'
-import { MaintenanceOverlay } from './MaintenanceOverlay'
 
 // Màn form (sản phẩm/tin tức) báo AdminShell tự ẩn sidebar khi mở panel Xem trước —
 // cả 2 chiếm chỗ ngang cùng lúc nên màn dễ chật. Tự động theo trạng thái preview,
@@ -382,7 +381,6 @@ export function AdminShell({
       </div>
 
       <ConfirmDialogProvider />
-      <MaintenanceOverlay />
     </PreviewSidebarContext.Provider>
   )
 }

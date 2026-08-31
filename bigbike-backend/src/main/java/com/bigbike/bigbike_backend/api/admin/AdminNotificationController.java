@@ -28,12 +28,8 @@ public class AdminNotificationController extends AdminControllerSupport {
     @GetMapping
     public ApiDataResponse<Map<String, Object>> list(HttpServletRequest request) {
         AdminUserProfile user = devAdminAuthService.requireAnyPermission(
-                request, "orders.read", "chat.read");
-        boolean wildcard = user.permissions().contains("*");
-        InboxView inbox = notificationService.inboxFor(
-                resolveAdminId(),
-                wildcard || user.permissions().contains("orders.read"),
-                wildcard || user.permissions().contains("chat.read"));
+                request, "orders.read");
+        InboxView inbox = notificationService.inboxFor(resolveAdminId());
         List<Map<String, Object>> mapped = inbox.items().stream().map(this::toMap).toList();
         return apiResponseFactory.data(
                 Map.of("unreadCount", inbox.unreadCount(), "items", mapped), request);

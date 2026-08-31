@@ -45,8 +45,8 @@ export default async function LoginPage({ params }: LoginPageProps) {
         imageAlt: t("imageAlt"),
       }}
     >
-      <AuthTitleBlock title={<Tr ns="Auth" k="tabLogin" />}>
-        <p className="m-0 text-a4-content text-muted-foreground">
+      <AuthTitleBlock title={<Tr ns="Auth" k="tabLogin" />} compact>
+        <p className="sr-only">
           <Tr ns="Auth.login" k="intro" />
           <span className="ml-1">
             <Tr ns="Auth.login" k="newMemberPrompt" />{" "}

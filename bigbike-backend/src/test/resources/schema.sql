@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS media_tags (
 CREATE INDEX IF NOT EXISTS idx_media_tags_tag ON media_tags(tag);
 
 -- Production creates the global message sequence in Flyway V1056 so customer,
--- assistant, staff, and system messages cannot collide during live handoff.
+-- assistant, and system messages cannot collide.
 -- H2 tests run with Flyway disabled, therefore they need the same primitive.
 CREATE SEQUENCE IF NOT EXISTS chat_message_sequence START WITH 1 INCREMENT BY 1;
 

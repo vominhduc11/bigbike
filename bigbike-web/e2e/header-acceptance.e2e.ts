@@ -5,13 +5,15 @@ import { expectNoHorizontalOverflow, gotoAndSettle } from "./helpers/ui-quality"
 const PHONE_WIDTHS = [320, 360, 375, 414];
 const DESKTOP_WIDTHS = [1280, 1366, 1440, 1600, 1920];
 const SEARCH_WIDTHS = [1280, 1440, 1920];
-const DESKTOP_CATEGORY_LABELS = [
+const VI_TRUNCATED_CATEGORY_LABELS = [
   "Giá đỡ điện thoại và phụ kiện camera hành trình",
   "Đồ lót giáp, đồ mưa và phụ kiện moto",
   "Tai nghe bluetooth mũ bảo hiểm",
-  "Túi treo xe máy và túi hít bình xăng",
 ];
-const LONG_DESKTOP_CATEGORY_LABEL = DESKTOP_CATEGORY_LABELS[0];
+const DESKTOP_LOCALES = [
+  { name: "VI", path: "/" },
+  { name: "EN", path: "/en/" },
+] as const;
 
 function header(page: Page) {
   return page.locator("[data-bb-header]");
@@ -176,82 +178,132 @@ test.describe("Header acceptance — desktop spacing and category panels", () =>
     });
   }
 
-  for (const width of DESKTOP_WIDTHS) {
-    test(`${width}px keeps both category panels at 368px`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 900 });
-      await gotoAndSettle(page, "/", { scroll: false });
+  for (const locale of DESKTOP_LOCALES) {
+    for (const width of DESKTOP_WIDTHS) {
+      test(`${locale.name} ${width}px keeps both category panels at 320px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await gotoAndSettle(page, locale.path, { scroll: false });
 
-      const parent = desktopMenu(page)
-        .locator(":scope > ul > li[data-header-menu-item-with-children]")
-        .first();
-      if ((await parent.count()) === 0) {
-        test.skip(true, "Current menu data has no desktop category branch");
-        return;
-      }
+        const parent = desktopMenu(page)
+          .locator(":scope > ul > li[data-header-menu-item-with-children]")
+          .first();
+        if ((await parent.count()) === 0) {
+          test.skip(true, "Current menu data has no desktop category branch");
+          return;
+        }
 
-      await parent.hover();
-      const firstPanel = parent.locator('[data-header-submenu][data-header-submenu-depth="0"]');
-      await expect(firstPanel).toBeVisible();
+        await parent.hover();
+        const firstPanel = parent.locator('[data-header-submenu][data-header-submenu-depth="0"]');
+        await expect(firstPanel).toBeVisible();
 
-      const nestedParent = firstPanel.locator('li:has(> [data-header-submenu-depth="1"])').first();
-      if ((await nestedParent.count()) === 0) {
-        test.skip(true, "Current menu data has no second-level category branch");
-        return;
-      }
+        const nestedParent = firstPanel
+          .locator('li:has(> [data-header-submenu-depth="1"])')
+          .first();
+        if ((await nestedParent.count()) === 0) {
+          test.skip(true, "Current menu data has no second-level category branch");
+          return;
+        }
 
-      await nestedParent.hover();
-      const secondPanel = nestedParent.locator(
-        '[data-header-submenu][data-header-submenu-depth="1"]',
-      );
-      await expect(secondPanel).toBeVisible();
-
-      const panelMetrics = await Promise.all(
-        [firstPanel, secondPanel].map((panel) =>
-          panel.evaluate((element) => {
-            const rect = element.getBoundingClientRect();
-            return { width: rect.width, right: rect.right };
-          }),
-        ),
-      );
-      for (const [index, metrics] of panelMetrics.entries()) {
-        expect(metrics.width, `category panel ${index + 1} width @ ${width}px`).toBe(368);
-        expect(
-          metrics.right,
-          `category panel ${index + 1} right edge @ ${width}px`,
-        ).toBeLessThanOrEqual(width + 1);
-      }
-
-      const labelStats = await desktopMenu(page)
-        .locator("[data-header-menu-label]:visible")
-        .evaluateAll((nodes) =>
-          nodes.map((node) => {
-            const range = document.createRange();
-            range.selectNodeContents(node);
-            const lineTops = Array.from(range.getClientRects()).map(
-              (rect) => Math.round(rect.top * 10) / 10,
-            );
-            range.detach();
-            return {
-              text: (node.textContent ?? "").trim(),
-              lines: new Set(lineTops).size,
-            };
-          }),
+        await nestedParent.hover();
+        const secondPanel = nestedParent.locator(
+          '[data-header-submenu][data-header-submenu-depth="1"]',
         );
-      const missingLabels = DESKTOP_CATEGORY_LABELS.filter(
-        (label) => !labelStats.some((stat) => stat.text === label),
-      );
-      if (missingLabels.length > 0) {
-        test.skip(true, `Current menu data does not contain: ${missingLabels.join(", ")}`);
-        return;
-      }
+        await expect(secondPanel).toBeVisible();
 
-      const multilineLabels = labelStats.filter((stat) => stat.lines > 1).map((stat) => stat.text);
-      expect(multilineLabels, `desktop multiline category labels @ ${width}px`).toEqual([
-        LONG_DESKTOP_CATEGORY_LABEL,
-      ]);
+        const panelMetrics = await Promise.all(
+          [firstPanel, secondPanel].map((panel) =>
+            panel.evaluate((element) => {
+              const rect = element.getBoundingClientRect();
+              return { width: rect.width, left: rect.left, right: rect.right };
+            }),
+          ),
+        );
+        for (const [index, metrics] of panelMetrics.entries()) {
+          expect(metrics.width, `category panel ${index + 1} width @ ${width}px`).toBe(320);
+          expect(
+            metrics.left,
+            `category panel ${index + 1} left edge @ ${width}px`,
+          ).toBeGreaterThanOrEqual(-1);
+          expect(
+            metrics.right,
+            `category panel ${index + 1} right edge @ ${width}px`,
+          ).toBeLessThanOrEqual(width + 1);
+        }
 
-      await expectNoHorizontalOverflow(page, `open category panels @ ${width}px`);
-    });
+        const labelStats = await desktopMenu(page)
+          .locator("[data-header-menu-label]:visible")
+          .evaluateAll((nodes) =>
+            nodes.map((node) => {
+              const label = node as HTMLElement;
+              const link = label.closest("a");
+              const row = label.closest("li");
+              const labelStyle = getComputedStyle(label);
+              const range = document.createRange();
+              range.selectNodeContents(label);
+              const lineTops = Array.from(range.getClientRects()).map(
+                (rect) => Math.round(rect.top * 10) / 10,
+              );
+              range.detach();
+              return {
+                text: (label.textContent ?? "").trim(),
+                lines: new Set(lineTops).size,
+                whiteSpace: labelStyle.whiteSpace,
+                overflow: labelStyle.overflow,
+                textOverflow: labelStyle.textOverflow,
+                title: link?.getAttribute("title"),
+                linkHeight: link?.getBoundingClientRect().height ?? 0,
+                rowHeight: row?.getBoundingClientRect().height ?? 0,
+                scrollWidth: label.scrollWidth,
+                clientWidth: label.clientWidth,
+              };
+            }),
+          );
+
+        expect(
+          labelStats.length,
+          `desktop submenu labels @ ${locale.name} ${width}px`,
+        ).toBeGreaterThan(0);
+        const rowHeights = new Set(labelStats.map((stat) => stat.rowHeight));
+        expect(
+          rowHeights,
+          `desktop submenu rows must be equal @ ${locale.name} ${width}px`,
+        ).toEqual(new Set([45]));
+        for (const stat of labelStats) {
+          expect(
+            stat.lines,
+            `${stat.text} should stay on one line @ ${locale.name} ${width}px`,
+          ).toBe(1);
+          expect(stat.whiteSpace, `${stat.text} should not wrap @ ${locale.name} ${width}px`).toBe(
+            "nowrap",
+          );
+          expect(stat.overflow, `${stat.text} should be clipped @ ${locale.name} ${width}px`).toBe(
+            "hidden",
+          );
+          expect(
+            stat.textOverflow,
+            `${stat.text} should use ellipsis @ ${locale.name} ${width}px`,
+          ).toBe("ellipsis");
+          expect(stat.linkHeight, `${stat.text} link height @ ${locale.name} ${width}px`).toBe(44);
+          expect(stat.title, `${stat.text} tooltip @ ${locale.name} ${width}px`).toBe(stat.text);
+        }
+
+        if (locale.name === "VI") {
+          const missingLabels = VI_TRUNCATED_CATEGORY_LABELS.filter(
+            (label) => !labelStats.some((stat) => stat.text === label),
+          );
+          if (missingLabels.length > 0) {
+            test.skip(true, `Current menu data does not contain: ${missingLabels.join(", ")}`);
+            return;
+          }
+          const truncatedLabels = labelStats
+            .filter((stat) => stat.scrollWidth > stat.clientWidth + 1)
+            .map((stat) => stat.text);
+          expect(truncatedLabels).toEqual(expect.arrayContaining(VI_TRUNCATED_CATEGORY_LABELS));
+        }
+
+        await expectNoHorizontalOverflow(page, `open category panels @ ${locale.name} ${width}px`);
+      });
+    }
   }
 });
 
@@ -462,6 +514,32 @@ test.describe("Header acceptance — search, scroll and keyboard", () => {
 
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(header(page)).toHaveAttribute("data-scrolled", "false");
+  });
+
+  test("category panels keep their fixed geometry after scrolling", async ({ page }) => {
+    await gotoAndSettle(page, "/", { scroll: false });
+    await page.evaluate(() => window.scrollTo(0, 600));
+    await expect(header(page)).toHaveAttribute("data-scrolled", "true");
+
+    const parent = desktopMenu(page)
+      .locator(":scope > ul > li[data-header-menu-item-with-children]")
+      .first();
+    if ((await parent.count()) === 0) {
+      test.skip(true, "Current menu data has no desktop category branch");
+      return;
+    }
+
+    await parent.hover();
+    const panel = parent.locator('[data-header-submenu][data-header-submenu-depth="0"]');
+    await expect(panel).toBeVisible();
+    const metrics = await panel.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, left: rect.left, right: rect.right };
+    });
+    expect(metrics.width).toBe(320);
+    expect(metrics.left).toBeGreaterThanOrEqual(-1);
+    expect(metrics.right).toBeLessThanOrEqual((await page.evaluate(() => window.innerWidth)) + 1);
+    await expectNoHorizontalOverflow(page, "scrolled open category panel");
   });
 });
 

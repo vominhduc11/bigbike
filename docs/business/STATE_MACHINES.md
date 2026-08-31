@@ -61,7 +61,7 @@ File này liên quan trực tiếp đến:
 | Media | `status` | `ACTIVE`, `INACTIVE`, `DELETED` | Upload creates `ACTIVE`; update validates allowed statuses; soft-delete sets `DELETED`; restore sets `ACTIVE`; hard-delete removes row/object. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminMediaService.java` |
 | Review | `status` | `PENDING`, `APPROVED`, `SPAM`, `TRASH` | New public review starts `PENDING`; moderation follows the controlled graph in §15A; `TRASH` is restorable and permanent deletion is a separate Super Admin action. An automatic moderator may additionally drive `PENDING → SPAM\|TRASH` (never `APPROVED`) — §15A "Automatic moderation actor". | Backend service + optimistic version | `OWNER_CONFIRMED_2026-08-08` | `BUSINESS_RULES.md` `REVIEW_RULE_009`/`010`/`012`, `AdminReviewService.java` |
 | Notification | `admin_notification_reads.lastReadAt` per admin | Shared notification backlog + per-admin read/unread state. Response `isRead` and exact `unreadCount` are derived for the caller; legacy shared `admin_notifications.is_read` is removed. | `mark-all-read` advances only the caller's high-water mark; the daily retention job removes only rows older than six months and never changes read markers. | Backend service + scheduled retention | `CONFIRMED_FROM_CODE` | `AdminNotificationService.java`, `AdminNotificationRetentionCleanupService.java`, `AdminNotificationController.java`, `V339__admin_notification_per_admin_read_state.sql`, `V1067__admin_notification_retention_and_remove_legacy_read_state.sql`, `AdminNotificationServiceTest.java` |
-| Chat staff handoff | `chat_handoff_requests.status` | `WAITING`, `ACTIVE`, `RETURNED_TO_AI`, `CLOSED` | Yêu cầu → một nhân viên nhận nguyên tử → bàn giao lại AI hoặc đóng; không có hai người cùng nhận. | Backend row lock/conditional update + DB constraints | `OWNER_CONFIRMED_2026-08-25` | `CHAT_RULE_040`, `CHAT_RULE_045`–`047`, V1056 |
+| Chat customer contact | `chat_conversations.status` / direct-contact actions | `AI_ACTIVE`, `CLOSED` | Khách nhận tư vấn AI; khi cần tự mở Hotline/Zalo/Messenger. Không tạo hàng chờ, không có trạng thái nhân viên. | Backend action allowlist + conversation ownership | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_008`, `011`, `040`, `045`–`047`, V1070 |
 | Settings | No lifecycle state confirmed | Public/private behavior exists in docs/controllers; no state machine confirmed. | N/A | `STATUS_ONLY` / `NEEDS_VERIFICATION` | `AdminSettingsController`, `PublicSettingsController`, `PHASE_1J...` |
 
 ## 4. Product State Machine
@@ -823,26 +823,25 @@ only distinct successful changes in `affected`, and exposes deterministic
 Status: `OWNER_CONFIRMED_2026-07-28`. Canonical rules:
 `BUSINESS_RULES.md` `REVIEW_RULE_009` and `REVIEW_RULE_010`.
 
-## 15B. Trợ lý BigBike — nhân viên tiếp nhận hội thoại
+## 15B. Trợ lý BigBike — không còn giao người thật (quyết định owner 2026-08-30)
 
-| From | To | Trigger / guard | Customer-visible result |
-|---|---|---|---|
-| — | `WAITING` | Khách bấm/nói gặp nhân viên; idempotent theo request/conversation. Ngoài giờ vẫn lưu nhưng không hứa đang có người trực. | Báo đang chờ trong giờ, hoặc báo lần mở cửa kế tiếp ngoài giờ. |
-| `WAITING` | `ACTIVE` | Admin có `chat.reply`; conditional update chỉ thành công nếu chưa ai nhận. | Nhãn cho biết nhân viên BigBike đang trả lời; trợ lý ngừng tự động. |
-| `ACTIVE` | `RETURNED_TO_AI` | Chỉ người đang nhận, hoặc owner wildcard mở khóa có audit. | Tin hệ thống báo nhân viên đã bàn giao và trợ lý tiếp tục. |
-| `ACTIVE` | `CLOSED` | Chỉ người đang nhận, hoặc owner wildcard mở khóa có audit. | Tin hệ thống kết thúc lịch sự, vẫn có lối mở hội thoại nối tiếp. |
+Từ quyết định của chủ shop ngày 2026-08-30, state machine giao người thật đã bị gỡ bỏ.
+Không còn `chat_handoff_requests`, các trạng thái `WAITING|ACTIVE|RETURNED_TO_AI`,
+claim, tin nhắn nhân viên, trả lại AI, đóng handoff, email hoặc thông báo cho handoff.
+Hội thoại vẫn nhận câu hỏi AI và có thể mở hội thoại nối tiếp khi đạt trần 40 lượt; khách
+tự mở thẻ liên hệ Hotline/Zalo/Messenger khi muốn liên hệ shop. Lịch sử trong quản trị là
+chỉ đọc. Migration `V1070__remove_staff_chat_and_retired_assistant_settings.sql` có
+assertion để không chạy khi dữ liệu handoff/tin nhắn nhân viên còn tồn tại.
 
-Forbidden: `WAITING → RETURNED_TO_AI|CLOSED`; người không nhận không được gửi/bàn giao/đóng; `RETURNED_TO_AI|CLOSED` không quay lại `ACTIVE` trên cùng handoff; assistant không tạo tin khi `ACTIVE`. Claim thứ hai trả `409` với người đang nhận. Dữ liệu `ACKNOWLEDGED` cũ được đọc như lịch sử đã đóng, không tự mở lại.
-
-Status: `OWNER_CONFIRMED_2026-08-25`; `CHAT_RULE_040`, `CHAT_RULE_045`–`047`.
+Status: `OWNER_CONFIRMED_2026-08-30`; `CHAT_RULE_008`, `009`, `011`, `040`, `045`–`047`.
 
 ## 15C. Trợ lý BigBike — vòng đời ảnh khách gửi
 
 | From | To | Guard / side effect |
 |---|---|---|
-| — | `PENDING` | Feature bật, disclosure bắt buộc đã hiển thị trước nút chọn/gửi, ownership hợp lệ, JPG/PNG/WebP ≤8 MB và trong trần ba ảnh/thread. Object đã re-encode nằm trong private bucket. |
+| — | `PENDING` | Dịch vụ AI đã khai báo, disclosure bắt buộc đã hiển thị trước nút chọn/gửi, ownership hợp lệ, JPG/PNG/WebP ≤8 MB và trong trần ba ảnh/thread. Object đã re-encode nằm trong private bucket. Nếu dịch vụ chưa khai báo, nút ảnh tự ẩn. |
 | `PENDING` | `ATTACHED` | Cùng customer/visitor + request id gắn ảnh vào customer message; retry idempotent. |
-| `ATTACHED` | `PROCESSING` | Staff chưa ACTIVE và atomic daily image slot còn; slot không hoàn lại sau provider call. |
+| `ATTACHED` | `PROCESSING` | Atomic daily image slot còn; slot không hoàn lại sau provider call. |
 | `PROCESSING` | `READY` | Intent/evidence server-owned đã lưu; outward answer vẫn đi qua anti-fabrication guard. |
 | `PROCESSING` | `UNRECOGNIZED` | Không đủ evidence/threshold; không gắn một product cụ thể. |
 | `PROCESSING` | `REJECTED_UNSAFE` | Provider safety/intent chặn; object bị xóa ngay, transcript chỉ giữ placeholder/reason. |
@@ -852,7 +851,7 @@ Status: `OWNER_CONFIRMED_2026-08-25`; `CHAT_RULE_040`, `CHAT_RULE_045`–`047`.
 
 Forbidden: public bucket/URL; token trong query; reuse ảnh làm history provider ở lượt sau; lưu raw filename/EXIF/embedding khách; `UNRECOGNIZED → READY` không có customer upload mới hoặc calibration/evidence mới.
 
-Status: `OWNER_CONFIRMED_2026-08-26`; `CHAT_RULE_057`–`059`.
+Status: `OWNER_CONFIRMED_2026-08-30`; `CHAT_RULE_057`–`059`.
 
 ## 16. Cross-Entity State Dependencies
 
@@ -987,18 +986,8 @@ Notes:
 
 Documentation này được tạo bằng thao tác đọc/inspect repository qua GitHub connector. Không chạy migration, seed, deploy, refactor hoặc command có side effect. Không sửa business logic hoặc source code ứng dụng.
 
-## Maintenance State Machine
+## Manual Maintenance State Machine — removed 2026-08-30
 
-Phạm vi: **chỉ trang quản trị**. Storefront không có state machine bảo trì (`BUSINESS_RULES` `MAINTENANCE_RULE_001`).
+Chế độ khóa quản trị thủ công đã bị gỡ hoàn toàn theo quyết định ngày 30/08/2026. Vì vậy BigBike không còn state machine, trạng thái lưu trữ, transition, API hoặc quyền nào cho chức năng này. Migration mới `V1071` dọn bảng `maintenance_state`, dữ liệu cài đặt cũ và vai trò kỹ thuật; các migration lịch sử giữ nguyên.
 
-```text
-NORMAL ──(DEVELOPER bật khoá)──> ACTIVE
-  ^                                  |
-  └────────(DEVELOPER tắt khoá)─────┘
-```
-
-- `NORMAL`: nhân viên thao tác bình thường.
-- `ACTIVE`: backend từ chối mọi thao tác ghi admin bằng `423 MAINTENANCE_ACTIVE` (đọc không bị chặn ở tầng backend, nhưng giao diện che kín toàn màn với nhân viên nên thực tế họ không tra cứu được). Riêng `DEVELOPER` vẫn ghi được, nếu không thì chính người khoá cũng không mở lại được.
-- Mọi chuyển trạng thái đều **thủ công**, do `DEVELOPER` bấm công tắc, theo cả hai chiều. Không có timer, không có `@Scheduled`, không tự động nhả khoá (`MAINTENANCE_RULE_006`).
-- `UPCOMING` là trạng thái lịch sử không còn hợp lệ. Khi cập nhật dữ liệu, hệ thống chuẩn hoá dữ liệu cũ về `NORMAL` và xoá giờ dự kiến.
-- Trạng thái nằm ở bảng riêng `maintenance_state` (1 dòng, có `CHECK` constraint), không nằm trong `site_settings`.
+Trang xin lỗi tự động do Nginx phục vụ khi upstream thật sự không phản hồi là fallback hạ tầng, không phải state machine nghiệp vụ và vẫn được giữ nguyên.

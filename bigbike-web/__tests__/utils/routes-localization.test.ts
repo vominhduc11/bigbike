@@ -18,6 +18,7 @@ import {
   toOrderDetailPath,
   toOrderConfirmPath,
   getSafeLoginHref,
+  getGuestStorefrontHref,
   normalizeStorefrontUrl,
 } from "../../lib/utils/routes";
 
@@ -59,15 +60,23 @@ describe("Route Localization Utility Tests", () => {
     });
 
     it("should translate nested/dynamic sub-segments correctly", () => {
-      expect(translatePath("/dat-hang/order-received/123-abc/", "en")).toBe("/en/order/order-received/123-abc/");
+      expect(translatePath("/dat-hang/order-received/123-abc/", "en")).toBe(
+        "/en/order/order-received/123-abc/",
+      );
       expect(translatePath("/tai-khoan/don-hang/456/", "en")).toBe("/en/account/orders/456/");
-      expect(translatePath("/tai-khoan/edit-address/billing/", "en")).toBe("/en/account/edit-address/billing/");
-      expect(translatePath("/chinh-sach/chinh-sach-bao-hanh/", "en")).toBe("/en/policy/warranty-policy/");
+      expect(translatePath("/tai-khoan/edit-address/billing/", "en")).toBe(
+        "/en/account/edit-address/billing/",
+      );
+      expect(translatePath("/chinh-sach/chinh-sach-bao-hanh/", "en")).toBe(
+        "/en/policy/warranty-policy/",
+      );
       expect(translatePath("/huong-dan/size-mu/", "en")).toBe("/en/guide/helmet-size/");
     });
 
     it("keeps the Vietnamese slug as an English fallback when slugEn is missing", () => {
-      expect(translatePath("/danh-muc/ao-giap-chong-nuoc/", "en")).toBe("/en/categories/ao-giap-chong-nuoc/");
+      expect(translatePath("/danh-muc/ao-giap-chong-nuoc/", "en")).toBe(
+        "/en/categories/ao-giap-chong-nuoc/",
+      );
       expect(translatePath("/tin-tuc/bai-viet-moi/", "en")).toBe("/en/tin-tuc/bai-viet-moi/");
     });
 
@@ -82,12 +91,8 @@ describe("Route Localization Utility Tests", () => {
       expect(translatePath("/vi/gio-hang/?coupon=BB#summary", "vi")).toBe(
         "/gio-hang/?coupon=BB#summary",
       );
-      expect(translatePath("/sp/?page=2#products", "en")).toBe(
-        "/en/products/?page=2#products",
-      );
-      expect(translatePath("/en/products/?page=2#products", "vi")).toBe(
-        "/sp/?page=2#products",
-      );
+      expect(translatePath("/sp/?page=2#products", "en")).toBe("/en/products/?page=2#products");
+      expect(translatePath("/en/products/?page=2#products", "vi")).toBe("/sp/?page=2#products");
     });
   });
 
@@ -129,9 +134,15 @@ describe("Route Localization Utility Tests", () => {
 
   describe("Individual path generator functions", () => {
     it("toCategoryPath", () => {
-      expect(toCategoryPath("waterproof-armor", "en", true)).toBe("/en/categories/waterproof-armor/");
-      expect(toCategoryPath("ao-giap-chong-nuoc", "en", false)).toBe("/en/categories/ao-giap-chong-nuoc/");
-      expect(toCategoryPath("ao-giap-chong-nuoc", "vi", false)).toBe("/danh-muc/ao-giap-chong-nuoc/");
+      expect(toCategoryPath("waterproof-armor", "en", true)).toBe(
+        "/en/categories/waterproof-armor/",
+      );
+      expect(toCategoryPath("ao-giap-chong-nuoc", "en", false)).toBe(
+        "/en/categories/ao-giap-chong-nuoc/",
+      );
+      expect(toCategoryPath("ao-giap-chong-nuoc", "vi", false)).toBe(
+        "/danh-muc/ao-giap-chong-nuoc/",
+      );
     });
 
     it("toArticlePath", () => {
@@ -161,9 +172,7 @@ describe("Route Localization Utility Tests", () => {
       expect(normalizeStorefrontUrl("/danh-muc-san-pham.html")).toBe("/sp/");
       expect(normalizeStorefrontUrl("/san-pham/#filters")).toBe("/sp/#filters");
       expect(
-        normalizeStorefrontUrl(
-          "https://bigbike.vn/danh-muc-san-pham/non-bao-hiem-moto/?page=2",
-        ),
+        normalizeStorefrontUrl("https://bigbike.vn/danh-muc-san-pham/non-bao-hiem-moto/?page=2"),
       ).toBe("https://bigbike.vn/danh-muc/non-bao-hiem-moto/?page=2");
     });
 
@@ -182,19 +191,42 @@ describe("Route Localization Utility Tests", () => {
     });
 
     it("toLoginPath translates a returnTo path into the target locale before appending it", () => {
-      expect(toLoginPath("/tai-khoan/don-hang/", "en")).toBe("/en/login/?tiep=%2Fen%2Faccount%2Forders%2F");
+      expect(toLoginPath("/tai-khoan/don-hang/", "en")).toBe(
+        "/en/login/?tiep=%2Fen%2Faccount%2Forders%2F",
+      );
+    });
+
+    it("toRegisterPath preserves a safe public return destination", () => {
+      expect(toRegisterPath("en", "/product/helmet/?color=red")).toBe(
+        "/en/register/?tiep=%2Fen%2Fproduct%2Fhelmet%2F%3Fcolor%3Dred",
+      );
+      expect(toRegisterPath("en", "https://evil.example")).toBe("/en/register/");
     });
 
     it("getSafeLoginHref returns a locale-correct login URL", () => {
-      expect(getSafeLoginHref("/tai-khoan/don-hang/", "en")).toBe("/en/login/?tiep=%2Fen%2Faccount%2Forders%2F");
+      expect(getSafeLoginHref("/tai-khoan/don-hang/", "en")).toBe(
+        "/en/login/?tiep=%2Fen%2Faccount%2Forders%2F",
+      );
       expect(getSafeLoginHref("/dang-nhap/", "en")).toBe("/en/login/");
+    });
+
+    it("guest exit preserves safe public pages and sends account, auth and unsafe destinations home", () => {
+      expect(getGuestStorefrontHref("/product/helmet/?color=red", "en")).toBe(
+        "/en/product/helmet/?color=red",
+      );
+      expect(getGuestStorefrontHref("/tai-khoan/don-hang/", "vi")).toBe("/");
+      expect(getGuestStorefrontHref("/en/account/orders/", "en")).toBe("/en/");
+      expect(getGuestStorefrontHref("/en/login/", "en")).toBe("/en/");
+      expect(getGuestStorefrontHref("https://evil.example", "vi")).toBe("/");
     });
 
     it("toOrderHistoryPath / toOrderDetailPath / toOrderConfirmPath honor an explicit en locale", () => {
       expect(toOrderHistoryPath("en")).toBe("/en/account/orders/");
       expect(toOrderHistoryPath("vi")).toBe("/tai-khoan/don-hang/");
       expect(toOrderDetailPath("123", "en")).toBe("/en/account/orders/123/");
-      expect(toOrderConfirmPath("BB1001", "abc-key", "en")).toBe("/en/orders/confirm/?so=BB1001&key=abc-key");
+      expect(toOrderConfirmPath("BB1001", "abc-key", "en")).toBe(
+        "/en/orders/confirm/?so=BB1001&key=abc-key",
+      );
     });
   });
 });

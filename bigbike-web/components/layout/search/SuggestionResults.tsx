@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "@/i18n/StorefrontLink";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { formatVnd, resolveMediaUrl } from "@/lib/utils/format";
+import { toSearchPath } from "@/lib/utils/routes";
 import { MediaImage } from "@/components/ui/MediaImage";
+import type { Locale } from "@/i18n/locale";
 import type { ArticleSuggestion, SearchSuggestion } from "./types";
-import { SEARCH_PATH, resultItem, resultsLabel, sResults } from "./styles";
+import { resultItem, resultsLabel, sResults } from "./styles";
 
 // Desktop live results listbox (query ≥1 char, settled): product + article hits,
 // with a sticky "view all" footer. Mounted into the same overlay panel.
@@ -16,14 +18,20 @@ export function SuggestionResults({
   trimmedQuery,
   addSearch,
   handleClose,
+  activeIndex,
 }: {
   suggestions: SearchSuggestion[];
   articleSuggestions: ArticleSuggestion[];
   trimmedQuery: string;
   addSearch: (item: string) => void;
   handleClose: () => void;
+  activeIndex: number;
 }) {
   const t = useTranslations("Search");
+  const locale = useLocale() as Locale;
+  const visibleProducts = suggestions.slice(0, 5);
+  const visibleArticles = articleSuggestions.slice(0, 3);
+  const searchHref = `${toSearchPath(locale)}?s=${encodeURIComponent(trimmedQuery)}`;
   return (
     <div
       id="bb-search-suggestions"
@@ -31,22 +39,23 @@ export function SuggestionResults({
       role="listbox"
       aria-label={t("suggestionsLabel")}
     >
-      {suggestions.length > 0 || articleSuggestions.length > 0 ? (
+      {visibleProducts.length > 0 || visibleArticles.length > 0 ? (
         <>
           {/* Scrollable results list — always shows at most max-height of outer container */}
           <div className="md:min-h-0 md:flex-1 md:overflow-y-auto md:[-webkit-overflow-scrolling:touch]">
-            {suggestions.length > 0 && (
+            {visibleProducts.length > 0 && (
               <p className={resultsLabel}>{t("sectionProducts")}</p>
             )}
-            {suggestions.slice(0, 5).map((product) => (
+            {visibleProducts.map((product, index) => (
               <LocalizedLink
                 key={product.id}
                 kind="product"
                 viSlug={product.slug}
                 enSlug={product.slugEn}
+                id={`bb-search-option-${index}`}
                 className={resultItem}
                 role="option"
-                aria-selected={false}
+                aria-selected={activeIndex === index}
                 onClick={() => { addSearch(trimmedQuery); handleClose(); }}
               >
                 {resolveMediaUrl(product.image?.url) ? (
@@ -69,19 +78,20 @@ export function SuggestionResults({
                 </div>
               </LocalizedLink>
             ))}
-            {articleSuggestions.length > 0 && (
+            {visibleArticles.length > 0 && (
               <>
                 <p className={resultsLabel}>{t("sectionArticles")}</p>
-                {articleSuggestions.slice(0, 3).map((article) => (
+                {visibleArticles.map((article, index) => (
                   <LocalizedLink
                     key={article.id}
                     kind="article"
                     viSlug={article.slug}
                     enSlug={article.slugEn}
+                    id={`bb-search-option-${visibleProducts.length + index}`}
                     className={resultItem}
                     role="option"
-                    aria-selected={false}
-                    onClick={handleClose}
+                    aria-selected={activeIndex === visibleProducts.length + index}
+                    onClick={() => { addSearch(trimmedQuery); handleClose(); }}
                   >
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <span className="text-a5-meta font-normal text-foreground line-clamp-2">{article.title}</span>
@@ -91,20 +101,30 @@ export function SuggestionResults({
               </>
             )}
           </div>
-          {/* "View all" always visible at bottom, never scrolls away */}
-          <Link
-            href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
-            className="md:flex-none flex items-center justify-center px-4 py-[13px] font-cta text-b4-action font-semibold uppercase tracking-normal text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none [border-top:1px_solid_var(--bb-color-border)]"
-            onClick={handleClose}
-          >
-            {t("viewAllResultsBtn", { query: trimmedQuery })}
-          </Link>
+          {/* "View all" and keyboard help stay visible at the bottom. */}
+          <div className="md:flex-none [border-top:1px_solid_var(--bb-color-border)]">
+            <Link
+              href={searchHref}
+              className="flex items-center justify-center px-4 py-2 font-cta text-b4-action font-semibold uppercase tracking-normal text-brand-on-dark no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none"
+              onClick={handleClose}
+            >
+              {t("viewAllResultsBtn", { query: trimmedQuery })}
+            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-3 pb-2 font-body text-b5-label text-muted-foreground">
+              <span><kbd className="font-cta text-foreground">↑↓</kbd> {t("footerMove")}</span>
+              <span><kbd className="font-cta text-foreground">↵</kbd> {t("footerSelect")}</span>
+              <span><kbd className="font-cta text-foreground">{t("footerEscapeKey")}</kbd> {t("footerClose")}</span>
+              <Link href={searchHref} className="text-brand-on-dark no-underline hover:underline" onClick={handleClose}>
+                {t("footerBrowse")}
+              </Link>
+            </div>
+          </div>
         </>
       ) : (
         <div className="px-4 py-5 text-center text-a5-meta text-muted-foreground">
           <p className="m-0 mb-2">{t("noMatchText", { query: trimmedQuery })}</p>
           <Link
-            href={`${SEARCH_PATH}?s=${encodeURIComponent(trimmedQuery)}`}
+            href={searchHref}
             className="font-semibold text-brand-on-dark no-underline"
             onClick={handleClose}
           >

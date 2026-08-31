@@ -27,8 +27,10 @@ import org.mockito.invocation.Invocation;
 class BigBikeSearchDecisionTest {
 
     private static final ChatAssistantSettings.Snapshot SETTINGS = new ChatAssistantSettings.Snapshot(
-            true, 60, "Xin chào", List.of("A", "B", "C"),
-            new ChatContactResponse("0900", "", "", "", ""), "", "", "");
+            true, 60, true,
+            new ChatContactResponse("0900", "", "", "", ""), "", "", "", 12,
+            ChatAssistantSettings.BankDetails.empty(),
+            ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty());
 
     @Test
     @DisplayName("CHAT_RULE_015: a floor price is never turned into a ceiling")

@@ -2184,7 +2184,7 @@ admin concurrency metadata.
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 14 active keys (desktop background, title, alt text and per-page illustration; plus 2 global fallbacks). The 3 legacy `hero_*_mobile_image_url` keys remain stored and returned for compatibility only; they are not editable or rendered. Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage SEO title and description (`seo_home_title`/`seo_home_description`), plus the homepage bottom SEO HTML block (`home_content_bottom_html`). The visible homepage H1 is the localized title of the introduction block, not a site-setting field. The former `seo_home_h1` row is retained in storage for compatibility but is no longer editable or part of the public homepage contract. | SEO website |
-| `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần mặc định 400 lượt AI/ngày giờ Việt Nam, ngưỡng cảnh báo chi phí tháng (không tự khoá), số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..12`, mặc định `12`), công tắc diễn giải cách nói tự nhiên, email handoff, câu chào và bốn gợi ý nhanh song ngữ. Lịch sử lấy từ đúng conversation, che PII rồi cắt 450 ký tự/tin. Không chứa khoá AI. | Trợ lý BigBike |
+| `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần mặc định 400 lượt AI/ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..12`, mặc định `12`) và công tắc diễn giải cách nói tự nhiên. Trần 40 lượt/hội thoại và hạn mức ảnh là hằng số phần mềm, không phải setting. Lịch sử lấy từ đúng conversation, che PII rồi cắt 450 ký tự/tin. Không chứa khoá AI. | Trợ lý BigBike |
 | `store` | Operational: low-stock threshold | Cửa hàng |
 | `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product AND content/article create/edit screens (shared data) — `product_assign_title` (STRING) + `product_assign_roles` (JSON array, 1–6 dynamic role entries, V318). **Super-admin-only writable** (see below). | Phân công sản phẩm |
@@ -2327,29 +2327,18 @@ The production migration plan is not an alternate application data model. It is 
 
 Status: `OWNER_CONFIRMED_2026-08-03` and `CONFIRMED_FROM_CODE` — `live-migration-owner-overrides-v1.json`, `LiveMigrationPreflightReport`, `LiveDuplicateProductSelectionPlanner`, `LiveProductInferencePlanner`, `LiveSourceMediaRecoveryPlanner`, `LiveTargetMediaCleanupPlanner`, `LiveMigrationContentRewriter`, `LiveMigrationExecutionGate`.
 
-## Maintenance State Data Contract
+## Manual Maintenance State Data Contract — removed 2026-08-30
 
-Migration `V374__maintenance_admin_lock.sql` creates a dedicated single-row table and **deletes** the five `site_settings` rows added by `V373` (V373 already ran in production, so V374 is forward-only and V373 must not be edited). Migration `V1054__simplify_admin_maintenance_lock.sql` is the current forward-only cleanup; V373, V374 and V375 remain unchanged.
+The manual admin-lock data contract no longer exists. New migration `V1071` removes the legacy `maintenance_state` table, the five obsolete `site_settings` keys from V373, the `DEVELOPER` role and `maintenance.manage`. It also moves the verified technical account `vominhduc760@gmail.com` to `ADMIN` before role cleanup.
 
-| Column | Type | Default | Notes |
-|---|---|---|---|
-| `id` | `SMALLINT` PK | `1` | `CHECK (id = 1)` — exactly one row |
-| `state` | `VARCHAR(16)` | `NORMAL` | `CHECK (state IN ('NORMAL','ACTIVE'))`; legacy `UPCOMING` is normalized to `NORMAL` by V1054 |
-| `staff_note` | `TEXT` | null | Message shown to staff on the maintenance overlay |
-| `updated_by` | `UUID` | null | Admin who last changed the state |
-| `updated_at` | `TIMESTAMPTZ` | `NOW()` | |
+V373, V374, V375 and V1054 remain immutable historical migrations. Automatic outage pages do not persist business state or expose a database/API data shape. Customer, order, inventory, cart and checkout data are not touched.
 
-V1054 first converts the live legacy value `UPCOMING` to `NORMAL`, removes the old `maintenance_expected_at` setting if it remains, and drops `expected_at`. The measured live evidence on 2026-08-24 was one `UPCOMING` row with an expected time overdue since 2026-08-07; `staff_note`, `updated_by` and audit timestamps are preserved. The current response shape is `state`, `staffNote`, `updatedAt`, `canToggle` and `uploadCount`; expected time is not retained or returned.
+## Trợ lý BigBike — dữ liệu sau rút gọn (V1070, owner decision 2026-08-30)
 
-**Why a dedicated table instead of `site_settings`.** `AdminSettingsService.listSettings` reads `settingRepo.findAll()` and does not consult `SettingDefinitionRegistry`, while every registry-driven guard treats an unregistered key as *unrestricted* (`requireSuperAdminForRestrictedKey` uses `.orElse(false)`, and value validation only runs when a definition exists). Keeping the lock in `site_settings` would therefore let any holder of `settings.write` flip it — defeating the `DEVELOPER`-only rule — and would let an arbitrary string be written into `maintenance_mode`, which `MaintenanceService.normalizedState` rejects on every subsequent read, bricking the status endpoint. The separate table plus `CHECK` constraint makes both unreachable by construction.
-
-V374 also creates the `DEVELOPER` role (`is_system = TRUE`) with 34 explicitly enumerated permissions. It deliberately does **not** copy `ADMIN`'s permission set: `ADMIN` holds `seo.index` (granted by V372) which is missing from `PermissionCatalog`, so copying would propagate that latent `400 UNKNOWN_PERMISSION` on the Roles screen to a third role.
-
-No customer or order data is touched by a state change. The response DTO (`state`, `staffNote`, `updatedAt`, `canToggle`, `uploadCount`) is derived, not a second persisted model — `canToggle` and `uploadCount` are computed per request. Checkout draft fields remain browser-local only and must never contain an access token, refresh token, password or payment secret.
-
-## Trợ lý BigBike — dữ liệu sau rút gọn (V1068, owner decision 2026-08-29)
-
-Migration V1068 là bước mới, không sửa migration đã chạy. Nó xóa dứt điểm dữ liệu/cấu trúc chỉ phục vụ chọn model, chi phí theo model, chấm model, mở lời chủ động, xin liên hệ, gắn đơn từ chat, phản hồi câu trả lời và báo cáo phụ. Bảng/field còn lại dưới đây là hợp đồng đang chạy.
+Migration V1068 và V1070 là các bước mới, không sửa migration đã chạy. V1070 theo quyết định
+của chủ shop ngày 2026-08-30 xóa dứt điểm dữ liệu/cấu trúc phục vụ chat người thật và các
+setting câu chào, gợi ý nhanh, lịch trực, email handoff, trần hội thoại và công tắc ảnh.
+Bảng/field còn lại dưới đây là hợp đồng đang chạy.
 
 ### `chat_conversations`
 
@@ -2358,7 +2347,7 @@ Migration V1068 là bước mới, không sửa migration đã chạy. Nó xóa 
 | `id` | `UUID` | Khóa hội thoại. |
 | `customer_id` / `visitor_id` | nullable FK | Scope đúng khách đăng nhập hoặc định danh first-party hiện tại; không chứa contact snapshot. |
 | `locale` | `VARCHAR` | `vi` hoặc `en` cho copy khách nhìn thấy. |
-| `status` / `turn_count` | enum/integer | Trạng thái chat và lượt tư vấn có nội dung; trần mặc định 40 do setting. |
+| `status` / `turn_count` | enum/integer | Trạng thái chat và lượt tư vấn có nội dung; trần 40 cố định trong phần mềm. |
 | `expires_at` / timestamps | `TIMESTAMPTZ` | Retention tối đa 90 ngày. |
 
 Không có trạng thái/lần đếm/lời mời liên hệ trên hội thoại.
@@ -2368,7 +2357,7 @@ Không có trạng thái/lần đếm/lời mời liên hệ trên hội thoại
 | Column | Type | Notes |
 |---|---|---|
 | `id` / `conversation_id` / `sequence` | UUID/FK/integer | Message thuộc đúng hội thoại và sắp xếp ổn định. |
-| `role` | `CUSTOMER|ASSISTANT|STAFF|SYSTEM` | `STAFF` có snapshot tên hiển thị, `SYSTEM` báo trạng thái. |
+| `role` | `CUSTOMER|ASSISTANT|SYSTEM` | `SYSTEM` chỉ giữ sự kiện hệ thống cần thiết; không còn tin nhắn nhân viên. |
 | `content` / `locale` | text/locale | Nội dung đã qua lớp an toàn và định dạng. |
 | `source` / `outcome_code` / `ai_called` | server-owned | Phân biệt fast-path/AI/fallback an toàn; `ai_called` hỗ trợ quota, không là ledger chi phí. |
 | `products_json` / `cross_sell_products_json` | JSONB nullable | Snapshot thẻ đã hậu kiểm, tối đa 8 sản phẩm và 2 phụ kiện. |
@@ -2376,18 +2365,11 @@ Không có trạng thái/lần đếm/lời mời liên hệ trên hội thoại
 
 Không còn token, độ trễ, số lần gọi nhà cung cấp, chi phí, requested/served model, fallback metadata, interaction source hoặc lead-prompt metadata trên message.
 
-### `chat_handoff_requests`
+### Handoff và dữ liệu nhân viên — đã gỡ (V1070)
 
-| Column | Type | Notes |
-|---|---|---|
-| `id` / `request_id` | UUID | Server id và idempotency. |
-| `conversation_id` | FK | Một request đang chờ cho đúng hội thoại; retention cùng hội thoại. |
-| `status` | `WAITING|ACTIVE|RETURNED_TO_AI|CLOSED` | Theo state machine `§15B`. |
-| `trigger_source` / `customer_kind` | enum | `BUTTON|MESSAGE` và `GUEST|SIGNED_IN`; không phải số điện thoại/contact. |
-| `question_summary` / `products_json` | nullable | Snapshot tối thiểu để nhân viên xử lý; không PII. |
-| assignee/resolution/business-hours fields | nullable | Claim nguyên tử, kết thúc/bàn giao và thông báo lần mở cửa tiếp theo. |
-
-Không có `contact_present` hay liên kết đến bảng liên hệ.
+Không còn bảng `chat_handoff_requests`, cột người nhận/tên nhân viên, vai trò `STAFF`,
+trạng thái chờ/đang xử lý/bàn giao lại AI, hay dữ liệu lịch trực/email/notification cho
+chat. Khách chỉ mở thẻ liên hệ Hotline/Zalo/Messenger; thao tác này không ghi vào backend.
 
 ### `chat_visitors`
 
@@ -2417,9 +2399,11 @@ Browser chỉ giữ signed visitor token, preference nhớ/tắt, conversation/t
 
 `cart_items` không có field conversation/interaction/attributed-at. Thêm giỏ từ chat dùng cùng validation sản phẩm, biến thể, giá và tồn như mọi lần thêm giỏ khác.
 
-### Dữ liệu bị xóa ở V1068
+### Dữ liệu bị xóa ở V1068 và V1070
 
 - Bảng: `chat_ai_usage_events`, `chat_evaluation_runs`, `chat_evaluation_model_results`, `chat_message_feedback`, `chat_leads`, `chat_interactions`, `chat_order_attributions`.
-- Cột telemetry/model/interaction/lead-prompt của `chat_messages`; các cột lead-offer của `chat_conversations`; các cột attribution của `cart_items`; `chat_handoff_requests.contact_present`.
+- V1070 xóa `chat_handoff_requests`, dữ liệu/columns STAFF của chat, các cột handoff trên `chat_conversations`/`chat_messages`, notification `CHAT_HANDOFF_*`, và permission `chat.reply`.
+- Cột telemetry/model/interaction/lead-prompt của `chat_messages`; các cột lead-offer của `chat_conversations`; các cột attribution của `cart_items`.
 - Toàn bộ `chat_visitors` hiện có, notification loại `CHAT_LEAD` và settings đã bỏ (model lựa chọn, cost warning, template/abbreviation owner-editable, memory-days, proactive và image quota owner-editable).
-- Dữ liệu cũ có thể chứa metadata lead trong `chat_messages.action_metadata` được scrub; transcript/tin nhắn không thuộc tính năng đã gỡ, handoff, ảnh và counter quota được giữ.
+- V1070 xóa các setting `ai_assistant_image_enabled`, `ai_assistant_conversation_turn_limit`, `ai_assistant_greeting`, `ai_assistant_quick_prompts`, `ai_assistant_handoff_email_enabled`, `ai_assistant_handoff_email_recipient`, `ai_assistant_business_hours`.
+- Dữ liệu cũ có thể chứa metadata lead trong `chat_messages.action_metadata` được scrub; transcript AI/customer, ảnh và counter quota được giữ.

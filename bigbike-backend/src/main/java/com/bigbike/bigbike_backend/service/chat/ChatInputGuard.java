@@ -54,8 +54,8 @@ public class ChatInputGuard {
             return Optional.of(new Decision(
                     "CONTACT_FALLBACK",
                     english
-                            ? "I am sorry this experience has upset you. I am passing this to BigBike staff now; please use Hotline, Zalo or Messenger below for direct support."
-                            : "BigBike xin lỗi vì trải nghiệm đã làm anh/chị không hài lòng. Em chuyển ngay sang nhân viên; anh/chị vui lòng chọn Hotline, Zalo hoặc Messenger bên dưới để được hỗ trợ trực tiếp nhé."));
+                            ? "I am sorry this experience has upset you. Please contact BigBike through Hotline, Zalo or Messenger below for direct support."
+                            : "BigBike xin lỗi vì trải nghiệm đã làm anh/chị không hài lòng. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger bên dưới để được hỗ trợ trực tiếp nhé."));
         }
         if (ADULT.matcher(value).find() || MALICIOUS_INTENT.matcher(value).find()) {
             return Optional.of(new Decision(

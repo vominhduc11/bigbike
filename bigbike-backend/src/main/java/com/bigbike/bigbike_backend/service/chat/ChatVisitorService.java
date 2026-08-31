@@ -3,7 +3,6 @@ package com.bigbike.bigbike_backend.service.chat;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatDeleteHistoryResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatHistoryMessageResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatHistoryResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatRealtimeTokenResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatSessionRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatSessionResponse;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
@@ -26,9 +25,7 @@ public class ChatVisitorService {
     private final ChatVisitorJpaRepository visitorRepo;
     private final ChatConversationJpaRepository conversationRepo;
     private final ChatMessageJpaRepository messageRepo;
-    private final ChatHandoffService handoffService;
     private final JwtService jwtService;
-    private final ChatPhase3Settings phase3Settings;
     private final ChatImageService chatImageService;
 
     @Autowired
@@ -36,30 +33,24 @@ public class ChatVisitorService {
             ChatVisitorJpaRepository visitorRepo,
             ChatConversationJpaRepository conversationRepo,
             ChatMessageJpaRepository messageRepo,
-            ChatHandoffService handoffService,
             JwtService jwtService,
-            ChatPhase3Settings phase3Settings,
             ChatImageService chatImageService
     ) {
         this.visitorRepo = visitorRepo;
         this.conversationRepo = conversationRepo;
         this.messageRepo = messageRepo;
-        this.handoffService = handoffService;
         this.jwtService = jwtService;
-        this.phase3Settings = phase3Settings;
         this.chatImageService = chatImageService;
     }
 
-    /** Compatibility constructor for phase-3 focused tests that predate customer images. */
+    /** Compatibility constructor for focused tests that do not exercise customer images. */
     public ChatVisitorService(
             ChatVisitorJpaRepository visitorRepo,
             ChatConversationJpaRepository conversationRepo,
             ChatMessageJpaRepository messageRepo,
-            ChatHandoffService handoffService,
-            JwtService jwtService,
-            ChatPhase3Settings phase3Settings
+            JwtService jwtService
     ) {
-        this(visitorRepo, conversationRepo, messageRepo, handoffService, jwtService, phase3Settings, null);
+        this(visitorRepo, conversationRepo, messageRepo, jwtService, null);
     }
 
     @Transactional
@@ -135,14 +126,12 @@ public class ChatVisitorService {
                 new ChatHistoryMessageResponse(
                         message.getId(), message.getSequenceNo(), message.getRole(), message.getContent(),
                         message.getSource(), message.getAnswerFormat(), message.getResultKind(),
-                        message.getStaffDisplayName(), message.getCreatedAt(),
+                        message.getCreatedAt(),
                         imagesByMessage.getOrDefault(message.getId(), List.of()))).toList();
-        var handoff = handoffService.latestStatusForConversation(conversationId);
-        String state = handoff == null ? "AI_ACTIVE" : handoff.channelState();
         long latest = messages.isEmpty() ? messageRepo.findMaxSequence(conversationId)
                 : messages.get(messages.size() - 1).getSequenceNo();
         return new ChatHistoryResponse(
-                conversationId, conversation.getThreadId(), state, latest, result, handoff);
+                conversationId, conversation.getThreadId(), latest, result);
     }
 
     @Transactional
@@ -166,14 +155,6 @@ public class ChatVisitorService {
         conversationRepo.deleteByVisitorId(visitorId);
         visitorRepo.deleteById(visitorId);
         return new ChatDeleteHistoryResponse(true);
-    }
-
-    @Transactional(readOnly = true)
-    public ChatRealtimeTokenResponse realtimeToken(
-            UUID conversationId, UUID customerId, String rawToken) {
-        requireOwner(conversationId, customerId, resolveVisitorIdReadOnly(rawToken));
-        return new ChatRealtimeTokenResponse(
-                jwtService.generateChatRealtimeToken(conversationId.toString()), Instant.now().plusSeconds(300));
     }
 
     @Transactional(readOnly = true)
@@ -206,6 +187,6 @@ public class ChatVisitorService {
     private void touch(ChatVisitorEntity visitor) {
         visitor.touch();
         visitor.setRememberedUntil(Instant.now().plus(
-                phase3Settings.memoryDays(), java.time.temporal.ChronoUnit.DAYS));
+                ChatAssistantSettings.DEFAULT_MEMORY_DAYS, java.time.temporal.ChronoUnit.DAYS));
     }
 }

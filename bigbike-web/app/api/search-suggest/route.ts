@@ -64,6 +64,9 @@ export async function GET(req: Request) {
       { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } },
     );
   } catch {
-    return NextResponse.json(EMPTY);
+    return NextResponse.json(
+      { error: { code: "SEARCH_UNAVAILABLE", message: "Search suggestions are temporarily unavailable." } },
+      { status: 502, headers: { "Cache-Control": "no-store" } },
+    );
   }
 }

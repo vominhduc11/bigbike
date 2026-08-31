@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.persistence.entity.admin.AdminNotificationRea
 import com.bigbike.bigbike_backend.persistence.repository.admin.AdminNotificationJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.admin.AdminNotificationReadJpaRepository;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
-import com.bigbike.bigbike_backend.service.ws.ChatHandoffWsEvent;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -14,7 +13,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -24,15 +22,14 @@ public class AdminNotificationService {
 
     private final AdminNotificationJpaRepository notificationRepo;
     private final AdminNotificationReadJpaRepository readRepo;
-    private final ObjectMapper objectMapper;
 
-    // REQUIRES_NEW, not the default REQUIRED. Every persist* below is invoked from
-    // TransactionSynchronization.afterCommit() (AdminOrderWsService / AdminChatWsService).
+    // REQUIRES_NEW, not the default REQUIRED. This is invoked from
+    // TransactionSynchronization.afterCommit() by AdminOrderWsService.
     // At that point the original transaction has already committed but its EntityManager is
     // still bound to the thread, so REQUIRED silently *joins* that dead transaction: the row
     // only ever reaches the persistence context, nothing flushes, and cleanup closes the
     // EntityManager and drops it — with no exception raised. That left admin_notifications
-    // permanently empty while orders and handoffs kept arriving.
+    // permanently empty while order events kept arriving.
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void persistFromWsEvent(OrderWsEvent event) {
         AdminNotificationEntity n = new AdminNotificationEntity();
@@ -42,15 +39,6 @@ public class AdminNotificationService {
         n.setPayload(buildPayload(event));
         n.setCreatedAt(Instant.now());
         notificationRepo.save(n);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void persistChatHandoff(ChatHandoffWsEvent event) {
-        AdminNotificationEntity notification = new AdminNotificationEntity();
-        notification.setType(event.type());
-        notification.setPayload(writePayload(event));
-        notification.setCreatedAt(event.requestedAt() == null ? Instant.now() : event.requestedAt());
-        notificationRepo.save(notification);
     }
 
     /** One inbox item with the caller's own read state resolved. */
@@ -65,22 +53,12 @@ public class AdminNotificationService {
      */
     @Transactional(readOnly = true)
     public InboxView inboxFor(UUID adminId) {
-        return inboxFor(adminId, true, true);
-    }
-
-    /**
-     * Permission-scoped inbox. Chat-only staff never receive order/customer payloads and
-     * order-only staff never receive chat metadata through the shared persistence table.
-     */
-    @Transactional(readOnly = true)
-    public InboxView inboxFor(UUID adminId, boolean includeOrders, boolean includeChat) {
         Instant lastReadAt = readRepo.findById(adminId)
                 .map(AdminNotificationReadEntity::getLastReadAt)
                 .orElse(null);
 
         List<AdminNotificationEntity> recent =
-                notificationRepo.findVisible(
-                        includeOrders, includeChat, PageRequest.of(0, MAX_FETCH));
+                notificationRepo.findVisible(PageRequest.of(0, MAX_FETCH));
 
         List<NotificationView> items = recent.stream()
                 .map(n -> new NotificationView(n, isReadForAdmin(n, lastReadAt)))
@@ -89,8 +67,8 @@ public class AdminNotificationService {
         // No marker yet means this admin has never opened the bell — the whole visible
         // backlog is unread. Only the marked case may be counted with a since bound.
         long unreadCount = lastReadAt == null
-                ? notificationRepo.countVisible(includeOrders, includeChat)
-                : notificationRepo.countVisibleAfter(includeOrders, includeChat, lastReadAt);
+                ? notificationRepo.countVisible()
+                : notificationRepo.countVisibleAfter(lastReadAt);
 
         return new InboxView(items, unreadCount);
     }
@@ -139,12 +117,4 @@ public class AdminNotificationService {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private String writePayload(ChatHandoffWsEvent event) {
-        try {
-            return objectMapper.writeValueAsString(event);
-        } catch (Exception exception) {
-            return "{\"type\":\"CHAT_HANDOFF_WAITING\",\"conversationId\":\""
-                    + event.conversationId() + "\"}";
-        }
-    }
 }

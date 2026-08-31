@@ -43,14 +43,14 @@ class PermissionCatalogMigrationConsistencyTest {
     /**
      * Keys granted by historical migrations for modules that have since been removed wholesale
      * (POS, receivables, coupons, shipping management, newsletter, contact messages, serial-level
-     * inventory). Later migrations dropped these rows along with the features, so no live role
-     * holds them and none can brick a role save.
+     * inventory and the retired manual maintenance lock). Later migrations dropped these rows
+     * along with the features, so no live role holds them and none can brick a role save.
      *
      * <p>Verified against the production database on 2026-08-06: {@code SELECT DISTINCT permission
      * FROM role_permissions} returns 35 keys plus {@code *}, and none of the entries below appear.
      *
-     * <p><b>This list must never grow.</b> A new entry means a migration granted a permission the
-     * application does not recognise — register the key instead.
+     * <p>A new entry is valid only when a later migration has removed the feature and revoked the
+     * historical permission. An active feature permission must be registered instead.
      */
     private static final Set<String> PERMISSIONS_FROM_REMOVED_FEATURES = Set.of(
             "contact.read", "contact.write",
@@ -60,7 +60,8 @@ class PermissionCatalogMigrationConsistencyTest {
             "pos.read", "pos.write", "pos.refund", "pos.price_override", "pos.sell_below_cost",
             "receivables.read", "receivables.create", "receivables.export",
             "receivables.override_limit", "receivables.record_payment", "receivables.write_off",
-            "shipping.read", "shipping.write");
+            "shipping.read", "shipping.write",
+            "maintenance.manage");
 
     @Test
     void everyPermissionGrantedByAMigrationExistsInTheCatalog() throws IOException {

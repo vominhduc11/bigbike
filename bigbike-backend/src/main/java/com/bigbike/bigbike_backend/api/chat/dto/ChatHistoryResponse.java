@@ -6,8 +6,6 @@ import java.util.UUID;
 public record ChatHistoryResponse(
         UUID conversationId,
         UUID threadId,
-        String channelState,
         long latestSequence,
-        List<ChatHistoryMessageResponse> messages,
-        ChatHandoffStatusResponse handoff
+        List<ChatHistoryMessageResponse> messages
 ) {}

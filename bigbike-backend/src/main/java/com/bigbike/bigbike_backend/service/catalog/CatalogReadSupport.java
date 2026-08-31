@@ -7,7 +7,7 @@ import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupport;
 import com.bigbike.bigbike_backend.domain.catalog.ProductHighlights;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
-import com.bigbike.bigbike_backend.repository.catalog.ProductSearchTerms;
+import com.bigbike.bigbike_backend.service.search.StorefrontSearchRules;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
 import java.math.BigDecimal;
@@ -33,7 +33,7 @@ import java.util.Set;
  * the service keeps only caching/orchestration and repository access. Imported via
  * {@code import static ...CatalogReadSupport.*;} so the service call sites stay unchanged.
  */
-final class CatalogReadSupport {
+public final class CatalogReadSupport {
 
     private CatalogReadSupport() {}
 
@@ -74,7 +74,7 @@ final class CatalogReadSupport {
      * kept — it is the card subtitle. Stock masking already happened upstream
      * in the repository's public-view mapper, so this transform is pure.
      */
-    static Product toListView(Product p) {
+    public static Product toListView(Product p) {
         return new Product(
                 p.id(),
                 p.sku(),
@@ -387,18 +387,7 @@ final class CatalogReadSupport {
     }
 
     static boolean matchesQuery(Product product, String q) {
-        if (q == null || q.isBlank()) {
-            return true;
-        }
-        List<String> terms = ProductSearchTerms.tokens(q);
-        if (terms.isEmpty()) return false;
-        String searchable = ProductSearchTerms.normalize(String.join(" ", List.of(
-                product.name() == null ? "" : product.name(),
-                product.slug() == null ? "" : product.slug(),
-                product.slugEn() == null ? "" : product.slugEn(),
-                product.sku() == null ? "" : product.sku(),
-                product.shortDescription() == null ? "" : product.shortDescription())));
-        return terms.stream().allMatch(searchable::contains);
+        return q == null || q.isBlank() || StorefrontSearchRules.matchesProduct(product, q);
     }
 
     static boolean matchesColor(Product product, String filterColor) {

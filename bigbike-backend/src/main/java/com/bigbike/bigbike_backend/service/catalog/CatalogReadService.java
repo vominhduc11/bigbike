@@ -18,6 +18,7 @@ import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
+import com.bigbike.bigbike_backend.service.search.StorefrontSearchRules;
 import java.math.BigDecimal;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -143,8 +144,11 @@ public class CatalogReadService {
             HomepageBlock homepageBlock,
             String lang
     ) {
+        boolean queryPresent = q != null && !q.isBlank();
+        boolean relevanceSort = queryPresent
+                && (sort == null || sort.isBlank() || "relevance".equalsIgnoreCase(sort));
         boolean popularitySort = "popularity".equalsIgnoreCase(sort);
-        String parsedSort = popularitySort || "date".equalsIgnoreCase(sort) || "menu_order".equalsIgnoreCase(sort)
+        String parsedSort = relevanceSort || popularitySort || "date".equalsIgnoreCase(sort) || "menu_order".equalsIgnoreCase(sort)
                 ? "createdAt:desc"
                 : sort;
         SortSpec sortSpec = sortParser.parse(parsedSort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
@@ -160,6 +164,7 @@ public class CatalogReadService {
                 && activeSizeFilters.isEmpty()
                 && activeBrands.size() <= 1
                 && !Boolean.TRUE.equals(inStock)
+                && !queryPresent
                 && !popularitySort
                 && !"homepageOrder".equals(sortSpec.field());
         if (sqlPaginationEligible) {
@@ -179,9 +184,11 @@ public class CatalogReadService {
 
         Set<String> categorySlugs = resolveCategorySlugsWithDescendants(category, lang);
         SizeScaleCatalog sizeCatalog = activeSizeCatalog();
-        Comparator<Product> comparator = popularitySort
-                ? bestSellingComparator(loadUnitsSold())
-                : productComparator(sortSpec);
+        Comparator<Product> comparator = relevanceSort
+                ? StorefrontSearchRules.relevanceComparator(q)
+                : popularitySort
+                    ? bestSellingComparator(loadUnitsSold())
+                    : productComparator(sortSpec);
         List<Product> result = catalogReadRepository.findAllPublishedProductsForListing(lang).stream()
                 .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(product -> !product.discontinued())

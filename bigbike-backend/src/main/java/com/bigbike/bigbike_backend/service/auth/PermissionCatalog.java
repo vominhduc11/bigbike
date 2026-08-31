@@ -101,17 +101,7 @@ public final class PermissionCatalog {
             read("roles.read"),
             write("roles.write", true, "roles.read"),
             entry("audit-logs.read", "audit-logs", Kind.READ, true),
-            entry("chat.read", "chat", Kind.READ, true),
-            entry("chat.reply", "chat", Kind.WRITE, true, "chat.read"),
-            // Registered so the capability is visible in the Roles screen, and so the maintenance
-            // endpoint stops borrowing `settings.write` to authenticate — an unrelated permission
-            // that is editable right there, whose removal would silently disable the lock.
-            //
-            // Holding it is necessary but NOT sufficient: the endpoint also requires the caller's
-            // role to literally be DEVELOPER, because SUPER_ADMIN's '*' satisfies every permission
-            // and the owner requires SUPER_ADMIN to be excluded. Granting this to any other role
-            // therefore does nothing — the admin label says so.
-            entry("maintenance.manage", "maintenance", Kind.WRITE, true)
+            entry("chat.read", "chat", Kind.READ, true)
         ))
     );
 

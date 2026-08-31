@@ -24,8 +24,10 @@ test.describe("Public + deep-link routes @1440", () => {
       await expect(page.locator("main").first()).toBeVisible();
       if (route.group === "auth") {
         await expect(page.locator("[data-auth-shell]")).toHaveCount(1);
-        await expect(page.locator("header[data-auth-header]")).toBeVisible();
-        await expect(page.locator("footer[data-auth-footer]")).toBeVisible();
+        await expect(
+          page.locator("header[data-auth-header], footer[data-auth-footer]"),
+        ).toHaveCount(0);
+        await expect(page.locator("[data-auth-guest-exit]")).toBeVisible();
         await expect(page.locator("header[data-bb-header], nav.bb-bottom-nav")).toHaveCount(0);
       } else {
         await expect(page.locator("footer").first()).toBeVisible();

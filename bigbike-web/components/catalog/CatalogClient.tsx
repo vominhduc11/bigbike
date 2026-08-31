@@ -52,6 +52,8 @@ export type CatalogClientProps = {
   includeCategoryParam?: boolean;
   /** Khoá đọc từ khoá tìm kiếm (vd /tim-kiem dùng ["s","q"]). */
   queryParamKeys?: string[];
+  /** Search pages use relevance unless a visitor explicitly selects another order. */
+  defaultSortWhenQuery?: string;
   emptyNotice?: string;
   /** Trang /tim-kiem: chỉ fetch khi có từ khoá hợp lệ (tránh liệt kê toàn bộ sản phẩm). */
   requireQuery?: boolean;
@@ -74,6 +76,7 @@ export function CatalogClient({
   routeBrandSlug,
   includeCategoryParam = false,
   queryParamKeys,
+  defaultSortWhenQuery,
   emptyNotice,
   requireQuery = false,
   emptyQueryNotice,
@@ -101,8 +104,8 @@ export function CatalogClient({
           ? [...previous, value]
           : [previous, value];
     });
-    return parseCatalogListParams(params, { includeCategoryParam, queryParamKeys });
-  }, [searchParams, includeCategoryParam, queryParamKeys]);
+    return parseCatalogListParams(params, { includeCategoryParam, queryParamKeys, defaultSortWhenQuery });
+  }, [searchParams, includeCategoryParam, queryParamKeys, defaultSortWhenQuery]);
   const [mobileDraft, setMobileDraft] = useState<CatalogFilterState>(catalog.currentFilters);
   const mobileDraftRef = useRef(mobileDraft);
   const mobileOpenRef = useRef(mobileOpen);
@@ -342,6 +345,7 @@ export function CatalogClient({
       />
       <CatalogResults
         orderbyCurrent={catalog.orderbyCurrent}
+        searchRelevance={Boolean(defaultSortWhenQuery === "relevance" && catalog.filters.q && catalog.orderbyCurrent === DEFAULT_CATALOG_ORDERBY)}
         pagination={pagination}
         products={products}
         notice={resolvedNotice}

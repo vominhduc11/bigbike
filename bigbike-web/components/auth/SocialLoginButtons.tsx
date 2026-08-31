@@ -82,18 +82,22 @@ export function SocialLoginButtons({
     t(isRegistration ? `${provider}Register` : provider);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div data-auth-social-login className="flex justify-center gap-3 md:flex-col">
       {(["facebook", "google"] as const).map((provider) => (
         <Button
           key={provider}
           asChild
           variant="filter"
-          size="auth"
-          className="w-full justify-center"
+          size="icon"
+          className="rounded-full md:min-h-13 md:w-full md:rounded-none md:px-8 lg:min-h-11"
         >
-          <a href={oauthAuthorizeUrl(provider, returnTo, consent)} onClick={handleOAuthClick}>
+          <a
+            href={oauthAuthorizeUrl(provider, returnTo, consent)}
+            onClick={handleOAuthClick}
+            aria-label={label(provider)}
+          >
             {provider === "facebook" ? <FacebookIcon /> : <GoogleIcon />}
-            <span>{label(provider)}</span>
+            <span className="sr-only md:not-sr-only">{label(provider)}</span>
           </a>
         </Button>
       ))}

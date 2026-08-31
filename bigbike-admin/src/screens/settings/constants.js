@@ -129,28 +129,10 @@ export function validateValue(key, value) {
   // Money / stock thresholds and retained assistant limits must be non-negative numbers.
   if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount')
       || k === 'ai_assistant_daily_limit'
-      || k === 'ai_assistant_conversation_turn_limit'
       || k === 'ai_assistant_recent_turn_pairs') {
     const n = Number(value)
     if (Number.isNaN(n) || n < 0) {
       return 'settings.valNumber'
-    }
-  }
-  if (k === 'ai_assistant_business_hours') {
-    try {
-      const schedule = JSON.parse(value)
-      const days = schedule?.days
-      if (!days || typeof days !== 'object') return 'settings.assistantConfig.invalidBusinessHours'
-      for (const day of ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']) {
-        const item = days[day]
-        if (!item || typeof item.enabled !== 'boolean') return 'settings.assistantConfig.invalidBusinessHours'
-        if (item.enabled && (!/^\d{2}:\d{2}$/.test(item.open || '')
-          || !/^\d{2}:\d{2}$/.test(item.close || '') || item.close <= item.open)) {
-          return 'settings.assistantConfig.invalidBusinessHours'
-        }
-      }
-    } catch {
-      return 'settings.assistantConfig.invalidBusinessHours'
     }
   }
   return null
@@ -302,15 +284,8 @@ export const KEY_LABELS_VI = {
   // ai_assistant (Trợ lý BigBike — CHAT_RULE_001..024)
   ai_assistant_enabled: 'Bật Trợ lý BigBike',
   ai_assistant_daily_limit: 'Số lượt gọi AI tối đa mỗi ngày',
-  ai_assistant_conversation_turn_limit: 'Số lượt tư vấn tối đa trong một hội thoại',
   ai_assistant_recent_turn_pairs: 'Số cặp hỏi–đáp gần nhất Trợ lý BigBike được đọc',
   ai_assistant_search_ai_interpretation_enabled: 'Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng',
-  ai_assistant_greeting: 'Câu chào đầu khung chat',
-  ai_assistant_quick_prompts: 'Các nút gợi ý nhanh',
-  ai_assistant_handoff_email_enabled: 'Gửi email khi khách xin gặp nhân viên',
-  ai_assistant_handoff_email_recipient: 'Email nhận yêu cầu gặp nhân viên',
-  ai_assistant_business_hours: 'Giờ nhân viên trực chat',
-  ai_assistant_image_enabled: 'Cho khách gửi ảnh để trợ lý tìm hàng',
   // store_policy — nguồn nội dung chung cho trang chính sách và Trợ lý BigBike
   policy_warranty_title: 'Tiêu đề chính sách bảo hành',
   policy_warranty_body_html: 'Nội dung chính sách bảo hành',
@@ -365,24 +340,10 @@ export const KEY_HINTS_VI = {
     'Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.',
   ai_assistant_daily_limit:
     'Giới hạn lượt AI theo ngày giờ Việt Nam; mặc định 400 lượt/ngày. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
-  ai_assistant_conversation_turn_limit:
-    'Từ 10 đến 100, mặc định 40. Các vòng khách trả lời câu hỏi làm rõ không bị tính vào trần này.',
   ai_assistant_recent_turn_pairs:
     'Từ 0 đến 12, mặc định 12. Đặt 0 để Trợ lý BigBike không đọc lịch sử; nội dung gửi AI được che thông tin riêng tư và cắt gọn.',
   ai_assistant_search_ai_interpretation_enabled:
     'Bật để Trợ lý BigBike hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay, không cần triển khai lại.',
-  ai_assistant_greeting:
-    'Nhập riêng tiếng Việt và tiếng Anh. Dòng đầu cần nói rõ Trợ lý BigBike là trợ lý ảo AI.',
-  ai_assistant_quick_prompts:
-    'Mỗi dòng là một nút. Nhập từ 3 đến 4 dòng cho từng ngôn ngữ.',
-  ai_assistant_handoff_email_enabled:
-    'Chỉ tắt email; khách đang chờ vẫn xuất hiện ngay trong màn quản trị.',
-  ai_assistant_handoff_email_recipient:
-    'Để trống để dùng email quản trị đã khai trên máy chủ. Chỉ nhập một địa chỉ email hợp lệ.',
-  ai_assistant_business_hours:
-    'Khách xin gặp nhân viên ngoài lịch này sẽ được báo giờ trực tiếp theo, không bị giữ ở trạng thái chờ vô hạn.',
-  ai_assistant_image_enabled:
-    'Mặc định tắt. Khi bật, khách được báo rõ ảnh sẽ gửi tới Google AI; ảnh lưu riêng trong hệ thống và tự xoá sau 90 ngày hoặc khi khách xoá lịch sử.',
   policy_warranty_title:
     'Dùng chung cho trang Chính sách bảo hành và câu trả lời của Trợ lý BigBike.',
   policy_warranty_body_html:
@@ -480,19 +441,7 @@ export const SECTION_GUIDE = {
   },
   ai_assistant_switch: {
     title: 'Vận hành và ngân sách của Trợ lý BigBike',
-    description: 'Bật/tắt trợ lý, giới hạn lượt AI mỗi ngày và cấu hình email báo yêu cầu gặp nhân viên.',
-  },
-  ai_assistant_copy: {
-    title: 'Nội dung đầu khung chat',
-    description: 'Câu chào và các câu hỏi gợi ý có bản tiếng Việt và tiếng Anh riêng.',
-  },
-  ai_assistant_live: {
-    title: 'Tiếp nhận khách',
-    description: 'Giới hạn lượt tư vấn và lịch trực để nhân viên tiếp nhận chat.',
-  },
-  ai_assistant_images: {
-    title: 'Đọc ảnh khách gửi',
-    description: 'Tính năng mặc định tắt; ảnh chỉ hỗ trợ tư vấn và không được dùng để khẳng định giá, thông số hoặc size.',
+    description: 'Bật/tắt trợ lý, giới hạn lượt AI mỗi ngày và cách hiểu yêu cầu tìm hàng.',
   },
   store_policy_content: {
     title: 'Nội dung chính sách dùng chung',
@@ -560,15 +509,8 @@ export const KEY_GUIDE = {
   review_moderation_banned_words:       ['review_moderation_words', 'danh sách từ cấm tự quản'],
   ai_assistant_enabled:                 ['ai_assistant_switch', 'bật/tắt Trợ lý BigBike trên toàn website'],
   ai_assistant_daily_limit:             ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
-  ai_assistant_conversation_turn_limit: ['ai_assistant_live', 'trần lượt tư vấn có nội dung; vòng làm rõ không tính'],
   ai_assistant_recent_turn_pairs:        ['ai_assistant_switch', '0–12 cặp gần nhất để hiểu câu nối'],
   ai_assistant_search_ai_interpretation_enabled: ['ai_assistant_switch', 'chuyển giữa cách hiểu tìm hàng mới và cũ'],
-  ai_assistant_greeting:                ['ai_assistant_copy', 'câu chào khi khách mở khung chat'],
-  ai_assistant_quick_prompts:           ['ai_assistant_copy', '3–4 nút câu hỏi nhanh trong khung chat'],
-  ai_assistant_handoff_email_enabled:   ['ai_assistant_switch', 'bật/tắt email báo khách đang chờ nhân viên'],
-  ai_assistant_handoff_email_recipient: ['ai_assistant_switch', 'địa chỉ nhận email báo khách đang chờ'],
-  ai_assistant_business_hours:          ['ai_assistant_live', 'lịch nhân viên có thể tiếp nhận chat theo từng ngày'],
-  ai_assistant_image_enabled:           ['ai_assistant_images', 'bật/tắt toàn bộ nút gửi ảnh trong khung chat'],
   policy_warranty_title:                ['store_policy_content', 'tiêu đề trang và câu trả lời về bảo hành'],
   policy_warranty_body_html:            ['store_policy_content', 'nội dung trang và câu trả lời về bảo hành'],
   policy_return_exchange_title:         ['store_policy_content', 'tiêu đề trang và câu trả lời về đổi trả/hoàn tiền'],

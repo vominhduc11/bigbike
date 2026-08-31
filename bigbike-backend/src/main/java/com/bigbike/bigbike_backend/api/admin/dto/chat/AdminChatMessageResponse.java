@@ -5,13 +5,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** Stored chat content and result classification; provider model/cost telemetry is not exposed. */
+/** Stored AI/customer content and result classification; provider telemetry is not exposed. */
 public record AdminChatMessageResponse(
         UUID id,
         long sequenceNo,
         String role,
-        UUID staffUserId,
-        String staffDisplayName,
         String content,
         String source,
         boolean aiCalled,

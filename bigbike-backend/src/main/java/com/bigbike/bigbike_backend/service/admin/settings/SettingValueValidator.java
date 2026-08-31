@@ -54,7 +54,6 @@ public class SettingValueValidator {
     private static final String PRODUCT_ASSIGN_ROLES_KEY = "product_assign_roles";
     private static final int MIN_ASSIGNMENT_ROLES = 1;
     private static final int MAX_ASSIGNMENT_ROLES = 6;
-    private static final String ASSISTANT_BUSINESS_HOURS_KEY = "ai_assistant_business_hours";
 
     public void validate(String key, String rawValue, SettingDefinition def) {
         if (rawValue == null) return;
@@ -270,33 +269,6 @@ public class SettingValueValidator {
         }
         if (PRODUCT_ASSIGN_ROLES_KEY.equals(key)) {
             validateProductAssignRoles(key, node);
-        } else if (ASSISTANT_BUSINESS_HOURS_KEY.equals(key)) {
-            validateAssistantBusinessHours(key, node);
-        }
-    }
-
-    private void validateAssistantBusinessHours(String key, JsonNode node) {
-        if (!node.isObject()
-                || !"Asia/Ho_Chi_Minh".equals(node.path("timezone").asString())
-                || !node.path("days").isObject()) {
-            throw fail(key, "BUSINESS_HOURS_INVALID",
-                    "Lịch trực phải dùng múi giờ Asia/Ho_Chi_Minh và có đủ các ngày trong tuần.");
-        }
-        Pattern time = Pattern.compile("^(?:[01]\\d|2[0-3]):[0-5]\\d$");
-        for (String day : List.of("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")) {
-            JsonNode value = node.path("days").path(day);
-            if (!value.isObject() || !value.path("enabled").isBoolean()) {
-                throw fail(key, "BUSINESS_HOURS_DAY_INVALID", "Thiếu hoặc sai cấu hình ngày " + day + ".");
-            }
-            if (value.path("enabled").asBoolean()) {
-                String open = value.path("open").asString("");
-                String close = value.path("close").asString("");
-                if (!time.matcher(open).matches() || !time.matcher(close).matches()
-                        || !java.time.LocalTime.parse(close).isAfter(java.time.LocalTime.parse(open))) {
-                    throw fail(key, "BUSINESS_HOURS_TIME_INVALID",
-                            "Giờ đóng phải sau giờ mở trong cùng ngày " + day + ".");
-                }
-            }
         }
     }
 

@@ -5,7 +5,6 @@ import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatClarificationResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatProductCardResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatHandoffStatusResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatNextStepResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatImageAvailabilityResponse;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
@@ -51,8 +50,6 @@ public class ChatService {
     private final ChatInputGuard inputGuard = new ChatInputGuard();
     private final ChatAiQuotaService chatAiQuotaService;
     private final ChatSalesAdvisorService salesAdvisorService;
-    private final ChatHandoffService handoffService;
-    private final ChatPhase3Settings phase3Settings;
     private final ChatVisitorService visitorService;
     private final ChatImageService chatImageService;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -62,20 +59,10 @@ public class ChatService {
     public ChatAvailabilityResponse availability(String lang) {
         ChatAssistantSettings.Snapshot settings = assistantSettings.load(lang);
         Availability availability = resolveAvailability(settings);
-        String greeting = responseGuard.isSafeGreeting(settings.greeting(), lang)
-                ? settings.greeting().trim()
-                : ChatAssistantSettings.defaultGreeting(lang);
-        List<String> quickPrompts = settings.quickPrompts().stream()
-                .filter(prompt -> responseGuard.isSafeCustomerText(prompt, lang))
-                .limit(4)
-                .toList();
-        if (quickPrompts.size() < 3) quickPrompts = ChatAssistantSettings.defaultQuickPrompts(lang);
-        int conversationLimit = currentTurnLimit();
+        int conversationLimit = STANDARD_MAX_TURNS;
         ChatAssistantSettings.ImageSettings imageSettings = assistantSettings.imageSettings();
         if (imageSettings == null) {
-            // Keep availability safe for older adapters/tests that predate image settings.
-            // Production settings always return a value; the compatibility default is off.
-            imageSettings = new ChatAssistantSettings.ImageSettings(false, 20, 3);
+            imageSettings = new ChatAssistantSettings.ImageSettings(true, 20, 3);
         }
         boolean imagesEnabled = imageSettings.enabled() && aiClient.isConfigured();
         String imageDisclosure = "en".equals(lang)
@@ -84,11 +71,9 @@ public class ChatService {
         return new ChatAvailabilityResponse(
                 availability.mode(),
                 "AI".equals(availability.mode()) ? "AI" : "CONTACT",
-                greeting,
-                quickPrompts,
                 conversationLimit,
                 settings.contacts(),
-                phase3Settings == null ? 30 : phase3Settings.memoryDays(),
+                ChatAssistantSettings.DEFAULT_MEMORY_DAYS,
                 new ChatImageAvailabilityResponse(
                         imagesEnabled, ChatImageStorageService.MAX_UPLOAD_BYTES, 1,
                         imageSettings.conversationLimit(), imageSettings.dailyLimit(),
@@ -136,13 +121,11 @@ public class ChatService {
                     List.of(), maxTurns);
         }
 
-        ChatHandoffStatusResponse liveHandoff = handoffService == null
-                ? null : handoffService.liveForConversation(conversation.getId());
         boolean countCustomerTurn = !isClarificationReply(conversation, request);
         if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
             if (chatImageService == null) {
                 throw ValidationException.fromField(
-                        "imageIds", "CHAT_IMAGE_DISABLED", "Tính năng đọc ảnh chưa sẵn sàng.");
+                        "imageIds", "CHAT_IMAGE_UNAVAILABLE", "Tính năng đọc ảnh hiện chưa sẵn sàng.");
             }
             String customerContent = request.getMessage() == null || request.getMessage().isBlank()
                     ? ("en".equals(request.getLang()) ? "Sent an image." : "Đã gửi một ảnh.")
@@ -150,42 +133,24 @@ public class ChatService {
             ChatMessageEntity customerMessage = saveCustomerMessage(
                     conversation, customerContent, request.getRequestId(),
                     countCustomerTurn);
-            if (liveHandoff != null && "ACTIVE".equals(liveHandoff.status())) {
-                chatImageService.attachForStaff(
-                        conversation, customerMessage.getId(), request.getImageIds());
-                conversationRepo.save(conversation);
-                handoffService.customerMessageAdded(conversation.getId());
-                return staffActiveResponse(conversation, settings, liveHandoff, maxTurns);
-            }
             ChatImageService.ImageTurnResult imageResult = chatImageService.processTurn(
                     conversation, customerMessage.getId(), request.getImageIds(),
                     customerContent, request.getLang());
-            boolean handoff = imageResult.handoff();
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> imageActions =
                     ChatActionCatalog.choose(
                             customerContent, imageResult.resultKind(), imageResult.products(),
                             List.of(), settings.contacts());
-            ChatHandoffStatusResponse imageHandoff = createHandoffIfNeeded(
-                    conversation, customerContent, imageResult.products(), handoff);
             saveAssistantMessage(
                     conversation, imageResult.answer(), imageResult.source(), false,
                     imageResult.products(), 0, request.getRequestId(), "PLAIN_TEXT",
-                    imageResult.resultKind(), imageActions, handoff,
-                    null, null, imageHandoff);
+                    imageResult.resultKind(), imageActions,
+                    null, null);
             finishTurnIfNeeded(conversation, maxTurns);
             conversationRepo.save(conversation);
             return aiResponse(
                     conversation, settings, imageResult.answer(), imageResult.products(),
-                    imageResult.resultKind(), handoff, imageActions, maxTurns,
-                    null, null, imageHandoff);
-        }
-        if (liveHandoff != null && "ACTIVE".equals(liveHandoff.status())) {
-            saveCustomerMessage(
-                    conversation, request.getMessage(), request.getRequestId(),
-                    false);
-            conversationRepo.save(conversation);
-            handoffService.customerMessageAdded(conversation.getId());
-            return staffActiveResponse(conversation, settings, liveHandoff, maxTurns);
+                    imageResult.resultKind(), imageActions, maxTurns,
+                    null, null);
         }
         Optional<ChatInputGuard.Decision> inputDecision = inputGuard.evaluate(
                 request.getMessage(), request.getLang());
@@ -201,18 +166,15 @@ public class ChatService {
                 ChatSalesAdvisorService.Advice advice = salesAdvice(
                         conversation, request, settings,
                         ChatToolService.ConversationContext.empty(), decision.answer(), List.of(),
-                        "CONTACT_FALLBACK", "CONTACT", null, true, contactActions);
-                ChatHandoffStatusResponse handoffStatus = createHandoffIfNeeded(
-                        conversation, request.getMessage(), advice.products(), true);
+                        "CONTACT_FALLBACK", "CONTACT", null, contactActions);
                 saveAssistantMessage(
                         conversation, advice.answer(), "CONTACT_FALLBACK", false, List.of(), 0,
                         request.getRequestId(), "PLAIN_TEXT", "CONTACT", advice.actions(),
-                        true, null,
-                        advice, handoffStatus);
+                        null, advice);
                 conversationRepo.save(conversation);
                 return aiResponse(
-                        conversation, settings, advice.answer(), List.of(), "CONTACT", true,
-                        advice.actions(), maxTurns, null, advice, handoffStatus);
+                        conversation, settings, advice.answer(), List.of(), "CONTACT",
+                        advice.actions(), maxTurns, null, advice);
             }
             finishTurnIfNeeded(conversation, maxTurns);
             boolean ended = conversation.getEndedReason() != null;
@@ -224,7 +186,7 @@ public class ChatService {
             saveAssistantMessage(
                     conversation, decision.answer(), decision.source(), false, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", refusalKind, refusalActions,
-                    ended, null, null, null);
+                    null, null);
             conversationRepo.save(conversation);
             return refusalResponse(
                     conversation, settings, decision.answer(), refusalKind, refusalActions, maxTurns);
@@ -242,7 +204,7 @@ public class ChatService {
             saveAssistantMessage(conversation, fallback,
                     "CONTACT_FALLBACK", false, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "CONTACT", List.of(),
-                    true, null, null, null);
+                    null, null);
             return contactResponse(
                     conversation, settings, fallback,
                     ChatActionCatalog.choose(
@@ -302,11 +264,11 @@ public class ChatService {
                     : Optional.empty();
             boolean clarifiedDuplicate = duplicateClarification.isPresent();
             if (clarifiedDuplicate) safe = duplicateClarification.get();
-            boolean handoff = applyConversationSignals(
-                    conversation,
-                    clarifiedDuplicate ? false : tool.offTopic(),
-                    clarifiedDuplicate ? false : tool.handoffRecommended());
-            String responseKind = resultKind(safe.products(), handoff, tool.clarification());
+            boolean ended = applyConversationSignals(
+                    conversation, clarifiedDuplicate ? false : tool.offTopic());
+            boolean directContact = !clarifiedDuplicate && tool.directContactRecommended();
+            String responseKind = resultKind(
+                    safe.products(), directContact || ended, tool.clarification());
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> responseActions =
                     tool.clarification() == null ? ChatActionCatalog.choose(
                             request.getMessage(), responseKind, safe.products(), tool.actions(), settings.contacts())
@@ -315,16 +277,14 @@ public class ChatService {
             ChatSalesAdvisorService.Advice advice = salesAdvice(
                     conversation, request, settings, referenceContext,
                     safe.answer(), safe.products(), responseSource, responseKind,
-                    tool.clarification(), handoff, responseActions);
-            handoff = advice.handoffRecommended();
-            ChatHandoffStatusResponse handoffStatus = createHandoffIfNeeded(
-                    conversation, request.getMessage(), advice.products(), handoff);
-            responseKind = resultKind(advice.products(), handoff, tool.clarification());
+                    tool.clarification(), responseActions);
+            responseKind = resultKind(
+                    advice.products(), directContact || conversation.getEndedReason() != null,
+                    tool.clarification());
             saveAssistantMessage(conversation, advice.answer(), responseSource,
                     false, advice.products(), 0,
                     request.getRequestId(), answerFormat(advice.answer()), responseKind,
-                    advice.actions(), handoff,
-                    tool.clarification(), advice, handoffStatus);
+                    advice.actions(), tool.clarification(), advice);
             saveConversationContext(conversation, toolService.recordConversationContext(
                     conversationContext,
                     request.getMessage(),
@@ -341,12 +301,10 @@ public class ChatService {
                     advice.answer(),
                     advice.products(),
                     responseKind,
-                    handoff,
                     advice.actions(),
                     maxTurns,
                     tool.clarification(),
-                    advice,
-                    handoffStatus);
+                    advice);
         }
 
         if (!chatAiQuotaService.tryReserve(settings.dailyLimit())) {
@@ -354,7 +312,7 @@ public class ChatService {
             String fallback = contactFallbackText(request.getLang(), FallbackCause.DAILY_LIMIT);
             saveAssistantMessage(conversation, fallback, "CONTACT_FALLBACK", false, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "CONTACT", List.of(),
-                    true, null, null, null);
+                    null, null);
             logFallback(ChatFallbackReason.DAILY_LIMIT_REACHED, FallbackFlow.QUOTA_GATE,
                     "NONE", 0, false);
             conversationRepo.save(conversation);
@@ -391,7 +349,7 @@ public class ChatService {
             saveAssistantMessage(
                     conversation, refusal, "CONTENT_REFUSAL", true, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "REFUSAL", safetyActions,
-                    ended, null, null, null);
+                    null, null);
             conversationRepo.save(conversation);
             return refusalResponse(
                     conversation, settings, refusal, "REFUSAL", safetyActions, maxTurns);
@@ -403,15 +361,16 @@ public class ChatService {
         if (ai.isEmpty()) {
             String apology = providerUnavailableText(request.getLang());
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions =
-                    List.of(new com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse("CONTACT_STAFF"));
+                    ChatActionCatalog.choose(
+                            request.getMessage(), "CONTACT", List.of(), List.of(), settings.contacts());
             saveAssistantMessage(
                     conversation, apology, "PROVIDER_UNAVAILABLE", true, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "CONTACT", actions,
-                    false, null, null, null);
+                    null, null);
             logFallback(ChatFallbackReason.AI_NO_SAFE_RESULT, FallbackFlow.AI, "NONE", 0, false);
             conversationRepo.save(conversation);
             return aiResponse(
-                    conversation, settings, apology, List.of(), "CONTACT", false, actions, maxTurns);
+                    conversation, settings, apology, List.of(), "CONTACT", actions, maxTurns);
         }
 
         AiChatClient.HybridAnswer hybridAnswer = ai.get();
@@ -481,11 +440,10 @@ public class ChatService {
         if (clarifiedDuplicate) safe = duplicateClarification.get();
         AiChatClient.Answer answer = recoveredFromGuard || clarifiedDuplicate
                 ? new AiChatClient.Answer(
-                        safe.answer(), false, false)
+                        safe.answer(), false)
                 : hybridAnswer.answer();
-        boolean handoff = applyConversationSignals(
-                conversation, answer.offTopic(), answer.handoffRecommended());
-        String responseKind = resultKind(safe.products(), handoff);
+        boolean ended = applyConversationSignals(conversation, answer.offTopic());
+        String responseKind = resultKind(safe.products(), ended);
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> proposedActions =
                 recoveredFromGuard || clarifiedDuplicate ? List.of() : hybridAnswer.actions();
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> responseActions =
@@ -495,17 +453,14 @@ public class ChatService {
         ChatSalesAdvisorService.Advice advice = salesAdvice(
                 conversation, request, settings, referenceContext,
                 safe.answer(), safe.products(), responseSource, responseKind,
-                null, handoff, responseActions);
-        handoff = advice.handoffRecommended();
-        ChatHandoffStatusResponse handoffStatus = createHandoffIfNeeded(
-                conversation, request.getMessage(), advice.products(), handoff);
-        responseKind = resultKind(advice.products(), handoff);
+                null, responseActions);
+        responseKind = resultKind(
+                advice.products(), conversation.getEndedReason() != null);
         saveAssistantMessage(
                 conversation, advice.answer(), responseSource,
                 true, advice.products(), 0,
                 request.getRequestId(), answerFormat(advice.answer()), responseKind,
-                advice.actions(), handoff,
-                null, advice, handoffStatus);
+                advice.actions(), null, advice);
         saveConversationContext(conversation, toolService.recordConversationContext(
                 conversationContext,
                 request.getMessage(),
@@ -521,12 +476,10 @@ public class ChatService {
                 advice.answer(),
                 advice.products(),
                 responseKind,
-                handoff || conversation.getEndedReason() != null,
                 advice.actions(),
                 maxTurns,
                 null,
-                advice,
-                handoffStatus);
+                advice);
     }
 
     private ChatConversationEntity loadOrCreate(
@@ -562,7 +515,6 @@ public class ChatService {
         StoredResponseMetadata metadata = readStoredMetadata(message.getActionMetadata());
         String mode = metadata == null ? "AI" : metadata.mode();
         String reason = metadata == null ? mode : metadata.reason();
-        boolean handoff = metadata != null && metadata.handoff();
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions = metadata == null
                 ? List.of() : metadata.actions() == null ? List.of() : metadata.actions();
         ChatClarificationResponse clarification = metadata == null ? null : metadata.clarification();
@@ -573,15 +525,14 @@ public class ChatService {
                 ? metadata.salesStage()
                 : message.getSalesStage() != null ? message.getSalesStage() : conversation.getSalesStage();
         ChatNextStepResponse nextStep = metadata == null ? null : metadata.nextStep();
-        ChatHandoffStatusResponse handoffStatus = metadata == null ? null : metadata.handoffStatus();
         return Optional.of(new ChatMessageResponse(
                 conversation.getId(), message.getId(), mode, reason, message.getContent(),
                 message.getAnswerFormat(), message.getResultKind(),
                 conversation.getTurnCount(), maxTurns,
                 remainingTurns(conversation, maxTurns),
-                products, clarification, handoff, actions,
-                settings.contacts(), crossSell, salesStage, nextStep, handoffStatus,
-                channelState(handoffStatus, conversation), conversation.getCountedTurns(), maxTurns,
+                products, clarification, actions,
+                settings.contacts(), crossSell, salesStage, nextStep,
+                conversation.getCountedTurns(), maxTurns,
                 remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns)));
     }
 
@@ -993,18 +944,18 @@ public class ChatService {
         String answer = repeated
                 ? repeatedFallbackText(lang)
                 : ("en".equals(lang)
-                ? "BigBike Assistant is busy and could not finish that lookup. Please try the same question again, or choose Talk to staff for immediate help."
-                : "Trợ lý BigBike đang bận nên chưa hoàn tất lần tra này. Anh/chị vui lòng hỏi lại đúng câu vừa rồi, hoặc bấm Gặp nhân viên nếu cần hỗ trợ ngay nhé.");
+                ? "BigBike Assistant is busy and could not finish that lookup. Please try the same question again, or contact BigBike through Hotline, Zalo or Messenger for immediate help."
+                : "Trợ lý BigBike đang bận nên chưa hoàn tất lần tra này. Anh/chị vui lòng hỏi lại đúng câu vừa rồi, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ ngay nhé.");
         logFallback(reason, aiCalled ? FallbackFlow.AI : FallbackFlow.FAST_PATH,
                 guardReason, productCount, false);
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions =
                 ChatActionCatalog.choose("", "CLARIFICATION", List.of(), List.of(), settings.contacts());
         saveAssistantMessage(conversation, answer, "CONTACT_FALLBACK", aiCalled, List.of(), 0,
                 requestId, "PLAIN_TEXT", "CLARIFICATION", actions,
-                false, null, null, null);
+                null, null);
         conversationRepo.save(conversation);
         return aiResponse(
-                conversation, settings, answer, List.of(), "CLARIFICATION", false,
+                conversation, settings, answer, List.of(), "CLARIFICATION",
                 actions, maxTurns);
     }
 
@@ -1026,33 +977,22 @@ public class ChatService {
             String source,
             String resultKind,
             ChatClarificationResponse clarification,
-            boolean handoff,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions
     ) {
         if (salesAdvisorService == null) {
             return new ChatSalesAdvisorService.Advice(
                     answer, products, List.of(), conversation.getSalesStage(),
-                    "ANSWERED", null, actions, handoff);
+                    "ANSWERED", null, actions);
         }
         return salesAdvisorService.advise(
                 conversation, request.getMessage(), request.getLang(), settings,
-                context, answer, products, source, resultKind, clarification, handoff, actions);
-    }
-
-    private ChatHandoffStatusResponse createHandoffIfNeeded(
-            ChatConversationEntity conversation,
-            String question,
-            List<ChatProductCardResponse> products,
-            boolean handoff
-    ) {
-        if (!handoff || handoffService == null) return null;
-        return handoffService.requestFromMessage(conversation, question, products);
+                context, answer, products, source, resultKind, clarification, actions);
     }
 
     private static String repeatedFallbackText(String lang) {
         return "en".equals(lang)
-                ? "The lookup is still busy. Please try again shortly or choose Talk to staff so BigBike can check it directly."
-                : "Lần tra vẫn đang bận. Anh/chị vui lòng thử lại sau ít phút hoặc bấm Gặp nhân viên để BigBike kiểm tra trực tiếp nhé.";
+                ? "The lookup is still busy. Please try again shortly, or contact BigBike through Hotline, Zalo or Messenger for direct help."
+                : "Lần tra vẫn đang bận. Anh/chị vui lòng thử lại sau ít phút, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp nhé.";
     }
 
     private void saveAssistantMessage(
@@ -1066,13 +1006,13 @@ public class ChatService {
         saveAssistantMessage(
                 conversation, content, source, aiCalled, products, aiRetryCount,
                 null, answerFormat(content), resultKind(products, false), List.of(),
-                false, null, null, null);
+                null, null);
     }
 
     private static String providerUnavailableText(String lang) {
         return "en".equals(lang)
-                ? "Sorry, BigBike Assistant could not complete this check right now. Please choose Talk to staff and the team will help you directly."
-                : "Em xin lỗi, Trợ lý BigBike chưa hoàn tất được lần kiểm tra này. Anh/chị bấm Gặp nhân viên để BigBike hỗ trợ trực tiếp nhé.";
+                ? "Sorry, BigBike Assistant could not complete this check right now. Please contact BigBike through Hotline, Zalo or Messenger for direct help."
+                : "Em xin lỗi, Trợ lý BigBike chưa hoàn tất được lần kiểm tra này. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp nhé.";
     }
 
     private void saveAssistantMessage(
@@ -1086,10 +1026,8 @@ public class ChatService {
             String answerFormat,
             String resultKind,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
-            boolean handoff,
             ChatClarificationResponse clarification,
-            ChatSalesAdvisorService.Advice salesAdvice,
-            ChatHandoffStatusResponse handoffStatus
+            ChatSalesAdvisorService.Advice salesAdvice
     ) {
         ChatMessageEntity message = new ChatMessageEntity();
         message.setConversationId(conversation.getId());
@@ -1104,13 +1042,11 @@ public class ChatService {
         message.setActionMetadata(writeJson(new StoredResponseMetadata(
                 mode,
                 mode,
-                handoff,
                 actions == null ? List.of() : List.copyOf(actions),
                 clarification,
                 salesAdvice == null ? List.of() : salesAdvice.crossSellProducts(),
                 salesAdvice == null ? conversation.getSalesStage() : salesAdvice.salesStage(),
-                salesAdvice == null ? null : salesAdvice.nextStep(),
-                handoffStatus)));
+                salesAdvice == null ? null : salesAdvice.nextStep())));
         message.setAiCalled(aiCalled);
         message.setAiRetryCount(Math.max(0, aiRetryCount));
         message.setProductsJson(products.isEmpty() ? null : writeJson(products));
@@ -1126,7 +1062,7 @@ public class ChatService {
     }
 
     private boolean applyConversationSignals(
-            ChatConversationEntity conversation, boolean offTopic, boolean handoffRecommended) {
+            ChatConversationEntity conversation, boolean offTopic) {
         if (offTopic) {
             conversation.setConsecutiveOffTopic(conversation.getConsecutiveOffTopic() + 1);
             if (conversation.getConsecutiveOffTopic() >= 2) {
@@ -1135,9 +1071,6 @@ public class ChatService {
             }
         } else {
             conversation.setConsecutiveOffTopic(0);
-        }
-        if (handoffRecommended) {
-            return true;
         }
         return false;
     }
@@ -1148,11 +1081,7 @@ public class ChatService {
     }
 
     private int resolveMaxTurns(ChatMessageRequest request) {
-        return currentTurnLimit();
-    }
-
-    private int currentTurnLimit() {
-        return phase3Settings == null ? MAX_TURNS : phase3Settings.conversationTurnLimit();
+        return STANDARD_MAX_TURNS;
     }
 
     private long nextMessageSequence(UUID conversationId) {
@@ -1187,20 +1116,6 @@ public class ChatService {
         return Math.max(0, maxTurns - conversation.getCountedTurns());
     }
 
-    private static String channelState(
-            ChatHandoffStatusResponse handoff, ChatConversationEntity conversation) {
-        if (handoff != null) {
-            return switch (handoff.status()) {
-                case "WAITING" -> "WAITING_FOR_STAFF";
-                case "ACTIVE" -> "STAFF_ACTIVE";
-                case "RETURNED_TO_AI" -> "AI_RESUMED";
-                case "CLOSED" -> "CLOSED";
-                default -> "AI_ACTIVE";
-            };
-        }
-        return "CLOSED".equals(conversation.getEndedReason()) ? "CLOSED" : "AI_ACTIVE";
-    }
-
     private static com.bigbike.bigbike_backend.api.chat.dto.ChatContinuationResponse continuation(
             ChatConversationEntity conversation, int maxTurns) {
         int remaining = remainingTurns(conversation, maxTurns);
@@ -1212,8 +1127,8 @@ public class ChatService {
                     ? "I continued this chat with the needs and products already discussed. You do not need to repeat them."
                     : "Em đã nối tiếp hội thoại cùng nhu cầu và sản phẩm mình vừa trao đổi; anh/chị không cần kể lại.")
                 : (english
-                    ? "We can continue in a linked chat or bring in BigBike staff without losing what you have shared."
-                    : "Mình có thể nối tiếp hội thoại hoặc gặp nhân viên BigBike mà không mất những gì anh/chị đã chia sẻ.");
+                    ? "We can continue in a linked chat without losing what you have shared."
+                    : "Mình có thể nối tiếp hội thoại mà không mất những gì anh/chị đã chia sẻ.");
         return new com.bigbike.bigbike_backend.api.chat.dto.ChatContinuationResponse(
                 true, conversation.getThreadId(), continued ? conversation.getId() : null, message);
     }
@@ -1233,12 +1148,11 @@ public class ChatService {
             String answer,
             List<ChatProductCardResponse> products,
             String responseKind,
-            boolean handoff,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
             int maxTurns
     ) {
         return aiResponse(
-                conversation, settings, answer, products, responseKind, handoff,
+                conversation, settings, answer, products, responseKind,
                 actions, maxTurns, null);
     }
 
@@ -1248,14 +1162,13 @@ public class ChatService {
             String answer,
             List<ChatProductCardResponse> products,
             String responseKind,
-            boolean handoff,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
             int maxTurns,
             ChatClarificationResponse clarification
     ) {
         return aiResponse(
-                conversation, settings, answer, products, responseKind, handoff,
-                actions, maxTurns, clarification, null, null);
+                conversation, settings, answer, products, responseKind,
+                actions, maxTurns, clarification, null);
     }
 
     private ChatMessageResponse aiResponse(
@@ -1264,12 +1177,10 @@ public class ChatService {
             String answer,
             List<ChatProductCardResponse> products,
             String responseKind,
-            boolean handoff,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
             int maxTurns,
             ChatClarificationResponse clarification,
-            ChatSalesAdvisorService.Advice salesAdvice,
-            ChatHandoffStatusResponse handoffStatus
+            ChatSalesAdvisorService.Advice salesAdvice
     ) {
         return new ChatMessageResponse(
                 conversation.getId(),
@@ -1284,14 +1195,12 @@ public class ChatService {
                 remainingTurns(conversation, maxTurns),
                 List.copyOf(products),
                 clarification,
-                handoff,
                 List.copyOf(actions),
                 settings.contacts(),
                 salesAdvice == null ? List.of() : salesAdvice.crossSellProducts(),
                 salesAdvice == null ? conversation.getSalesStage() : salesAdvice.salesStage(),
                 salesAdvice == null ? null : salesAdvice.nextStep(),
-                handoffStatus,
-                channelState(handoffStatus, conversation), conversation.getCountedTurns(), maxTurns,
+                conversation.getCountedTurns(), maxTurns,
                 remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns));
     }
 
@@ -1315,10 +1224,9 @@ public class ChatService {
                 remainingTurns(conversation, maxTurns),
                 List.of(),
                 null,
-                true,
                 List.copyOf(actions),
-                settings.contacts(), List.of(), conversation.getSalesStage(), null, null,
-                channelState(null, conversation), conversation.getCountedTurns(), maxTurns,
+                settings.contacts(), List.of(), conversation.getSalesStage(), null,
+                conversation.getCountedTurns(), maxTurns,
                 remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns));
     }
 
@@ -1337,27 +1245,9 @@ public class ChatService {
                 answer, "PLAIN_TEXT", responseKind,
                 conversation.getTurnCount(), maxTurns,
                 remainingTurns(conversation, maxTurns),
-                List.of(), null, ended, List.copyOf(actions), settings.contacts(),
-                List.of(), conversation.getSalesStage(), null, null,
-                channelState(null, conversation), conversation.getCountedTurns(), maxTurns,
-                remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns));
-    }
-
-    private ChatMessageResponse staffActiveResponse(
-            ChatConversationEntity conversation,
-            ChatAssistantSettings.Snapshot settings,
-            ChatHandoffStatusResponse handoff,
-            int maxTurns
-    ) {
-        String answer = "en".equals(conversation.getLocale())
-                ? "A BigBike staff member is handling this chat and will reply here."
-                : "Nhân viên BigBike đang tiếp nhận và sẽ trả lời anh/chị ngay trong khung chat này.";
-        return new ChatMessageResponse(
-                conversation.getId(), null, "CONTACT", "STAFF_ACTIVE", answer, "PLAIN_TEXT",
-                "CONTACT", conversation.getTurnCount(), maxTurns,
-                remainingTurns(conversation, maxTurns), List.of(), null, true,
-                List.of(), settings.contacts(), List.of(), conversation.getSalesStage(), null,
-                handoff, "STAFF_ACTIVE", conversation.getCountedTurns(), maxTurns,
+                List.of(), null, List.copyOf(actions), settings.contacts(),
+                List.of(), conversation.getSalesStage(), null,
+                conversation.getCountedTurns(), maxTurns,
                 remainingTurns(conversation, maxTurns), continuation(conversation, maxTurns));
     }
 
@@ -1407,13 +1297,11 @@ public class ChatService {
     private record StoredResponseMetadata(
             String mode,
             String reason,
-            boolean handoff,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
             ChatClarificationResponse clarification,
             List<ChatProductCardResponse> crossSellProducts,
             String salesStage,
-            ChatNextStepResponse nextStep,
-            ChatHandoffStatusResponse handoffStatus
+            ChatNextStepResponse nextStep
     ) {}
 
     private static String endedReason(String reason) {
@@ -1469,21 +1357,21 @@ public class ChatService {
     private static String contactFallbackText(String lang, FallbackCause cause) {
         if ("en".equals(lang)) {
             return switch (cause) {
-                case SERVICE_PAUSED -> "BigBike Assistant is temporarily paused. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
-                case DAILY_LIMIT -> "BigBike Assistant has reached today’s automated-chat limit. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
-                case SERVICE_NOT_READY -> "BigBike Assistant is not ready at the moment. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
-                case PROVIDER_UNAVAILABLE -> "That lookup did not finish, but you can keep chatting here. Please send the product name or detail to check again; Talk to staff remains available if you need immediate help.";
-                case SAFETY_REVIEW -> "I do not have enough confirmed detail to answer this part clearly, so I do not want to guess. Please choose Talk to staff; Hotline, Zalo and Messenger below can help you directly.";
-                case STAFF_REVIEW -> "This request needs a BigBike staff review so no unsupported promise is made. Please choose Talk to staff; Hotline, Zalo and Messenger are available below for direct help.";
+                case SERVICE_PAUSED -> "BigBike Assistant is temporarily paused. Please contact BigBike through Hotline, Zalo or Messenger for direct help.";
+                case DAILY_LIMIT -> "BigBike Assistant has reached today’s automated-chat limit. Please contact BigBike through Hotline, Zalo or Messenger for direct help.";
+                case SERVICE_NOT_READY -> "BigBike Assistant is not ready at the moment. Please contact BigBike through Hotline, Zalo or Messenger for direct help.";
+                case PROVIDER_UNAVAILABLE -> "That lookup did not finish. Please try the product name or detail again, or contact BigBike through Hotline, Zalo or Messenger for direct help.";
+                case SAFETY_REVIEW -> "I do not have enough confirmed detail to answer this clearly, so I do not want to guess. Please contact BigBike through Hotline, Zalo or Messenger for help.";
+                case DIRECT_CONTACT -> "This request needs a direct BigBike check so no unsupported promise is made. Please contact BigBike through Hotline, Zalo or Messenger for help.";
             };
         }
         return switch (cause) {
-            case SERVICE_PAUSED -> "Trợ lý BigBike đang tạm nghỉ. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
-            case DAILY_LIMIT -> "Trợ lý BigBike đã dùng hết lượt tư vấn tự động trong hôm nay. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
-            case SERVICE_NOT_READY -> "Trợ lý BigBike hiện chưa sẵn sàng. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
-            case PROVIDER_UNAVAILABLE -> "Lần tra này chưa hoàn tất nhưng anh/chị vẫn có thể hỏi tiếp trong khung chat. Anh/chị thử gửi tên mẫu hoặc chi tiết cần kiểm tra; nếu cần hỗ trợ ngay, nút Gặp nhân viên vẫn luôn có sẵn ạ.";
-            case SAFETY_REVIEW -> "Em cần anh/chị nói rõ thêm để kiểm tra đúng thông tin và không đoán. Anh/chị gửi tên mẫu hoặc chi tiết cần xem; nút Gặp nhân viên vẫn luôn có sẵn nếu mình cần hỗ trợ trực tiếp ạ.";
-            case STAFF_REVIEW -> "Trường hợp này cần nhân viên BigBike kiểm tra trực tiếp để không đưa ra cam kết ngoài chính sách. Anh/chị bấm Gặp nhân viên; Hotline, Zalo và Messenger luôn hiển thị bên dưới để BigBike hỗ trợ trực tiếp.";
+            case SERVICE_PAUSED -> "Trợ lý BigBike đang tạm nghỉ. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp.";
+            case DAILY_LIMIT -> "Trợ lý BigBike đã dùng hết lượt tư vấn tự động trong hôm nay. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp.";
+            case SERVICE_NOT_READY -> "Trợ lý BigBike hiện chưa sẵn sàng. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp.";
+            case PROVIDER_UNAVAILABLE -> "Lần tra này chưa hoàn tất. Anh/chị vui lòng thử lại bằng tên mẫu hoặc chi tiết cần kiểm tra, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.";
+            case SAFETY_REVIEW -> "Em chưa có đủ dữ liệu đã xác minh để trả lời rõ mà không đoán. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.";
+            case DIRECT_CONTACT -> "Trường hợp này cần BigBike kiểm tra trực tiếp để không đưa ra cam kết ngoài chính sách. Anh/chị vui lòng liên hệ qua Hotline, Zalo hoặc Messenger để được hỗ trợ.";
         };
     }
 
@@ -1491,19 +1379,16 @@ public class ChatService {
         boolean english = "en".equals(lang);
         return switch (reason == null ? "TURN_LIMIT" : reason) {
             case "OFF_TOPIC" -> english
-                    ? "BigBike Assistant only supports BigBike products and services. Please choose Talk to staff if you need other help."
-                    : "Trợ lý BigBike chỉ hỗ trợ sản phẩm và dịch vụ của shop. Anh/chị bấm Gặp nhân viên để được hỗ trợ thêm nhé.";
+                    ? "BigBike Assistant only supports BigBike products and services. Please contact BigBike through Hotline, Zalo or Messenger if you need other help."
+                    : "Trợ lý BigBike chỉ hỗ trợ sản phẩm và dịch vụ của shop. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu cần hỗ trợ thêm nhé.";
             case "AI_UNAVAILABLE", "DAILY_LIMIT_REACHED", "DISABLED" -> english
-                    ? "BigBike Assistant is busy at the moment. Please try again later or choose Talk to staff for immediate help."
-                    : "Trợ lý BigBike đang bận. Anh/chị vui lòng thử lại sau hoặc bấm Gặp nhân viên để được hỗ trợ ngay nhé.";
-            case "HANDOFF" -> english
-                    ? "This conversation has been passed to BigBike staff. Please use the contact options below to continue."
-                    : "Hội thoại đã được chuyển sang nhân viên BigBike. Anh/chị dùng các kênh liên hệ bên dưới để được hỗ trợ tiếp nhé.";
+                    ? "BigBike Assistant is busy at the moment. Please try again later or contact BigBike through Hotline, Zalo or Messenger for immediate help."
+                    : "Trợ lý BigBike đang bận. Anh/chị vui lòng thử lại sau hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ ngay nhé.";
             default -> english
                     ? "This conversation has reached its " + maxTurns
-                    + "-question limit. Please choose Talk to staff to continue."
+                    + "-question limit. Please continue in the linked chat; your previous context is preserved."
                     : "Hội thoại này đã nhận đủ " + maxTurns
-                    + " lượt hỏi. Anh/chị bấm Gặp nhân viên để BigBike hỗ trợ tiếp nhé.";
+                    + " lượt hỏi. Anh/chị có thể tiếp tục trong hội thoại được nối tiếp; nội dung trước đó vẫn được giữ lại nhé.";
         };
     }
 
@@ -1519,6 +1404,6 @@ public class ChatService {
         SERVICE_NOT_READY,
         PROVIDER_UNAVAILABLE,
         SAFETY_REVIEW,
-        STAFF_REVIEW
+        DIRECT_CONTACT
     }
 }

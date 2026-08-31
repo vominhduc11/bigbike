@@ -299,8 +299,8 @@ public class ChatToolService {
         if (isGreetingOrHelp(normalized)) {
             return Optional.of(ToolOutcome.local(
                     english
-                            ? "Hello, I’m BigBike Assistant, BigBike’s AI shopping assistant. I can help you find currently sold products, check verified store policies or view orders on your signed-in account. Tell me the product, brand, category or price range you are considering, or choose Talk to staff for direct help."
-                            : "Em là Trợ lý BigBike, trợ lý ảo AI của BigBike. Em có thể tìm sản phẩm đang bán, tra chính sách đã công bố hoặc xem đơn của tài khoản đang đăng nhập. Anh/chị cho em biết tên hàng, thương hiệu, danh mục hoặc tầm giá đang quan tâm; nếu cần, anh/chị có thể bấm Gặp nhân viên.",
+                            ? "Hello, I’m BigBike Assistant, BigBike’s AI shopping assistant. I can help you find currently sold products, check verified store policies or view orders on your signed-in account. Tell me the product, brand, category or price range you are considering."
+                            : "Em là Trợ lý BigBike, trợ lý ảo AI của BigBike. Em có thể tìm sản phẩm đang bán, tra chính sách đã công bố hoặc xem đơn của tài khoản đang đăng nhập. Anh/chị cho em biết tên hàng, thương hiệu, danh mục hoặc tầm giá đang quan tâm nhé.",
                     "RULE", false, false));
         }
         if (isAmbiguousComparison(question, normalized)) {
@@ -330,11 +330,11 @@ public class ChatToolService {
         if (isPromotionLookup(normalized)) {
             return Optional.of(promotionOutcome(lang, english));
         }
-        if (isHumanHandoff(normalized)) {
+        if (isDirectContactRequest(normalized)) {
             return Optional.of(ToolOutcome.local(
                     english
-                            ? "This request needs a BigBike staff member to review it directly. Please choose Talk to staff below so the team can help without making an unsupported promise. I’ll keep the contact options available."
-                            : "Trường hợp này cần nhân viên BigBike kiểm tra trực tiếp để hỗ trợ đúng chính sách. Anh/chị bấm Gặp nhân viên bên dưới giúp em nhé; em không tự hứa giảm giá, ngày giao hoặc ngoại lệ đổi trả. Các kênh liên hệ luôn được giữ sẵn.",
+                            ? "This request needs a direct check by BigBike. Please contact us through Hotline, Zalo or Messenger so the shop can help without making an unsupported promise."
+                            : "Trường hợp này cần BigBike kiểm tra trực tiếp để hỗ trợ đúng chính sách. Anh/chị vui lòng liên hệ qua Hotline, Zalo hoặc Messenger; em không tự hứa giảm giá, ngày giao hoặc ngoại lệ đổi trả nhé.",
                     "RULE", false, true));
         }
         if (isOrderQuestion(normalized) && customerId == null) {
@@ -358,8 +358,8 @@ public class ChatToolService {
         if (isKnownOffTopic(normalized)) {
             return Optional.of(ToolOutcome.local(
                     english
-                            ? "I can only help with products currently sold by BigBike, store policies and your signed-in orders. I can’t advise on motorcycles, politics or topics outside the shop. Please choose Talk to staff if you need other help from BigBike."
-                            : "Em chỉ hỗ trợ sản phẩm BigBike đang bán, chính sách cửa hàng và đơn của tài khoản đã đăng nhập. Em không tư vấn xe, chính trị hoặc nội dung ngoài phạm vi shop. Anh/chị có thể bấm Gặp nhân viên nếu cần BigBike hỗ trợ việc khác.",
+                            ? "I can only help with products currently sold by BigBike, store policies and your signed-in orders. I can’t advise on motorcycles, politics or topics outside the shop. Please contact BigBike through Hotline, Zalo or Messenger for other shop support."
+                            : "Em chỉ hỗ trợ sản phẩm BigBike đang bán, chính sách cửa hàng và đơn của tài khoản đã đăng nhập. Em không tư vấn xe, chính trị hoặc nội dung ngoài phạm vi shop. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu cần hỗ trợ việc khác nhé.",
                     "RULE", true, false));
         }
         return Optional.empty();
@@ -607,7 +607,7 @@ public class ChatToolService {
                 || isShopInfoQuestion(normalized)
                 || isBankDetailsQuestion(normalized)
                 || isPromotionLookup(normalized)
-                || isHumanHandoff(normalized)
+                || isDirectContactRequest(normalized)
                 || isKnownOffTopic(normalized)
                 || isLightestQuestion(normalized)
                 || isSafetyHelmetAdvice(normalized)
@@ -1992,15 +1992,15 @@ public class ChatToolService {
             } catch (RuntimeException ignored) {
                 return ToolOutcome.local(
                         english
-                                ? "I found a matching product, but its detailed information is not available right now. I won’t guess the size, specifications or stock options. Please open the product page later or choose Talk to staff."
-                                : "Em đã tìm thấy sản phẩm phù hợp nhưng thông tin chi tiết hiện chưa sẵn sàng. Em không đoán size, thông số hoặc lựa chọn tồn kho. Anh/chị thử mở trang sản phẩm sau hoặc bấm Gặp nhân viên giúp em nhé.",
+                                ? "I found a matching product, but its detailed information is not available right now. I won’t guess the size, specifications or stock options. Please open the product page later or contact BigBike through Hotline, Zalo or Messenger."
+                                : "Em đã tìm thấy sản phẩm phù hợp nhưng thông tin chi tiết hiện chưa sẵn sàng. Em không đoán size, thông số hoặc lựa chọn tồn kho. Anh/chị thử mở trang sản phẩm sau hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger giúp em nhé.",
                         "TOOL", false, true);
             }
             if (detail == null) {
                 return ToolOutcome.local(
                         english
-                                ? "I found a matching product, but its detailed information is not available right now. I won’t guess the size, specifications or stock options. Please open the product page later or choose Talk to staff."
-                                : "Em đã tìm thấy sản phẩm phù hợp nhưng thông tin chi tiết hiện chưa sẵn sàng. Em không đoán size, thông số hoặc lựa chọn tồn kho. Anh/chị thử mở trang sản phẩm sau hoặc bấm Gặp nhân viên giúp em nhé.",
+                                ? "I found a matching product, but its detailed information is not available right now. I won’t guess the size, specifications or stock options. Please open the product page later or contact BigBike through Hotline, Zalo or Messenger."
+                                : "Em đã tìm thấy sản phẩm phù hợp nhưng thông tin chi tiết hiện chưa sẵn sàng. Em không đoán size, thông số hoặc lựa chọn tồn kho. Anh/chị thử mở trang sản phẩm sau hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger giúp em nhé.",
                         "TOOL", false, true);
             }
             payload.put("detailTool", "get_product");
@@ -2652,14 +2652,14 @@ public class ChatToolService {
         String scopeLead = inheritedPriceScopeLead(price, english);
         if (scopeLead == null) {
             return english
-                    ? "I could not find a currently sold product matching this request. Please try a different price range or choose Talk to staff for help choosing another option."
-                    : "Em chưa tìm thấy sản phẩm đang bán phù hợp với yêu cầu này. Anh/chị thử đổi tầm giá hoặc bấm Gặp nhân viên để BigBike kiểm tra thêm nhé.";
+                    ? "I could not find a currently sold product matching this request. Please try a different price range or contact BigBike through Hotline, Zalo or Messenger for another option."
+                    : "Em chưa tìm thấy sản phẩm đang bán phù hợp với yêu cầu này. Anh/chị thử đổi tầm giá hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được gợi ý thêm nhé.";
         }
         return english
                 ? scopeLead + " but I could not find a currently sold product that matches it. "
-                        + "Please try a different range or choose Talk to staff for help choosing another option."
+                        + "Please try a different range or contact BigBike through Hotline, Zalo or Messenger for another option."
                 : scopeLead + " nhưng chưa tìm thấy sản phẩm đang bán phù hợp. "
-                        + "Anh/chị thử đổi tầm giá hoặc bấm Gặp nhân viên để BigBike kiểm tra thêm nhé.";
+                        + "Anh/chị thử đổi tầm giá hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được gợi ý thêm nhé.";
     }
 
     private static String inheritedPriceScopeLead(PriceIntent price, boolean english) {
@@ -2860,15 +2860,15 @@ public class ChatToolService {
                 && extractRequestedOption(normalized, SIZE_REQUEST) != null;
         sentences.add(english
                 ? (exactSizeRequested
-                ? "Choose Buy if this size suits you, or choose Talk to staff if you would like a fit check."
+                ? "Choose Buy if this size suits you, or contact BigBike through Hotline, Zalo or Messenger if you would like a fit check."
                 : detailIntent.size()
-                ? "Measure your head circumference first, then choose Talk to staff if you would like size advice."
-                : "Open the product page for the complete saved information, or choose Talk to staff if you need confirmation.")
+                ? "Measure your head circumference first, then contact BigBike through Hotline, Zalo or Messenger if you would like size advice."
+                : "Open the product page for the complete saved information, or contact BigBike through Hotline, Zalo or Messenger if you need confirmation.")
                 : (exactSizeRequested
-                ? "Anh/chị có thể bấm Chọn mua nếu size này phù hợp, hoặc bấm Gặp nhân viên nếu muốn shop kiểm tra độ vừa đầu nhé."
+                ? "Anh/chị có thể bấm Chọn mua nếu size này phù hợp, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu muốn shop kiểm tra độ vừa đầu nhé."
                 : detailIntent.size()
-                ? "Anh/chị nên đo vòng đầu trước, rồi bấm Gặp nhân viên nếu cần tư vấn chọn cỡ nhé."
-                : "Anh/chị có thể mở trang sản phẩm để xem đầy đủ thông tin, hoặc bấm Gặp nhân viên nếu cần shop xác nhận thêm nhé."));
+                ? "Anh/chị nên đo vòng đầu trước, rồi liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu cần tư vấn chọn cỡ nhé."
+                : "Anh/chị có thể mở trang sản phẩm để xem đầy đủ thông tin, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu cần shop xác nhận thêm nhé."));
         return new DeterministicAnswer(String.join(" ", sentences), false, false);
     }
 
@@ -3181,8 +3181,8 @@ public class ChatToolService {
                 : (english ? "colour information" : "thông tin màu");
         return new DeterministicAnswer(
                 english
-                        ? "I found the matching product, but its " + requested + " is not available right now. I will not guess. Please open the product page later or choose Talk to staff so BigBike can check it directly."
-                        : "Dạ, em đã tìm thấy sản phẩm phù hợp nhưng hiện chưa có đủ thông tin về " + requested + ". Em không đoán thông tin này. Anh/chị mở trang sản phẩm sau hoặc bấm Gặp nhân viên để BigBike kiểm tra trực tiếp giúp mình nhé.",
+                        ? "I found the matching product, but its " + requested + " is not available right now. I will not guess. Please open the product page later or contact BigBike through Hotline, Zalo or Messenger for a direct check."
+                        : "Dạ, em đã tìm thấy sản phẩm phù hợp nhưng hiện chưa có đủ thông tin về " + requested + ". Em không đoán thông tin này. Anh/chị mở trang sản phẩm sau hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được kiểm tra trực tiếp nhé.",
                 false,
                 true);
     }
@@ -4686,8 +4686,8 @@ public class ChatToolService {
         if (orders.isEmpty()) {
             return ToolOutcome.local(
                     english
-                            ? "This signed-in account does not have any orders yet. I checked only the account that is currently signed in and did not use identity details from chat. Please choose Talk to staff if an order appears to be missing."
-                            : "Tài khoản đang đăng nhập chưa có đơn hàng nào. Em chỉ kiểm tra đúng tài khoản hiện tại và không dùng thông tin nhận dạng gửi trong chat. Nếu anh/chị thấy thiếu đơn, vui lòng bấm Gặp nhân viên.",
+                            ? "This signed-in account does not have any orders yet. I checked only the account that is currently signed in and did not use identity details from chat. If an order appears to be missing, please contact BigBike through Hotline, Zalo or Messenger."
+                            : "Tài khoản đang đăng nhập chưa có đơn hàng nào. Em chỉ kiểm tra đúng tài khoản hiện tại và không dùng thông tin nhận dạng gửi trong chat. Nếu anh/chị thấy thiếu đơn, vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger nhé.",
                     "TOOL", false, false);
         }
 
@@ -4790,9 +4790,9 @@ public class ChatToolService {
         return ToolOutcome.local(
                 english
                         ? "BigBike’s current contact information is: " + details
-                                + ". Please choose Talk to staff for a direct conversation. Your contact options remain available below."
+                                + ". Please contact BigBike through Hotline, Zalo or Messenger for a direct conversation. Your contact options remain available below."
                         : "Thông tin liên hệ hiện có của BigBike: " + details
-                                + ". Anh/chị có thể bấm Gặp nhân viên để trao đổi trực tiếp. Các kênh liên hệ vẫn được giữ sẵn bên dưới.",
+                                + ". Anh/chị có thể liên hệ BigBike qua Hotline, Zalo hoặc Messenger để trao đổi trực tiếp. Các kênh liên hệ vẫn được giữ sẵn bên dưới.",
                 "RULE", false, false);
     }
 
@@ -4848,8 +4848,8 @@ public class ChatToolService {
         if (!bank.complete()) {
             return ToolOutcome.local(
                     english
-                            ? "Please choose Talk to staff so BigBike can confirm the current bank-transfer details before you pay."
-                            : "Anh/chị vui lòng bấm Gặp nhân viên để BigBike xác nhận thông tin chuyển khoản hiện hành trước khi thanh toán nhé.",
+                            ? "Please contact BigBike through Hotline, Zalo or Messenger so the shop can confirm the current bank-transfer details before you pay."
+                            : "Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để shop xác nhận thông tin chuyển khoản hiện hành trước khi thanh toán nhé.",
                     "RULE", false, true);
         }
         String answer = english
@@ -4878,32 +4878,32 @@ public class ChatToolService {
             answer = policy.available()
                     ? plain(policy.title() + ". " + policy.text(), 1800)
                     : (english
-                    ? "Please open BigBike’s Returns and Exchanges Policy or choose Talk to staff before sending a product back."
-                    : "Anh/chị vui lòng mở Chính sách đổi trả của BigBike hoặc bấm Gặp nhân viên trước khi gửi sản phẩm về nhé.");
+                    ? "Please open BigBike’s Returns and Exchanges Policy or contact BigBike through Hotline, Zalo or Messenger before sending a product back."
+                    : "Anh/chị vui lòng mở Chính sách đổi trả của BigBike hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger trước khi gửi sản phẩm về nhé.");
         } else if (hasWord(normalized, "bao hanh", "warranty")) {
             ChatAssistantSettings.PolicyText policy = settings == null
                     ? ChatAssistantSettings.PolicyText.empty() : settings.warrantyPolicy();
             answer = policy.available()
                     ? plain(policy.title() + ". " + policy.text(), 1800)
                     : (english
-                    ? "Please open BigBike’s Warranty Policy or choose Talk to staff so the current terms can be checked."
-                    : "Anh/chị vui lòng mở Chính sách bảo hành của BigBike hoặc bấm Gặp nhân viên để kiểm tra điều kiện hiện hành nhé.");
+                    ? "Please open BigBike’s Warranty Policy or contact BigBike through Hotline, Zalo or Messenger so the current terms can be checked."
+                    : "Anh/chị vui lòng mở Chính sách bảo hành của BigBike hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để kiểm tra điều kiện hiện hành nhé.");
         } else if (hasWord(normalized, "privacy", "rieng tu", "du lieu ca nhan")) {
             answer = english
-                    ? "BigBike’s published Privacy Policy explains what customer information the store collects, why it is used and how customers can contact staff about their data. I will not infer legal rights or handling details that are not present in the current policy; please choose Talk to staff for a case-specific request."
-                    : "Chính sách riêng tư đã công bố của BigBike nêu loại thông tin khách hàng được thu thập, mục đích sử dụng và cách liên hệ shop về dữ liệu cá nhân. Em không tự suy diễn quyền hoặc cách xử lý ngoài nội dung chính sách hiện hành; anh/chị bấm Gặp nhân viên nếu có yêu cầu cụ thể.";
+                    ? "BigBike’s published Privacy Policy explains what customer information the store collects, why it is used and how customers can contact BigBike about their data. I will not infer legal rights or handling details that are not present in the current policy; please contact BigBike through Hotline, Zalo or Messenger for a case-specific request."
+                    : "Chính sách riêng tư đã công bố của BigBike nêu loại thông tin khách hàng được thu thập, mục đích sử dụng và cách liên hệ shop về dữ liệu cá nhân. Em không tự suy diễn quyền hoặc cách xử lý ngoài nội dung chính sách hiện hành; anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu có yêu cầu cụ thể.";
         } else if (hasWord(normalized, "size", "sizes", "kich co", "do size", "size guide")) {
             answer = english
-                    ? "Please use the helmet or protective-clothing size guide and compare your actual measurement with the product’s own size table when available. Some products do not yet have a size table, so I won’t infer a size from height or weight alone. Choose Talk to staff if you want BigBike to confirm the fit."
-                    : "Anh/chị dùng hướng dẫn đo size mũ hoặc trang phục và đối chiếu số đo thật với bảng size riêng của sản phẩm nếu có. Một số sản phẩm chưa nhập bảng size nên em không suy ra size chỉ từ chiều cao/cân nặng. Anh/chị bấm Gặp nhân viên nếu muốn BigBike xác nhận thêm.";
+                    ? "Please use the helmet or protective-clothing size guide and compare your actual measurement with the product’s own size table when available. Some products do not yet have a size table, so I won’t infer a size from height or weight alone. Contact BigBike through Hotline, Zalo or Messenger if you want the shop to confirm the fit."
+                    : "Anh/chị dùng hướng dẫn đo size mũ hoặc trang phục và đối chiếu số đo thật với bảng size riêng của sản phẩm nếu có. Một số sản phẩm chưa nhập bảng size nên em không suy ra size chỉ từ chiều cao/cân nặng. Anh/chị liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu muốn shop xác nhận thêm nhé.";
         } else if (hasWord(normalized, "thanh toan", "payment")) {
             answer = english
                     ? "BigBike currently supports two manual payment methods: cash on delivery (COD) and bank transfer. BigBike Assistant cannot take payment or place an order on your behalf. Please continue through the cart to choose a method and review the order before confirming."
                     : "BigBike hiện hỗ trợ hai hình thức thanh toán thủ công: nhận hàng trả tiền (COD) và chuyển khoản ngân hàng. Em không nhận tiền và không chốt đơn thay anh/chị. Anh/chị vui lòng đi qua Giỏ hàng để chọn hình thức và kiểm tra lại trước khi xác nhận.";
         } else {
             answer = english
-                    ? "BigBike provides free delivery for purchase orders. Delivery time depends on the destination; choose Talk to staff and share the delivery area if you need an estimate. Return or exchange shipping follows the separate Returns and Exchanges Policy."
-                    : "BigBike miễn phí giao hàng cho đơn mua. Thời gian giao tùy khu vực; anh/chị bấm Gặp nhân viên và cho biết nơi nhận nếu cần shop ước tính. Phí gửi hàng đổi/trả áp dụng theo Chính sách đổi trả riêng.";
+                    ? "BigBike provides free delivery for purchase orders. Delivery time depends on the destination; contact BigBike through Hotline, Zalo or Messenger and share the delivery area if you need an estimate. Return or exchange shipping follows the separate Returns and Exchanges Policy."
+                    : "BigBike miễn phí giao hàng cho đơn mua. Thời gian giao tùy khu vực; anh/chị liên hệ BigBike qua Hotline, Zalo hoặc Messenger và cho biết nơi nhận nếu cần shop ước tính. Phí gửi hàng đổi/trả áp dụng theo Chính sách đổi trả riêng.";
         }
         return ToolOutcome.local(answer, "RULE", false, false);
     }
@@ -5559,7 +5559,7 @@ public class ChatToolService {
         };
     }
 
-    private static boolean isHumanHandoff(String value) {
+    private static boolean isDirectContactRequest(String value) {
         return hasWord(value, "khieu nai", "complaint", "complaints", "thuong luong",
                 "giam duoc khong", "bot gia", "xin giam gia", "giam them", "negotiate", "negotiation",
                 "discount this", "lower the price", "deal gia", "bao hanh phuc tap", "tu choi bao hanh", "warranty claim",
@@ -6531,20 +6531,20 @@ public class ChatToolService {
     public record DeterministicAnswer(
             String answer,
             boolean offTopic,
-            boolean handoffRecommended
+            boolean directContactRecommended
     ) {
         static DeterministicAnswer from(ToolOutcome outcome) {
             return new DeterministicAnswer(
                     outcome.localAnswer(),
                     outcome.offTopic(),
-                    outcome.handoffRecommended());
+                    outcome.directContactRecommended());
         }
 
         static DeterministicAnswer from(ToolOutcome outcome, String question) {
             return new DeterministicAnswer(
                     outcome.localAnswer(),
                     outcome.offTopic(),
-                    outcome.handoffRecommended());
+                    outcome.directContactRecommended());
         }
     }
 
@@ -6555,7 +6555,7 @@ public class ChatToolService {
             String toolJson,
             List<ChatProductCardResponse> products,
             boolean offTopic,
-            boolean handoffRecommended,
+            boolean directContactRecommended,
             List<ChatActionResponse> actions,
             Set<RequiredDisclosure> requiredDisclosures,
             boolean inheritedPrice,
@@ -6625,28 +6625,28 @@ public class ChatToolService {
         }
 
         static ToolOutcome local(
-                String answer, String source, boolean offTopic, boolean handoff) {
-            return local(answer, source, offTopic, handoff, List.of());
+                String answer, String source, boolean offTopic, boolean directContact) {
+            return local(answer, source, offTopic, directContact, List.of());
         }
 
         static ToolOutcome local(
                 String answer,
                 String source,
                 boolean offTopic,
-                boolean handoff,
+                boolean directContact,
                 List<ChatActionResponse> actions) {
-            return local(answer, source, offTopic, handoff, actions, List.of());
+            return local(answer, source, offTopic, directContact, actions, List.of());
         }
 
         static ToolOutcome local(
                 String answer,
                 String source,
                 boolean offTopic,
-                boolean handoff,
+                boolean directContact,
                 List<ChatActionResponse> actions,
                 List<ChatProductCardResponse> products) {
             return new ToolOutcome(false, answer, source, "{}",
-                    products == null ? List.of() : List.copyOf(products), offTopic, handoff,
+                    products == null ? List.of() : List.copyOf(products), offTopic, directContact,
                     List.copyOf(actions), Set.of(), false, null, List.of(), null, null, null);
         }
 

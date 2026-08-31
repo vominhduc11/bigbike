@@ -11,10 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { HelpTooltip } from '@/components/HelpTooltip'
 import {
-  AssistantConfigEditor,
-  ASSISTANT_BUSINESS_HOURS_KEY,
-} from './AssistantConfigEditor'
-import {
   displayValue, inputTypeFor, placeholderFor, isTranslatableSetting,
   settingLabel, settingHint, KEY_RECO,
 } from './constants'
@@ -39,7 +35,6 @@ export function SettingField({
   const isBoolean = setting.valueType === 'BOOLEAN'
   const isEnum = setting.valueType === 'ENUM' && Array.isArray(setting.allowedValues) && setting.allowedValues.length > 0
   const isNumber = setting.valueType === 'INTEGER' || setting.valueType === 'DECIMAL' || setting.valueType === 'MONEY'
-  const isAssistantConfig = setting.key === ASSISTANT_BUSINESS_HOURS_KEY
   const type = isNumber ? 'number' : inputTypeFor(setting.key)
   const placeholder = isEnLang
     ? t('settings.englishPlaceholder')
@@ -61,7 +56,7 @@ export function SettingField({
 
   const activeValue = isEnLang ? currentValueEn : currentValue
   const activeRawValue = isEnLang ? rawValueEn : rawValue
-  const LabelElement = isHtml || isImage || isAssistantConfig ? 'span' : 'label'
+  const LabelElement = isHtml || isImage ? 'span' : 'label'
   function handleActiveChange(value) {
     if (isEnLang) onChangeEn(setting.key, value)
     else onChange(setting.key, value)
@@ -116,15 +111,15 @@ export function SettingField({
   return (
     <div
       className="h-full py-1"
-      role={isHtml || isImage || isAssistantConfig ? 'group' : undefined}
-      aria-labelledby={isHtml || isImage || isAssistantConfig ? labelId : undefined}
-      aria-describedby={isHtml || isImage || isAssistantConfig ? describedBy : undefined}
+      role={isHtml || isImage ? 'group' : undefined}
+      aria-labelledby={isHtml || isImage ? labelId : undefined}
+      aria-describedby={isHtml || isImage ? describedBy : undefined}
     >
       <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-center gap-1">
           <LabelElement
             id={labelId}
-            htmlFor={isHtml || isImage || isAssistantConfig ? undefined : controlId}
+            htmlFor={isHtml || isImage ? undefined : controlId}
             className="text-sm font-semibold leading-5 text-foreground"
           >
             {label}
@@ -151,14 +146,7 @@ export function SettingField({
       ) : null}
       {supportText && longSupport ? <span id={supportId} className="sr-only">{supportText}</span> : null}
 
-      {isAssistantConfig ? (
-        <AssistantConfigEditor
-          settingKey={setting.key}
-          value={currentValue}
-          readOnly={!canUpdate}
-          onChange={(value) => onChange(setting.key, value)}
-        />
-      ) : canUpdate ? (
+      {canUpdate ? (
         isHtml ? (
           <DeferredRichTextEditor
             value={activeValue}

@@ -26,9 +26,9 @@ public class InternalMailRecipient {
     @PostConstruct
     void validate() {
         if (address.isBlank()) {
-            throw new IllegalStateException(
-                    "BIGBIKE_MAIL_ADMIN is required: set the shared internal notification email "
-                            + "for new-order and staff-handoff alerts before starting the backend.");
+                    throw new IllegalStateException(
+                            "BIGBIKE_MAIL_ADMIN is required: set the shared internal notification email "
+                            + "for new-order alerts before starting the backend.");
         }
         if (!EMAIL.matcher(address).matches()) {
             throw new IllegalStateException(

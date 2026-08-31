@@ -87,27 +87,7 @@ describe('RoleDetail', () => {
     expect(screen.queryByRole('toolbar', { name: 'Thanh thao tác' })).not.toBeInTheDocument()
   })
 
-  // Vai trò DEVELOPER giữ quyền cho phép MỞ LẠI khoá bảo trì. Bỏ nhầm một quyền ở đây là
-  // không ai mở khoá được nữa, nên backend từ chối sửa và giao diện phải ẩn nút tương ứng.
-  it('locks the DEVELOPER role against permission edits, with an explanation', () => {
-    renderDetail({
-      role: { ...role, id: 'DEVELOPER', name: 'Developer', isSystem: true },
-      editMode: false,
-      isDirty: false,
-    })
-
-    expect(screen.queryByRole('button', { name: 'Chỉnh sửa quyền' })).not.toBeInTheDocument()
-    expect(screen.getByText(/khoá không cho sửa/i)).toBeInTheDocument()
-  })
-
-  // Khác SUPER_ADMIN: bảng quyền vẫn hiện đầy đủ để người xem biết vai trò này gồm những gì
-  // (đó là lý do `maintenance.manage` được tạo — để khả năng bảo trì nhìn thấy được).
-  it('still shows the DEVELOPER permission list, unlike SUPER_ADMIN', () => {
-    const asDeveloper = { ...role, id: 'DEVELOPER', name: 'Developer', isSystem: true }
-    const { unmount } = renderDetail({ role: asDeveloper, editMode: false, isDirty: false })
-    expect(screen.getByText('Hiện mã kỹ thuật')).toBeInTheDocument()
-    unmount()
-
+  it('does not show permission-code controls for SUPER_ADMIN', () => {
     renderDetail({
       role: { ...role, id: 'SUPER_ADMIN', name: 'Super Admin', isSystem: true },
       editMode: false,

@@ -45,7 +45,6 @@ public class ChatSalesAdvisorService {
             String source,
             String resultKind,
             ChatClarificationResponse clarification,
-            boolean handoffRecommended,
             List<ChatActionResponse> proposedActions
     ) {
         boolean english = "en".equals(lang);
@@ -93,7 +92,7 @@ public class ChatSalesAdvisorService {
         }
 
         NextStep next = chooseNextStep(
-                normalized, stage, products, crossSell, clarification, handoffRecommended,
+                normalized, stage, products, crossSell, clarification,
                 cheaper != null, declinedStep, english);
         if (conversation.getDeclinedNextStepType() != null
                 && conversation.getDeclinedNextStepType().equals(next.response().type())) {
@@ -104,10 +103,10 @@ public class ChatSalesAdvisorService {
         conversation.setSalesStage(stage);
         conversation.setLastNextStepType(next.response().type());
         List<ChatActionResponse> actions = stageActions(
-                stage, next.response().type(), proposedActions, handoffRecommended);
+                stage, next.response().type(), proposedActions);
         return new Advice(
                 answer, products, crossSell, stage, outcome, next.response(),
-                actions, handoffRecommended);
+                actions);
     }
 
     private static String classifyStage(
@@ -264,15 +263,11 @@ public class ChatSalesAdvisorService {
             List<ChatProductCardResponse> products,
             List<ChatProductCardResponse> crossSell,
             ChatClarificationResponse clarification,
-            boolean handoff,
             boolean cheaper,
             boolean declined,
             boolean english
     ) {
         String slug = products.size() == 1 ? products.get(0).slug() : null;
-        if (handoff) return next("CONTINUE_WHILE_WAITING", null, null, english,
-                "Staff has been alerted; you can keep asking me questions while you wait.",
-                "Em đã báo nhân viên; trong lúc chờ, anh/chị vẫn có thể hỏi em tiếp.");
         if (clarification != null) return next(
                 "ANSWER_CLARIFICATION", null, clarification.id().toString(), english,
                 "Choose one option below so I can continue with the right need.",
@@ -293,8 +288,8 @@ public class ChatSalesAdvisorService {
         if ("DECIDING".equals(stage)) {
             if (asksSize(normalized)) return next(
                     "CHOOSE_SIZE", slug, null, english,
-                    "Choose the size shown for this model, or ask staff to confirm it before adding to cart.",
-                    "Anh/chị chọn size đang hiển thị của mẫu này, hoặc nhờ nhân viên xác nhận trước khi thêm giỏ.");
+                    "Choose the size shown for this model, or contact BigBike through Hotline, Zalo or Messenger before adding it to your cart.",
+                    "Anh/chị chọn size đang hiển thị của mẫu này, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger trước khi thêm giỏ.");
             return next("ADD_TO_CART", slug, null, english,
                     "Add this model to your cart when you are ready to proceed.",
                     "Anh/chị thêm mẫu này vào giỏ khi đã sẵn sàng chốt.");
@@ -330,15 +325,13 @@ public class ChatSalesAdvisorService {
     private static List<ChatActionResponse> stageActions(
             String stage,
             String nextStep,
-            List<ChatActionResponse> proposed,
-            boolean handoff
+            List<ChatActionResponse> proposed
     ) {
-        if (handoff) return List.of(new ChatActionResponse("CONTACT_STAFF"));
         Set<String> allowed = switch (stage) {
-            case "POST_PURCHASE" -> Set.of("ORDER_HISTORY", "ORDER_LOOKUP", "CONTACT_STAFF");
-            case "DECIDING" -> Set.of("CHECK_SIZE", "CHECK_STOCK", "VIEW_POLICY", "CONTACT_STAFF");
-            case "CHOOSING" -> Set.of("COMPARE_PRODUCTS", "CHECK_SIZE", "CHANGE_BUDGET", "CONTACT_STAFF");
-            default -> Set.of("CHANGE_NEEDS", "CHANGE_BUDGET", "FIND_PRODUCTS", "CONTACT_STAFF");
+            case "POST_PURCHASE" -> Set.of("ORDER_HISTORY", "ORDER_LOOKUP");
+            case "DECIDING" -> Set.of("CHECK_SIZE", "CHECK_STOCK", "VIEW_POLICY");
+            case "CHOOSING" -> Set.of("COMPARE_PRODUCTS", "CHECK_SIZE", "CHANGE_BUDGET");
+            default -> Set.of("CHANGE_NEEDS", "CHANGE_BUDGET", "FIND_PRODUCTS");
         };
         LinkedHashSet<String> types = new LinkedHashSet<>();
         if (proposed != null) proposed.stream()
@@ -535,8 +528,7 @@ public class ChatSalesAdvisorService {
             String salesStage,
             String outcomeCode,
             ChatNextStepResponse nextStep,
-            List<ChatActionResponse> actions,
-            boolean handoffRecommended
+            List<ChatActionResponse> actions
     ) {
         public Advice {
             products = products == null ? List.of() : List.copyOf(products);

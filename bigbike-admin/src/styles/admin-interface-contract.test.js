@@ -202,7 +202,7 @@ describe('admin interface composition contract', () => {
       }))
     })
 
-    expect(headers).toHaveLength(33)
+    expect(headers).toHaveLength(32)
     for (const header of headers) {
       const group = /\bgroup="([^"]+)"/.exec(header.props)?.[1]
       expect(allowedGroups.has(group), header.path).toBe(true)

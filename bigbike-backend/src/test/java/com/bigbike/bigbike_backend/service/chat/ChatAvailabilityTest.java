@@ -46,14 +46,19 @@ class ChatAvailabilityTest {
     }
 
     @Test
-    @DisplayName("a polite Vietnamese configured greeting is valid without mandatory pronoun keywords")
-    void politeGreetingDoesNotNeedBothPronouns() {
+    @DisplayName("configured availability exposes fixed image policy without retired greeting fields")
+    void availabilityExposesFixedImagePolicy() {
         AiChatClient chatClient = mock(AiChatClient.class);
         when(chatClient.isConfigured()).thenReturn(true);
         ChatService service = service(chatClient, 60, 0);
 
-        assertThat(service.availability("vi").greeting())
-                .isEqualTo("Xin chào");
+        var availability = service.availability("vi");
+        assertThat(availability.maxTurns()).isEqualTo(40);
+        assertThat(availability.images().enabled()).isTrue();
+        assertThat(availability.images().maxPerTurn()).isEqualTo(1);
+        assertThat(availability.images().maxPerConversation()).isEqualTo(3);
+        assertThat(availability.images().dailyLimit()).isEqualTo(20);
+        assertThat(availability.images().maxBytes()).isEqualTo(8L * 1024 * 1024);
     }
 
     private static ChatService service(AiChatClient client, int limit, long spent) {
@@ -61,8 +66,9 @@ class ChatAvailabilityTest {
         ChatMessageJpaRepository messages = mock(ChatMessageJpaRepository.class);
         ChatAssistantSettings settings = mock(ChatAssistantSettings.class);
         when(settings.load("vi")).thenReturn(new ChatAssistantSettings.Snapshot(
-                true, limit, "Xin chào", List.of("A", "B", "C"), CONTACTS,
-                "", "", ""));
+                true, limit, true, CONTACTS, "", "", "", 12,
+                ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty()));
         ChatAiQuotaService quota = mock(ChatAiQuotaService.class);
         when(quota.usedToday()).thenReturn(spent);
         when(quota.tryReserve(org.mockito.ArgumentMatchers.anyInt())).thenReturn(true);
@@ -76,8 +82,6 @@ class ChatAvailabilityTest {
                 new ChatResponseGuard(),
                 quota,
                 mock(ChatSalesAdvisorService.class),
-                null,
-                null,
                 null,
                 null);
     }

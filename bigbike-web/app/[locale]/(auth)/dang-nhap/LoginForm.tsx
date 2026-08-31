@@ -18,6 +18,7 @@ import {
 } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { AuthField } from "@/components/auth/AuthField";
+import { GuestStorefrontExit } from "@/components/auth/GuestStorefrontExit";
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -99,7 +100,8 @@ export function LoginForm({
           placeholder={t("emailPlaceholder")}
           registration={register("login")}
           error={errors.login}
-          groupClassName="min-[1024px]:mb-4"
+          compact
+          groupClassName="lg:mb-4"
         />
 
         <AuthField
@@ -111,10 +113,11 @@ export function LoginForm({
           passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
           registration={register("password")}
           error={errors.password}
-          groupClassName="min-[1024px]:mb-4"
+          compact
+          groupClassName="lg:mb-4"
         />
 
-        <div className="mb-5 grid gap-3 md:grid-cols-2 min-[1024px]:mb-4">
+        <div className="mb-3 grid gap-3 md:mb-5 md:grid-cols-2 lg:mb-4">
           <div className="flex min-h-11 items-center gap-2">
             <Controller
               name="remember"
@@ -158,13 +161,13 @@ export function LoginForm({
           type="submit"
           size="auth"
           disabled={isSubmitting}
-          className="!text-primary-foreground hover:!text-primary-foreground"
+          className="min-h-11 md:min-h-13 !text-primary-foreground hover:!text-primary-foreground"
         >
           {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>
 
-      <p className="mt-3 text-center text-a5-meta text-muted-foreground min-[1024px]:mt-2">
+      <p className="mt-2 text-center text-a5-meta text-muted-foreground lg:mt-2">
         <Link
           href={toOrderLookupPath(locale)}
           data-auth-order-lookup
@@ -174,12 +177,17 @@ export function LoginForm({
         </Link>
       </p>
 
-      <Button asChild variant="secondary" size="auth" className="mt-3 w-full min-[1024px]:mt-2">
+      <Button
+        asChild
+        variant="secondary"
+        size="auth"
+        className="mt-2 min-h-11 w-full md:mt-3 md:min-h-13 lg:mt-2"
+      >
         <Link href={toRegisterPath(locale)}>{t("registerCta")}</Link>
       </Button>
 
       <div
-        className="my-6 flex items-center gap-3 min-[1024px]:my-5"
+        className="my-3 flex items-center gap-3 md:my-6 lg:my-3"
         role="separator"
         aria-label={tSocial("divider")}
       >
@@ -189,6 +197,7 @@ export function LoginForm({
       </div>
 
       <SocialLoginButtons returnTo={resolvedReturnTo} />
+      <GuestStorefrontExit returnTo={returnTo} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { type Locale } from "@/i18n/locale";
+import { isSafeReturnTo } from "@/lib/utils/auth";
 
 const SITE_ORIGIN =
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
@@ -81,7 +82,15 @@ function resolveInternalPath(pathname: string): string {
   const stripped = stripLocalePrefix(pathname);
   const path = cleanPath(stripped.path);
 
-  if (["/san-pham", "/danh-muc", "/danh-muc-san-pham", "/danh-muc-san-pham.html", "/categories"].includes(path)) {
+  if (
+    [
+      "/san-pham",
+      "/danh-muc",
+      "/danh-muc-san-pham",
+      "/danh-muc-san-pham.html",
+      "/categories",
+    ].includes(path)
+  ) {
     return "/sp";
   }
 
@@ -204,7 +213,9 @@ export function normalizeStorefrontUrl(value: string): string {
   if (!trimmed) return trimmed;
   const normalizePath = (pathname: string) => {
     const clean = cleanPath(pathname);
-    if (["/san-pham", "/danh-muc", "/danh-muc-san-pham", "/danh-muc-san-pham.html"].includes(clean)) {
+    if (
+      ["/san-pham", "/danh-muc", "/danh-muc-san-pham", "/danh-muc-san-pham.html"].includes(clean)
+    ) {
       return "/sp/";
     }
     if (clean.startsWith("/danh-muc-san-pham/")) {
@@ -241,7 +252,11 @@ export function toCheckoutPath(locale?: Locale): string {
   return translatePath("/dat-hang/", locale ?? getActiveLocale());
 }
 
-export function toOrderConfirmPath(orderNumber: string, orderKey?: string, locale?: Locale): string {
+export function toOrderConfirmPath(
+  orderNumber: string,
+  orderKey?: string,
+  locale?: Locale,
+): string {
   const params = new URLSearchParams({ so: orderNumber });
   if (orderKey) params.set("key", orderKey);
   return `${translatePath("/don-hang/xac-nhan/", locale ?? getActiveLocale())}?${params}`;
@@ -252,13 +267,18 @@ export function toOrderLookupPath(locale?: Locale): string {
 }
 
 export function toOrderDetailPath(orderId: string, locale?: Locale): string {
-  return translatePath(`/tai-khoan/don-hang/${encodeURIComponent(orderId)}/`, locale ?? getActiveLocale());
+  return translatePath(
+    `/tai-khoan/don-hang/${encodeURIComponent(orderId)}/`,
+    locale ?? getActiveLocale(),
+  );
 }
 
 export function toLoginPath(returnTo?: string, locale?: Locale): string {
   const currentLocale = locale ?? getActiveLocale();
   const base = translatePath("/dang-nhap/", currentLocale);
-  return returnTo ? `${base}?tiep=${encodeURIComponent(translatePath(returnTo, currentLocale))}` : base;
+  return returnTo && isSafeReturnTo(returnTo)
+    ? `${base}?tiep=${encodeURIComponent(translatePath(returnTo, currentLocale))}`
+    : base;
 }
 
 export function getSafeLoginHref(returnTo: string | undefined, locale?: Locale): string {
@@ -271,8 +291,12 @@ export function toForgotPasswordPath(token?: string, locale?: Locale): string {
   return token ? `${base}?token=${encodeURIComponent(token)}` : base;
 }
 
-export function toRegisterPath(locale?: Locale): string {
-  return translatePath("/dang-ky/", locale ?? getActiveLocale());
+export function toRegisterPath(locale?: Locale, returnTo?: string): string {
+  const currentLocale = locale ?? getActiveLocale();
+  const base = translatePath("/dang-ky/", currentLocale);
+  return returnTo && isSafeReturnTo(returnTo)
+    ? `${base}?tiep=${encodeURIComponent(translatePath(returnTo, currentLocale))}`
+    : base;
 }
 
 export function toAccountPath(locale?: Locale): string {
@@ -292,8 +316,14 @@ export function getSiteOrigin(): string {
 }
 
 const AUTH_ROUTE_PATHS = new Set([
-  "/dang-nhap", "/dang-ky", "/quen-mat-khau", "/xac-nhan-email",
-  "/login", "/register", "/forgot-password", "/verify-email",
+  "/dang-nhap",
+  "/dang-ky",
+  "/quen-mat-khau",
+  "/xac-nhan-email",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/verify-email",
 ]);
 
 export function isAuthRoute(pathname: string | null | undefined): boolean {
@@ -302,14 +332,42 @@ export function isAuthRoute(pathname: string | null | undefined): boolean {
   return AUTH_ROUTE_PATHS.has(internal);
 }
 
+function isCustomerAccountRoute(pathname: string): boolean {
+  const internal = resolveInternalPath(splitHref(pathname).pathname).replace(/\/+$/, "");
+  return internal === "/tai-khoan" || internal.startsWith("/tai-khoan/");
+}
+
+/**
+ * Resolves the guest exit without trusting a URL supplied through the query
+ * string. Account and authentication screens deliberately send the visitor
+ * home, while a valid public route remains in the active locale.
+ */
+export function getGuestStorefrontHref(returnTo: string | undefined, locale?: Locale): string {
+  const currentLocale = locale ?? getActiveLocale();
+  if (
+    !returnTo ||
+    !isSafeReturnTo(returnTo) ||
+    isAuthRoute(returnTo) ||
+    isCustomerAccountRoute(returnTo)
+  ) {
+    return toHomePath(currentLocale);
+  }
+  return translatePath(returnTo, currentLocale);
+}
+
 export type LocalizedRouteResult =
   | { action: "redirect"; url: string }
   | { action: "rewrite"; url: string }
   | { action: "passthrough" };
 
 /** Compatibility helper for tests and legacy callers; next-intl middleware owns rewrites. */
-export function getLocalizedRoute(pathnameWithSearch: string, locale: Locale): LocalizedRouteResult {
+export function getLocalizedRoute(
+  pathnameWithSearch: string,
+  locale: Locale,
+): LocalizedRouteResult {
   const target = translatePath(pathnameWithSearch, locale);
-  const current = withTrailingSlash(splitHref(pathnameWithSearch).pathname) + splitHref(pathnameWithSearch).suffix;
+  const current =
+    withTrailingSlash(splitHref(pathnameWithSearch).pathname) +
+    splitHref(pathnameWithSearch).suffix;
   return target === current ? { action: "passthrough" } : { action: "redirect", url: target };
 }

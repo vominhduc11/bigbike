@@ -24,7 +24,7 @@ import org.mockito.ArgumentCaptor;
 class ChatServiceFallbackTest {
 
     @Test
-    void unavailableFixedModelShowsApologyAndTalkToStaffWithoutSwitchingModels() {
+    void unavailableFixedModelShowsDirectContactFallbackWithoutSwitchingModels() {
         UUID conversationId = UUID.randomUUID();
         ChatConversationJpaRepository conversations = mock(ChatConversationJpaRepository.class);
         ChatMessageJpaRepository messages = mock(ChatMessageJpaRepository.class);
@@ -32,7 +32,6 @@ class ChatServiceFallbackTest {
         ChatToolService tools = mock(ChatToolService.class);
         AiChatClient client = mock(AiChatClient.class);
         ChatAiQuotaService quota = mock(ChatAiQuotaService.class);
-        ChatPhase3Settings phase3 = mock(ChatPhase3Settings.class);
         ChatConversationEntity conversation = new ChatConversationEntity();
         conversation.setId(conversationId);
         conversation.setLocale("vi");
@@ -43,9 +42,10 @@ class ChatServiceFallbackTest {
         when(messages.nextSequence()).thenReturn(1L, 2L);
         when(messages.save(any(ChatMessageEntity.class))).thenAnswer(call -> call.getArgument(0));
         when(settings.load("vi")).thenReturn(new ChatAssistantSettings.Snapshot(
-                true, 400, "Xin chào", List.of("Tìm mũ", "Chọn size", "Xem chính sách"),
-                new ChatContactResponse("0900000000", "", "", "", ""), "", "", ""));
-        when(phase3.conversationTurnLimit()).thenReturn(40);
+                true, 400, true,
+                new ChatContactResponse("0900000000", "", "", "", ""), "", "", "", 12,
+                ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty()));
         when(client.isConfigured()).thenReturn(true);
         when(quota.tryReserve(400)).thenReturn(true);
         when(tools.resolveFastPath(anyString(), anyString(), any(), any(), any()))
@@ -58,7 +58,7 @@ class ChatServiceFallbackTest {
         ChatService service = new ChatService(
                 conversations, messages, settings, tools, new ChatToolRegistry(), client,
                 new ChatResponseGuard(), quota, mock(ChatSalesAdvisorService.class), null,
-                phase3, null, null);
+                null);
 
         var response = service.send(ChatMessageRequest.builder()
                 .conversationId(conversationId)
@@ -67,17 +67,16 @@ class ChatServiceFallbackTest {
                 .build(), null);
 
         assertThat(response.resultKind()).isEqualTo("CONTACT");
-        assertThat(response.handoffRecommended()).isFalse();
         assertThat(response.answer()).contains("chưa hoàn tất được lần kiểm tra này");
         assertThat(response.actions()).extracting(ChatActionResponse::type)
-                .containsExactly("CONTACT_STAFF");
+                .containsExactly("CALL_HOTLINE");
         verify(quota).tryReserve(400);
         verify(client).answer(anyString(), anyString(), any(), anyBoolean(), any(), any(), any(), any());
         ArgumentCaptor<ChatMessageEntity> saved = ArgumentCaptor.forClass(ChatMessageEntity.class);
         verify(messages, org.mockito.Mockito.atLeast(2)).save(saved.capture());
         assertThat(saved.getAllValues()).anySatisfy(message -> {
             assertThat(message.getSource()).isEqualTo("PROVIDER_UNAVAILABLE");
-            assertThat(message.getContent()).contains("Gặp nhân viên");
+            assertThat(message.getContent()).contains("chưa hoàn tất được lần kiểm tra này");
         });
     }
 }

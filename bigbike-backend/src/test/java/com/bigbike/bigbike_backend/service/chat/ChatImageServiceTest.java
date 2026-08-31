@@ -153,6 +153,22 @@ class ChatImageServiceTest {
     }
 
     @Test
+    void imageTurnIgnoresRetiredToggleAndKeepsTheVerifiedQuotas() {
+        Fixture fixture = fixture("vi");
+        when(fixture.assistantSettings.imageSettings())
+                .thenReturn(new ChatAssistantSettings.ImageSettings(false, 20, 3));
+        fixture.analysis(new ChatImageAnalysisClient.ImageAnalysis(
+                "PRODUCT_SEARCH", "Mũ bảo hiểm", "MEDIUM", List.of(), false));
+
+        ChatImageService.ImageTurnResult result = fixture.process("Đây là loại gì?");
+
+        assertThat(result.analyzed()).isTrue();
+        verify(fixture.quotaService).tryReserve(20);
+        verify(fixture.analysisClient).analyze(
+                any(), anyString(), anyString(), any(), any());
+    }
+
+    @Test
     void unsafeImageIsImmediatelyHiddenAndItsObjectIsDeleted() {
         Fixture fixture = fixture("vi");
         fixture.analysis(new ChatImageAnalysisClient.ImageAnalysis(
@@ -196,20 +212,6 @@ class ChatImageServiceTest {
     }
 
     @Test
-    void staffActiveAttachmentNeverConsumesQuotaOrCallsVision() {
-        Fixture fixture = fixture("vi");
-
-        fixture.service.attachForStaff(
-                fixture.conversation, fixture.messageId, List.of(fixture.image.getId()));
-
-        assertThat(fixture.image.getCustomerMessageId()).isEqualTo(fixture.messageId);
-        assertThat(fixture.image.getStatus()).isEqualTo("ATTACHED");
-        verify(fixture.quotaService, never()).tryReserve(anyInt());
-        verify(fixture.analysisClient, never()).analyze(
-                any(), anyString(), anyString(), any(), any());
-    }
-
-    @Test
     void pendingImageOlderThanOneHourDeletesOnlyThatPrivateObject() {
         Fixture fixture = fixture("vi");
         Instant cutoff = Instant.parse("2026-08-26T10:00:00Z");
@@ -237,7 +239,6 @@ class ChatImageServiceTest {
         assertThat(result.answer()).contains(expectedOne, expectedTwo);
         assertThat(result.products()).isEmpty();
         if (caption.toLowerCase().contains("nứt") || caption.toLowerCase().contains("broken")) {
-            assertThat(result.handoff()).isTrue();
             assertThat(result.answer()).doesNotContain(
                     "chắc chắn được bảo hành", "warranty is guaranteed");
         }

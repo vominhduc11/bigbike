@@ -26,6 +26,7 @@ describe("SuggestionResults", () => {
         trimmedQuery="helmet"
         addSearch={vi.fn()}
         handleClose={vi.fn()}
+        activeIndex={-1}
       />,
     );
 

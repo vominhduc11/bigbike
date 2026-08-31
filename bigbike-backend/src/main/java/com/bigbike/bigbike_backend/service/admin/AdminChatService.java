@@ -2,25 +2,20 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatConversationDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatConversationResponse;
-import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatHandoffResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatMessageResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatQualityStatsResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatStatsResponse;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.mapper.ChatMapper;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatConversationEntity;
-import com.bigbike.bigbike_backend.persistence.entity.chat.ChatHandoffEntity;
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatMessageEntity;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatConversationJpaRepository;
-import com.bigbike.bigbike_backend.persistence.repository.chat.ChatHandoffJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.chat.ChatMessageJpaRepository;
 import com.bigbike.bigbike_backend.service.chat.ChatAiQuotaService;
 import com.bigbike.bigbike_backend.service.chat.ChatAssistantSettings;
-import com.bigbike.bigbike_backend.service.chat.ChatHandoffProductJson;
 import com.bigbike.bigbike_backend.service.chat.ChatImageService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.persistence.criteria.Predicate;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -34,10 +29,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Operational transcript and quota view for staff. All model comparison, pricing, lead,
- * feedback and conversion analytics were intentionally removed with V1068.
- */
+/** Read-only transcript, image and quota view for administrators. */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -46,7 +38,6 @@ public class AdminChatService {
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final ChatConversationJpaRepository conversationRepo;
-    private final ChatHandoffJpaRepository handoffRepo;
     private final ChatMessageJpaRepository messageRepo;
     private final ChatAssistantSettings assistantSettings;
     private final ChatAiQuotaService chatAiQuotaService;
@@ -89,18 +80,17 @@ public class AdminChatService {
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hội thoại."));
         List<ChatMessageEntity> entities = messageRepo.findByConversationIdOrderByCreatedAtAsc(id);
         Map<UUID, List<com.bigbike.bigbike_backend.api.chat.dto.ChatImageResponse>> imagesByMessage =
-                chatImageService.referencesByMessageIds(entities.stream().map(ChatMessageEntity::getId).toList());
+                chatImageService.referencesByMessageIds(entities.stream()
+                        .map(ChatMessageEntity::getId).toList());
         List<AdminChatMessageResponse> messages = entities.stream()
                 .map(entity -> withImages(
-                        chatMapper.toMessage(entity), imagesByMessage.getOrDefault(entity.getId(), List.of())))
+                        chatMapper.toMessage(entity),
+                        imagesByMessage.getOrDefault(entity.getId(), List.of())))
                 .toList();
-        AdminChatHandoffResponse handoff = handoffRepo.findFirstByConversationIdOrderByRequestedAtDesc(id)
-                .map(item -> toHandoff(item, Instant.now()))
-                .orElse(null);
         return new AdminChatConversationDetailResponse(
                 conversation.getId(), conversation.getCustomerId(), conversation.getLocale(),
                 conversation.getTurnCount(), conversation.getAiCallCount(), conversation.getEndedReason(),
-                conversation.getStartedAt(), conversation.getLastMessageAt(), messages, handoff);
+                conversation.getStartedAt(), conversation.getLastMessageAt(), messages);
     }
 
     public AdminChatStatsResponse stats(
@@ -131,14 +121,12 @@ public class AdminChatService {
     }
 
     private AdminChatConversationResponse toListItem(ChatConversationEntity conversation) {
-        List<ChatMessageEntity> messages = messageRepo.findByConversationIdOrderByCreatedAtAsc(conversation.getId());
+        List<ChatMessageEntity> messages = messageRepo.findByConversationIdOrderByCreatedAtAsc(
+                conversation.getId());
         String resultKind = messages.isEmpty() ? null : messages.get(messages.size() - 1).getResultKind();
-        String handoffStatus = handoffRepo.findFirstByConversationIdOrderByRequestedAtDesc(conversation.getId())
-                .map(ChatHandoffEntity::getStatus)
-                .orElse("AI_ACTIVE");
         return new AdminChatConversationResponse(
                 conversation.getId(), conversation.getLocale(), null, conversation.getTurnCount(),
-                conversation.getAiCallCount(), handoffStatus, resultKind, conversation.getStartedAt(),
+                conversation.getAiCallCount(), resultKind, conversation.getStartedAt(),
                 conversation.getLastMessageAt(), conversation.getEndedReason());
     }
 
@@ -147,22 +135,9 @@ public class AdminChatService {
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatImageResponse> images
     ) {
         return new AdminChatMessageResponse(
-                message.id(), message.sequenceNo(), message.role(), message.staffUserId(),
-                message.staffDisplayName(), message.content(), message.source(), message.aiCalled(),
-                message.answerFormat(), message.resultKind(), message.productsJson(), message.createdAt(), images);
-    }
-
-    private static AdminChatHandoffResponse toHandoff(ChatHandoffEntity entity, Instant now) {
-        List<AdminChatHandoffResponse.ProductReference> products = ChatHandoffProductJson.read(entity.getProductsJson())
-                .stream().map(item -> new AdminChatHandoffResponse.ProductReference(item.slug(), item.name())).toList();
-        long waitingSeconds = "WAITING".equals(entity.getStatus())
-                ? Math.max(0, Duration.between(entity.getRequestedAt(), now).getSeconds()) : 0;
-        return new AdminChatHandoffResponse(
-                entity.getId(), entity.getConversationId(), entity.getStatus(), entity.getTriggerSource(),
-                entity.getCustomerKind(), entity.getQuestionSummary(), products, entity.getRequestedAt(),
-                waitingSeconds, entity.getAcknowledgedAt(), entity.getAcknowledgedBy(), entity.getAssignedAt(),
-                entity.getAssignedAdminId(), entity.getAssignedDisplayName(), entity.getResolvedAt(),
-                entity.getResolution(), entity.isWithinBusinessHours(), entity.getNextOpenAt());
+                message.id(), message.sequenceNo(), message.role(), message.content(), message.source(),
+                message.aiCalled(), message.answerFormat(), message.resultKind(), message.productsJson(),
+                message.createdAt(), images);
     }
 
     private static DateRange normalizedRange(LocalDate from, LocalDate to) {

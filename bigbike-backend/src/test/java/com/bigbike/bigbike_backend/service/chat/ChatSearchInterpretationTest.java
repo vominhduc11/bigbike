@@ -37,18 +37,18 @@ class ChatSearchInterpretationTest {
             true,
             60,
             true,
-            "Xin chào",
-            List.of("A", "B", "C"),
             new ChatContactResponse("0900", "", "", "", ""),
-            "", "", "");
+            "", "", "", 12,
+            ChatAssistantSettings.BankDetails.empty(),
+            ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty());
     private static final ChatAssistantSettings.Snapshot LEGACY_SETTINGS = new ChatAssistantSettings.Snapshot(
             true,
             60,
             false,
-            "Xin chào",
-            List.of("A", "B", "C"),
             new ChatContactResponse("0900", "", "", "", ""),
-            "", "", "");
+            "", "", "", 12,
+            ChatAssistantSettings.BankDetails.empty(),
+            ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty());
 
     @Test
     void shorthandNaturalWordingAndPriceFormsReachTheInterpretedPublicCategory() {

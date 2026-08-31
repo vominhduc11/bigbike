@@ -21,6 +21,17 @@ function PanelHarness() {
   );
 }
 
+function SearchPanelHarness() {
+  const { activePanel, openPanel } = useHeaderUi();
+
+  return (
+    <>
+      <output data-testid="search-active-panel">{activePanel}</output>
+      <button type="button" onClick={(event) => openPanel("search", event.currentTarget)}>Mở tìm kiếm</button>
+    </>
+  );
+}
+
 describe("HeaderUiProvider", () => {
   let pathname = "/";
 
@@ -55,5 +66,21 @@ describe("HeaderUiProvider", () => {
       expect(document.body.style.overflow).toBe("");
       expect(document.documentElement.style.overflow).toBe("");
     });
+  });
+
+  it("trả tiêu điểm về nút tìm kiếm khi đóng bằng Escape", async () => {
+    render(
+      <HeaderUiProvider>
+        <SearchPanelHarness />
+      </HeaderUiProvider>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Mở tìm kiếm" });
+    fireEvent.click(trigger);
+    expect(screen.getByTestId("search-active-panel")).toHaveTextContent("search");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(screen.getByTestId("search-active-panel")).toHaveTextContent("none");
   });
 });

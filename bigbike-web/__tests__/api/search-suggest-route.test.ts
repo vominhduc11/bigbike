@@ -67,11 +67,24 @@ describe("GET /api/search-suggest", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("returns empty products when backend is unavailable", async () => {
+  it("returns a recoverable system error when backend is unavailable", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
     const req = new Request("http://localhost/api/search-suggest?q=xe");
     const res = await GET(req);
-    const json = await res.json() as { products: unknown[] };
-    expect(json.products).toHaveLength(0);
+    const json = await res.json() as { error: { code: string } };
+    expect(res.status).toBe(502);
+    expect(json.error.code).toBe("SEARCH_UNAVAILABLE");
+  });
+
+  it("preserves a backend rate-limit response for the retry UI", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ error: { code: "RATE_LIMITED", message: "Too many requests" } }),
+      { status: 429, headers: { "content-type": "application/json", "retry-after": "60" } },
+    )));
+    const req = new Request("http://localhost/api/search-suggest?q=xe");
+    const res = await GET(req);
+    expect(res.status).toBe(429);
+    expect(res.headers.get("retry-after")).toBe("60");
+    expect((await res.json() as { error: { code: string } }).error.code).toBe("RATE_LIMITED");
   });
 });

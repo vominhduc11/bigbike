@@ -2,7 +2,7 @@
 
 import { LogOut, UserCircle } from "lucide-react";
 import Link from "@/i18n/StorefrontLink";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,11 +19,13 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
   const locale = useLocale() as Locale;
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [loggingOut, setLoggingOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAuthed = auth.status === "authenticated";
-  const displayName = isAuthed ? auth.profile.displayName ?? "" : "";
+  const displayName = isAuthed ? (auth.profile.displayName ?? "") : "";
+  const storefrontReturnTo = pathname ?? undefined;
 
   function clearCloseTimer() {
     if (!closeTimerRef.current) return;
@@ -74,11 +76,27 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
             <div className="flex items-center gap-3">
               <Avatar url={auth.profile.avatarUrl} name={displayName} size="sm" variant="brand" />
               <div>
-                <p className="m-0! font-cta text-b4-action font-semibold uppercase text-white">{t("greeting")} <span>{displayName}</span></p>
-                <Link href={toAccountPath(locale)} prefetch={false} className="text-a5-meta text-white/70 no-underline!">{t("account")}</Link>
+                <p className="m-0! font-cta text-b4-action font-semibold uppercase text-white">
+                  {t("greeting")} <span>{displayName}</span>
+                </p>
+                <Link
+                  href={toAccountPath(locale)}
+                  prefetch={false}
+                  className="text-a5-meta text-white/70 no-underline!"
+                >
+                  {t("account")}
+                </Link>
               </div>
             </div>
-            <Button type="button" variant="ghost" size="icon" onClick={() => void handleLogout()} disabled={loggingOut} aria-label={t("logout")} className="text-white hover:not-disabled:scale-100">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => void handleLogout()}
+              disabled={loggingOut}
+              aria-label={t("logout")}
+              className="text-white hover:not-disabled:scale-100"
+            >
               <LogOut className="h-6 w-6" aria-hidden />
             </Button>
           </div>
@@ -86,9 +104,19 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
           <div className="flex min-h-11 items-center gap-5 text-white">
             <UserCircle className="h-10 w-10 shrink-0" aria-hidden />
             <div className="text-a4-content">
-              <Link href={toRegisterPath(locale)} className="text-white! no-underline!">{t("register")}</Link>
+              <Link
+                href={toRegisterPath(locale, storefrontReturnTo)}
+                className="text-white! no-underline!"
+              >
+                {t("register")}
+              </Link>
               <span className="px-2">/</span>
-              <Link href={toLoginPath(undefined, locale)} className="text-white! no-underline!">{t("login")}</Link>
+              <Link
+                href={toLoginPath(storefrontReturnTo, locale)}
+                className="text-white! no-underline!"
+              >
+                {t("login")}
+              </Link>
             </div>
           </div>
         )}
@@ -137,18 +165,46 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
           menuOpen && "pointer-events-auto visible opacity-100",
         )}
       >
-        <span className="absolute right-15 top-[-18px] h-0 w-0 border-x-[18px] border-b-[18px] border-x-transparent border-b-white" aria-hidden />
+        <span
+          className="absolute right-15 top-[-18px] h-0 w-0 border-x-[18px] border-b-[18px] border-x-transparent border-b-white"
+          aria-hidden
+        />
         <div className="flex flex-col gap-5">
           <Button asChild variant="primary" size="auth">
-            <Link href={isAuthed ? toAccountPath(locale) : toRegisterPath(locale)} prefetch={false} role="menuitem" onClick={closeMenu}>
+            <Link
+              href={isAuthed ? toAccountPath(locale) : toRegisterPath(locale, storefrontReturnTo)}
+              prefetch={false}
+              role="menuitem"
+              onClick={closeMenu}
+            >
               {isAuthed ? t("account") : t("register")}
             </Link>
           </Button>
           {isAuthed ? (
-            <Button type="button" role="menuitem" variant="dark" size="auth" onClick={() => void handleLogout()} disabled={loggingOut}>{t("logout")}</Button>
+            <Button
+              type="button"
+              role="menuitem"
+              variant="dark"
+              size="auth"
+              onClick={() => void handleLogout()}
+              disabled={loggingOut}
+            >
+              {t("logout")}
+            </Button>
           ) : (
-            <Button asChild variant="dark" size="auth" className="hover:!bg-black/80 hover:!border-black/80 hover:!text-white">
-              <Link href={toLoginPath(undefined, locale)} role="menuitem" onClick={closeMenu}>{t("login")}</Link>
+            <Button
+              asChild
+              variant="dark"
+              size="auth"
+              className="hover:!bg-black/80 hover:!border-black/80 hover:!text-white"
+            >
+              <Link
+                href={toLoginPath(storefrontReturnTo, locale)}
+                role="menuitem"
+                onClick={closeMenu}
+              >
+                {t("login")}
+              </Link>
             </Button>
           )}
         </div>

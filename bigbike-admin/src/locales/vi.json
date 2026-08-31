@@ -270,7 +270,6 @@
     "chat": "Hội thoại với Trợ lý BigBike",
     "adminUsers": "Tài khoản quản trị",
     "settings": "Cài đặt",
-    "maintenance": "Bảo trì hệ thống",
     "auditLogs": "Nhật ký",
     "reports": "Báo cáo",
     "roles": "Vai trò và quyền truy cập",
@@ -1606,7 +1605,7 @@
       "reasonLabel": "Lý do",
       "reasonPlaceholder": "Mô tả lý do thực hiện thao tác này...",
       "reasonRequired": "Bắt buộc nhập lý do cho thao tác này.",
-      "unsavedActionWarning": "Thao tác CHƯA được lưu. Hệ thống đang bảo trì hoặc kết nối đã ngắt. Sau khi hệ thống hoạt động, dữ liệu đơn sẽ được tải lại."
+      "unsavedActionWarning": "Thao tác CHƯA được lưu vì kết nối đã ngắt. Dữ liệu đơn sẽ được tải lại; vui lòng thử lại."
     },
     "emptyAll": "Chưa có đơn hàng nào",
     "emptyAllDesc": "Khi có đơn đặt trên website, đơn sẽ hiện ở đây."
@@ -2834,34 +2833,6 @@
     "discardConfirm": "Huỷ mọi thay đổi chưa lưu? Các chỉnh sửa sẽ bị mất.",
     "discardConfirmTitle": "Huỷ thay đổi banner"
   },
-  "maintenance": {
-    "title": "Chế độ bảo trì trang quản trị",
-    "intro": "Khoá chỉ áp dụng cho trang quản trị. Trang bán hàng và việc đặt hàng của khách không bị ảnh hưởng ở bất kỳ trạng thái nào.",
-    "detailsTitle": "Thông tin hiển thị cho nhân viên",
-    "stateNormal": "Bình thường",
-    "stateActive": "Đang khoá",
-    "toggleLabel": "Khoá trang quản trị",
-    "toggleAria": "Bật hoặc tắt khoá trang quản trị",
-    "lockNow": "Khoá ngay",
-    "staffNote": "Lời nhắn cho nhân viên",
-    "staffNoteHint": "Đây là lời nhắn duy nhất nhân viên đọc trên màn hình bị khoá. Nếu cần báo giờ, ghi vào đây.",
-    "staffNotePlaceholder": "Ví dụ: Đang nâng cấp dữ liệu sản phẩm. Dự kiến xong 15:00.",
-    "updatedAt": "Cập nhật lần cuối",
-    "statusTitle": "Trạng thái hiện tại",
-    "saved": "Đã cập nhật trạng thái bảo trì.",
-    "developerOnly": "Chỉ tài khoản kỹ thuật (DEVELOPER) mới bật/tắt được chế độ bảo trì.",
-    "activeHint": "Nhân viên đang không lưu được thay đổi nào. Chỉ tài khoản kỹ thuật còn thao tác được.",
-    "uploadsInFlight": "Đang có {{count}} tệp tải lên dở dang.",
-    "confirmLockTitle": "Khoá trang quản trị?",
-    "confirmLockBody": "Nhân viên sẽ không lưu được bất kỳ thay đổi nào cho tới khi bạn mở lại. Khách hàng không bị ảnh hưởng.",
-    "confirmLockUploads": "Đang có {{count}} tệp tải lên dở dang — khoá bây giờ sẽ làm hỏng các tệp đó. ",
-    "overlayActiveTitle": "Trang quản trị đang bảo trì",
-    "overlayActiveBody": "Mọi thay đổi tạm thời không lưu được. Nếu bạn vừa bấm lưu, thao tác đó CHƯA được ghi nhận — hãy làm lại sau khi mở khoá.",
-    "overlayCustomersSafe": "Trang bán hàng vẫn chạy bình thường, khách vẫn đặt hàng được.",
-    "overlayStaffNote": "Lời nhắn cho nhân viên",
-    "noStaffNote": "Chưa có lời nhắn.",
-    "bannerActive": "Bạn đang khoá trang quản trị để bảo trì."
-  },
   "chatAdmin": {
     "title": "Hội thoại với Trợ lý BigBike",
     "description": "Xem lại nội dung Trợ lý BigBike đã tư vấn, lượt dùng AI và yêu cầu gặp nhân viên trong 90 ngày gần nhất.",
@@ -3590,7 +3561,6 @@
     "saveError": "Không thể lưu quyền. Vui lòng thử lại.",
     "discardChanges": "Bạn có thay đổi chưa lưu. Bỏ qua và chuyển vai trò?",
     "superAdminBanner": "Chủ hệ thống có toàn quyền — mọi quyền hạn được cấp tự động và không thể thay đổi qua giao diện.",
-    "developerBanner": "Vai trò kỹ thuật. Quyền của vai trò này được khoá không cho sửa, vì đây là thứ cho phép mở lại trang quản trị sau khi bảo trì — bỏ nhầm một quyền là không ai mở khoá được nữa.",
     "noEditPermission": "Bạn chỉ có quyền xem. Tài khoản chưa được cấp quyền chỉnh sửa vai trò và quyền truy cập.",
     "noEditSystem": "Vai trò Chủ hệ thống không thể chỉnh sửa.",
     "sensitivePermTitle": "Xác nhận thay đổi quyền nhạy cảm",
@@ -3674,8 +3644,7 @@
       "admin-users": "Tài khoản quản trị",
       "roles": "Vai trò & phân quyền",
       "audit-logs": "Nhật ký hoạt động",
-      "chat": "Trợ lý BigBike",
-      "maintenance": "Bảo trì hệ thống"
+      "chat": "Trợ lý BigBike"
     },
     "permOrdersRead": "Xem đơn hàng",
     "permOrdersWrite": "Xử lý & cập nhật đơn hàng",
@@ -3709,7 +3678,6 @@
     "permAuditLogsRead": "Xem nhật ký kiểm tra",
     "permChatRead": "Xem hội thoại khách của Trợ lý BigBike",
     "permChatReply": "Tiếp nhận và trả lời khách ngay trong khung chat",
-    "permMaintenanceManage": "Bật/tắt bảo trì trang quản trị (chỉ vai trò Developer dùng được)",
     "permReportsRead": "Xem báo cáo doanh thu & vận hành",
     "permReportsExport": "Xuất báo cáo",
     "roleDesc_SUPER_ADMIN": "Toàn quyền hệ thống",

@@ -5,15 +5,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bigbike.bigbike_backend.api.admin.AdminChatController;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
-import com.bigbike.bigbike_backend.api.admin.dto.chat.AdminChatSendMessageRequest;
 import com.bigbike.bigbike_backend.service.admin.AdminChatService;
-import com.bigbike.bigbike_backend.service.chat.ChatHandoffService;
 import com.bigbike.bigbike_backend.service.chat.ChatImageService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,29 +55,12 @@ class AdminChatPermissionTest {
     }
 
     @Test
-    void accountWithoutChatReplyCannotClaimOrSendToACustomer() {
-        AdminChatService chat = mock(AdminChatService.class);
-        ChatHandoffService handoffs = mock(ChatHandoffService.class);
-        DevAdminAuthService auth = mock(DevAdminAuthService.class);
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        when(auth.requirePermission(request, "chat.reply"))
-                .thenThrow(new ForbiddenException("Permission denied."));
-        AdminChatController controller = new AdminChatController(
-                chat,
-                handoffs,
-                null,
-                auth,
-                mock(ApiResponseFactory.class));
-
-        assertThrows(ForbiddenException.class,
-                () -> controller.claim(UUID.randomUUID(), request));
-        assertThrows(ForbiddenException.class,
-                () -> controller.sendMessage(
-                        UUID.randomUUID(),
-                        new AdminChatSendMessageRequest(UUID.randomUUID(), "Xin chào anh/chị"),
-                        request));
-
-        verifyNoInteractions(handoffs);
+    void customerChatHasNoStaffReplyOrHandoffEndpoints() {
+        assertThat(AdminChatController.class.getDeclaredMethods())
+                .noneMatch(method -> method.getName().equals("claim")
+                        || method.getName().equals("sendMessage")
+                        || method.getName().equals("returnToAi")
+                        || method.getName().equals("close"));
     }
 
     @Test
@@ -91,7 +73,6 @@ class AdminChatPermissionTest {
                 .thenThrow(new ForbiddenException("Permission denied."));
         AdminChatController controller = new AdminChatController(
                 chat,
-                mock(ChatHandoffService.class),
                 images,
                 auth,
                 mock(ApiResponseFactory.class));

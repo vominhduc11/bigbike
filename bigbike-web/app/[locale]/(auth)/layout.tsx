@@ -1,8 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { AuthFooter } from "@/components/auth/AuthFooter";
-import { AuthHeader } from "@/components/auth/AuthHeader";
-import { isLocale, type Locale } from "@/i18n/locale";
+import { isLocale } from "@/i18n/locale";
 
 export default async function AuthLayout({
   children,
@@ -13,11 +11,9 @@ export default async function AuthLayout({
 }>) {
   const { locale: localeParam } = await params;
   if (!isLocale(localeParam)) notFound();
-  const locale: Locale = localeParam;
 
   return (
-    <div data-auth-shell className="flex min-h-full flex-1 flex-col">
-      <AuthHeader locale={locale} />
+    <div data-auth-shell className="flex min-h-svh flex-1 flex-col bg-background">
       <main
         id="main-content"
         data-auth-main
@@ -26,7 +22,6 @@ export default async function AuthLayout({
       >
         {children}
       </main>
-      <AuthFooter />
     </div>
   );
 }

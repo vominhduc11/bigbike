@@ -118,12 +118,6 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Lịch nghỉ lễ / Tết.").build(),
 
-                // Chế độ bảo trì CỐ Ý không nằm ở đây (V374). Registry chỉ mô tả thêm cho các dòng
-                // site_settings; danh sách màn Cài đặt lấy từ settingRepo.findAll(), và mọi guard
-                // dựa trên registry đều coi key lạ là KHÔNG hạn chế. Giữ trạng thái bảo trì ở đây
-                // đồng nghĩa bất kỳ ai có `settings.write` cũng tự mở khoá được. Trạng thái nay
-                // nằm ở bảng riêng `maintenance_state`, chỉ đổi qua PUT /api/v1/admin/maintenance.
-
                 // ── PAYMENT ── (tài khoản nhận chuyển khoản — admin tự nhập & đối soát thủ công,
                 // không có cổng thanh toán tự động; hiển thị cho khách ở trang xác nhận đơn BACS)
                 SettingDefinition.builder("bank_account_holder", "payment", SettingValueType.STRING)
@@ -281,26 +275,13 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("ai_assistant_daily_limit", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(10_000)
                         .description("Số lượt trả lời có gọi AI tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tắt phần AI.").build(),
-                SettingDefinition.builder("ai_assistant_conversation_turn_limit", "ai_assistant", SettingValueType.INTEGER)
-                        .min(10).max(100)
-                        .description("Số lượt tư vấn có nội dung tối đa trong một hội thoại. Vòng làm rõ không tính.").build(),
                 SettingDefinition.builder("ai_assistant_recent_turn_pairs", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(12)
                         .description("Số cặp hỏi–đáp gần nhất gửi cho Trợ lý BigBike để hiểu câu nối. Đặt 0 để không gửi lịch sử; tối đa 12.").build(),
                 SettingDefinition.builder("ai_assistant_search_ai_interpretation_enabled", "ai_assistant", SettingValueType.BOOLEAN)
-                        .description("Cho AI diễn giải cách nói tự nhiên khi tìm hàng, sau đó backend đối chiếu từng bộ lọc. Tắt để quay về cách kiểm chứng cũ ngay.").build(),
-                SettingDefinition.builder("ai_assistant_greeting", "ai_assistant", SettingValueType.LONG_TEXT)
-                        .description("Câu chào đầu khung chat của Trợ lý BigBike; có thể nhập riêng bản tiếng Anh.").build(),
-                SettingDefinition.builder("ai_assistant_quick_prompts", "ai_assistant", SettingValueType.LONG_TEXT)
-                        .description("Mỗi dòng là một nút gợi ý nhanh; widget dùng tối đa 4 dòng và có thể nhập riêng bản tiếng Anh.").build(),
-                SettingDefinition.builder("ai_assistant_handoff_email_enabled", "ai_assistant", SettingValueType.BOOLEAN)
-                        .description("Gửi email ngay khi khách xin gặp nhân viên; cảnh báo trong màn quản trị luôn hoạt động.").build(),
-                SettingDefinition.builder("ai_assistant_handoff_email_recipient", "ai_assistant", SettingValueType.STRING)
-                        .description("Email nhận yêu cầu gặp nhân viên; để trống dùng email quản trị từ môi trường.").build(),
-                SettingDefinition.builder("ai_assistant_business_hours", "ai_assistant", SettingValueType.JSON)
-                        .description("Lịch trực nhân viên theo tuần, múi giờ Asia/Ho_Chi_Minh.").build(),
-                SettingDefinition.builder("ai_assistant_image_enabled", "ai_assistant", SettingValueType.BOOLEAN)
-                        .description("Bật đọc ảnh khách gửi; mặc định tắt và độc lập với chat chữ.").build()
+                        .description("Cho AI diễn giải cách nói tự nhiên khi tìm hàng, sau đó backend đối chiếu từng bộ lọc. Tắt để quay về cách kiểm chứng cũ ngay.").build()
+                // Image input and the 40-turn conversation ceiling are fixed software policy.
+                // They deliberately do not appear in the settings registry.
         );
     }
 }

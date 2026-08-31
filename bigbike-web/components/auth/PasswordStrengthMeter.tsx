@@ -35,10 +35,12 @@ export function PasswordStrengthMeter({
   password,
   label,
   labels,
+  compact = false,
 }: {
   password: string;
   label: string;
   labels: Record<PasswordStrength, string>;
+  compact?: boolean;
 }) {
   const strength = getPasswordStrength(password);
   const filled = filledSegments[strength];
@@ -48,13 +50,17 @@ export function PasswordStrengthMeter({
     <output
       data-password-strength={strength}
       aria-live="polite"
-      className="mb-5 block text-a5-meta text-muted-foreground"
+      className={
+        compact
+          ? "mb-1 block text-a5-meta text-muted-foreground md:mb-5 lg:mb-3"
+          : "mb-5 block text-a5-meta text-muted-foreground"
+      }
     >
       <span className="flex items-center justify-between gap-3">
         <span>{label}</span>
         <span className="font-semibold text-foreground">{labels[strength]}</span>
       </span>
-      <span className="mt-2 grid grid-cols-4 gap-1" aria-hidden="true">
+      <span className="mt-1 grid grid-cols-4 gap-1 md:mt-2" aria-hidden="true">
         {Array.from({ length: 4 }, (_, index) => (
           <span key={index} className={index < filled ? `h-1 ${color}` : "h-1 bg-border"} />
         ))}

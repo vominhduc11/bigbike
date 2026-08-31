@@ -3,14 +3,10 @@ package com.bigbike.bigbike_backend.api.chat;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatAvailabilityResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatMessageResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatHandoffRequest;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatHandoffResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatSessionRequest;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatSessionResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatHistoryResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatDeleteHistoryResponse;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatRealtimeTokenRequest;
-import com.bigbike.bigbike_backend.api.chat.dto.ChatRealtimeTokenResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatImageUploadResponse;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
@@ -19,7 +15,6 @@ import com.bigbike.bigbike_backend.config.ratelimit.RateLimitService;
 import com.bigbike.bigbike_backend.config.ratelimit.RateLimitTier;
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
 import com.bigbike.bigbike_backend.service.chat.ChatService;
-import com.bigbike.bigbike_backend.service.chat.ChatHandoffService;
 import com.bigbike.bigbike_backend.service.chat.ChatVisitorService;
 import com.bigbike.bigbike_backend.service.chat.ChatImageService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,7 +48,6 @@ import java.util.concurrent.CompletableFuture;
 public class ChatController {
 
     private final ChatService chatService;
-    private final ChatHandoffService chatHandoffService;
     private final ChatVisitorService chatVisitorService;
     private final ChatImageService chatImageService;
     private final ApiResponseFactory apiResponseFactory;
@@ -62,14 +56,12 @@ public class ChatController {
     @org.springframework.beans.factory.annotation.Autowired
     public ChatController(
             ChatService chatService,
-            ChatHandoffService chatHandoffService,
             ChatVisitorService chatVisitorService,
             ChatImageService chatImageService,
             ApiResponseFactory apiResponseFactory,
             RateLimitService rateLimitService
     ) {
         this.chatService = chatService;
-        this.chatHandoffService = chatHandoffService;
         this.chatVisitorService = chatVisitorService;
         this.chatImageService = chatImageService;
         this.apiResponseFactory = apiResponseFactory;
@@ -82,7 +74,7 @@ public class ChatController {
             ApiResponseFactory apiResponseFactory,
             RateLimitService rateLimitService
     ) {
-        this(chatService, null, null, null, apiResponseFactory, rateLimitService);
+        this(chatService, null, null, apiResponseFactory, rateLimitService);
     }
 
     @GetMapping("/availability")
@@ -120,15 +112,6 @@ public class ChatController {
     ) {
         return apiResponseFactory.data(
                 chatVisitorService.deleteHistory(currentCustomerId(), visitorToken), request);
-    }
-
-    @PostMapping("/realtime-token")
-    public ApiDataResponse<ChatRealtimeTokenResponse> realtimeToken(
-            @Valid @RequestBody ChatRealtimeTokenRequest body,
-            HttpServletRequest request
-    ) {
-        return apiResponseFactory.data(chatVisitorService.realtimeToken(
-                body.conversationId(), currentCustomerId(), body.visitorToken()), request);
     }
 
     @PostMapping("/messages")
@@ -209,19 +192,6 @@ public class ChatController {
 
     private static void sendProgress(SseEmitter emitter, String code) throws java.io.IOException {
         emitter.send(SseEmitter.event().name("progress").data(Map.of("code", code)));
-    }
-
-    @PostMapping("/handoffs")
-    public ApiDataResponse<ChatHandoffResponse> requestHandoff(
-            @Valid @RequestBody ChatHandoffRequest body,
-            HttpServletRequest request
-    ) {
-        UUID scopeId = body.conversationId() == null ? body.requestId() : body.conversationId();
-        rateLimitService.checkOrThrow(
-                RateLimitTier.CHAT, RateLimitScope.CONVERSATION, scopeId.toString());
-        UUID visitorId = resolveVisitorId(body.visitorToken());
-        return apiResponseFactory.data(
-                chatHandoffService.request(body, currentCustomerId(), visitorId), request);
     }
 
     private UUID resolveVisitorId(String visitorToken) {

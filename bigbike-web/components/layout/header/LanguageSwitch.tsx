@@ -16,9 +16,7 @@ import {
   translatePath,
 } from "@/lib/utils/routes";
 
-export function LanguageSwitch({
-  variant = "storefront",
-}: { variant?: "storefront" | "auth" } = {}) {
+export function LanguageSwitch() {
   const locale = useLocale() as Locale;
   const altSlug = useAltSlug();
   const router = useRouter();
@@ -46,11 +44,7 @@ export function LanguageSwitch({
   }
 
   return (
-    <div
-      data-language-switch
-      data-auth-language-switch={variant === "auth" ? true : undefined}
-      className="flex h-full shrink-0 items-center px-1"
-    >
+    <div data-language-switch className="flex h-full shrink-0 items-center px-1">
       {LOCALES.map((code, index) => (
         <span key={code} className="inline-flex items-center">
           {index > 0 ? (

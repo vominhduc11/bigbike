@@ -501,14 +501,14 @@ async function openLoginFromHome(page: Page): Promise<void> {
   if (!(await mobileTrigger.isVisible())) {
     const header = page.locator("header[data-bb-header]");
     await header.getByRole("button", { name: /tài khoản/i }).click();
-    await page.getByRole("menu").locator(`a[href="${LOGIN_PATH}"]`).click();
+    await page.getByRole("menu").locator(`a[href^="${LOGIN_PATH}"]`).click();
     return;
   }
 
   await mobileTrigger.click();
   const menu = page.locator("[data-header-mobile-menu]");
   await expect(menu).toBeVisible();
-  const loginLink = menu.locator(`a[href="${LOGIN_PATH}"]`);
+  const loginLink = menu.locator(`a[href^="${LOGIN_PATH}"]`);
   await expect(loginLink).toBeVisible();
   await page.waitForTimeout(500);
   await loginLink.click();
@@ -594,24 +594,26 @@ test("2. đăng nhập sau khi bị chặn vẫn quay lại đúng Tài khoản"
   }
 });
 
-test("3. mở Đăng nhập từ Trang chủ rồi đăng nhập thành công", async ({ page }) => {
+test("3. mở Đăng nhập từ Trang chủ rồi đăng nhập thành công quay lại Trang chủ", async ({
+  page,
+}) => {
   const state = await installMocks(page);
   for (const viewport of LOGIN_VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await repeatThreeTimes(async (run) => {
       await prepareAnonymous(page, state, HOME_PATH);
       await openLoginFromHome(page);
-      await expect(page).toHaveURL(new RegExp(`${LOGIN_PATH.replaceAll("/", "\\/")}$`));
+      await expect(page).toHaveURL(new RegExp(`${LOGIN_PATH.replaceAll("/", "\\/")}\\?tiep=%2F$`));
       await expect(page.locator('[data-auth-page="login"]')).toBeVisible();
       await beginTransitionObservation(page, state);
       state.loginDelayMs = 150;
       state.meDelayMs = 350;
       await submitLogin(page);
-      await expectAccount(page, `case 3 run ${run} @ ${viewport.name}`);
+      await expectHome(page, `case 3 run ${run} @ ${viewport.name}`);
       await expectTransitionEvidence(
         page,
         state,
-        ACCOUNT_PATH,
+        HOME_PATH,
         `case 3 run ${run} @ ${viewport.name}`,
       );
       expect(state.loginRequests, `case 3 login API @ ${viewport.name} run ${run}`).toBe(1);

@@ -35,12 +35,6 @@ public class ChatMessageEntity {
     @Column(name = "sequence_no", nullable = false)
     private long sequenceNo;
 
-    @Column(name = "staff_user_id")
-    private UUID staffUserId;
-
-    @Column(name = "staff_display_name", length = 120)
-    private String staffDisplayName;
-
     @Column(nullable = false, columnDefinition = "text")
     private String content;
 

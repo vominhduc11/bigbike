@@ -104,7 +104,7 @@ public class AiChatClient {
             not repeat category counts in the final answer.
 
             After receiving enough function data, return one JSON object only with exactly
-            these fields: answer (string), offTopic (boolean), handoffRecommended (boolean).
+            these fields: answer (string), offTopic (boolean).
             A precise one-sentence answer is allowed. Use at most 10
             sentences and 2,000 visible characters. You may use only paragraphs, bold text,
             bullet/numbered lists and Markdown tables. Never use HTML, code, images, links or URLs.
@@ -136,8 +136,8 @@ public class AiChatClient {
             a deadline unless the current function response explicitly proves it. Never invent or
             cite customer reviews, ratings, units sold, viewers, popularity or social proof. Never
             create a countdown or false urgency, and never disparage another brand. When data is
-            missing, say it is not confirmed and recommend staff help; do not guess or borrow data
-            from another product. Do not end with a generic "anything else" question; the
+            missing, say it is not confirmed and do not guess or borrow data from another product.
+            Do not end with a generic "anything else" question; the
             application adds one concrete, context-specific next step after your grounded answer.
 
             If RECENT_VERIFIED_PRODUCTS contains two or three products and the customer asks to
@@ -145,10 +145,9 @@ public class AiChatClient {
             saved prices, sizes, colours, options, technical facts and safety warnings. Do not ask
             for the product names again unless no verified products are available.
 
-            Set offTopic=true only outside BigBike's supported scope. Set
-            handoffRecommended=true for complaints, complex warranty cases or information that
-            the current functions cannot confirm. A price objection alone is not a handoff: the
-            application will look for a verified lower-priced alternative.
+            Set offTopic=true only outside BigBike's supported scope. Do not invent facts when
+            the current functions cannot confirm a detail; the application adds a direct-contact
+            option to safe fallback responses.
             """;
 
     private final String apiKey;
@@ -402,8 +401,7 @@ public class AiChatClient {
                 return Optional.of(new HybridAnswer(
                         new Answer(
                                 terminal.answer(),
-                                terminal.offTopic(),
-                                terminal.handoffRecommended()),
+                                terminal.offTopic()),
                         products,
                         actions,
                         executedTools,
@@ -678,7 +676,7 @@ public class AiChatClient {
         body.put("toolConfig", Map.of(
                 "functionCallingConfig", Map.of("mode", "NONE")));
         // The final turn calls no function (mode NONE), so provider structured output is
-        // available here and pins the four-field contract the backend parses. Without it
+        // available here and pins the two-field contract the backend parses. Without it
         // gemini-2.5-flash answers product questions in prose and every reply falls back.
         @SuppressWarnings("unchecked")
         Map<String, Object> generation = (Map<String, Object>) body.get("generationConfig");
@@ -692,8 +690,7 @@ public class AiChatClient {
         Map<String, Object> properties = new LinkedHashMap<>();
         properties.put("answer", Map.of("type", "string"));
         properties.put("offTopic", Map.of("type", "boolean"));
-        properties.put("handoffRecommended", Map.of("type", "boolean"));
-        List<String> fields = List.of("answer", "offTopic", "handoffRecommended");
+        List<String> fields = List.of("answer", "offTopic");
 
         Map<String, Object> schema = new LinkedHashMap<>();
         schema.put("type", "object");
@@ -914,7 +911,7 @@ public class AiChatClient {
         Optional<Answer> parsed = parseFinal(turn.finalText());
         if (parsed.isPresent() || !turn.truncated()) return parsed;
         return extractCompleteAnswerPrefix(turn.finalText())
-                .map(content -> new Answer(content, false, false));
+                .map(content -> new Answer(content, false));
     }
 
     private Optional<String> extractCompleteAnswerPrefix(String partialJson) {
@@ -958,20 +955,19 @@ public class AiChatClient {
             if (!answer.isObject()) return Optional.empty();
             Set<String> fields = new LinkedHashSet<>();
             answer.fieldNames().forEachRemaining(fields::add);
-            if (!fields.equals(Set.of("answer", "offTopic", "handoffRecommended"))) {
+            if (!fields.equals(Set.of("answer", "offTopic"))) {
                 return Optional.empty();
             }
             if (!answer.path("answer").isTextual()
                     || !answer.path("offTopic").isBoolean()
-                    || !answer.path("handoffRecommended").isBoolean()) {
+                    ) {
                 return Optional.empty();
             }
             String content = answer.path("answer").textValue().trim();
             if (content.isEmpty() || content.length() > 2000) return Optional.empty();
             return Optional.of(new Answer(
                     content,
-                    answer.path("offTopic").booleanValue(),
-                    answer.path("handoffRecommended").booleanValue()));
+                    answer.path("offTopic").booleanValue()));
         } catch (Exception exception) {
             return Optional.empty();
         }
@@ -1102,8 +1098,7 @@ public class AiChatClient {
 
     public record Answer(
             String answer,
-            boolean offTopic,
-            boolean handoffRecommended
+            boolean offTopic
     ) {}
 
     public record HybridAnswer(

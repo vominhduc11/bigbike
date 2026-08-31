@@ -3,6 +3,16 @@ import { parseCatalogListParams, toggleCatalogGenderFilter } from "@/lib/utils/c
 import { buildQueryString, hasPriceRangeFilter } from "@/lib/utils/query";
 
 describe("catalog gender filter query contract", () => {
+  it("keeps relevance as the implicit order for a search keyword", () => {
+    const parsed = parseCatalogListParams(
+      { s: "mũ bảo hiểm" },
+      { queryParamKeys: ["s", "q"], defaultSortWhenQuery: "relevance" },
+    );
+
+    expect(parsed.productSort).toBe("relevance");
+    expect(parsed.orderbyCurrent).toBe("menu_order");
+  });
+
   it("marks price-range URLs as noindex candidates even when the value is empty", () => {
     expect(hasPriceRangeFilter({ min_price: "500000" })).toBe(true);
     expect(hasPriceRangeFilter({ max_price: "1000000" })).toBe(true);

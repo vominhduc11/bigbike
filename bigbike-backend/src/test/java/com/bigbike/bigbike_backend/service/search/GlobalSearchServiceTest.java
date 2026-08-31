@@ -17,12 +17,12 @@ class GlobalSearchServiceTest {
         ContentReadRepository contentRepository = mock(ContentReadRepository.class);
         GlobalSearchService service = new GlobalSearchService(catalogRepository, contentRepository);
 
-        when(catalogRepository.searchPublishedProducts(List.of("helmet"), "en", 6)).thenReturn(List.of());
+        when(catalogRepository.findAllPublishedProductsForListing("en")).thenReturn(List.of());
         when(contentRepository.searchPublishedArticles(List.of("helmet"), "en", 6)).thenReturn(List.of());
 
         service.search("helmet", null, 6, "en");
 
-        verify(catalogRepository).searchPublishedProducts(List.of("helmet"), "en", 6);
+        verify(catalogRepository).findAllPublishedProductsForListing("en");
         verify(contentRepository).searchPublishedArticles(List.of("helmet"), "en", 6);
     }
 }

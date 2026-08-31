@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Search, X } from "lucide-react";
@@ -10,31 +10,50 @@ import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 import { useRecentSearches } from "@/lib/hooks/useRecentSearches";
-import { useSearchSuggestions } from "@/lib/query/search-suggestions";
-import { cn } from "@/lib/utils";
-import { toSearchPath } from "@/lib/utils/routes";
-import type { Locale } from "@/i18n/locale";
-import type { PopularCategory } from "./search/types";
 import {
+  SearchSuggestionsError,
+  useSearchSuggestions,
+} from "@/lib/query/search-suggestions";
+import { cn } from "@/lib/utils";
+import { toArticlePath, toProductPath, toSearchPath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
+import type { ArticleSuggestion, SearchShortcuts, SearchSuggestion } from "./search/types";
+import {
+  sClear,
   sClose,
   sForm,
   sIcon,
   sInput,
   sLayer,
   sLayerOpen,
+  sLoading,
   sOverlay,
   sOverlayOpen,
   sPanel,
+  sResults,
 } from "./search/styles";
 import { PreSuggestions } from "./search/PreSuggestions";
 import { SuggestionResults } from "./search/SuggestionResults";
 import { MobileSearchBody } from "./search/MobileSearchBody";
 
 type SearchToggleProps = {
-  popularCategories?: PopularCategory[];
+  shortcuts?: SearchShortcuts;
 };
 
-export function SearchToggle({ popularCategories: categoriesFromApi = [] }: SearchToggleProps) {
+const EMPTY_SHORTCUTS: SearchShortcuts = {
+  trendingBrands: [],
+  suggestedProducts: [],
+  popularCategories: [],
+};
+const EMPTY_PRODUCT_SUGGESTIONS: SearchSuggestion[] = [];
+const EMPTY_ARTICLE_SUGGESTIONS: ArticleSuggestion[] = [];
+
+function truncateQueryForDisplay(value: string) {
+  const characters = Array.from(value);
+  return characters.length > 72 ? `${characters.slice(0, 72).join("")}…` : value;
+}
+
+export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps) {
   const t = useTranslations("Search");
   const locale = useLocale() as Locale;
   const router = useRouter();
@@ -42,38 +61,54 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
   const inputRef = useRef<HTMLInputElement>(null);
   const wasOpenRef = useRef(false);
   const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
   const debouncedQuery = useDebounce(query.trim(), 300);
   const { isPanelOpen, closePanel } = useHeaderUi();
   const open = isPanelOpen("search");
   const currentSearchQuery = searchParams.get("s") ?? searchParams.get("q") ?? "";
+  const trimmedQuery = query.trim();
+  const queryTooLong = trimmedQuery.length > 100;
+  const currentSearchQueryDisplay = truncateQueryForDisplay(trimmedQuery);
 
   const { searches: recentSearches, addSearch, removeSearch, clearAll } = useRecentSearches();
-
-  const quickSearches = t.raw("quickSearchSuggestions") as string[];
-  const trendingSearches = t.raw("trendingSearches") as string[];
-  const localCategories = t.raw("popularCategories") as string[];
-  const resolvedCategories: PopularCategory[] =
-    categoriesFromApi.length > 0
-      ? categoriesFromApi
-      : localCategories.map((name) => ({ name, slug: "" }));
-
-  const trimmedQuery = query.trim();
-  const suggestQuery = open && debouncedQuery.length >= 1;
-  const { data: suggestionResult, isFetching: suggestLoading } = useSearchSuggestions(
-    locale,
-    debouncedQuery,
-    suggestQuery,
-  );
-  const suggestions = suggestionResult?.products ?? [];
-  const articleSuggestions = suggestionResult?.articles ?? [];
+  const suggestQuery = open && debouncedQuery.length >= 1 && !queryTooLong;
+  const {
+    data: suggestionResult,
+    error: suggestionError,
+    isFetching: suggestLoading,
+    refetch,
+  } = useSearchSuggestions(locale, debouncedQuery, suggestQuery);
+  const suggestions = suggestionResult?.products ?? EMPTY_PRODUCT_SUGGESTIONS;
+  const articleSuggestions = suggestionResult?.articles ?? EMPTY_ARTICLE_SUGGESTIONS;
   const isDebouncing = trimmedQuery.length >= 1 && trimmedQuery !== debouncedQuery;
   const isLoading = isDebouncing || suggestLoading;
-  const showSuggestions = open && debouncedQuery.length >= 1 && !isLoading;
-  const showPreSuggestions =
-    open &&
-    !trimmedQuery &&
-    !isLoading &&
-    (recentSearches.length > 0 || trendingSearches.length > 0);
+  const searchError = suggestionError instanceof SearchSuggestionsError ? suggestionError : null;
+  const failureKind = queryTooLong || searchError?.status === 400
+    ? "validation"
+    : searchError?.status === 429
+      ? "rate-limit"
+      : suggestionError
+        ? "system"
+        : null;
+  const showFailure = open && trimmedQuery.length > 0 && failureKind !== null;
+  const showSuggestions = open && trimmedQuery.length >= 1 && debouncedQuery.length >= 1 && Boolean(suggestionResult) && !showFailure;
+  const hasShortcuts =
+    shortcuts.trendingBrands.length > 0 ||
+    shortcuts.suggestedProducts.length > 0 ||
+    shortcuts.popularCategories.length > 0;
+  const showPreSuggestions = open && !trimmedQuery && (recentSearches.length > 0 || hasShortcuts);
+
+  const selectableItems = useMemo(
+    () => [
+      ...(suggestionResult?.products ?? []).slice(0, 5).map((product) => ({
+        href: toProductPath(locale === "en" ? product.slugEn || product.slug : product.slug, locale),
+      })),
+      ...(suggestionResult?.articles ?? []).slice(0, 3).map((article) => ({
+        href: toArticlePath(locale === "en" ? article.slugEn || article.slug : article.slug, locale),
+      })),
+    ],
+    [locale, suggestionResult],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -92,6 +127,7 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
 
   function handleClose() {
     setQuery("");
+    setActiveIndex(-1);
     closePanel();
   }
 
@@ -99,9 +135,52 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
     const trimmed = value.trim();
     if (!trimmed) return;
     addSearch(trimmed);
-    handleClose();
+    setQuery("");
+    setActiveIndex(-1);
+    closePanel();
     router.push(`${toSearchPath(locale)}?s=${encodeURIComponent(trimmed)}`);
   }
+
+  function openActiveSuggestion() {
+    const selected = selectableItems[activeIndex];
+    if (!selected) return false;
+    if (trimmedQuery) addSearch(trimmedQuery);
+    setQuery("");
+    setActiveIndex(-1);
+    closePanel();
+    router.push(selected.href);
+    return true;
+  }
+
+  function handleInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      handleClose();
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (selectableItems.length === 0) return;
+      event.preventDefault();
+      setActiveIndex((current) => {
+        if (event.key === "ArrowDown") return (current + 1 + selectableItems.length) % selectableItems.length;
+        return current <= 0 ? selectableItems.length - 1 : current - 1;
+      });
+      return;
+    }
+
+    if (event.key === "Enter" && activeIndex >= 0) {
+      event.preventDefault();
+      openActiveSuggestion();
+    }
+  }
+
+  const failureCopy = failureKind === "rate-limit"
+    ? { title: t("rateLimitTitle"), description: t("rateLimitDescription") }
+    : failureKind === "validation"
+      ? { title: t("validationErrorTitle"), description: t("validationErrorDescription", { query: currentSearchQueryDisplay }) }
+      : { title: t("systemErrorTitle"), description: t("systemErrorDescription") };
 
   return (
     <div
@@ -143,7 +222,11 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
               type="text"
               enterKeyHint="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setActiveIndex(-1);
+              }}
+              onKeyDown={handleInputKeyDown}
               placeholder={t("inputPlaceholder")}
               autoComplete="off"
               aria-label={t("inputAriaLabel")}
@@ -151,29 +234,61 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
               aria-autocomplete="list"
               aria-expanded={showSuggestions}
               aria-controls={showSuggestions ? "bb-search-suggestions" : undefined}
+              aria-activedescendant={activeIndex >= 0 ? `bb-search-option-${activeIndex}` : undefined}
               className={sInput}
             />
+
+            {trimmedQuery && (
+              <Button
+                type="button"
+                variant="ghost"
+                className={sClear}
+                aria-label={t("clearAriaLabel")}
+                onClick={() => {
+                  setQuery("");
+                  setActiveIndex(-1);
+                  inputRef.current?.focus();
+                }}
+              >
+                <X size={16} aria-hidden />
+              </Button>
+            )}
+
+            {isLoading && (
+              <Loader2 size={18} aria-hidden className={cn(sLoading, "animate-spin")} />
+            )}
 
             <Button
               type="button"
               variant="ghost"
               className={sClose}
-              aria-label={isLoading ? t("inputPlaceholder") : t("closeAriaLabel")}
-              onClick={isLoading ? undefined : handleClose}
+              aria-label={t("closeAriaLabel")}
+              onClick={handleClose}
             >
-              {isLoading ? (
-                <Loader2 size={20} aria-hidden className="animate-spin" />
-              ) : (
-                <X size={20} aria-hidden />
-              )}
+              <X size={20} aria-hidden />
             </Button>
           </form>
+
+          <span className="sr-only" aria-live="polite">
+            {isLoading ? t("loadingSuggestions") : ""}
+          </span>
+
+          {showFailure && (
+            <div className={cn(sResults, "px-4 py-5 text-center text-a5-meta text-muted-foreground")} role="alert">
+              <p className="m-0 font-semibold text-foreground">{failureCopy.title}</p>
+              <p className="m-0 mt-1 break-words">{failureCopy.description}</p>
+              {failureKind !== "validation" && (
+                <Button type="button" variant="outline" className="mt-3" onClick={() => void refetch()}>
+                  {t("retry")}
+                </Button>
+              )}
+            </div>
+          )}
 
           {showPreSuggestions && (
             <PreSuggestions
               recentSearches={recentSearches}
-              trendingSearches={trendingSearches}
-              resolvedCategories={resolvedCategories}
+              shortcuts={shortcuts}
               runSearch={runSearch}
               removeSearch={removeSearch}
               clearAll={clearAll}
@@ -188,15 +303,14 @@ export function SearchToggle({ popularCategories: categoriesFromApi = [] }: Sear
               trimmedQuery={trimmedQuery}
               addSearch={addSearch}
               handleClose={handleClose}
+              activeIndex={activeIndex}
             />
           )}
 
-          {!showSuggestions && (
+          {!showSuggestions && !showFailure && (
             <MobileSearchBody
               recentSearches={recentSearches}
-              quickSearches={quickSearches}
-              trendingSearches={trendingSearches}
-              resolvedCategories={resolvedCategories}
+              shortcuts={shortcuts}
               runSearch={runSearch}
               removeSearch={removeSearch}
               clearAll={clearAll}

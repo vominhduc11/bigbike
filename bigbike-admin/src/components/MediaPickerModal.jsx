@@ -14,7 +14,6 @@ import { FilterSelect } from './FilterSelect'
 import { IconClose, IconUpload, IconCheck } from './media-picker/pickerIcons'
 import { formatBytes, mergeMediaCacheItem } from './media-picker/pickerUtils'
 import { useModalFocusTrap, useBodyScrollLock } from './media-picker/useModalBehavior'
-import { sendAdminWs } from '../lib/adminWebSocket'
 import { IMAGE_MEDIA_MIME_TYPES, MAX_MEDIA_UPLOAD_BYTES, VIDEO_MEDIA_MIME_TYPES, normalizeMediaMimeType } from '../lib/mediaConstants'
 import { evaluateImageDimensions } from '../lib/imageRecommendations'
 import { BrandLogoCropDialog } from './BrandLogoCropDialog'
@@ -317,8 +316,6 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       // cập nhật nhầm tiến trình lẫn nhau.
       const itemId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`)
       setUploadQueue((q) => [...q, { id: itemId, name: file.name, progress: 0, error: null, status: 'pending' }])
-      sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'PENDING' })
-      sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'UPLOADING' })
       try {
         const result = await uploadMedia(file, '', (pct) => {
           setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: pct } : item))
@@ -335,18 +332,15 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
               }
             : result.item)
           setUploadQueue((q) => q.map((item) => item.id === itemId ? { ...item, progress: 100, status: 'done' } : item))
-          sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'DONE' })
         } else {
           setUploadQueue((q) => q.map((item) => item.id === itemId
             ? { ...item, error: t('media.picker.uploadFailed'), status: 'error' }
             : item))
-          sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'ERROR' })
         }
       } catch (uploadFailure) {
         setUploadQueue((q) => q.map((item) => item.id === itemId
           ? { ...item, error: uploadFailure?.message || t('media.picker.uploadFailed'), status: 'error' }
           : item))
-        sendAdminWs('/app/admin/maintenance/uploads', { uploadId: itemId, status: 'ERROR' })
       }
     }
 

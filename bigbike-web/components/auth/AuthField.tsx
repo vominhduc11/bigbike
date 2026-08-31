@@ -18,6 +18,8 @@ export type AuthFieldProps = {
   passwordToggleLabels?: { show: string; hide: string };
   /** Class phụ cho wrapper của trường. */
   groupClassName?: string;
+  /** Giữ chiều cao gọn trên điện thoại; nhãn vẫn có cho công cụ hỗ trợ. */
+  compact?: boolean;
 };
 
 /**
@@ -35,6 +37,7 @@ export function AuthField({
   hint,
   passwordToggleLabels,
   groupClassName,
+  compact = false,
 }: AuthFieldProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const hintId = useId();
@@ -45,8 +48,14 @@ export function AuthField({
     .join(" ");
 
   return (
-    <div className={cn("mb-5", groupClassName)}>
-      <Label htmlFor={id} className="mb-2 block text-a5-meta text-foreground">
+    <div className={cn(compact ? "mb-1 md:mb-5 lg:mb-3" : "mb-5", groupClassName)}>
+      <Label
+        htmlFor={id}
+        className={cn(
+          "mb-2 block text-a5-meta text-foreground lg:mb-1",
+          compact && "sr-only md:not-sr-only",
+        )}
+      >
         {label}
         <span aria-hidden="true" className="text-brand">
           *
@@ -54,7 +63,11 @@ export function AuthField({
       </Label>
       <div className="relative">
         <Input
-          className={cn("h-13 w-full px-5 text-a4-content", isPassword && "pr-13")}
+          className={cn(
+            compact ? "h-11 px-4 md:h-13 md:px-5 lg:h-11" : "h-13 px-5",
+            "w-full text-a4-content",
+            isPassword && "pr-13",
+          )}
           id={id}
           type={isPassword && isPasswordVisible ? "text" : type}
           autoComplete={autoComplete}

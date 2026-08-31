@@ -121,7 +121,6 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       const g = (s.settingGroup || 'GENERAL').toUpperCase()
       if (HIDDEN_GROUPS.has(g)) continue
       // Product-assignment settings remain hidden and have their own synthetic tab below.
-      // (Chế độ bảo trì đã rời khỏi màn này ở V374 — nay có màn riêng cho DEVELOPER.)
       if (s.superAdminOnly && !isSuperAdmin) continue
       if (!map.has(g)) map.set(g, [])
       map.get(g).push(s)

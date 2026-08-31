@@ -24,7 +24,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * PostgreSQL regression coverage for the notification bell's unread count.
+ * PostgreSQL regression coverage for the order-only notification bell's unread count.
  *
  * <p>The H2 suite cannot catch this class of bug: H2 accepts a bare placeholder in an
  * {@code :param is null} branch, while PostgreSQL rejects it with "could not determine
@@ -64,25 +64,22 @@ class AdminNotificationPostgresQueryTest {
         // Never opened the bell → no read marker → the whole visible backlog is unread.
         AdminNotificationService.InboxView inbox = service.inboxFor(UUID.randomUUID());
 
-        assertThat(inbox.unreadCount()).isGreaterThanOrEqualTo(2);
-        assertThat(inbox.items()).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(inbox.unreadCount()).isGreaterThanOrEqualTo(1);
+        assertThat(inbox.items()).hasSizeGreaterThanOrEqualTo(1);
+        assertThat(inbox.items()).noneMatch(item -> item.type().startsWith("CHAT_"));
         assertThat(inbox.items()).noneMatch(AdminNotificationService.NotificationView::read);
     }
 
     @Test
-    void countVisibleRespectsPermissionScopeWithoutSinceBound() {
+    void countVisibleExcludesRetiredChatNotifications() {
         Instant now = Instant.now();
         persist("NEW_ORDER", now.minus(3, ChronoUnit.HOURS));
         persist("CHAT_LEAD", now.minus(2, ChronoUnit.HOURS));
         persist("CHAT_HANDOFF_WAITING", now.minus(1, ChronoUnit.HOURS));
 
-        long ordersOnly = notificationRepository.countVisible(true, false);
-        long chatOnly = notificationRepository.countVisible(false, true);
-        long both = notificationRepository.countVisible(true, true);
+        long visible = notificationRepository.countVisible();
 
-        assertThat(ordersOnly).isGreaterThanOrEqualTo(1);
-        assertThat(chatOnly).isGreaterThanOrEqualTo(2);
-        assertThat(both).isEqualTo(ordersOnly + chatOnly);
+        assertThat(visible).isGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -91,8 +88,8 @@ class AdminNotificationPostgresQueryTest {
         persist("NEW_ORDER", marker.minus(30, ChronoUnit.MINUTES));
         persist("NEW_ORDER", marker.plus(30, ChronoUnit.MINUTES));
 
-        long before = notificationRepository.countVisible(true, true);
-        long after = notificationRepository.countVisibleAfter(true, true, marker);
+        long before = notificationRepository.countVisible();
+        long after = notificationRepository.countVisibleAfter(marker);
 
         assertThat(after).isGreaterThanOrEqualTo(1);
         assertThat(after).isLessThan(before);
@@ -115,7 +112,7 @@ class AdminNotificationPostgresQueryTest {
         readRepository.saveAndFlush(marker);
 
         AdminNotificationEntity expired = persist("NEW_ORDER", expiredAt);
-        AdminNotificationEntity retained = persist("CHAT_LEAD", retainedAt);
+        AdminNotificationEntity retained = persist("NEW_ORDER", retainedAt);
 
         int deleted = notificationRepository.deleteOlderThanBatch(cutoff, 500);
 

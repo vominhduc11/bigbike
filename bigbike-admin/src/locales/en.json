@@ -270,7 +270,6 @@
     "chat": "BigBike Assistant conversations",
     "adminUsers": "Admin Users",
     "settings": "Settings",
-    "maintenance": "Maintenance",
     "auditLogs": "Audit Logs",
     "reports": "Reports",
     "redirects": "Redirects",
@@ -1606,7 +1605,7 @@
       "reasonLabel": "Reason",
       "reasonPlaceholder": "Describe the reason for this action...",
       "reasonRequired": "A reason is required for this action.",
-      "unsavedActionWarning": "This action was NOT saved. The system is under maintenance or the connection was lost. The order data will be reloaded once the system is available."
+      "unsavedActionWarning": "This action was NOT saved because the connection was lost. The order data will be reloaded; please try again."
     },
     "emptyAll": "No orders yet",
     "emptyAllDesc": "When customers place orders on the website, they will appear here."
@@ -2834,34 +2833,6 @@
     "discardConfirm": "Discard all unsaved changes? Your edits will be lost.",
     "discardConfirmTitle": "Discard banner changes"
   },
-  "maintenance": {
-    "title": "Admin panel maintenance",
-    "intro": "The lock applies to the admin panel only. The storefront and customer ordering are unaffected in every state.",
-    "detailsTitle": "Information shown to staff",
-    "stateNormal": "Normal",
-    "stateActive": "Locked",
-    "toggleLabel": "Lock the admin panel",
-    "toggleAria": "Turn the admin-panel lock on or off",
-    "lockNow": "Lock now",
-    "staffNote": "Message for staff",
-    "staffNoteHint": "This is the only message staff read on the lock screen. If needed, write the expected time here.",
-    "staffNotePlaceholder": "e.g. Migrating product data. Expected to finish at 15:00.",
-    "updatedAt": "Last updated",
-    "statusTitle": "Current status",
-    "saved": "Maintenance state updated.",
-    "developerOnly": "Only the technical (DEVELOPER) account can turn maintenance on or off.",
-    "activeHint": "Staff cannot save any changes right now. Only the technical account can still make changes.",
-    "uploadsInFlight": "{{count}} upload(s) still in progress.",
-    "confirmLockTitle": "Lock the admin panel?",
-    "confirmLockBody": "Staff will not be able to save any changes until you unlock. Customers are unaffected.",
-    "confirmLockUploads": "{{count}} upload(s) are still in progress — locking now will break them. ",
-    "overlayActiveTitle": "Admin panel is under maintenance",
-    "overlayActiveBody": "Changes cannot be saved right now. If you just pressed save, that action was NOT recorded — please redo it after the lock is lifted.",
-    "overlayCustomersSafe": "The storefront is still running; customers can still place orders.",
-    "overlayStaffNote": "Message for staff",
-    "noStaffNote": "No message has been added.",
-    "bannerActive": "You have locked the admin panel for maintenance."
-  },
   "chatAdmin": {
     "title": "BigBike Assistant conversations",
     "description": "Review BigBike Assistant's advice, AI usage, and staff-handoff requests within the 90-day retention window.",
@@ -3591,7 +3562,6 @@
     "saveError": "Failed to save permissions. Please try again.",
     "discardChanges": "You have unsaved changes. Discard and switch roles?",
     "superAdminBanner": "The Owner role has full access — all permissions are granted automatically and cannot be changed through the UI.",
-    "developerBanner": "Technical role. Its permissions are locked because they are what lets a developer release the maintenance lock — removing one by mistake would leave nobody able to unlock the panel.",
     "noEditPermission": "View only. You need roles.write permission to edit role permissions.",
     "noEditSystem": "The Owner role cannot be edited.",
     "sensitivePermTitle": "Confirm sensitive permission change",
@@ -3675,8 +3645,7 @@
       "admin-users": "Admin accounts",
       "roles": "Roles & permissions",
       "audit-logs": "Activity log",
-      "chat": "BigBike Assistant",
-      "maintenance": "System maintenance"
+      "chat": "BigBike Assistant"
     },
     "permOrdersRead": "View orders",
     "permOrdersWrite": "Process & update orders",
@@ -3713,7 +3682,6 @@
     "permAuditLogsRead": "View audit log",
     "permChatRead": "View BigBike Assistant customer conversations",
     "permChatReply": "Claim conversations and reply to customers in live chat",
-    "permMaintenanceManage": "Toggle admin-panel maintenance (only the Developer role can use it)",
     "permReportsRead": "View revenue & operations reports",
     "permReportsExport": "Export reports",
     "roleDesc_SUPER_ADMIN": "Full system access",

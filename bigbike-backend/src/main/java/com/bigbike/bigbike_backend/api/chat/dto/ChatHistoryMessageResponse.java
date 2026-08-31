@@ -12,7 +12,6 @@ public record ChatHistoryMessageResponse(
         String source,
         String answerFormat,
         String resultKind,
-        String staffDisplayName,
         Instant createdAt,
         List<ChatImageResponse> images
 ) {

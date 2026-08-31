@@ -44,12 +44,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private static final String REVIEWS_PERMISSION = "reviews.read";
     private static final String CUSTOMERS_PERMISSION = "customers.read";
     private static final String PRODUCTS_PERMISSION = "products.read";
-    private static final String CHAT_PERMISSION = "chat.read";
     private static final String PRESENCE_DESTINATION = "/app/admin/presence";
     private static final String ACCESS_DESTINATION = "/user/queue/admin/access";
-    private static final String CUSTOMER_CHAT_DESTINATION = "/user/queue/chat";
-    private static final String MAINTENANCE_TOPIC = "/topic/admin/maintenance";
-    private static final String MAINTENANCE_UPLOAD_DESTINATION = "/app/admin/maintenance/uploads";
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String SESSION_ATTR_ADMIN_USER_ID = "adminUserId";
     private static final String SESSION_ATTR_ACCESS_VERSION = "accessVersion";
@@ -62,7 +58,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final RateLimitService rateLimitService;
     private final List<String> allowedOrigins;
     private final Map<String, SessionAccess> sessions = new ConcurrentHashMap<>();
-    private final Map<String, UUID> customerChatSessions = new ConcurrentHashMap<>();
     private final Map<UUID, AtomicInteger> connectionCounts = new ConcurrentHashMap<>();
 
     public WebSocketConfig(
@@ -117,19 +112,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     String token = auth.substring(7);
                     try {
                         Claims claims = jwtService.parseAccessToken(token);
-                        if ("chat-realtime".equals(claims.get("scope", String.class))) {
-                            UUID conversationId = UUID.fromString(claims.getSubject());
-                            String sessionId = accessor.getSessionId();
-                            if (sessionId == null) throw new IllegalArgumentException("WebSocket session is required.");
-                            rateLimitService.checkOrThrow(
-                                    RateLimitTier.WEBSOCKET_HANDSHAKE,
-                                    RateLimitScope.CONVERSATION,
-                                    conversationId.toString());
-                            customerChatSessions.put(sessionId, conversationId);
-                            accessor.setUser(new UsernamePasswordAuthenticationToken(
-                                    "chat:" + conversationId, null, List.of()));
-                            return message;
-                        }
                         UUID userId = UUID.fromString(claims.getSubject());
                         long accessVersion = accessVersionFrom(claims);
                         AdminAccountStatusService.Snapshot snapshot = adminAccountStatusService.getSnapshot(userId);
@@ -173,16 +155,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 }
 
                 if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
-                    if (CUSTOMER_CHAT_DESTINATION.equals(accessor.getDestination())
-                            && accessor.getSessionId() != null
-                            && customerChatSessions.containsKey(accessor.getSessionId())) {
-                        return message;
-                    }
                     SessionAccess session = sessionAccess(accessor);
                     String destination = accessor.getDestination();
                     boolean allowedAccessQueue = ACCESS_DESTINATION.equals(destination) && isCurrentAccess(session);
-                    boolean allowedMaintenanceTopic = MAINTENANCE_TOPIC.equals(destination) && isCurrentAccess(session);
-                    if (!allowedAccessQueue && !allowedMaintenanceTopic
+                    if (!allowedAccessQueue
                             && (session == null || !hasPermissionForDestination(session, destination))) {
                         log.warn("WS SUBSCRIBE rejected: permission or session check failed");
                         throw new IllegalArgumentException("Not permitted to subscribe to " + destination + ".");
@@ -190,14 +166,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 }
 
                 if (StompCommand.SEND.equals(accessor.getCommand())) {
-                    if (accessor.getSessionId() != null
-                            && customerChatSessions.containsKey(accessor.getSessionId())) {
-                        throw new IllegalArgumentException("Customer chat WebSocket is read-only.");
-                    }
                     SessionAccess session = sessionAccess(accessor);
                     boolean validPresence = PRESENCE_DESTINATION.equals(accessor.getDestination());
-                    boolean validUploadLease = MAINTENANCE_UPLOAD_DESTINATION.equals(accessor.getDestination());
-                    if (session == null || (!validPresence && !validUploadLease) || !isCurrentAccess(session)) {
+                    if (session == null || !validPresence || !isCurrentAccess(session)) {
                         log.warn("WS SEND rejected: destination or session check failed");
                         throw new IllegalArgumentException("Invalid admin realtime destination.");
                     }
@@ -228,7 +199,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     case "/topic/admin/inventory" -> INVENTORY_PERMISSION;
                     case "/topic/admin/reviews" -> REVIEWS_PERMISSION;
                     case "/topic/admin/customers" -> CUSTOMERS_PERMISSION;
-                    case "/topic/admin/chat" -> CHAT_PERMISSION;
                     default -> {
                         if (destination.startsWith("/topic/admin/presence/order/")) yield ORDERS_PERMISSION;
                         if (destination.startsWith("/topic/admin/presence/product/")) yield PRODUCTS_PERMISSION;
@@ -258,15 +228,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     return message;
                 }
 
-                if (MAINTENANCE_TOPIC.equals(accessor.getDestination())) {
-                    SessionAccess session = accessor.getSessionId() == null
-                            ? null : sessions.get(accessor.getSessionId());
-                    if (!isCurrentAccess(session)) {
-                        log.debug("WS maintenance outbound blocked by access check");
-                        return null;
-                    }
-                    return message;
-                }
                 if (!requiresPermission(accessor.getDestination())) return message;
 
                 SessionAccess session = accessor.getSessionId() == null ? null : sessions.get(accessor.getSessionId());
@@ -303,7 +264,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     private void removeSession(String sessionId) {
-        customerChatSessions.remove(sessionId);
         SessionAccess removed = sessions.remove(sessionId);
         if (removed == null) {
             return;
@@ -328,7 +288,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             case "/topic/admin/inventory" -> INVENTORY_PERMISSION;
             case "/topic/admin/reviews" -> REVIEWS_PERMISSION;
             case "/topic/admin/customers" -> CUSTOMERS_PERMISSION;
-            case "/topic/admin/chat" -> CHAT_PERMISSION;
             default -> {
                 if (destination.startsWith("/topic/admin/presence/order/")) yield ORDERS_PERMISSION;
                 if (destination.startsWith("/topic/admin/presence/product/")) yield PRODUCTS_PERMISSION;

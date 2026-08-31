@@ -109,11 +109,6 @@ public class InternalRedirectController {
         return ResponseEntity.noContent().build();
     }
 
-    // Maintenance control endpoints removed with V374: the lock is now toggled from the admin
-    // panel (PUT /api/v1/admin/maintenance, DEVELOPER role only), not by a host script. Leaving a
-    // shared-token endpoint that flips the lock would have been a bypass of that role gate, since
-    // BIGBIKE_INTERNAL_TOKEN also serves the redirect lookups below and lives in .env on the VPS.
-
     private boolean isAuthorized(HttpServletRequest request) {
         if (internalToken == null || internalToken.isBlank()) {
             // No token configured: allow only when explicitly opted in (e.g. local dev)

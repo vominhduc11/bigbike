@@ -53,7 +53,7 @@ của test.
 
 ## Internal email configuration regression
 
-The backend must resolve one shared internal recipient for new-order and staff-handoff
+The backend must resolve one shared internal recipient for new-order
 notifications. Tests cover the valid configured value, rejection of a missing value at
 startup, rejection of a malformed value, and the distinction between "accepted by the
 SMTP provider" and final mailbox delivery in the email-dispatch log. The customer sender
@@ -97,18 +97,18 @@ GitHub Actions currently runs:
 | ~~POS~~ | Removed 2026-06-23 (online-only) — `Phase1MPosApiTest.java` deleted | `REMOVED` |
 | Media hardening | `AdminMediaP0Test.java` | `CONFIRMED_FROM_TEST` |
 | Redirect target integrity | `AdminRedirectApiTest.java` + web proxy redirect tests | `REQUIRED_FOR_REDIRECT_RULE_011_012` |
-| Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, handoff, memory 30 ngày, cart và ảnh riêng tư VI/EN. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059` |
+| Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, memory 30 ngày, cart và ảnh riêng tư VI/EN. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059` |
 
 ## Trợ lý BigBike — ma trận kiểm thử (owner decision 2026-08-29)
 
 - Backend: tư vấn sản phẩm/so sánh/size/giá/tồn/policy/đơn dùng nguồn thật; safety chặn bịa giá, giảm/quà/giao hàng, khan hiếm và lộ PII.
-- Backend: Gemini 3.7 Flash là model duy nhất; timeout/`429`/`5xx`/network/empty-invalid payload chỉ retry chính model trong 65 giây/tối đa 4 provider calls; final failure có `CONTACT_STAFF`, không tự handoff và không thử model khác.
+- Backend: Gemini 3.7 Flash là model duy nhất; timeout/`429`/`5xx`/network/empty-invalid payload chỉ retry chính model trong 65 giây/tối đa 4 provider calls; final failure mở các kênh liên hệ trực tiếp, không tự handoff và không thử model khác.
 - Backend: one logical turn giữ đúng một quota slot, retry không tạo slot mới; quota 400/ngày và trần 40 lượt mặc định còn chính xác; clarification/fast-path không gọi AI.
-- Backend: queue/oldest-first, claim nguyên tử, staff message realtime, return-to-AI, close, outside-hours next-open không thu liên hệ; `chat.read`/`chat.reply` trả đúng 403 khi thiếu quyền.
-- Backend: setting registry chỉ còn các key được giữ; review moderation không bị ảnh hưởng; migration V1068 chạy từ database rỗng và assert vắng bảng/cột/settings/dữ liệu đã gỡ.
+- Backend: không có queue/claim/staff message/return-to-AI/close/outside-hours handoff; direct contact không ghi dữ liệu; `chat.read` trả đúng 403 khi thiếu quyền và `chat.reply` không còn được cấp.
+- Backend: setting registry chỉ còn các key được giữ; review moderation không bị ảnh hưởng; migration V1070 assert dữ liệu handoff đã được dọn trước khi bỏ cấu trúc.
 - Web/admin: không render/call/mocking cho model chooser/evaluation/cost/fallback, lead/form liên hệ, feedback, proactive, attribution, unanswered/data gaps, template/abbreviation editor; đầy đủ VI/EN và không mojibake.
-- Web: Gặp nhân viên từ action final failure mở đúng panel, không tự tạo request; add cart/variant vẫn có hậu kiểm; memory v2 xoay token cũ và quyền tắt/xóa vẫn đúng.
-- Image: default off, disclosure, 1 ảnh/lượt, 3/hội thoại, 20/ngày, 8 MB, private ownership/retention; image intent tiếp tục dùng fixture, không chạy bulk provider thật.
+- Web: action lỗi mở đúng panel Hotline/Zalo/Messenger mà không tạo request; không có lối gọi người thật; add cart/variant vẫn có hậu kiểm; memory v2 xoay token cũ và quyền tắt/xóa vẫn đúng.
+- Image: khi AI service có cấu hình thì luôn bật, có disclosure, 1 ảnh/lượt, 3/hội thoại, 20/ngày, 8 MB, private ownership/retention; thiếu service thì nút tự ẩn; image intent tiếp tục dùng fixture, không chạy bulk provider thật.
 - E2E: dùng REST/SSE/STOMP mock hoặc fixture, dữ liệu tiền tố `E2E_`; không gọi AI thật và không chạm dữ liệu khách.
 
 Các context PostgreSQL profile `tc` chạy toàn bộ migration từ kho trống. Migration production có thể dùng snapshot hợp lệ nhưng không sửa version đã áp dụng. Nếu server local không chạy do migration đã áp dụng không có trong source, ghi `Not run` và tiếp tục unit/build/static checks.

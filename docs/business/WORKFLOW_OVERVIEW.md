@@ -12,28 +12,28 @@
 | 6 | System | Push admin order event (no quantity decrement — boolean availability, V261) | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, `AdminOrderWsService.java` |
 | 7 | Customer/Guest | Track the order from the signed-in order detail or confirmation link: refresh the existing order read every 15 seconds while visible, refresh on tab focus, and stop at `COMPLETED` or `CANCELLED`; no customer WebSocket is used | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web` order query hooks and confirmation client |
 
-## Trợ lý BigBike — tư vấn và Gặp nhân viên (owner decision 2026-08-29)
+## Trợ lý BigBike — tư vấn và tự liên hệ shop (owner decision 2026-08-30)
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
-| 1 | Guest/Customer | Trợ lý tư vấn hàng thật theo giai đoạn nhu cầu: chọn/so sánh sản phẩm, size, giá, còn hàng, chính sách, thông tin shop và đơn của chính khách đăng nhập. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_001`–`020`, `034`–`039` |
-| 2 | System | Mỗi lượt cần AI dùng duy nhất Gemini 3.7 Flash, trong trần 400 lượt/ngày và 40 lượt/hội thoại mặc định. Fast-path không dùng AI. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_006`, `009`, `010`, `019` |
-| 3 | System | Nếu Gemini lỗi/quá tải, hệ thống thử lại chính model trong deadline 65 giây và tối đa bốn lần gọi. Vẫn lỗi thì trả lời xin lỗi kèm nút Gặp nhân viên; không đổi model và không tự tạo yêu cầu. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_011`, `019` |
-| 4 | Guest/Customer | Bấm/nói Gặp nhân viên tạo `WAITING`; trong giờ trợ lý tiếp tục cho đến khi có người nhận, ngoài giờ khách được báo lần mở cửa kế tiếp. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_040`, `046` |
-| 5 | Admin/System | Realtime + email báo nhân viên; người có `chat.reply` nhận nguyên tử → `ACTIVE`, nhắn trực tiếp; trợ lý lùi. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_040`, `045`, `047` |
-| 6 | Admin/System | Nhân viên trả lại AI → `RETURNED_TO_AI`, hoặc kết thúc → `CLOSED`; trạng thái đồng bộ ngay cho khách. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_040`, `045` |
-| 7 | Guest/Customer | Khách bấm thẻ sản phẩm, chọn biến thể còn hàng và thêm vào giỏ; backend hậu kiểm giá, tồn và biến thể trước khi thêm. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_014`, `052` |
-| 8 | Guest/Customer | Cùng thiết bị được nối ngữ cảnh 30 ngày; khách thấy, tắt hoặc xóa được. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_049` |
-| 9 | Guest/Customer/Admin | Đọc ảnh mặc định tắt; khi bật, khách gửi tối đa một ảnh/lượt, ba ảnh/hội thoại, 20 ảnh/ngày. Ảnh được bảo vệ riêng tư; admin có `chat.read` xem trong đúng hội thoại. | `OWNER_CONFIRMED_2026-08-29` | `CHAT_RULE_057`–`059` |
+| 1 | Guest/Customer | Trợ lý tư vấn hàng thật theo giai đoạn nhu cầu: chọn/so sánh sản phẩm, size, giá, còn hàng, chính sách, thông tin shop và đơn của chính khách đăng nhập. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_001`–`020`, `034`–`039` |
+| 2 | System | Mỗi lượt cần AI dùng duy nhất Gemini 3.7 Flash, trong trần 400 lượt/ngày và 40 lượt/hội thoại cố định. Fast-path không dùng AI; chạm trần thì mở hội thoại nối tiếp. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_006`, `009`, `010`, `019` |
+| 3 | System | Nếu Gemini lỗi/quá tải, hệ thống thử lại chính model trong deadline 65 giây và tối đa bốn lần gọi. Vẫn lỗi thì trả lời xin lỗi kèm các kênh liên hệ trực tiếp; không đổi model và không tạo yêu cầu người thật. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_011`, `019` |
+| 4 | Guest/Customer | Khách gặp giới hạn, thiếu dữ liệu hoặc cần trao đổi ngoài phạm vi được mời tự liên hệ qua Hotline, Zalo hoặc Messenger. Bấm liên hệ chỉ mở thẻ/kênh shop, không tạo hàng chờ. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_008`, `011`, `034`–`039` |
+| 5 | Guest/Customer | Khách có thể gửi tối đa một ảnh/lượt, ba ảnh/hội thoại, 20 ảnh/ngày, tối đa 8MB và chỉ JPG/PNG/WebP. Khi dịch vụ AI chưa khai báo, nút ảnh tự ẩn. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_057`–`059` |
+| 6 | Guest/Customer | Khách bấm thẻ sản phẩm, chọn biến thể còn hàng và thêm vào giỏ; backend hậu kiểm giá, tồn và biến thể trước khi thêm. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_014`, `052` |
+| 7 | Guest/Customer | Cùng thiết bị được nối ngữ cảnh 30 ngày; khách thấy, tắt hoặc xóa được. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_049` |
 
 ### Màn quản trị chat
 
-Màn `/admin/chat` giữ hàng chờ Gặp nhân viên, danh sách hội thoại, chi tiết hội thoại, bộ đếm “hôm nay đã dùng bao nhiêu lượt AI trên trần” và các chỉ số chất lượng còn phục vụ trực tiếp việc tư vấn. Không còn khu vực chọn/so sánh model, chấm model, chi phí/độ trễ/fallback theo model, phễu liên hệ, gắn đơn, phản hồi câu trả lời, câu bó tay hoặc dữ liệu sản phẩm thiếu.
+Màn `/admin/chat` chỉ giữ danh sách, chi tiết transcript chỉ đọc, xem ảnh, bộ đếm “hôm nay đã dùng bao nhiêu lượt AI trên trần” và các chỉ số chất lượng còn phục vụ trực tiếp việc tư vấn. Không còn hàng chờ, nhận việc, trả lời khách, trả lại AI, email/chuông handoff, khu vực chọn/so sánh model, chấm model, chi phí/độ trễ/fallback theo model, phễu liên hệ, gắn đơn, phản hồi câu trả lời, câu bó tay hoặc dữ liệu sản phẩm thiếu.
 ## Account Login Workflow
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
 | 1 | Guest | Open `/dang-nhap` or `/dang-ky` as separate legacy-parity pages; registration remains a separate route, not an in-place auth tab | `CONFIRMED_FROM_CODE` | live legacy URLs `/dang-nhap.html`, `/dang-ky.html`, current `page.tsx`, `LoginForm.tsx`, `RegisterForm.tsx`; raw local export permanently unavailable |
+| 1a | Guest | All four authentication routes (login, registration, password reset and email confirmation) use the same white, full-screen shell without storefront navigation, logo, language switch or policy footer. On wide screens the existing account-benefits panel remains; below that breakpoint only the form is shown. | `OWNER_CONFIRMED_2026-08-30` | Owner decision 2026-08-30; `AuthPageFrame` and auth route layout |
+| 1b | Guest | Every authentication route provides a clearly separated “continue as guest” exit. It returns to the approved public page in `tiep` when one exists; a missing, authentication, customer-account or unsafe/external destination returns to the localized home page. This exit does not authenticate the guest or call the server. | `OWNER_CONFIRMED_2026-08-30` | Owner decision 2026-08-30; public guest browsing/checkout remains available |
 | 2a | Guest | Sign in with email/phone + password; "Ghi nhớ" keeps the session for 30 days (vs 1 day when unchecked) | `CONFIRMED_FROM_CODE` | `CustomerAuthService.login`, `CustomerSessionService` |
 | 2b | Guest | Create a password account only after explicitly agreeing to the localized Privacy Policy. The server records policy version `2026-08-27`, acceptance time and UI locale with the new account; no Terms page is implied by this checkbox. | `OWNER_CONFIRMED_2026-08-27` | `CUSTOMER_RULE_011`, `CustomerAuthService.register`, `customer_privacy_consents` |
 | 2c | Guest | Or continue with **Google or Facebook**. Both buttons remain on login and registration pages. A new account may be created only from the registration path after the same Privacy Policy agreement; an existing linked identity signs in normally. | `OWNER_CONFIRMED_2026-08-27` | `SocialLoginButtons.tsx`, `CustomerOAuthService.linkOrCreate`, `CUSTOMER_RULE_011` |
@@ -120,14 +120,8 @@ hiển thị trong khung 24×24px ở cả máy tính lẫn điện thoại; kh�
 
 API địa chỉ backend (`GET /api/v1/address/provinces[...]`) đã gỡ 2026-07-15 (AUD-056, owner decision #8 — web/admin không gọi, không có client ngoài); nguồn dữ liệu duy nhất là `VN_PROVINCES` tích hợp trong web. Field `district` chỉ là dữ liệu lịch sử, không được thu thập cho địa chỉ mới — xem `DATA_CONTRACT.md` §Address fields.
 
-## Maintenance Workflow (owner-confirmed 2026-08-06, thu gọn phạm vi cùng ngày)
+## Manual Maintenance Workflow — removed 2026-08-30
 
-Không còn script trên máy chủ: toàn bộ luồng nằm trong màn **Bảo trì hệ thống** của trang quản trị, chỉ vai trò `DEVELOPER` nhìn thấy.
+Không còn workflow bật/tắt hoặc khóa trang quản trị thủ công. Từ 30/08/2026, nhân viên dùng admin bình thường; tài khoản kỹ thuật `vominhduc760@gmail.com` mang vai trò `ADMIN` sau migration `V1071`.
 
-| Bước | Người thực hiện | Luồng | Trạng thái | Căn cứ |
-|---|---|---|---|---|
-| 1 | Dev | Mở màn Bảo trì hệ thống, ghi lời nhắn cho nhân viên. Nếu cần báo giờ, ghi giờ đó trong lời nhắn; không còn ô giờ dự kiến riêng | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `API_CONTRACT.md` §Maintenance API |
-| 2 | Dev | Bật công tắc khoá → hộp xác nhận hiện số tệp đang tải lên dở dang; xác nhận thì chuyển `ACTIVE` | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_007` |
-| 3 | Hệ thống | Mọi thao tác ghi admin bị từ chối `423 MAINTENANCE_ACTIVE`; nhân viên (không phải dev) thấy hộp thông báo **che kín toàn màn** nên không thao tác được gì, kể cả tra cứu. Lời nhắn được hiển thị rõ trên màn hình khoá | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_004`, `MAINTENANCE_RULE_007` |
-| 4 | Khách hàng | **Không bị ảnh hưởng gì** — duyệt web, thêm giỏ và đặt hàng bình thường suốt thời gian khoá | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `BUSINESS_RULES.md` `MAINTENANCE_RULE_002` |
-| 5 | Dev | Tắt công tắc khoá → `NORMAL`; phiên admin của nhân viên tự hồi phục trong tối đa một chu kỳ (STOMP tức thì, poll 60 giây dự phòng) | `CONFIRMED_FROM_OWNER_DECISION_2026-08-24` | `DEPLOYMENT_GUIDE.md` §Maintenance runbook |
+Khách hàng không bị ảnh hưởng: duyệt web, thêm giỏ và đặt hàng vẫn đi qua workflow thương mại hiện hành. Khi upstream thật sự không phản hồi, Nginx vẫn tự phục vụ trang lỗi tĩnh trong `deploy/maintenance/`; đây là fallback hạ tầng độc lập, không phải workflow nghiệp vụ.

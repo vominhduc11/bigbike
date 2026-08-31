@@ -54,10 +54,11 @@ class ChatToolServiceTest {
         ChatAssistantSettings.Snapshot settings = new ChatAssistantSettings.Snapshot(
                 true,
                 60,
-                "Xin chào",
-                List.of("A", "B", "C"),
+                true,
                 new ChatContactResponse("0900", "", "", "", ""),
-                "", "", "");
+                "", "", "", 12,
+                ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty());
 
         ChatToolService.ToolOutcome outcome = tools.resolve(
                 "Kiểm tra đơn hàng của tôi", "vi", null, settings);
@@ -190,7 +191,7 @@ class ChatToolServiceTest {
 
         assertThat(outcome.localAnswer()).contains("1 sản phẩm", "đang giảm giá");
         assertThat(outcome.products()).extracting(ChatProductCardResponse::slug).containsExactly("sale-1");
-        assertThat(outcome.handoffRecommended()).isFalse();
+        assertThat(outcome.directContactRecommended()).isFalse();
     }
 
     @Test
@@ -903,7 +904,7 @@ class ChatToolServiceTest {
 
         assertThat(result.products()).isEmpty();
         assertThat(result.terminalAnswer()).isNotNull();
-        assertThat(result.terminalAnswer().handoffRecommended()).isFalse();
+        assertThat(result.terminalAnswer().directContactRecommended()).isFalse();
         assertThat(result.terminalAnswer().answer()).contains("đúng mẫu", "không đổi sang sản phẩm khác");
     }
 
@@ -2258,10 +2259,11 @@ class ChatToolServiceTest {
         return new ChatAssistantSettings.Snapshot(
                 true,
                 60,
-                "Xin chào",
-                List.of("A", "B", "C"),
+                true,
                 new ChatContactResponse("0900", "", "", "", ""),
-                "", "", "");
+                "", "", "", 12,
+                ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty());
     }
 
     private static ChatAssistantSettings.Snapshot legacySettings() {
@@ -2269,10 +2271,10 @@ class ChatToolServiceTest {
                 true,
                 60,
                 false,
-                "Xin chào",
-                List.of("A", "B", "C"),
                 new ChatContactResponse("0900", "", "", "", ""),
-                "", "", "");
+                "", "", "", 12,
+                ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty());
     }
 
     private static ChatAssistantSettings.Snapshot historySettings() {
@@ -2280,11 +2282,10 @@ class ChatToolServiceTest {
                 true,
                 60,
                 true,
-                "Xin chào",
-                List.of("A", "B", "C"),
                 new ChatContactResponse("0900", "", "", "", ""),
-                "", "", "",
-                3);
+                "", "", "", 3,
+                ChatAssistantSettings.BankDetails.empty(), ChatAssistantSettings.PolicyText.empty(),
+                ChatAssistantSettings.PolicyText.empty());
     }
 
     private static ChatAssistantSettings.Snapshot shopSettings() {
@@ -2292,8 +2293,6 @@ class ChatToolServiceTest {
                 true,
                 60,
                 true,
-                "Xin chào",
-                List.of("A", "B", "C"),
                 new ChatContactResponse("0900", "", "", "", ""),
                 "123 Đường Test",
                 "08:00–18:00",

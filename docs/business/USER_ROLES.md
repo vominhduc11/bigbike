@@ -57,15 +57,14 @@ File này dùng làm nền cho:
 
 ## 4. Public Website Roles
 
-### Ranh giới vai trò cho Trợ lý BigBike giai đoạn 4
+### Ranh giới vai trò cho Trợ lý BigBike sau rút gọn (owner decision 2026-08-30)
 
 | Actor | Được làm | Không được làm | Căn cứ |
 |---|---|---|---|
-| Guest / Customer | Gửi ảnh khi owner đã bật, xem lại ảnh của chính hội thoại, tắt nhớ hoặc xoá lịch sử và ảnh của chính mình | Xem ảnh hội thoại khác; dùng ảnh để yêu cầu hệ thống đoán size, bảo hành, giá hoặc dữ liệu đơn | `CHAT_RULE_049`, `057`–`059` |
-| Admin có `chat.read` | Xem transcript, ảnh riêng tư thuộc hội thoại và hàng chờ | Lấy URL ảnh công khai; xem ảnh nếu thiếu `chat.read`; tiếp nhận hoặc nhắn nếu thiếu `chat.reply` | `CHAT_RULE_047`, `059`, `PERMISSION_MATRIX.md` |
-| Admin có `chat.reply` | Tiếp nhận, nhắn, trả lại AI hoặc kết thúc handoff; quyền này phụ thuộc `chat.read` | Sửa/xoá ảnh hoặc transcript; đổi cài đặt nếu thiếu `settings.write` | `CHAT_RULE_047`, `059` |
-| Owner/Admin có `settings.read` / `settings.write` | Quản lý công tắc trợ lý, quota, câu chào/gợi ý, hiểu cách nói tự nhiên, lịch trực/email handoff và công tắc đọc ảnh | Đổi model chat, mở bảng giá/bộ đề/chi phí đã gỡ; đổi model kiểm duyệt đánh giá bằng cài đặt Trợ lý; xem transcript/ảnh riêng tư nếu thiếu `chat.read` | `CHAT_RULE_010`, `057` |
-| System | Gửi ảnh đã kiểm tra tới Gemini 3.7 Flash để nhận diện khi feature bật và xoá object theo retention | Log ảnh/PII; giữ ảnh ngoài hạn 90 ngày; coi output AI là bằng chứng catalog; đổi sang model khác | `CHAT_RULE_019`, `057`–`059` |
+| Guest / Customer | Gửi ảnh khi dịch vụ AI đã khai báo, xem lại ảnh của chính hội thoại, tắt nhớ hoặc xoá lịch sử và ảnh của chính mình | Xem ảnh hội thoại khác; dùng ảnh để yêu cầu hệ thống đoán size, bảo hành, giá hoặc dữ liệu đơn | `CHAT_RULE_049`, `057`–`059` |
+| Admin có `chat.read` | Xem transcript, ảnh riêng tư thuộc hội thoại và thống kê | Lấy URL ảnh công khai; xem ảnh nếu thiếu `chat.read`; gửi hoặc sửa tin nhắn khách | `CHAT_RULE_047`, `059`, `PERMISSION_MATRIX.md` |
+| Owner/Admin có `settings.read` / `settings.write` | Quản lý bật/tắt trợ lý, quota AI/ngày, ghi nhớ gần đây và hiểu cách nói tự nhiên | Đổi model chat, mở bảng giá/bộ đề/chi phí đã gỡ; đổi model kiểm duyệt đánh giá bằng cài đặt Trợ lý; xem transcript/ảnh riêng tư nếu thiếu `chat.read` | `CHAT_RULE_010`, `057` |
+| System | Gửi ảnh đã kiểm tra tới Gemini 3.7 Flash để nhận diện khi dịch vụ đã khai báo và xoá object theo retention | Log ảnh/PII; giữ ảnh ngoài hạn 90 ngày; coi output AI là bằng chứng catalog; đổi sang model khác | `CHAT_RULE_019`, `057`–`059` |
 
 ### Role: Guest / Visitor
 
@@ -91,11 +90,11 @@ File này dùng làm nền cho:
 | Checkout guest | `CONFIRMED_FROM_CODE` | `CheckoutService`, `SecurityConfig`, `PHASE_1F_CHECKOUT_API_REPORT.md` | Guest/customer checkout supported. |
 | Quick-buy guest | `CONFIRMED_FROM_CODE` | `CheckoutService`, `SecurityConfig` | Quick-buy public POST. |
 | Order lookup | `CONFIRMED_FROM_CODE` | `OrderLookupController`, `SecurityConfig` | Public GET order lookup. |
+| Leave authentication and continue browsing | `OWNER_CONFIRMED_2026-08-30` | Owner decision 2026-08-30; `AuthPageFrame` / storefront routes | The four authentication pages expose a guest exit. It restores only a safe public page; account, authentication and external destinations return to the localized home page. |
 | Access admin portal/API | `CONFIRMED_FROM_CODE` restricted | `SecurityConfig` | `/api/v1/admin/**` requires `ROLE_ADMIN`. |
 
 #### Needs Verification
 
-- Whether public web UI clearly distinguishes guest checkout vs login-required features.
 - Review submission UI and moderation path.
 - Guest cart persistence and expiry behavior.
 
@@ -421,13 +420,14 @@ Confirmed evidence:
 - `AdminRolePermissions.MAP` defines built-in role-to-permission mapping.
 - `AdminRolePermissions.MAP` defines built-in role-to-permission mapping.
 - `SUPER_ADMIN` has wildcard `*`.
-- `chat.reply` là quyền vận hành hẹp để nhân viên tiếp nhận, nhắn trực tiếp, bàn giao hoặc kết thúc với khách; nó phụ thuộc `chat.read`, không cho sửa/xoá lịch sử và không tự cấp cho vai trò thường. `SUPER_ADMIN` có qua wildcard; owner cấp `chat.read` + `chat.reply` cho custom role phù hợp ở màn Vai trò. `chat.handle` là tên cũ được migration đổi sang `chat.reply`, không tồn tại song song.
+- `chat.read` là quyền chỉ đọc để xem danh sách, transcript, ảnh và thống kê Trợ lý BigBike. `chat.reply` đã bị xoá theo quyết định của chủ shop ngày 2026-08-30; không còn quyền vận hành chat người thật. Các quyền khác của vai trò không thay đổi.
 - Admin user management validates built-in/custom roles and writes audit logs.
 - Role management (`AdminRoleService`) supports listing roles, editing role permissions, creating custom roles and deleting custom roles.
 - **Role governance** (enforced, not just inferred): only the **2 built-in roles** (`SUPER_ADMIN`, `ADMIN`) are **system roles** (`is_system = TRUE`) and cannot be deleted. `V361__retain_two_system_roles.sql` reclassifies every other historical system role—including `SHOP_MANAGER` and `EDITOR`—as custom while preserving permissions and assigned users. `SUPER_ADMIN` permissions are immutable (`*`); custom roles can be edited and can be deleted only when no admin user is still assigned. `CUSTOMER` is a storefront auth role (`ROLE_CUSTOMER`), not a row in `admin_roles`. Full detail: `PERMISSION_MATRIX.md` → Role Governance.
 
 Important distinction:
 
+- `chat.reply` đã bị xoá theo quyết định owner ngày 2026-08-30. `chat.read` vẫn là quyền chỉ đọc cho lịch sử, ảnh và thống kê; không thay đổi các quyền khác. `chat.handle` và `chat.reply` không còn là quyền đang dùng.
 - `USER_ROLES.md` describes who the roles are and what they do at business level.
 - `PERMISSION_MATRIX.md` should list exact permission strings, route mappings and API/action-level access.
 

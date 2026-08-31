@@ -55,7 +55,9 @@ class ChatArticleToolTest {
 
     private static ChatAssistantSettings.Snapshot settings() {
         return new ChatAssistantSettings.Snapshot(
-                true, 400, "Xin chào", List.of("A", "B", "C"),
-                new ChatContactResponse("0900", "", "", "", ""), "", "", "");
+                true, 400, true,
+                new ChatContactResponse("0900", "", "", "", ""), "", "", "", 12,
+                ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty(), ChatAssistantSettings.PolicyText.empty());
     }
 }

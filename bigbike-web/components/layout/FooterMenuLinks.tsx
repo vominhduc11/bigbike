@@ -53,31 +53,17 @@ function buildFooterMenuItems(locale: string) {
   ];
 }
 
-export function FooterMenuLinks({ variant = "all" }: { variant?: "all" | "privacy" }) {
+export function FooterMenuLinks() {
   const locale = useLocale();
-  const allItems = buildFooterMenuItems(locale);
-  const items =
-    variant === "privacy"
-      ? allItems.filter((item) => item.href === "/chinh-sach/chinh-sach-bao-mat-thong-tin/")
-      : allItems;
+  const items = buildFooterMenuItems(locale);
 
   return (
-    <ul
-      className={
-        variant === "privacy"
-          ? "m-0 flex list-none justify-center p-0"
-          : "m-0 flex list-none flex-col gap-[5px] p-0"
-      }
-    >
+    <ul className="m-0 flex list-none flex-col gap-1 p-0">
       {items.map((item) => (
         <li key={item.href} data-footer-menu-link={item.id}>
           <Link
             href={translatePath(item.href, locale as Locale)}
-            className={
-              variant === "privacy"
-                ? "inline-flex min-h-11 items-center text-white! no-underline! hover:text-brand-inverse!"
-                : "text-white! no-underline! hover:text-brand-inverse!"
-            }
+            className="text-white! no-underline! hover:text-brand-inverse!"
           >
             {item.label}
           </Link>

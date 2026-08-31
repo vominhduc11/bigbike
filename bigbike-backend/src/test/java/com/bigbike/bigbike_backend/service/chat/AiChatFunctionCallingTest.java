@@ -636,8 +636,7 @@ class AiChatFunctionCallingTest {
     private static Map<String, Object> safeAnswer(String answer) {
         return Map.of(
                 "answer", answer,
-                "offTopic", false,
-                "handoffRecommended", false);
+                "offTopic", false);
     }
 
     private static String functionCall(String name, Map<String, ?> args, String id) {

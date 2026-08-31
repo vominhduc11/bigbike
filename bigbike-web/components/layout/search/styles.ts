@@ -1,8 +1,6 @@
 // Class bundles + path constant for the search panel, lifted out of SearchToggle
 // to keep the component file focused on logic. Pure strings — no behaviour change.
 
-export const SEARCH_PATH = "/tim-kiem/";
-
 // Inline-Tailwind class bundles for the search-panel CONTENT (the overlay shell
 // — layer/overlay/panel/form/input + transitions/keyframe — stays in globals.css
 // per the CLAUDE.md keyframe/complex-pseudo exemption). Search reds use
@@ -95,11 +93,18 @@ export const sClose =
   "hover:bg-transparent hover:text-[color:var(--bb-brand-primary)] focus-visible:bg-transparent focus-visible:text-[color:var(--bb-brand-primary)] " +
   "max-md:static max-md:right-auto max-md:w-[var(--bb-touch-target)] max-md:h-[var(--bb-touch-target)] " +
   "max-md:min-w-[var(--bb-touch-target)] max-md:items-center max-md:justify-center max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
+export const sClear =
+  "absolute top-1/2 right-10 [transform:translateY(-50%)] min-h-0 p-0 text-white " +
+  "hover:bg-transparent hover:text-[color:var(--bb-brand-primary)] focus-visible:bg-transparent focus-visible:text-[color:var(--bb-brand-primary)] " +
+  "max-md:static max-md:right-auto max-md:w-[var(--bb-touch-target)] max-md:h-[var(--bb-touch-target)] " +
+  "max-md:min-w-[var(--bb-touch-target)] max-md:items-center max-md:justify-center max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
+export const sLoading =
+  "absolute top-1/2 right-20 [transform:translateY(-50%)] text-white max-md:static max-md:right-auto max-md:ml-auto max-md:text-[color:var(--bb-text-inverse)]";
 export const sInput =
   // `!` mirrors the legacy !important — guarantees these win over the shadcn Input
   // base regardless of twMerge grouping. A4 keeps search input at 16px on mobile
   // (preventing iOS zoom) and 18px on desktop, including ultra-wide screens.
-  "h-full [border:none]! bg-transparent! [padding:0_48px_0_34px]! [box-shadow:none]! [color:var(--bb-text-inverse)]! text-a4-content! " +
+  "h-full [border:none]! bg-transparent! [padding:0_88px_0_34px]! [box-shadow:none]! [color:var(--bb-text-inverse)]! text-a4-content! " +
   "placeholder:text-white placeholder:opacity-100 placeholder:font-normal focus-visible:outline-none " +
   "max-md:h-[var(--bb-touch-target)]! max-md:[border:1px_solid_rgba(255,255,255,0.18)]! max-md:bg-[var(--bb-bg-surface)]! " +
   "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:leading-none! " +
