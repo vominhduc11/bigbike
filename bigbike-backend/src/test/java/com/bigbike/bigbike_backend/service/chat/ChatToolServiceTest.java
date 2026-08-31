@@ -96,7 +96,7 @@ class ChatToolServiceTest {
 
         ChatToolService.ToolOutcome help = tools.resolveFastPath(
                 "Bạn có thể giúp tôi những gì?", "vi", null, settings()).orElseThrow();
-        assertThat(help.localAnswer()).contains("em", "anh/chị");
+        assertThat(help.localAnswer()).contains("em").containsIgnoringCase("anh/chị");
 
         assertThat(tools.resolveFastPath(
                 "có những bài tin tức nào", "vi", null, settings())).isEmpty();
@@ -2274,6 +2274,7 @@ class ChatToolServiceTest {
                 new ChatContactResponse("0900", "", "", "", ""),
                 "", "", "", 12,
                 ChatAssistantSettings.BankDetails.empty(),
+                ChatAssistantSettings.PolicyText.empty(),
                 ChatAssistantSettings.PolicyText.empty());
     }
 

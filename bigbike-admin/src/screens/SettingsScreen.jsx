@@ -20,6 +20,7 @@ import {
   getAutosaveKey, saveFormToStorage, loadFormFromStorage, clearFormFromStorage,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
+import { ReviewInvitationOperations } from './settings/ReviewInvitationOperations'
 import { DetailSection } from '../components/DetailSection'
 
 // Lazy — Cài đặt mở mặc định ở tab chung, không phải tab Banner (496 dòng); tải sẵn tĩnh
@@ -646,6 +647,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                 saving={saving}
                 saveSuccess={saveSuccess}
                 saveError={saveError}
+                beforeContent={activeTab === 'REVIEW_INVITATION' ? (
+                  <ReviewInvitationOperations canUpdate={canUpdate} />
+                ) : null}
               />
             )}
             </div>

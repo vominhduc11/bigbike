@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -7,9 +8,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
+import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
 import com.bigbike.bigbike_backend.persistence.entity.video.HomeVideoEntity;
+import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.video.HomeVideoJpaRepository;
+import com.bigbike.bigbike_backend.service.video.YouTubeHomeVideoClient.ChannelFeed;
+import com.bigbike.bigbike_backend.service.video.YouTubeHomeVideoClient.FeedVideo;
+import com.bigbike.bigbike_backend.service.video.YouTubeHomeVideoSyncService.SyncPlan;
+import com.bigbike.bigbike_backend.service.video.YouTubeHomeVideoSyncWriter;
 import java.time.Instant;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +37,12 @@ class HomeVideoApiTest {
 
     @Autowired
     private HomeVideoJpaRepository homeVideoJpaRepository;
+
+    @Autowired
+    private SiteSettingJpaRepository siteSettingJpaRepository;
+
+    @Autowired
+    private YouTubeHomeVideoSyncWriter syncWriter;
 
     private MockMvc mockMvc;
 
@@ -162,6 +177,59 @@ class HomeVideoApiTest {
                         .value("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0"))
                 .andExpect(jsonPath("$.data[0].autoThumbnailUrl")
                         .value("https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg"));
+    }
+
+    @Test
+    void publicHomeVideos_returnsOnlyTheFirstTenActiveRows() throws Exception {
+        for (int index = 0; index < 12; index++) {
+            homeVideoJpaRepository.save(homeVideo("hv_public_" + index, index, true));
+        }
+
+        mockMvc.perform(get("/api/v1/home-videos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(10))
+                .andExpect(jsonPath("$.data[0].id").value("hv_public_0"))
+                .andExpect(jsonPath("$.data[9].id").value("hv_public_9"));
+    }
+
+    @Test
+    void automaticSync_insertsNewVideoFirstWithoutBreakingUniqueSortOrder() {
+        var setting = siteSettingJpaRepository.findBySettingKey("youtube_url").orElseGet(() -> {
+            var created = new SiteSettingEntity();
+            created.setSettingKey("youtube_url");
+            created.setSettingGroup("contact");
+            created.setPublic(true);
+            created.setDescription("Official YouTube channel");
+            return created;
+        });
+        setting.setSettingValue("https://www.youtube.com/@bigbike-shop");
+        siteSettingJpaRepository.saveAndFlush(setting);
+
+        HomeVideoEntity old = homeVideo("hv_existing", 0, true);
+        homeVideoJpaRepository.saveAndFlush(old);
+        FeedVideo latest = new FeedVideo(
+                "AAAAAAAAAAA",
+                "TEST CHỐNG NƯỚC",
+                Instant.parse("2026-08-27T03:00:00Z"),
+                "https://www.youtube.com/watch?v=AAAAAAAAAAA"
+        );
+
+        syncWriter.apply(new SyncPlan(
+                new ChannelFeed(
+                        "https://www.youtube.com/@bigbike-shop",
+                        "UCabcdefghijklmnopqrstuv",
+                        List.of(latest)
+                ),
+                Set.of()
+        ));
+
+        List<HomeVideoEntity> rows = homeVideoJpaRepository.findAllByOrderBySortOrderAsc();
+        assertThat(rows).extracting(HomeVideoEntity::getId)
+                .containsExactly("hv_yt_AAAAAAAAAAA", "hv_existing");
+        assertThat(rows).extracting(HomeVideoEntity::getSortOrder).containsExactly(0, 1);
+        assertThat(rows.get(0).getTitle()).isEqualTo("TEST CHỐNG NƯỚC");
+        assertThat(rows.get(0).getTitleEn()).isNull();
+        assertThat(rows.get(0).getThumbnail()).isNull();
     }
 
     @Test

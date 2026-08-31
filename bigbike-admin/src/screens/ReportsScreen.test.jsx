@@ -163,6 +163,7 @@ describe('ReportsScreen', () => {
     await waitFor(() => expect(mocks.exportOrdersCsv).toHaveBeenCalledWith({
       from: '2026-07-01',
       to: '2026-07-10',
+      orderScope: 'ALL',
     }))
     expect(mocks.toastSuccess).toHaveBeenCalledWith('export.success')
   })
@@ -185,5 +186,7 @@ describe('ReportsScreen', () => {
     expect(enLocale.reports.kpiPaidRevenueHint).toContain('not confirmed payment transactions')
     expect(viLocale.reports.kpiOrderCountHint).toContain('không tính đơn đã huỷ')
     expect(enLocale.reports.kpiAovHint).toContain('cancelled orders are excluded')
+    expect(viLocale.reports.historyScopeDisclosure).toContain('có tính đơn lịch sử')
+    expect(enLocale.reports.historyScopeDisclosure).toContain('includes historical orders')
   })
 })

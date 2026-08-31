@@ -41,7 +41,9 @@ class ChatInputGuardTest {
                 .get()
                 .satisfies(decision -> {
                     assertThat(decision.source()).isEqualTo("CONTACT_FALLBACK");
-                    assertThat(decision.answer()).contains("xin lỗi", "nhân viên", "Hotline", "Zalo", "Messenger");
+                    assertThat(decision.answer())
+                            .contains("xin lỗi", "Hotline", "Zalo", "Messenger")
+                            .doesNotContain("nhân viên");
                 });
     }
 }

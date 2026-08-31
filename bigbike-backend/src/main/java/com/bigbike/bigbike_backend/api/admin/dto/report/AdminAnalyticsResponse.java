@@ -7,8 +7,14 @@ public record AdminAnalyticsResponse(
         PeriodSummary summary,
         List<DailyRevenueItem> dailyRevenue,
         List<TopProductItem> topProducts,
-        List<TopCustomerItem> topCustomers
+        List<TopCustomerItem> topCustomers,
+        Scope scope
 ) {
+    public record Scope(
+            String orderScope,
+            boolean includesHistoricalOrders
+    ) {}
+
     public record PeriodSummary(
             BigDecimal grossOrderValue,
             BigDecimal paidRevenue,

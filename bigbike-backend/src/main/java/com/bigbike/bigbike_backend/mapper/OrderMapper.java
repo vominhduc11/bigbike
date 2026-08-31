@@ -23,6 +23,8 @@ public interface OrderMapper {
 
     @Mapping(target = "itemCount", source = "itemCount")
     @Mapping(target = "source", source = "entity.source")
+    @Mapping(target = "orderScope", ignore = true)
+    @Mapping(target = "historyClassification", ignore = true)
     AdminOrderListItemResponse toAdminListItem(OrderEntity entity, int itemCount);
 
     @Mapping(target = "orderKey", source = "orderKey")

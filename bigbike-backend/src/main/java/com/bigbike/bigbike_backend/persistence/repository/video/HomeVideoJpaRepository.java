@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface HomeVideoJpaRepository extends JpaRepository<HomeVideoEntity, String> {
     List<HomeVideoEntity> findAllByOrderBySortOrderAsc();
-    List<HomeVideoEntity> findByIsActiveTrueOrderBySortOrderAsc();
+    List<HomeVideoEntity> findTop10ByIsActiveTrueOrderBySortOrderAsc();
     Optional<HomeVideoEntity> findBySortOrder(Integer sortOrder);
 }

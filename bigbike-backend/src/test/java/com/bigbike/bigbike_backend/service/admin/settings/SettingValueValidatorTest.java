@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.config.MediaUrlProperties;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
+import com.bigbike.bigbike_backend.service.security.YouTubeChannelUrlPolicy;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -23,7 +25,7 @@ class SettingValueValidatorTest {
     @BeforeEach
     void setUp() {
         SafeMediaAssetUrlPolicy policy = new SafeMediaAssetUrlPolicy(new MediaUrlProperties(), "https://bigbike.vn");
-        validator = new SettingValueValidator(policy, new ObjectMapper());
+        validator = new SettingValueValidator(policy, new YouTubeChannelUrlPolicy(), new ObjectMapper());
     }
 
     @Test
@@ -104,6 +106,47 @@ class SettingValueValidatorTest {
 
     private static final SettingDefinition HTML_DEF =
             SettingDefinition.builder("footer_html", "content", SettingValueType.HTML).build();
+    private static final SettingDefinition YOUTUBE_CHANNEL_DEF =
+            SettingDefinition.builder("youtube_url", "contact", SettingValueType.URL).build();
+    private static final SettingDefinition OUT_OF_STOCK_TIME_DEF =
+            SettingDefinition.builder(
+                    "inventory_out_of_stock_digest_time", "inventory", SettingValueType.STRING).build();
+
+    @Test
+    void outOfStockDigestTimeAcceptsStrictTwentyFourHourClock() {
+        assertThatCode(() -> validator.validate(
+                "inventory_out_of_stock_digest_time", "08:00", OUT_OF_STOCK_TIME_DEF))
+                .doesNotThrowAnyException();
+
+        for (String value : List.of("8:00", "24:00", "08:60", "08:00:00")) {
+            ValidationException ex = assertThrows(ValidationException.class,
+                    () -> validator.validate(
+                            "inventory_out_of_stock_digest_time", value, OUT_OF_STOCK_TIME_DEF));
+            assertThat(ex.details().get(0).code()).isEqualTo("INVALID_TIME");
+        }
+    }
+
+    @Test
+    void youtubeChannel_acceptsHandleAndDirectChannelPages() {
+        assertThatCode(() -> validator.validate(
+                "youtube_url", "https://youtube.com/@bigbike-shop?sub_confirmation=1", YOUTUBE_CHANNEL_DEF))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> validator.validate(
+                "youtube_url", "https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv", YOUTUBE_CHANNEL_DEF))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void youtubeChannel_rejectsVideoPlaylistAndOtherHosts() {
+        for (String value : List.of(
+                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "https://www.youtube.com/playlist?list=PL123",
+                "https://example.com/@bigbike-shop")) {
+            ValidationException ex = assertThrows(ValidationException.class,
+                    () -> validator.validate("youtube_url", value, YOUTUBE_CHANNEL_DEF));
+            assertThat(ex.details().get(0).code()).isEqualTo("INVALID_YOUTUBE_CHANNEL_URL");
+        }
+    }
 
     @Test
     void html_allowsInternalMediaImages() {

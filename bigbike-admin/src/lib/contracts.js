@@ -766,6 +766,9 @@ function normalizeAddress(input) {
 
 export function normalizeOrder(input) {
   const s = input && typeof input === 'object' ? input : {}
+  const historySource = s.historyClassification && typeof s.historyClassification === 'object'
+    ? s.historyClassification
+    : null
 
   // Derive addresses — backend returns list; split by type
   const addresses = Array.isArray(s.addresses) ? s.addresses.map(normalizeAddress) : []
@@ -805,6 +808,15 @@ export function normalizeOrder(input) {
     fulfillmentType: toTrimmedStringLocal(s.fulfillmentType) || 'DELIVERY',
     paymentMethod,
     source: toTrimmedStringLocal(s.source) || undefined,
+    orderScope: s.orderScope === 'HISTORICAL' ? 'HISTORICAL' : 'OPERATIONAL',
+    historyClassification: historySource ? {
+      batchKey: toTrimmedStringLocal(historySource.batchKey) || undefined,
+      labelVi: toTrimmedStringLocal(historySource.labelVi) || undefined,
+      labelEn: toTrimmedStringLocal(historySource.labelEn) || undefined,
+      reasonVi: toTrimmedStringLocal(historySource.reasonVi) || undefined,
+      reasonEn: toTrimmedStringLocal(historySource.reasonEn) || undefined,
+      classifiedAt: toTrimmedStringLocal(historySource.classifiedAt) || undefined,
+    } : undefined,
     // Line items — backend field is lineItems (not items)
     items: Array.isArray(s.lineItems) ? s.lineItems.map(normalizeOrderItem) : [],
     itemCount: toIntegerLocal(s.itemCount, 0),

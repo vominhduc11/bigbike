@@ -129,6 +129,13 @@ public class ProductEntity {
     @Column(nullable = false)
     private ProductStockState stockState;
 
+    @Column(name = "out_of_stock_since")
+    private Instant outOfStockSince;
+
+    @Column(name = "out_of_stock_since_estimated", nullable = false,
+            columnDefinition = "boolean default false")
+    private boolean outOfStockSinceEstimated;
+
     @Column(name = "stock_quantity")
     private Integer stockQuantity;
 

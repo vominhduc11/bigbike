@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductStockState;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductVariantEntity;
 import java.util.List;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,9 +19,9 @@ public class InventoryPolicyService {
 
     /** A variant's stockState mirrors its availability boolean. */
     public void recomputeStockState(ProductVariantEntity variant) {
-        variant.setStockState(variant.isAvailable()
-                ? ProductStockState.IN_STOCK
-                : ProductStockState.OUT_OF_STOCK);
+        boolean available = variant.isAvailable();
+        variant.setStockState(available ? ProductStockState.IN_STOCK : ProductStockState.OUT_OF_STOCK);
+        updateOutOfStockAge(variant, available);
     }
 
     /**
@@ -34,6 +35,7 @@ public class InventoryPolicyService {
         product.setStockState(anyAvailable
                 ? ProductStockState.IN_STOCK
                 : ProductStockState.OUT_OF_STOCK);
+        updateOutOfStockAge(product, anyAvailable);
     }
 
     /**
@@ -52,11 +54,33 @@ public class InventoryPolicyService {
             product.setStockState(anyAvailable
                     ? ProductStockState.IN_STOCK
                     : ProductStockState.OUT_OF_STOCK);
+            updateOutOfStockAge(product, anyAvailable);
             return;
         }
         boolean available = !Boolean.FALSE.equals(product.getAvailable());
         product.setStockState(available
                 ? ProductStockState.IN_STOCK
                 : ProductStockState.OUT_OF_STOCK);
+        updateOutOfStockAge(product, available);
+    }
+
+    private static void updateOutOfStockAge(ProductVariantEntity variant, boolean available) {
+        if (available) {
+            variant.setOutOfStockSince(null);
+            variant.setOutOfStockSinceEstimated(false);
+        } else if (variant.getOutOfStockSince() == null) {
+            variant.setOutOfStockSince(Instant.now());
+            variant.setOutOfStockSinceEstimated(false);
+        }
+    }
+
+    private static void updateOutOfStockAge(ProductEntity product, boolean available) {
+        if (available) {
+            product.setOutOfStockSince(null);
+            product.setOutOfStockSinceEstimated(false);
+        } else if (product.getOutOfStockSince() == null) {
+            product.setOutOfStockSince(Instant.now());
+            product.setOutOfStockSinceEstimated(false);
+        }
     }
 }

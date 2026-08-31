@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  ReviewRequestError,
-  submitProductReview,
-  uploadReviewPhoto,
-} from "./api";
+import { ReviewRequestError, submitProductReview, uploadReviewPhoto } from "./api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -20,9 +16,7 @@ describe("review public mutations", () => {
     vi.stubGlobal("fetch", fetchMock);
     const file = new File(["image"], "review.webp", { type: "image/webp" });
 
-    await expect(uploadReviewPhoto("prod/1", file)).resolves.toBe(
-      "/media/reviews/a/review.webp",
-    );
+    await expect(uploadReviewPhoto("prod/1", file)).resolves.toBe("/media/reviews/a/review.webp");
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toMatch(/\/api\/v1\/products\/prod%2F1\/reviews\/photos$/);
@@ -46,6 +40,7 @@ describe("review public mutations", () => {
       comment: "Phản hồi thử nghiệm",
       photos: ["/media/reviews/a/review.webp"],
       website: "",
+      inviteToken: "anonymous-review-token",
     });
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -58,6 +53,7 @@ describe("review public mutations", () => {
       comment: "Phản hồi thử nghiệm",
       photos: ["/media/reviews/a/review.webp"],
       website: "",
+      inviteToken: "anonymous-review-token",
     });
   });
 

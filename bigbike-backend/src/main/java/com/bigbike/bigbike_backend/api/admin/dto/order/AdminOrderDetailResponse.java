@@ -36,5 +36,7 @@ public record AdminOrderDetailResponse(
         List<OrderLineItemResponse> lineItems,
         List<OrderAddressResponse> addresses,
         List<OrderShippingItemResponse> shippingItems,
-        List<OrderPaymentResponse> payments
+        List<OrderPaymentResponse> payments,
+        String orderScope,
+        OrderHistoryClassificationResponse historyClassification
 ) {}

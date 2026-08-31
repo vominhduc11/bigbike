@@ -336,7 +336,9 @@ The public review list, approved aggregate, 9-bucket breakdown and linked custom
 
 Submits a review (`status = PENDING`, awaits admin moderation). Honeypot `website` field → accept-and-drop silently. Duplicate guard: same `productId` + normalized author + normalized body within 24h → `409`. Concurrent submits for the same product are serialized on that product before the duplicate query and insert, so two racing identical requests cannot both pass the guard. See `SubmitReviewRequest`.
 
-Body fields: `rating` (required, **decimal, one of `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5`** — 9 half-star levels), `comment` (optional, ≤1000), `website` (honeypot), plus `photos` (optional, `string[]`, ≤10). For guests, `authorName` is required (≤80) and `authorEmail` is optional (≤255, valid email when present). For an authenticated customer, both body fields are optional and ignored: the backend resolves display name and email from the current account (`REVIEW_RULE_007`). Any rating outside the 9 levels (e.g. `4.2`) → `400 VALIDATION_ERROR`.
+Body fields: `rating` (required, **decimal, one of `1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5`** — 9 half-star levels), `comment` (optional, ≤1000), `website` (honeypot), `photos` (optional, `string[]`, ≤10), and `inviteToken` (optional, opaque string, ≤256). For guests, `authorName` is required (≤80) and `authorEmail` is optional (≤255, valid email when present). For an authenticated customer, both body fields are optional and ignored: the backend resolves display name and email from the current account (`REVIEW_RULE_007`). Any rating outside the 9 levels (e.g. `4.2`) → `400 VALIDATION_ERROR`.
+
+When `inviteToken` is present, it must be the unused token issued for this exact product in one review-invitation delivery. Invalid/wrong-product token → `400 VALIDATION_ERROR`; a token already linked to a review → `409 CONCURRENT_MODIFICATION`. The review remains `PENDING` and follows the unchanged moderation contract. On successful insert the invitation item is atomically linked to the new review, even when a guest leaves `authorEmail` blank (`REVIEW_RULE_015`). The token is optional so the existing review form and API remain backward compatible.
 
 Each `photos[]` entry must be a canonical Review URL under `/media/reviews/...`. The object must have been created by this module's upload endpoint for the same `productId` and be unclaimed. Submit atomically claims each object for the newly created review; a missing, foreign-product, duplicate or already-claimed object returns `409`. This is a server-side ownership check, not URL-prefix trust alone (`REVIEW_RULE_005`/`011`).
 
@@ -354,6 +356,10 @@ Public, no auth. `multipart/form-data` with a single `file` part — uploads one
 Validation: image only — declared Content-Type and Apache Tika magic-byte detection must **match exactly** and be `image/jpeg`, `image/png`, or `image/webp` (no SVG/GIF/video); the stored object gets the canonical `.jpg`/`.png`/`.webp` extension for that verified type rather than trusting the client filename. Max **8 MB** per file. Unknown `productId` → `404`; wrong type / mismatch / oversize / empty → `400 VALIDATION_ERROR`. Photos are stored directly under the `reviews/` prefix and are **not** registered in the admin media library (`media` table). Contract target is to downscale to max **1600px** wide before storing (`ImageCompressionService`, MEDIA_RULE_006). JPEG/PNG currently meet that target; accepted WebP currently falls back to the original bytes because the runtime has no WebP ImageIO reader (`CODE_GAP_WEBP_2026-07-28`, shared Media P2 debt). Evidence: `PublicReviewController.uploadPhoto`, `ReviewPhotoStorageService`, `ReviewPhotoStorageServiceTest`, `ImageCompressionServiceTest`.
 
 Every successful upload also creates a durable unclaimed record containing its canonical object key, product ID and upload timestamp. A scheduled cleanup atomically removes records still unclaimed after 24 hours and then deletes the corresponding MinIO object. Once claimed by a submitted review, the object cannot be claimed again.
+
+### `POST /api/v1/review-invitations/unsubscribe`
+
+Public, no auth. Body `{ "token": "<opaque token>" }`; `token` is required and at most 256 characters. A valid token creates or confirms the permanent opt-out for the delivery email and changes all still-pending invitation deliveries for that normalized email to `SKIPPED`. The success response is `ApiDataResponse<{ "unsubscribed": true }>` and is idempotent for the same valid token. Invalid/unknown token returns `400 VALIDATION_ERROR`; no response reveals an email address. This mutation is protected by the existing public Review rate-limit tier and an exact CSRF exemption, matching the no-login requirement in `REVIEW_RULE_016`.
 
 ## Content Categories — REMOVED (2026-08-03)
 
@@ -693,7 +699,7 @@ Status: `CONFIRMED_FROM_CODE` — `AdminMediaController.java`, `AdminMediaFolder
 
 | Endpoint | Current contract | Status | Evidence |
 |---|---|---|---|
-| `POST /api/v1/checkout` | Revalidates price/availability state and creates order/payment rows. Availability is gated per-variant by `isAvailable` (boolean), or by `stockState` for no-variant products; there is **no quantity decrement** (V261). The old product-level `forceOutOfStock` hard override (`STOCK_RULE_004`) was removed (V342, 2026-07-19). Billing **and** resolved shipping address require `province` + `ward` + `addressLine1` (two-tier VN address; blank strings in a custom shipping block fall back to billing). No shipping-method choice and **no shipping fee** (`shippingAmount = 0`, owner decision 2026-06-23, `SHIP_RULE_001`). `paymentMethod` accepts `COD` or `BANK_TRANSFER`; omitted is normalised to `COD` and any other explicit code is rejected (`PAY_RULE_001`, owner decision 2026-07-21). | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, `CheckoutSupport.java`, checkout tests |
+| `POST /api/v1/checkout` | Revalidates price/availability state and creates order/payment rows. Availability is gated per-variant by `isAvailable` (boolean), or by `stockState` for no-variant products; there is **no quantity decrement** (V261). The old product-level `forceOutOfStock` hard override (`STOCK_RULE_004`) was removed (V342, 2026-07-19). Billing **and** resolved shipping address require `province` + `ward` + `addressLine1` (two-tier VN address; blank strings in a custom shipping block fall back to billing). No shipping-method choice and **no shipping fee** (`shippingAmount = 0`, owner decision 2026-06-23, `SHIP_RULE_001`). `paymentMethod` accepts `COD` or `BANK_TRANSFER`; omitted is normalised to `COD` and any other explicit code is rejected (`PAY_RULE_001`, owner decision 2026-07-21). Optional `locale` accepts only `vi|en`, defaults to `vi`, and is a passive order snapshot used only to select the language of a later review invitation; it does not change price, payment or order processing. | `OWNER_CONFIRMED_2026-08-31` | `CheckoutService.java`, `CheckoutSupport.java`, checkout and invitation tests |
 > **Removed (2026-07-15).** `POST /api/v1/orders/quick-buy` (single-item direct purchase) was deleted — endpoint, `CheckoutService.quickBuy`, `QuickBuyRequest` DTO, security matcher and tests (owner decision, reversing AUD-010). The storefront has no quick-buy entry point; customers order through the cart.
 
 > **Removed (2026-06-23, online-only).** `POST /api/v1/admin/pos/orders` (immediate in-store sale) and `GET /api/v1/admin/pos/products/search` (POS product search) were deleted along with the POS module. See "POS Contract" below.
@@ -716,7 +722,7 @@ Status: `REMOVED` | Evidence: commit gỡ `CheckoutController.getOptions` + `Che
 
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
-| `GET /api/v1/admin/dashboard?period={7d\|30d\|90d}` | `orders.read` only; no exact-role restriction | Returns KPI aggregates, revenue series, order-status breakdown, recent orders, top products. Revenue excludes `CANCELLED` orders (`FAILED` removed 2026-07-21). Default period: `30d`. | `OWNER_CONFIRMED_2026-07-31` | `AdminDashboardController.java`, `AdminDashboardService.java` |
+| `GET /api/v1/admin/dashboard?period={7d\|30d\|90d}` | `orders.read` only; no exact-role restriction | Returns mixed-scope dashboard data. `pendingOrders`, status breakdown and recent orders use `OPERATIONAL` only; revenue/order-volume/top-product metrics keep the existing financial formulas and include historical orders. Default period: `30d`. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_015`, `REPORT_RULE_012`, `AdminDashboardService.java` |
 
 Response shape: `ApiDataResponse<AdminDashboardSummaryResponse>`:
 - `kpi`: `{ todayRevenue, todayPaidRevenue, todayRevenuePct, todayOrders, todayOrdersDelta, pendingOrders, activeProducts }`
@@ -724,6 +730,7 @@ Response shape: `ApiDataResponse<AdminDashboardSummaryResponse>`:
 - `orderStatusBreakdown`: `[{ status, count }]` — period-scoped, all statuses with count > 0
 - `recentOrders`: last 5 orders `[{ id, orderNumber, customerName, customerEmail, total, orderStatus, currency, placedAt }]`
 - `topProducts`: top 5 by line-item revenue `[{ productId (product_pk varchar), name, revenue, units }]`
+- `scopes`: `{ operational: { orderScope:"OPERATIONAL", includesHistoricalOrders:false }, financial: { orderScope:"ALL", includesHistoricalOrders:true } }`. Field-specific status rules remain those documented above; this metadata only discloses historical-order inclusion.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -731,8 +738,8 @@ Status: `CONFIRMED_FROM_CODE`
 
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
-| `GET /api/v1/admin/reports/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD` | `reports.read` | Returns PeriodSummary, daily revenue series, top products, and top customers. | `CONFIRMED_FROM_CODE` | `AdminReportController.java`, `AdminReportService.java` |
-| `GET /api/v1/admin/reports/orders/export?q=...&status=...&from=...&to=...` | `reports.export` | Exports every order matching the current Orders-screen search/status/date filters to a UTF-8 BOM CSV file. `from`/`to` are inclusive Vietnam calendar dates and the export is not capped at 10,000 rows. | `CONFIRMED_FROM_CODE` | `ORDER_RULE_011`, `ORDER_RULE_012`, `AdminOrderCsvExportService.java` |
+| `GET /api/v1/admin/reports/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD` | `reports.read` | Returns PeriodSummary, daily revenue, top products and top customers; formulas include historical orders and expose `scope.includesHistoricalOrders=true`. | `OWNER_CONFIRMED_2026-08-31` | `REPORT_RULE_012`, `AdminReportService.java` |
+| `GET /api/v1/admin/reports/orders/export?q=...&status=...&from=...&to=...&orderScope=...&attention=...` | `reports.export` | Exports every order matching the Orders-screen filters. `orderScope` is `ALL|OPERATIONAL|HISTORICAL` (default `ALL`); optional `attention=OVERDUE` intersects operational PENDING with the current threshold. UTF-8 BOM, Vietnam dates and no row cap remain. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_011`–`015`, `AdminOrderCsvExportService.java` |
 | `GET /api/v1/admin/reports/customers/export?q=...&status=...&synthetic=...&emailVerified=...` | `reports.export` | Exports every customer matching the current Customers-screen search/status/synthetic/email-verification filters to a UTF-8 BOM CSV file. The export is streamed across all pages and has no 10,000-row cap. | `CONFIRMED_BACKEND_ENFORCED` | `CUSTOMER_RULE_009`, `AdminReportController.java`, `AdminCustomerCsvExportService.java` |
 
 **Custom range limit (frontend-only, `REPORT_RULE_011`):** The admin UI restricts the custom `from`/`to` range picker on the Reports screen to a maximum 90-day span. This is not enforced by `/analytics` itself, which only validates `from <= to`.
@@ -743,17 +750,18 @@ Returns `AdminAnalyticsResponse`. The `PeriodSummary` object inside `summary` co
 - `paidRevenue`: SUM(totalAmount) where status = COMPLETED; response name retained for compatibility.
 - `orderCount`: count of orders excl CANCELLED.
 - `avgOrderValue`: grossOrderValue / orderCount (or 0 if orderCount = 0).
+- `scope`: `{ orderScope:"ALL", includesHistoricalOrders:true }`; status inclusion remains field-specific as listed above.
 *(Note: `refundAmount` and `netRevenue` metrics were removed on 2026-07-04 as the refund feature is retired. `FAILED` was removed as an order status on 2026-07-21 — old `FAILED` orders were migrated to `CANCELLED`.)*
 
 ### Order Export Format
 The CSV file generated by `/api/v1/admin/reports/orders/export` contains the following headers in order:
-- `order_number`, `status`, `customer_email`, `customer_phone`, `currency`, `subtotal`, `shipping`, `total`, `paid_amount`, `placed_at`, `paid_at`, `completed_at`, `cancelled_at`
+- `order_number`, `status`, `customer_email`, `customer_phone`, `currency`, `subtotal`, `shipping`, `total`, `paid_amount`, `placed_at`, `paid_at`, `completed_at`, `cancelled_at`, `report_scope`, `order_scope`, `history_batch_key`
 *(Note: the `"discount"` column was removed on 2026-07-04 as promotion codes/discounts are retired).*
 
 The export applies `q` to the same case-insensitive fields as the Orders list
 (order number/key and customer email/phone), applies `status`, and interprets
 `from`/`to` at `Asia/Ho_Chi_Minh` day boundaries. It exports every match across
-all pages with no silent row cap.
+all pages with no silent row cap. The response also sets `X-Order-Scope` and the filename contains the effective scope, so an empty file still declares whether historical orders were included.
 
 ### Customer Export Format
 The CSV file generated by `/api/v1/admin/reports/customers/export` contains the following headers in order:
@@ -1096,7 +1104,7 @@ endpoints and one realtime notification topic, all gated by `inventory.read`:
 | Endpoint | Current behavior |
 |---|---|
 | `GET /api/v1/admin/inventory` | Flat stock list (variants + no-variant products), filter `q`/`stockState`, paginated. Carries `available: boolean` (no quantities). |
-| WebSocket `/topic/admin/inventory` | `INVENTORY_STATE_CHANGED` after-commit event when a product or variant changes between `IN_STOCK` and `OUT_OF_STOCK`; gated by `inventory.read`. The Dashboard invalidates `['inventory-summary']` and keeps 90-second polling as fallback. |
+| WebSocket `/topic/admin/inventory` | `INVENTORY_STATE_CHANGED` after-commit event when a product or variant changes between `IN_STOCK` and `OUT_OF_STOCK`, plus `INVENTORY_OUT_OF_STOCK_DIGEST_READY` after the persistent morning snapshot commits; gated by `inventory.read`. The Dashboard invalidates `['inventory-summary']`; the bell refreshes its inbox for the digest event. |
 | `GET /api/v1/admin/inventory/summary` | `{ totalItems, inStockCount, outOfStockCount }` — powers the Dashboard "Hết hàng" alert. |
 
 **Removed (2026-07-15, AUD-056, owner decision #8):** `GET /grouped`, `GET /movements`,
@@ -1709,7 +1717,9 @@ Video trang chủ có tiêu đề 2 ngôn ngữ (`title` VI + `title_en` EN tùy
 
 **Đọc public:** `GET /api/v1/home-videos` nhận query `lang` = `vi` (mặc định) hoặc
 `en`. Khi `lang=en`, `title` trả bản tiếng Anh, **lùi về VI** khi `title_en` rỗng.
-Storefront truyền `getLocale()` vào `lang`.
+Storefront truyền `getLocale()` vào `lang`. Response chỉ chứa **tối đa 10** bản ghi
+`is_active=true` đầu tiên theo `sortOrder`; ít hơn 10 thì trả số còn lại, rỗng thì
+storefront ẩn cả khối.
 
 **Đọc admin:** `GET /api/v1/admin/home-videos` trả thêm `titleEn` thô để editor sửa
 song ngữ. **Ghi:** `POST/PATCH /api/v1/admin/home-videos` nhận thêm `titleEn` (tùy
@@ -1719,9 +1729,19 @@ host và nền tảng khác trả `400 INVALID_VALUE`. PATCH không gửi `video
 cập nhật field khác và giữ nguyên URL legacy. Public/admin GET tiếp tục trả URL legacy
 để xem trước/render.
 
-Status: `CONFIRMED_FROM_CODE` — `PublicHomeVideoController` (`lang` param),
+**Đồng bộ tự động:** không thêm endpoint công khai hoặc admin mới. Scheduler chạy
+`04:10 Asia/Ho_Chi_Minh`, đọc kênh từ site setting `youtube_url`, lấy tối đa 15 video
+mới nhất và ghi qua cùng bảng `home_videos`. Bản ghi mới có `title` đúng feed,
+`titleEn=null`, `thumbnail=null`, `isActive=true`; mã đã tồn tại ở bất kỳ trạng thái
+nào bị bỏ qua. Scheduler chỉ có thể tạo bản ghi mới hoặc đổi video YouTube chắc chắn
+đã xoá/riêng tư sang `isActive=false`; không có đường tự động đổi bản ghi đang tắt
+sang bật. Mọi lỗi/timeout/payload không chắc chắn là no-op nguyên tử.
+
+Status: `OWNER_CONFIRMED_2026-08-31; CONFIRMED_FROM_CODE_AND_TEST` — `HOME_VIDEO_RULE_001`–`003`,
+`PublicHomeVideoController` (`lang` param),
 `PublicHomeVideoResponse.from(video, lang)`, `AdminHomeVideoService`,
-`UpsertHomeVideoRequest` / `PatchHomeVideoRequest` (`titleEn`), migration `V161`.
+`UpsertHomeVideoRequest` / `PatchHomeVideoRequest` (`titleEn`),
+`YouTubeHomeVideoSyncService`, migration `V161`.
 
 ## POS Contract — REMOVED (owner decision 2026-06-23, online-only)
 
@@ -1739,6 +1759,26 @@ Status: `REMOVED`
 | `PATCH /api/v1/admin/settings` | `settings.write` | **Batch update** — atomically update multiple settings in one transaction. Body: `{"updates":[{"key":"…","value":"…","valueEn":"…"}]}` (`valueEn` optional, null = unchanged; same required-`valueEn`-for-translatable-required-keys rule as the single-update path). All validations run before any mutation; if any item is invalid the whole request fails with 400 and no settings are changed. Same `superAdminOnly` 403 gate as the single-update path. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, `AdminSettingsService.batchUpdateSettings` |
 | `GET /api/v1/admin/product-assignment` | `products.read` **or** `content.read` | Returns the editable "Phân công" guide for the product AND content/article create-edit banners (same endpoint, same data): `{title, roles: [{id, name, items}]}` — `roles` is a dynamic list, 1–6 entries, Super-Admin managed; `items` is a single free-text field (not a nested array). A caller who can open either editor may read it. Write is via the `product_assign_title` + `product_assign_roles` `superAdminOnly` settings keys above. | `CONFIRMED_FROM_OWNER_DECISION` | `AdminProductAssignmentController.java`, `DevAdminAuthService.java` |
 | `GET /api/v1/settings/public` | public | List settings marked `isPublic=true` that are on the registry public allowlist. Sensitive keys are never exposed regardless of DB flag. | `CONFIRMED_FROM_CODE` | `PublicSettingsController.java` |
+
+`order_overdue_days` is a private `INTEGER` setting in group `order_operations`, default `2`, minimum `1`. It is edited through the existing admin settings list/batch PATCH under “Vận hành đơn hàng / Order operations”, never returned by the public settings endpoint, and does not create a new permission.
+
+The private `inventory` group contains `inventory_out_of_stock_digest_enabled` (`BOOLEAN`, default `true`) and `inventory_out_of_stock_digest_time` (`STRING`, default `08:00`, strict `HH:mm`). They are read/written through the existing admin endpoints with `settings.read`/`settings.write`, never returned publicly, and require no new endpoint.
+
+The private `review_invitation` group (`REVIEW_RULE_014`–`016`) contains exactly three keys and is never returned by `GET /api/v1/settings/public`:
+
+| Key | Type | Default | Validation / effect |
+|---|---|---|---|
+| `review_invitation_enabled` | `BOOLEAN` | `false` | `false → true` opens a new campaign at the committed update time. `true → false` closes it and permanently skips its pending deliveries. Writing the same value is a no-op. |
+| `review_invitation_delay_days` | `INTEGER` | `7` | Inclusive range 1–90. Updating it recalculates `dueAt` for still-pending deliveries of the active campaign from each order's `completedAt`; sent/attempted/skipped rows never change. |
+| `review_invitation_daily_limit` | `INTEGER` | `20` | Inclusive range 1–50. Caps attempts per Vietnam calendar day; failures and uncertain outcomes count. |
+
+`youtube_url` vẫn thuộc nhóm `contact` và xuất hiện trong public settings như trước,
+nhưng còn là nguồn duy nhất cho đồng bộ video trang chủ. Màn Video trang chủ đọc đúng
+setting này qua `GET /api/v1/admin/settings?q=youtube_url` (`settings.read`) và lưu qua
+batch PATCH hiện có (`settings.write`); nhóm Contact tổng vẫn ẩn trong Settings. Giá trị
+trống làm scheduler no-op; giá trị không trống chỉ nhận trang kênh HTTPS
+`youtube.com/@handle` hoặc `youtube.com/channel/UC...` (cho phép `www`, slash cuối và
+`sub_confirmation=1`), còn video/playlist/host khác trả `400 VALIDATION_ERROR`.
 
 **Batch update response shape:** `ApiDataResponse<List<AdminSiteSettingResponse>>` — items in same order as request `updates` array. `AdminSiteSettingResponse` no longer includes `enLocked` (dropped V312 with the Gemini auto-translation removal) — English values are entered manually, no lock/skip state to track.
 
@@ -1853,10 +1893,10 @@ Evidence: `AdminQuickSearchController`, `AdminQuickSearchService`, `AdminOrderSu
 
 | Method | Path | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/orders` | `orders.read` | Paginated order list. Query: `page` (≥1, default 1), `size` (1–100, default 20), `status`, `q` (order number/key, customer email or phone, stored customer name or shipping recipient name), `from`/`to` (`YYYY-MM-DD`, inclusive calendar dates interpreted at `Asia/Ho_Chi_Minh` day boundaries), and `sort` (default `placedAt:desc`; supports placed/created date and total amount). Text search is accent-insensitive and treats `%`, `_` and `\\` literally. | `CONFIRMED_FROM_CODE` | `ORDER_RULE_011`, `ADMIN_SEARCH_RULE_002`–`ADMIN_SEARCH_RULE_005`, `AdminOrderController.listOrders`, `AdminOrderService.listOrders`, `AdminOrderSupport` |
-| `GET` | `/api/v1/admin/orders/{orderId}` | `orders.read` | Admin order detail, including line-item/address/payment snapshots and internal-only `cancelReason` immediately after `cancelledAt`. Customer and guest order-detail responses do not expose `cancelReason`. | `CONFIRMED_FROM_CODE` | `AdminOrderController.getOrderDetail`, `AdminOrderDetailResponse` |
-| `GET` | `/api/v1/admin/orders/{orderId}/allowed-transitions` | `orders.read` | Returns only the legal next values in the single order-status lifecycle documented in `STATE_MACHINES.md` §6. | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAllowedTransitions`, `AdminOrderService.ALLOWED_TRANSITIONS` |
-| `PATCH` | `/api/v1/admin/orders/{orderId}/status` | `orders.write` | Accepts `UpdateOrderStatusRequest.status` and optional `cancelReason`. When transitioning into `CANCELLED`, `cancelReason` is mandatory; the backend stores the trimmed value in `orders.cancel_reason` and rejects blank/missing values with `VALIDATION_ERROR`. Repeating the already-current status is an idempotent no-op; invalid lifecycle moves return conflict. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderController.updateOrderStatus`, `AdminOrderService.updateOrderStatus` |
+| `GET` | `/api/v1/admin/orders` | `orders.read` | Existing page/status/search/date/sort query plus `orderScope=ALL|OPERATIONAL|HISTORICAL` (API default `ALL`) and optional `attention=OVERDUE`. Overdue is valid only for operational PENDING and uses `order_overdue_days`. Text/date semantics remain unchanged. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_011`–`015`, `AdminOrderSupport` |
+| `GET` | `/api/v1/admin/orders/{orderId}` | `orders.read` | Existing snapshots plus `orderScope` and nullable `historyClassification { batchKey, labelVi, labelEn, reasonVi, reasonEn, classifiedAt }`. Customer/guest APIs do not expose this internal metadata. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, `AdminOrderDetailResponse` |
+| `GET` | `/api/v1/admin/orders/{orderId}/allowed-transitions` | `orders.read` | Returns legal lifecycle values for operational orders; returns an empty list for an active historical order. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `STATE_MACHINES.md` §6 |
+| `PATCH` | `/api/v1/admin/orders/{orderId}/status` | `orders.write` | Existing transition contract remains; active historical orders always return `409 HISTORICAL_ORDER_READ_ONLY` before same-status handling or side effects. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `AdminOrderService.updateOrderStatus` |
 | `GET` | `/api/v1/admin/orders/{orderId}/audit` | `orders.read` | Returns the order's internal audit trail in reverse chronological order. | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
 
 ## Customer Admin
@@ -1947,16 +1987,20 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 
 ## Admin Notification Center Contract (V102 + V339 + retention)
 
-Persistent counterpart of the WebSocket order and chat feeds — admins offline when an event fires still see it here. Both endpoints are gated by **`orders.read` OR `chat.read`** (no dedicated `notifications.*` permission), so chat-only staff reach their own inbox. The listing is then **scoped to the caller's permissions**: `CHAT_*` rows are returned only with `chat.read`, all other rows only with `orders.read`, and `unreadCount` counts the same scoped set.
+Persistent counterpart of the WebSocket feeds — admins offline when an order event or morning inventory digest fires still see it here. A caller needs at least one of **`orders.read`** or **`inventory.read`** and receives only matching rows; the retired customer-chat handoff feed is not persisted or exposed.
 
 **Per-admin read state (V339, AUD-017/018/019).** Read state is tracked **per admin** in `admin_notification_reads` (a per-admin `last_read_at` high-water mark) — a notification is "read" for an admin when it was created at/before that admin's marker. The legacy shared `admin_notifications.is_read` flag is removed by the retention cleanup migration and must not be reintroduced. `GET` returns the shared recent backlog (up to 50, newest first) with each item's `isRead` resolved for the calling admin, plus that admin's exact `unreadCount`; the server count is authoritative even when the UI displays only its newest 30 rows. `mark-all-read` only advances the **caller's** marker — it never mutates shared rows, so other admins keep their unread state and no backlog disappears until the six-month retention job removes an expired row. The notification `payload` shape and privacy boundary remain unchanged.
 
 | Method | Path | Permission | Purpose | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/notifications` | `orders.read` or `chat.read` | Recent notifications (≤50) with the caller's `unreadCount`. Each item: `id`, `type`, `orderId`, `orderNumber`, `payload` (incl. `customerName`, `total`), `isRead` (per-admin), `createdAt`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.inboxFor` |
-| `POST` | `/api/v1/admin/notifications/mark-all-read` | `orders.read` or `chat.read` | Advance the calling admin's read marker to now. Returns `{ unreadCount: 0 }`. | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.markAllReadFor` |
+| `GET` | `/api/v1/admin/notifications` | `orders.read` or `inventory.read` | Recent permission-filtered notifications (≤50) with the caller's exact `unreadCount`. Common item fields: `id`, `type`, optional `orderId`/`orderNumber`, parsed `payload`, `isRead`, `createdAt`. | `OWNER_CONFIRMED_2026-08-31` | `AdminNotificationController.java`, `AdminNotificationService.inboxFor` |
+| `POST` | `/api/v1/admin/notifications/mark-all-read` | `orders.read` or `inventory.read` | Advance the calling admin's marker to now for the notification scopes they can see. Returns `{ unreadCount: 0 }`. | `OWNER_CONFIRMED_2026-08-31` | `AdminNotificationController.java`, `AdminNotificationService.markAllReadFor` |
 
-> **Write path (fixed 2026-08-28).** Rows are stored from `TransactionSynchronization.afterCommit()` in `AdminOrderWsService` / `AdminChatWsService`, so every `persist*` method on `AdminNotificationService` must run with `Propagation.REQUIRES_NEW`. Under the default `REQUIRED` the save silently joins the already-committed transaction, never flushes, and is dropped without an exception — which left `admin_notifications` empty in production while orders and handoffs kept arriving. Regression: `AdminNotificationAfterCommitTest`.
+For `type=INVENTORY_OUT_OF_STOCK_DIGEST`, `payload` is the immutable morning snapshot described in `DATA_CONTRACT.md`: `schemaVersion`, `digestDate`, `generatedAt`, `counts { fullyOutOfStockProducts, partiallyOutOfStockProducts, unavailableVariants }`, `fullyOutOfStock[]`, and `partiallyOutOfStock[]`. Product entries carry localized names, SKU, direct `editPath`, `outOfStockSince`, `outOfStockDays`, and `outOfStockSinceEstimated`; partial entries also carry every unavailable variant. Long arrays are not API-truncated.
+
+For `type=ORDER_OVERDUE_DIGEST`, `orderId`/`orderNumber` are null and `payload` is `{ schemaVersion:1, count, thresholdDays, cutoffAt }`. It contains no PII and no order-id array. It is visible only with `orders.read`; the admin bell links it to `/admin/orders?orderScope=OPERATIONAL&orderStatus=PENDING&attention=OVERDUE`.
+
+> **Write path (fixed 2026-08-28).** Order rows are stored from `TransactionSynchronization.afterCommit()` in `AdminOrderWsService`, so every `persist*` method on `AdminNotificationService` must run with `Propagation.REQUIRES_NEW`. Under the default `REQUIRED` the save silently joins the already-committed transaction, never flushes, and is dropped without an exception. Regression: `AdminNotificationAfterCommitTest`.
 
 Notification rows older than six calendar months are removed by the daily retention job; the per-admin read-marker table is retained. `NOTIFICATION_RULE_001` applies.
 
@@ -1972,7 +2016,7 @@ Notification rows older than six calendar months are removed by the daily retent
 | Confirmed topic | `/topic/admin/orders` | `CONFIRMED_FROM_CODE` | `AdminOrderWsService.java`, `adminWebSocket.js` |
 | Payload | `OrderWsEvent` with `type`, `orderId`, `orderNumber`, `customerName`, `total`, `status`, `paymentMethod`, `timestamp` | `CONFIRMED_FROM_CODE` | `OrderWsEvent.java` |
 | Confirmed topic | `/topic/admin/inventory` | `CONFIRMED_FROM_CODE` | `AdminInventoryWsService.java`, `adminWebSocket.js` |
-| Inventory payload | `InventoryWsEvent` with `type`, `productId`, `timestamp`; subscription requires `inventory.read` | `CONFIRMED_FROM_CODE` | `InventoryWsEvent.java`, `WebSocketConfig.java` |
+| Inventory payload | `InventoryWsEvent` with `type`, nullable `productId`, `timestamp`; subscription requires `inventory.read`. Digest-ready uses `type=INVENTORY_OUT_OF_STOCK_DIGEST_READY` and `productId=null`, prompting the bell to reload the persistent snapshot. | `OWNER_CONFIRMED_2026-08-31` | `InventoryWsEvent.java`, `WebSocketConfig.java` |
 | Confirmed topic | `/topic/admin/reviews` | `CONFIRMED_FROM_CODE` | `AdminReviewWsService.java`, `adminWebSocket.js` |
 | Review payload | `ReviewWsEvent` with `type`, `reviewId`, `productId`, `status`, `timestamp`; `REVIEW_SUBMITTED` is sent after the public review transaction commits and subscription requires `reviews.read` | `CONFIRMED_FROM_CODE` | `ReviewWsEvent.java`, `PublicReviewService.java`, `WebSocketConfig.java` |
 | Confirmed topic | `/topic/admin/customers` | `CONFIRMED_FROM_CODE` | `AdminCustomerWsService.java`, `adminWebSocket.js` |
@@ -2090,6 +2134,19 @@ empty nullable metadata so the admin UI can render an explicit fallback.
 Review audit snapshots intentionally contain no `authorEmail`, review body/comment
 or photo URLs. They retain only operational metadata such as review/product ID,
 status, rating, photo count, timestamps and optimistic version.
+
+## Admin Review Invitations Contract
+
+All endpoints require an Admin JWT. Read endpoints require `settings.read`; the sole mutation requires `settings.write`. They live under Settings rather than the Review moderation permissions because they control outbound communication and global opt-out records (`REVIEW_RULE_014`–`016`).
+
+| Method | Path | Permission | Purpose |
+|---|---|---|---|
+| `GET` | `/api/v1/admin/review-invitations/summary` | `settings.read` | Returns `{ pending, sent, failed, uncertain, skipped, optedOut, attemptedToday, dailyLimit, enabled, delayDays }`. Counts are global; `attemptedToday` uses the Vietnam calendar date. |
+| `GET` | `/api/v1/admin/review-invitations` | `settings.read` | Paginated list, stable order `createdAt DESC, id DESC`. Optional `page` (1-based), `size` (1–100), `status` (`PENDING|SENDING|SENT|FAILED|UNCERTAIN|SKIPPED`) and literal `q` over order number/email. Item shape: `{ id, orderId, orderNumber, recipientEmail, locale, status, completedAt, dueAt, attemptedAt, providerAcceptedAt, skipReason, failureCode, failureMessage, productCount, reviewedProductCount, createdAt }`. Secret tokens are never returned. |
+| `POST` | `/api/v1/admin/review-invitations/{id}/skip` | `settings.write` | Body `{ "reason": "REFUNDED" }`. Allowed only while `PENDING`; changes it to `SKIPPED` with reason `REFUNDED`. Same-state refunded skip is idempotent; attempted/final rows return `409`. |
+| `GET` | `/api/v1/admin/review-invitation-opt-outs` | `settings.read` | Paginated permanent opt-out list, optional `page`, `size`, `q`; shape `{ items: [{ email, optedOutAt, source }], pagination }`. There is deliberately no delete/re-subscribe endpoint. |
+
+The invitation list records failures rather than swallowing them. `failureMessage` is a sanitized operator-facing summary and must not contain a token or SMTP credential. `SENDING` older than 30 minutes becomes `UNCERTAIN` and is never retried. `SKIPPED` reason vocabulary is `FEATURE_DISABLED`, `CAMPAIGN_CLOSED`, `ORDER_CANCELLED`, `REFUNDED`, `OPTED_OUT`, `NO_ELIGIBLE_PRODUCTS`, `ALREADY_REVIEWED`; a missing-email order is omitted before a delivery row is created.
 
 ## Admin Roles Contract
 
@@ -2232,7 +2289,7 @@ Response `data`: `{ mode, reason, maxTurns, contacts, images }`.
 
 Body `@Valid`: `{ conversationId?:uuid, requestId?:uuid, message?:0..1000, imageIds?:uuid[0..1], lang:"vi|en", pageContext?:{type:"PRODUCT",productSlug:"slug"}, clarificationSelection?:{clarificationId,optionId} }`. Ít nhất một trong `message`/`imageIds` phải có. `conversationId` bỏ trống ở lượt đầu; client giữ nguyên `requestId` khi retry. Cùng request id trả đúng kết quả đã lưu, không tăng quota/tạo tin/gọi provider lần hai.
 
-Response `data`: `{ conversationId, assistantMessageId, mode, reason, answer, answerFormat, resultKind, turnCount, maxTurns, remainingTurns, products, crossSellProducts, images, clarification, nextStep, actions, contacts, continuation }`.
+Response `data`: `{ conversationId, assistantMessageId, mode, reason, answer, answerFormat, resultKind, turnCount, maxTurns, remainingTurns, products, crossSellProducts, clarification, nextStep, actions, contacts, continuation }`.
 
 - `actions` chỉ là allowlist server-owned; chỉ có `CALL_HOTLINE`, `OPEN_ZALO`, `OPEN_MESSENGER` cho liên hệ trực tiếp. Không có `CONTACT_STAFF`, `leadOffer`, `leadPrompt`, interaction id hoặc proof gắn đơn.
 - Customer turn có trần cố định 40; clarification và retry cùng `requestId` không tính. Khi đạt trần, backend tạo hội thoại nối tiếp cùng thread/context đã làm sạch, không trả hard `TURN_LIMIT` và không chặn khách.

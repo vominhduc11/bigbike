@@ -19,7 +19,7 @@ describe("chat client safety normalization", () => {
         mode: "AI",
         answer: "Dạ, em đã kiểm tra các lựa chọn đang bán. Anh/chị xem mẫu phù hợp bên dưới nhé.",
         turnCount: 1,
-        maxTurns: 12,
+        maxTurns: 40,
         remainingTurns: 11,
         products: [
           {
@@ -47,7 +47,6 @@ describe("chat client safety normalization", () => {
             stockState: "IN_STOCK",
           },
         ],
-        handoffRecommended: false,
         actions: [],
         contacts: {},
       }) as never,
@@ -67,10 +66,9 @@ describe("chat client safety normalization", () => {
       answerFormat: "PLAIN_TEXT",
       resultKind: "ANSWER",
       turnCount: 1,
-      maxTurns: 12,
+      maxTurns: 40,
       remainingTurns: 11,
       products: [],
-      handoffRecommended: false,
       actions: [],
       contacts: {},
     };
@@ -200,7 +198,7 @@ describe("chat client safety normalization", () => {
         answerFormat: "PLAIN_TEXT",
         resultKind: "CLARIFICATION",
         turnCount: 1,
-        maxTurns: 16,
+        maxTurns: 40,
         remainingTurns: 15,
         products: [],
         clarification: {
@@ -211,7 +209,6 @@ describe("chat client safety normalization", () => {
             { id: "show-all", label: "Cứ cho em xem tất cả", count: null, kind: "BYPASS" },
           ],
         },
-        handoffRecommended: false,
         actions: [{ type: "CHECK_SIZE" }],
         contacts: {},
       }) as never,
@@ -248,7 +245,7 @@ describe("chat client safety normalization", () => {
         mode: "AI",
         answer: "Please choose one option.",
         turnCount: 1,
-        maxTurns: 16,
+        maxTurns: 40,
         remainingTurns: 15,
         products: [],
         clarification: {
@@ -256,7 +253,6 @@ describe("chat client safety normalization", () => {
           criterion: "GROUP",
           options: [{ id: "bad", label: "IN_STOCK", count: 1, kind: "FILTER" }],
         },
-        handoffRecommended: false,
         actions: [],
         contacts: {},
       }) as never,

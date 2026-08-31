@@ -77,11 +77,11 @@ class StorePolicyServiceTest {
         var en = service.get("warranty", "en");
 
         assertThat(Jsoup.parse(vi.bodyHtml()).text())
-                .contains("Nhắn Zalo 0760000000 hoặc gọi Hotline 0900000000")
+                .contains("Vui lòng gọi Hotline 0900000000 hoặc nhắn Zalo 0760000000")
                 .contains("Địa chỉ đang dùng", "Thứ 2–7: 9–21h")
                 .doesNotContain("ZaloGọi");
         assertThat(Jsoup.parse(en.bodyHtml()).text())
-                .contains("Message Zalo 0760000000 or call Hotline 0900000000")
+                .contains("Please call Hotline 0900000000 or message Zalo 0760000000")
                 .contains("Current address", "Mon–Sat: 9–21")
                 .doesNotContain("ZaloCall");
     }
@@ -119,11 +119,11 @@ class StorePolicyServiceTest {
         String en = Jsoup.parse(service.get("return-exchange", "en").bodyHtml()).text();
 
         assertThat(vi)
-                .contains("Nhắn Zalo 0760000000 hoặc gọi Hotline 0900000000")
+                .contains("Vui lòng gọi Hotline 0900000000 hoặc nhắn Zalo 0760000000")
                 .contains("Địa chỉ đang dùng", "Thứ 2–7: 9–21h")
                 .doesNotContain("0906902404", "0764640679", "địa chỉ cũ");
         assertThat(en)
-                .contains("Message Zalo 0760000000 or call Hotline 0900000000")
+                .contains("Please call Hotline 0900000000 or message Zalo 0760000000")
                 .contains("Current address", "Mon–Sat: 9–21")
                 .doesNotContain("0906902404", "0764640679", "old address");
     }

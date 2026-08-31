@@ -65,8 +65,8 @@ const COPY = {
     en: "7. Images sent to BigBike Assistant",
   },
   s7Intro: {
-    vi: "Tính năng gửi ảnh mặc định tắt và chỉ xuất hiện khi BigBike chủ động bật. Trước khi chọn ảnh, khung chat sẽ nhắc rõ cách ảnh được xử lý.",
-    en: "Image upload is off by default and appears only after BigBike enables it. Before you select an image, chat clearly explains how it will be handled.",
+    vi: "Tính năng gửi ảnh luôn sẵn sàng khi dịch vụ AI Google đã được BigBike cấu hình; tính năng này không có công tắc bật/tắt trong Cài đặt. Trước khi chọn ảnh, khung chat sẽ nhắc rõ cách ảnh được xử lý.",
+    en: "Image upload is always available when BigBike has configured Google's AI service; there is no image on/off switch in Settings. Before you select an image, chat clearly explains how it will be handled.",
   },
   footerNote: {
     vi: "Chính sách này có thể được cập nhật theo thời gian. Phiên bản mới nhất luôn được đăng tại bigbike.vn.",
@@ -149,6 +149,10 @@ const CHAT_IMAGES: Bi[] = [
   {
     vi: "Ảnh tự động bị xoá khi hết hạn lưu 90 ngày. Nếu khách xoá lịch sử trò chuyện, ảnh trong lịch sử đó cũng bị xoá.",
     en: "Images are automatically deleted after the 90-day retention period. Deleting chat history also deletes images attached to that history.",
+  },
+  {
+    vi: "Khách có quyền xem ảnh đã lưu trong lịch sử của mình và yêu cầu BigBike xoá ảnh hoặc xoá toàn bộ lịch sử trò chuyện.",
+    en: "You can view images saved in your own history and ask BigBike to delete an image or your entire chat history.",
   },
   {
     vi: "Ảnh không phù hợp có thể bị chặn và không được xử lý tiếp. Khách luôn có thể không gửi ảnh và mô tả nhu cầu bằng chữ.",

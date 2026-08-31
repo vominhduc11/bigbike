@@ -154,7 +154,8 @@ class Phase1KOpenApiContractTest {
         JsonNode exportParameters = exportOperation.path("parameters");
 
         assertThat(listParameters.findValuesAsText("name"))
-                .contains("page", "size", "status", "q", "from", "to", "sort");
+                .contains("page", "size", "status", "q", "from", "to", "sort",
+                        "orderScope", "attention");
         assertThat(parameterNamed(listParameters, "from").path("description").asText())
                 .contains("Asia/Ho_Chi_Minh");
         assertThat(parameterNamed(listParameters, "to").path("description").asText())
@@ -162,7 +163,7 @@ class Phase1KOpenApiContractTest {
         assertThat(paths.path("/api/v1/admin/orders").path("get").path("responses").has("400")).isTrue();
 
         assertThat(exportParameters.findValuesAsText("name"))
-                .containsExactly("q", "status", "from", "to");
+                .containsExactly("q", "status", "from", "to", "orderScope", "attention");
         assertThat(parameterNamed(exportParameters, "q").path("description").asText())
                 .doesNotContain("customer name");
         assertThat(textValues(parameterNamed(exportParameters, "status").path("schema").path("enum")))

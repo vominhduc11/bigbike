@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
+
+    boolean existsByProductIdAndCustomerId(String productId, UUID customerId);
+
+    @Query(value = """
+            select exists(
+                select 1 from reviews
+                where product_id = :productId
+                  and author_email is not null
+                  and lower(trim(author_email)) = :normalizedEmail
+            )
+            """, nativeQuery = true)
+    boolean existsByProductIdAndNormalizedAuthorEmail(
+            @Param("productId") String productId,
+            @Param("normalizedEmail") String normalizedEmail);
 
     Optional<ReviewEntity> findByLegacyId(Long legacyId);
 

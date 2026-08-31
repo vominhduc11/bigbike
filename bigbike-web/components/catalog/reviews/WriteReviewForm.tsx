@@ -11,11 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/Avatar";
 import { useAuth } from "@/lib/auth/auth-store";
-import {
-  ReviewRequestError,
-  submitProductReview,
-  uploadReviewPhoto,
-} from "./api";
+import { ReviewRequestError, submitProductReview, uploadReviewPhoto } from "./api";
 import { StarRatingInput } from "./stars";
 import type { PhotoItem } from "./types";
 import { createReviewSchema, type ReviewFormValues } from "@/lib/schemas/customer";
@@ -29,12 +25,14 @@ export function WriteReviewForm({
   productId,
   onSuccess,
   variant = "card",
+  inviteToken,
 }: {
   productId: string;
   onSuccess: () => void;
   // "card" = khung viền + tiêu đề riêng (cũ, dùng inline). "dialog" = bỏ khung +
   // tiêu đề vì DialogTitle của modal đã là tiêu đề. Hiện chỉ modal dùng form này.
   variant?: "card" | "dialog";
+  inviteToken?: string;
 }) {
   const t = useTranslations("Product.reviews");
   const tValidation = useTranslations("FormValidation");
@@ -53,10 +51,18 @@ export function WriteReviewForm({
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const reviewValidation = (key: string) => key === "ratingInvalid"
-    ? t("errorPickStars")
-    : key === "required" ? t("errorPickName") : tValidation(key);
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<ReviewFormValues>({
+  const reviewValidation = (key: string) =>
+    key === "ratingInvalid"
+      ? t("errorPickStars")
+      : key === "required"
+        ? t("errorPickName")
+        : tValidation(key);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<ReviewFormValues>({
     resolver: zodResolver(createReviewSchema(reviewValidation, Boolean(signedInProfile))),
     defaultValues: { rating: 0, authorName: "", authorEmail: "", comment: "", website: "" },
   });
@@ -125,12 +131,13 @@ export function WriteReviewForm({
         .filter((p) => p.status === "done" && p.url)
         .map((p) => p.url as string);
       await submitProductReview(productId, {
-          authorName: effectiveName,
-          authorEmail: effectiveEmail || undefined,
-          rating: values.rating,
-          comment: values.comment,
-          photos: photoUrls,
-          website: values.website,
+        authorName: effectiveName,
+        authorEmail: effectiveEmail || undefined,
+        rating: values.rating,
+        comment: values.comment,
+        photos: photoUrls,
+        website: values.website,
+        inviteToken,
       });
       setDone(true);
       onSuccess();
@@ -146,7 +153,9 @@ export function WriteReviewForm({
       } else {
         setError(t("errorNetwork"));
       }
-    } finally { /* react-hook-form owns submitting state */ }
+    } finally {
+      /* react-hook-form owns submitting state */
+    }
   }
 
   return (
@@ -177,8 +186,16 @@ export function WriteReviewForm({
             <Label className="text-a5-meta font-semibold text-[var(--bb-text-primary)]">
               {t("formStars")} <span className="text-brand">*</span>
             </Label>
-            <StarRatingInput value={rating} onChange={(next) => { setRating(next); setValue("rating", next, { shouldValidate: true }); }} />
-            {errors.rating && <p className="m-0 text-a5-meta text-brand">{errors.rating.message}</p>}
+            <StarRatingInput
+              value={rating}
+              onChange={(next) => {
+                setRating(next);
+                setValue("rating", next, { shouldValidate: true });
+              }}
+            />
+            {errors.rating && (
+              <p className="m-0 text-a5-meta text-brand">{errors.rating.message}</p>
+            )}
           </div>
 
           {signedInProfile ? (
@@ -212,7 +229,9 @@ export function WriteReviewForm({
                   placeholder={t("formNamePlaceholder")}
                   maxLength={80}
                 />
-                {errors.authorName && <p className="m-0 text-a5-meta text-brand">{errors.authorName.message}</p>}
+                {errors.authorName && (
+                  <p className="m-0 text-a5-meta text-brand">{errors.authorName.message}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -222,12 +241,10 @@ export function WriteReviewForm({
                 >
                   {t("formEmail")}
                 </Label>
-                <Input
-                  id="review-email"
-                  type="email"
-                  {...register("authorEmail")}
-                />
-                {errors.authorEmail && <p className="m-0 text-a5-meta text-brand">{errors.authorEmail.message}</p>}
+                <Input id="review-email" type="email" {...register("authorEmail")} />
+                {errors.authorEmail && (
+                  <p className="m-0 text-a5-meta text-brand">{errors.authorEmail.message}</p>
+                )}
               </div>
             </>
           )}
@@ -246,7 +263,9 @@ export function WriteReviewForm({
               maxLength={1000}
               rows={5}
             />
-            {errors.comment && <p className="m-0 text-a5-meta text-brand">{errors.comment.message}</p>}
+            {errors.comment && (
+              <p className="m-0 text-a5-meta text-brand">{errors.comment.message}</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">

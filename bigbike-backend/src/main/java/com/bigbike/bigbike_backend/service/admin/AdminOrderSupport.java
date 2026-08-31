@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderAddressEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
+import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderHistoryBatchOrderEntity;
 import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import com.bigbike.bigbike_backend.util.AdminSearchText;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -59,7 +60,8 @@ final class AdminOrderSupport {
         return new AdminOrderListItemResponse(
                 dto.id(), dto.orderNumber(), dto.status(), dto.fulfillmentType(),
                 dto.customerEmail(), dto.customerPhone(), fallback,
-                dto.totalAmount(), dto.currency(), dto.placedAt(), dto.itemCount(), dto.source());
+                dto.totalAmount(), dto.currency(), dto.placedAt(), dto.itemCount(), dto.source(),
+                dto.orderScope(), dto.historyClassification());
     }
 
     static String safeCustomerName(OrderEntity order) {
@@ -93,6 +95,24 @@ final class AdminOrderSupport {
 
     static Specification<OrderEntity> buildFilterSpecification(
             String status, String q, String from, String to
+    ) {
+        return buildFilterSpecification(
+                status,
+                q,
+                from,
+                to,
+                AdminOrderQueryOptions.from(null, null),
+                null
+        );
+    }
+
+    static Specification<OrderEntity> buildFilterSpecification(
+            String status,
+            String q,
+            String from,
+            String to,
+            AdminOrderQueryOptions queryOptions,
+            Instant overdueCutoff
     ) {
         Instant fromInstant = parseFromDate(from);
         Instant toInstant = parseToDate(to);
@@ -135,8 +155,44 @@ final class AdminOrderSupport {
             if (toInstant != null) {
                 predicates.add(cb.lessThan(root.get("placedAt"), toInstant));
             }
+
+            if (queryOptions.orderScope() == AdminOrderQueryOptions.OrderScope.HISTORICAL) {
+                predicates.add(historicalMembershipExists(root, criteriaQuery, cb));
+            } else if (queryOptions.orderScope() == AdminOrderQueryOptions.OrderScope.OPERATIONAL) {
+                predicates.add(cb.not(historicalMembershipExists(root, criteriaQuery, cb)));
+            }
+
+            if (queryOptions.overdueOnly()) {
+                predicates.add(cb.not(historicalMembershipExists(root, criteriaQuery, cb)));
+                predicates.add(cb.equal(root.get("status"), OrderStatus.PENDING.name()));
+                if (overdueCutoff == null) {
+                    predicates.add(cb.disjunction());
+                } else {
+                    Expression<Instant> orderAge = cb.coalesce(
+                            root.<Instant>get("placedAt"),
+                            root.<Instant>get("createdAt")
+                    );
+                    predicates.add(cb.lessThan(orderAge, overdueCutoff));
+                }
+            }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    private static Predicate historicalMembershipExists(
+            Root<OrderEntity> orderRoot,
+            CriteriaQuery<?> criteriaQuery,
+            jakarta.persistence.criteria.CriteriaBuilder cb
+    ) {
+        Subquery<UUID> membershipSubquery = criteriaQuery.subquery(UUID.class);
+        Root<OrderHistoryBatchOrderEntity> membership =
+                membershipSubquery.from(OrderHistoryBatchOrderEntity.class);
+        membershipSubquery.select(membership.get("id"));
+        membershipSubquery.where(
+                cb.equal(membership.get("order").get("id"), orderRoot.get("id")),
+                cb.isTrue(membership.get("batch").get("active"))
+        );
+        return cb.exists(membershipSubquery);
     }
 
     private static Expression<String> unaccentLower(

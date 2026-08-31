@@ -19,6 +19,22 @@ public interface AdminNotificationJpaRepository extends JpaRepository<AdminNotif
             """)
     List<AdminNotificationEntity> findVisible(Pageable pageable);
 
+    @Query("""
+            select n from AdminNotificationEntity n
+            where n.type = 'INVENTORY_OUT_OF_STOCK_DIGEST'
+            order by n.createdAt desc
+            """)
+    List<AdminNotificationEntity> findInventoryVisible(Pageable pageable);
+
+    @Query("""
+            select n from AdminNotificationEntity n
+            where n.type like 'ORDER_%'
+               or n.type = 'NEW_ORDER'
+               or n.type = 'INVENTORY_OUT_OF_STOCK_DIGEST'
+            order by n.createdAt desc
+            """)
+    List<AdminNotificationEntity> findAllVisible(Pageable pageable);
+
     // Everything visible to this admin — used when the caller has no read marker yet,
     // in which case the whole backlog counts as unread (see API_CONTRACT.md V339).
     @Query("""
@@ -26,6 +42,20 @@ public interface AdminNotificationJpaRepository extends JpaRepository<AdminNotif
             where n.type like 'ORDER_%' or n.type = 'NEW_ORDER'
             """)
     long countVisible();
+
+    @Query("""
+            select count(n) from AdminNotificationEntity n
+            where n.type = 'INVENTORY_OUT_OF_STOCK_DIGEST'
+            """)
+    long countInventoryVisible();
+
+    @Query("""
+            select count(n) from AdminNotificationEntity n
+            where n.type like 'ORDER_%'
+               or n.type = 'NEW_ORDER'
+               or n.type = 'INVENTORY_OUT_OF_STOCK_DIGEST'
+            """)
+    long countAllVisible();
 
     // Keep :since in a typed comparison only. A `:since is null` branch here renders a bare
     // placeholder that PostgreSQL cannot type ("could not determine data type of parameter"),
@@ -37,7 +67,23 @@ public interface AdminNotificationJpaRepository extends JpaRepository<AdminNotif
             """)
     long countVisibleAfter(@Param("since") Instant since);
 
-    @Modifying
+    @Query("""
+            select count(n) from AdminNotificationEntity n
+            where n.type = 'INVENTORY_OUT_OF_STOCK_DIGEST'
+              and n.createdAt > :since
+            """)
+    long countInventoryVisibleAfter(@Param("since") Instant since);
+
+    @Query("""
+            select count(n) from AdminNotificationEntity n
+            where (n.type like 'ORDER_%'
+                or n.type = 'NEW_ORDER'
+                or n.type = 'INVENTORY_OUT_OF_STOCK_DIGEST')
+              and n.createdAt > :since
+            """)
+    long countAllVisibleAfter(@Param("since") Instant since);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
             with candidates as (
                 select id

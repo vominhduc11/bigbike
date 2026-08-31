@@ -260,8 +260,6 @@ class ChatResponseGuardTest {
                 .toList();
 
         assertThat(rejectedReplies).isEmpty();
-        assertThat(guard.isSafeGreeting("Dạ, em là Trợ lý BigBike, trợ lý ảo AI của BigBike.", "vi")).isTrue();
-        assertThat(guard.isSafeGreeting("I am BigBike Assistant, BigBike's AI shopping assistant.", "en")).isTrue();
     }
 
     private record PreparedReply(String lang, String text) {}

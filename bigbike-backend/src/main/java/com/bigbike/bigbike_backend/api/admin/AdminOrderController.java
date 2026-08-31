@@ -44,11 +44,14 @@ public class AdminOrderController extends AdminControllerSupport {
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             @RequestParam(required = false, defaultValue = "placedAt:desc") String sort,
+            @RequestParam(defaultValue = "ALL") String orderScope,
+            @RequestParam(required = false) String attention,
             HttpServletRequest request
     ) {
         devAdminAuthService.requirePermission(request, "orders.read");
         return apiResponseFactory.list(
-                adminOrderService.listOrders(page, size, status, q, from, to, sort),
+                adminOrderService.listOrders(
+                        page, size, status, q, from, to, sort, orderScope, attention),
                 request
         );
     }

@@ -70,12 +70,15 @@ describe('exportOrdersCsv', () => {
       status: 'PROCESSING',
       from: '2026-07-20',
       to: '2026-07-24',
+      orderScope: 'HISTORICAL',
+      attention: 'OVERDUE',
     })
 
     expect(fetchMock).toHaveBeenCalledOnce()
     expect(fetchMock.mock.calls[0][0]).toBe(
       '/api/v1/admin/reports/orders/export'
-      + '?q=0909%20123%20456&status=PROCESSING&from=2026-07-20&to=2026-07-24',
+      + '?q=0909%20123%20456&status=PROCESSING&from=2026-07-20&to=2026-07-24'
+      + '&orderScope=HISTORICAL&attention=OVERDUE',
     )
   })
 })

@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepos
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
 import com.bigbike.bigbike_backend.service.review.ReviewModerationService;
 import com.bigbike.bigbike_backend.service.review.ReviewRatingLevels;
+import com.bigbike.bigbike_backend.service.review.invitation.ReviewInvitationService;
 import com.bigbike.bigbike_backend.service.ws.AdminReviewWsService;
 import com.bigbike.bigbike_backend.service.ws.ReviewWsEvent;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
@@ -59,6 +60,7 @@ public class PublicReviewService {
     private final ReviewPhotoStorageService reviewPhotoStorageService;
     private final AdminReviewWsService adminReviewWsService;
     private final ReviewModerationService reviewModerationService;
+    private final ReviewInvitationService reviewInvitationService;
 
     public PublicProductReviewsResponse getProductReviews(String productId, int page, int size) {
         return getProductReviews(productId, page, size, null, null);
@@ -131,6 +133,13 @@ public class PublicReviewService {
     public void submitReview(
             String productId, String authorName, String authorEmail, BigDecimal rating, String comment,
             List<String> photos, UUID customerId) {
+        submitReview(productId, authorName, authorEmail, rating, comment, photos, customerId, null);
+    }
+
+    @Transactional
+    public void submitReview(
+            String productId, String authorName, String authorEmail, BigDecimal rating, String comment,
+            List<String> photos, UUID customerId, String inviteToken) {
         // Serialize submissions for one product before the query-then-insert duplicate
         // guard. Without this row lock, two concurrent requests could both observe no
         // duplicate and persist the same normalized author/body pair.
@@ -182,6 +191,7 @@ public class PublicReviewService {
         }
 
         ReviewEntity saved = reviewRepo.saveAndFlush(entity);
+        reviewInvitationService.consumeInviteToken(inviteToken, productId, saved.getId(), now);
         claimReviewPhotos(productId, saved.getId(), photoObjectKeys, now);
         adminReviewWsService.pushEvent(new ReviewWsEvent(
                 "REVIEW_SUBMITTED",

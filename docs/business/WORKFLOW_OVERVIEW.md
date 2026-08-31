@@ -12,6 +12,28 @@
 | 6 | System | Push admin order event (no quantity decrement — boolean availability, V261) | `CONFIRMED_FROM_CODE` | `CheckoutService.java`, `AdminOrderWsService.java` |
 | 7 | Customer/Guest | Track the order from the signed-in order detail or confirmation link: refresh the existing order read every 15 seconds while visible, refresh on tab focus, and stop at `COMPLETED` or `CANCELLED`; no customer WebSocket is used | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web` order query hooks and confirmation client |
 
+## Post-purchase Review Invitation Workflow
+
+| Step | Actor | Current flow | Status | Evidence |
+|---|---|---|---|---|
+| 1 | Owner (`settings.write`) | Bật tính năng trong Cài đặt để tạo mốc bắt đầu mới; đặt số ngày chờ 1–90 (mặc định 7) và trần 1–50 thư/ngày (mặc định 20). Tắt tính năng bỏ qua thư còn chờ; bật lại không gửi bù. | `OWNER_CONFIRMED_2026-08-31` | `REVIEW_RULE_014`, `REVIEW_RULE_016` |
+| 2 | System, 04:30 giờ Việt Nam | Xếp lịch một lần cho mỗi đơn mới `COMPLETED` sau mốc bật, không lấy đơn nhập cũ, đơn thiếu email, đơn hủy, đơn đã đánh dấu hoàn tiền, email đã từ chối hoặc sản phẩm đã đánh giá. | `OWNER_CONFIRMED_2026-08-31` | `REVIEW_RULE_014`–`015` |
+| 3 | System, 09:00–20:50 giờ Việt Nam | Mỗi 10 phút thử tối đa một thư, không vượt trần ngày; mọi lần thử đều lưu kết quả và không tự thử lại để không tạo thư trùng. Thư giao dịch tiếp tục dùng đường gửi hiện có và luôn được ưu tiên. | `OWNER_CONFIRMED_2026-08-31` | `REVIEW_RULE_016` |
+| 4 | Guest/Customer | Nhận thư theo ngôn ngữ đã dùng lúc đặt, bấm đúng sản phẩm và hộp thoại đánh giá hiện có mở ngay; không cần đăng nhập. Review vẫn vào `PENDING` chờ duyệt như trước. | `OWNER_CONFIRMED_2026-08-31` | `REVIEW_RULE_009`, `REVIEW_RULE_015` |
+| 5 | Guest/Customer | Bấm link từ chối trong thư, xác nhận không đăng nhập; email đó vĩnh viễn không nhận thêm thư mời đánh giá. | `OWNER_CONFIRMED_2026-08-31` | `REVIEW_RULE_016` |
+| 6 | Operator (`settings.read`; `settings.write` để đổi trạng thái) | Xem số liệu, danh sách kết quả gửi và danh sách từ chối trong Cài đặt; có thể đánh dấu **Không gửi — đã hoàn tiền** trước giờ gửi. | `OWNER_CONFIRMED_2026-08-31` | `REVIEW_RULE_014`–`016`, `PERMISSION_MATRIX.md` |
+
+## Historical-order classification and daily operations
+
+| Step | Actor | Current flow | Status | Evidence |
+|---|---|---|---|---|
+| 1 | Owner | Chạy dry-run trên máy chủ; lệnh chỉ tiếp tục khi dấu vết `legacy_id` khớp đúng 1.661 đơn, gồm 388 PENDING và 508 PROCESSING | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, ops script |
+| 2 | Owner | Chạy execute một lần để ghi đợt + thành viên vào sổ phân loại; chạy lại không nhân đôi và không sửa dòng `orders` | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, `ORDER_RULE_014` |
+| 3 | Sales staff | Mở Đơn hàng ở phạm vi Đơn vận hành mặc định; đổi sang Đơn lịch sử hoặc Tất cả khi tra cứu khách cũ. Đơn lịch sử có nhãn/lý do và chỉ đọc | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `ORDER_RULE_015` |
+| 4 | System, 04:20 giờ Việt Nam | Tìm đơn vận hành vẫn PENDING cũ hơn ngưỡng owner đặt; không có đợt lịch sử active, setting lỗi hoặc danh sách rỗng thì no-op | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_015`, `NOTIFICATION_RULE_002` |
+| 5 | System | Nếu có đơn đủ điều kiện, tạo đúng một bản tin trong chuông, ghi ngày chạy + từng đơn đã nhắc; không thông báo lẻ và không lặp đơn ở ngày sau | `OWNER_CONFIRMED_2026-08-31` | `NOTIFICATION_RULE_002` |
+| 6 | Owner | Khi cần hoàn tác, tắt đợt phân loại bằng batch key; membership/audit giữ nguyên, toàn bộ đơn hàng tiếp tục không bị sửa | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, `ORDER_RULE_014` |
+
 ## Trợ lý BigBike — tư vấn và tự liên hệ shop (owner decision 2026-08-30)
 
 | Step | Actor | Current flow | Status | Evidence |
@@ -54,7 +76,28 @@ The point-of-sale / walk-in ("bán tại quầy") workflow was removed entirely.
 | 3 | System | Reject empty files, unsupported types and declared/content MIME mismatches. Admin image uploads accept only JPEG/JPG, PNG and WebP; MP4 video remains accepted. | `OWNER_CONFIRMED_2026-08-28` | `AdminMediaP0Test.java`, `AdminMediaService.java` |
 | 4 | System | Persist media metadata and storage reference | `CONFIRMED_FROM_CODE` | `AdminMediaService.java` |
 
+## Homepage YouTube Video Workflow
+
+| Step | Actor | Current flow | Status | Evidence |
+|---|---|---|---|---|
+| 1 | Owner (`settings.read`/`settings.write`) | Xem hoặc đổi “Kênh YouTube chính thức” ngay trên màn Video trang chủ; giá trị lưu ở `youtube_url` | `OWNER_CONFIRMED_2026-08-31` | `HOME_VIDEO_RULE_001`, `HomeVideoListScreen.jsx` |
+| 2 | System, 04:10 giờ Việt Nam | Đọc trang kênh/feed công khai, xác minh đúng kênh và tối đa 15 video mới nhất; mọi lỗi hoặc dữ liệu không chắc chắn kết thúc bằng no-op | `OWNER_CONFIRMED_2026-08-31` | `YouTubeHomeVideoClient`, `HomeVideoSyncScheduler` |
+| 3 | System | Bỏ qua mọi mã YouTube đã có trong kho, không bật lại bản ghi đã tắt; tạo video mới với tiêu đề YouTube, EN/thumbnail riêng để trống và chèn mới nhất lên đầu | `OWNER_CONFIRMED_2026-08-31` | `HOME_VIDEO_RULE_002`, sync tests |
+| 4 | System | Kiểm tra đủ các ứng viên có thể lên 10 vị trí; video chắc chắn đã xoá/ẩn chuyển sang tắt, không xoá; public trả tối đa 10 video hợp lệ | `OWNER_CONFIRMED_2026-08-31` | `HOME_VIDEO_RULE_003`, API tests |
+| 5 | Admin (`home_videos.write`) | Tiếp tục thêm/sửa/tắt/xếp tay; kéo video đang bật vào 10 vị trí đầu để đưa lên trang chủ, tắt để gỡ và lần chạy sau không tự bật lại | `OWNER_CONFIRMED_2026-08-31` | `HomeVideoListScreen.jsx` |
+
 ## Product Authoring & Live Preview Workflow
+
+## Daily Out-of-stock Digest Workflow
+
+| Step | Actor | Current flow | Status | Evidence |
+|---|---|---|---|---|
+| 1 | Owner (`settings.read`/`settings.write`) | Bật/tắt và chọn giờ bản tin tại Cài đặt › Cảnh báo hết hàng; mặc định bật lúc 08:00 giờ Việt Nam | `OWNER_CONFIRMED_2026-08-31` | `STOCK_ALERT_RULE_002` |
+| 2 | System | Đến giờ, lấy một ảnh chụp chỉ gồm sản phẩm đang bán; loại nháp/ẩn/thùng rác/ngừng kinh doanh và không thay đổi trạng thái món nào | `OWNER_CONFIRMED_2026-08-31` | `STOCK_ALERT_RULE_001`, `STOCK_ALERT_RULE_003` |
+| 3 | System | Nếu danh sách trống thì im lặng. Nếu có, tạo đúng một bản tin chia “Hết sạch” và “Thiếu cỡ hoặc màu”, xếp lâu nhất trước và lưu mốc ngày đã chạy để không lặp | `OWNER_CONFIRMED_2026-08-31` | `STOCK_ALERT_RULE_002`, `STOCK_ALERT_RULE_005` |
+| 4 | System | Đưa cùng ảnh chụp vào chuông quản trị và gửi một email song ngữ đến hộp thư nội bộ hiện có; không fan-out và không tự thử gửi lại trong ngày | `OWNER_CONFIRMED_2026-08-31` | `STOCK_ALERT_RULE_003`, `STOCK_ALERT_RULE_006` |
+| 5 | Sales staff (`inventory.read`) | Mở từng dòng để đi thẳng tới màn sửa sản phẩm, tự quyết định nhập hàng/đổi trạng thái/ẩn; hệ thống không làm thay | `OWNER_CONFIRMED_2026-08-31` | `STOCK_ALERT_RULE_003`, `STOCK_ALERT_RULE_005` |
+
 
 | Step | Actor | Action | Status | Evidence |
 |---|---|---|---|---|

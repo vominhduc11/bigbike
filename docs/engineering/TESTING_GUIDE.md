@@ -51,6 +51,13 @@ viễn cần quyền `*` theo API contract. Kịch bản editor có thể kiểm
 bằng `E2E_FORCE_EDITOR_TIMEOUT=1`; worker guard vẫn dọn được sản phẩm đã tạo ngoài timeout
 của test.
 
+## Daily out-of-stock digest regression
+
+Automated coverage must prove: one aggregate (not per-item messages) when stock is out; complete silence when no item qualifies; draft/hidden/trash/discontinued rows are excluded; a published product with a mix of available and unavailable variants appears only in the separate partial section; disabling the setting prevents a run; the configured Vietnam time and same-day catch-up work; one local date cannot create a second notification or SMTP attempt; estimated legacy ages and exact future ages render bilingually; every product link targets its admin editor; and a long list remains fully viewable. Email tests render the template and mock dispatch — they must never use real SMTP.
+
+Status: `CONFIRMED_FROM_CODE_AND_TEST`
+
+
 ## Internal email configuration regression
 
 The backend must resolve one shared internal recipient for new-order
@@ -60,6 +67,35 @@ SMTP provider" and final mailbox delivery in the email-dispatch log. The custome
 address and email templates are outside this regression.
 
 Status: `REQUIRED_FOR_NOTIFICATION_DELIVERY_CONFIGURATION`
+
+## Post-purchase review invitation regression
+
+Automated tests must use a fake mail dispatcher and a fixed clock in Vietnam time; no test may connect to SMTP or use a real customer/order record. Required coverage:
+
+- a native order completed after the active campaign cutoff is queued and attempted once after the configured delay; repeated queue/sender runs never create a second delivery or attempt;
+- imported/legacy orders, orders completed before enable, cancelled orders, missing-email orders, manually refunded skips and emails already opted out do not send;
+- disabling closes the campaign and skips pending deliveries; re-enabling creates a new cutoff and does not catch up an older order;
+- duplicate line items produce one product link; products already reviewed by linked customer/order email or consumed invite item are omitted; no eligible product means no send;
+- review submission with a valid product token stays `PENDING`, consumes that item exactly once and works for a guest with blank review email; wrong-product/invalid/reused tokens are rejected;
+- unsubscribe is public, idempotent for its valid token, reveals no email and permanently suppresses every pending delivery for the normalized address;
+- one atomic Vietnam-date attempt counter never exceeds the configured 1–50 daily limit under repeated/concurrent dispatcher calls; failures and uncertain outcomes consume a slot and are not retried;
+- VI/EN subject/body/product links/unsubscribe copy render with valid Unicode; admin read/write permissions, list states and operator error visibility are covered;
+- web tests prove the fragment opens the existing PDP dialog and passes the hidden token, checkout snapshots `vi|en`, and both localized unsubscribe routes cover loading/success/error states;
+- focused Playwright may verify the local direct-link/unsubscribe screens only against isolated fixtures/fake mail. It must never trigger a real SMTP message or mutate live shop data.
+
+Status: `REQUIRED_FOR_REVIEW_RULE_014_016`
+
+## Historical-order and overdue-reminder regression
+
+Use PostgreSQL integration data only; never clone or mutate shop orders. The canonical fixture contains 1,661 rows with `legacy_id`, including 388 PENDING and 508 PROCESSING, plus 5 native rows. Required checks:
+
+- run the same classification SQL twice: membership remains 1,661; order status, content and all monetary columns keep identical values; rollback/reactivate changes only batch activity;
+- operational dashboard/nav/list/recent/status/reminder queries exclude active historical rows while financial dashboard/reports/customer purchase aggregates remain unchanged and disclose inclusion;
+- ALL/OPERATIONAL/HISTORICAL plus OVERDUE filters, admin detail provenance, uncapped CSV scope columns/header, and `409 HISTORICAL_ORDER_READ_ONLY` with zero side effects;
+- strictly older PENDING native order produces one `ORDER_OVERDUE_DIGEST`; repeated/same-day/concurrent/next-day runs do not duplicate it; in-threshold/exact-boundary/non-PENDING/history rows are excluded; zero candidates, no active history batch or invalid setting create no notification;
+- admin Vitest covers VI/EN filters, read-only states, settings, dashboard threshold `>=5`, report/customer scope wording and digest navigation; Playwright uses only isolated test fixtures and 1440/768/375 viewports.
+
+Status: `REQUIRED_FOR_ORDER_RULE_013_015_NOTIFICATION_RULE_002_REPORT_RULE_012`
 
 ## Variant attribute link regression
 
@@ -97,6 +133,7 @@ GitHub Actions currently runs:
 | ~~POS~~ | Removed 2026-06-23 (online-only) — `Phase1MPosApiTest.java` deleted | `REMOVED` |
 | Media hardening | `AdminMediaP0Test.java` | `CONFIRMED_FROM_TEST` |
 | Redirect target integrity | `AdminRedirectApiTest.java` + web proxy redirect tests | `REQUIRED_FOR_REDIRECT_RULE_011_012` |
+| Review invitation | Eligibility/cutoff/idempotency/opt-out/quota/token/API/template suites plus admin/web direct-link tests | `REQUIRED_FOR_REVIEW_RULE_014_016` |
 | Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, memory 30 ngày, cart và ảnh riêng tư VI/EN. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059` |
 
 ## Trợ lý BigBike — ma trận kiểm thử (owner decision 2026-08-29)

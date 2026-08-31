@@ -55,10 +55,7 @@ export async function fetchReviewsPage(
   return payload as ReviewsData;
 }
 
-export async function uploadReviewPhoto(
-  productId: string,
-  file: File,
-): Promise<string> {
+export async function uploadReviewPhoto(productId: string, file: File): Promise<string> {
   const form = new FormData();
   form.set("file", file);
   const res = await fetch(
@@ -70,9 +67,10 @@ export async function uploadReviewPhoto(
       body: form,
     },
   );
-  const payload = (await res.json().catch(() => null)) as
-    | { data?: { url?: string }; error?: string | { message?: string } }
-    | null;
+  const payload = (await res.json().catch(() => null)) as {
+    data?: { url?: string };
+    error?: string | { message?: string };
+  } | null;
   if (!res.ok) {
     throw new ReviewRequestError(res.status, getErrorMessage(payload, ""));
   }
@@ -90,6 +88,7 @@ export type SubmitReviewPayload = {
   comment: string;
   photos: string[];
   website: string;
+  inviteToken?: string;
 };
 
 export async function submitProductReview(
@@ -109,9 +108,9 @@ export async function submitProductReview(
     },
   );
   if (!res.ok) {
-    const payload = (await res.json().catch(() => null)) as
-      | { error?: string | { message?: string } }
-      | null;
+    const payload = (await res.json().catch(() => null)) as {
+      error?: string | { message?: string };
+    } | null;
     throw new ReviewRequestError(res.status, getErrorMessage(payload, ""));
   }
 }

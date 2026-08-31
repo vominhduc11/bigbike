@@ -66,7 +66,8 @@ class AdminNotificationPostgresQueryTest {
 
         assertThat(inbox.unreadCount()).isGreaterThanOrEqualTo(1);
         assertThat(inbox.items()).hasSizeGreaterThanOrEqualTo(1);
-        assertThat(inbox.items()).noneMatch(item -> item.type().startsWith("CHAT_"));
+        assertThat(inbox.items())
+                .noneMatch(item -> item.notification().getType().startsWith("CHAT_"));
         assertThat(inbox.items()).noneMatch(AdminNotificationService.NotificationView::read);
     }
 
@@ -120,7 +121,7 @@ class AdminNotificationPostgresQueryTest {
         assertThat(notificationRepository.findById(expired.getId())).isEmpty();
         assertThat(notificationRepository.findById(retained.getId())).isPresent();
         assertThat(readRepository.findById(adminId).orElseThrow().getLastReadAt())
-                .isEqualTo(markerAt);
+                .isEqualTo(markerAt.truncatedTo(ChronoUnit.MICROS));
     }
 
     @Test

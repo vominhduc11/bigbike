@@ -16,5 +16,7 @@ public record AdminOrderListItemResponse(
         String currency,
         Instant placedAt,
         int itemCount,
-        String source
+        String source,
+        String orderScope,
+        OrderHistoryClassificationResponse historyClassification
 ) {}

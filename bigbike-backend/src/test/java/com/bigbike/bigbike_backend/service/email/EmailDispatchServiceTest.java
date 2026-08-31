@@ -20,7 +20,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 class EmailDispatchServiceTest {
 
     @Test
-    void reportsProviderHandoffWithoutClaimingFinalDelivery() {
+    void reportsProviderAcceptanceWithoutClaimingFinalDelivery() {
         JavaMailSender mailSender = mock(JavaMailSender.class);
         TemplateEngine templateEngine = mock(TemplateEngine.class);
         MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
@@ -37,7 +37,7 @@ class EmailDispatchServiceTest {
     }
 
     @Test
-    void reportsProviderFailureAsNotHandedOff() {
+    void reportsProviderFailureAsNotAccepted() {
         JavaMailSender mailSender = mock(JavaMailSender.class);
         TemplateEngine templateEngine = mock(TemplateEngine.class);
         MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
@@ -52,7 +52,7 @@ class EmailDispatchServiceTest {
     }
 
     @Test
-    void reportsDisabledMailAsNotHandedOff() {
+    void reportsDisabledMailAsNotAccepted() {
         EmailDispatchService service = new EmailDispatchService(
                 Optional.empty(), mock(TemplateEngine.class), "no-reply@example.test", "BigBike");
 

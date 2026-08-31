@@ -22,6 +22,7 @@ import { KpiCard } from '../components/KpiCard'
 import { Screen, ScreenHeader } from '../components/layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Alert } from '@/components/ui/alert'
 import { ExportButton } from '../components/ExportButton'
 import { fetchAnalytics, exportOrdersCsv, exportCustomersCsv } from '../lib/adminApi'
 import { formatCurrencyVnd, fmtIsoDateShort } from '../lib/formatters'
@@ -361,7 +362,11 @@ export function ReportsScreen() {
             <ExportButton
               disabled={!canExport || !shouldFetch}
               title={!canExport ? t('reports.requirePermission') : undefined}
-              onExport={() => runExport(() => exportOrdersCsv({ from: exportFrom, to: exportTo }))}
+              onExport={() => runExport(() => exportOrdersCsv({
+                from: exportFrom,
+                to: exportTo,
+                orderScope: 'ALL',
+              }))}
             >
               {t('reports.exportOrders')}
             </ExportButton>
@@ -378,6 +383,10 @@ export function ReportsScreen() {
       />
 
       {state.warning && <ReadOnlyBanner warning={state.warning} />}
+
+      <Alert tone="info" size="sm" className="mb-4" role="status">
+        {t('reports.historyScopeDisclosure')}
+      </Alert>
 
       {state.status === 'loading' && (
         <>

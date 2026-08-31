@@ -15,7 +15,6 @@ import {
 } from './contracts'
 import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStorage'
 import { getContentLang } from './contentLang'
-import { generateId } from './utils'
 
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
 
@@ -1067,6 +1066,8 @@ export async function fetchOrders(query) {
         status: query?.orderStatus !== 'ALL' ? query?.orderStatus : undefined,
         from: query?.from,
         to: query?.to,
+        orderScope: query?.orderScope || 'OPERATIONAL',
+        attention: query?.attention !== 'ALL' ? query?.attention : undefined,
       },
     })
     return withLiveData(parseListPayload(payload, normalizeOrder, Number(query?.pageSize) || 10))
@@ -1399,9 +1400,9 @@ export async function fetchPublicSettings() {
   }
 }
 
-export async function fetchSettings() {
+export async function fetchSettings(query = {}) {
   try {
-    const payload = await requestJson('/admin/settings', { query: { page: 1, size: 200 } })
+    const payload = await requestJson('/admin/settings', { query: { page: 1, size: 200, ...query } })
     const list = Array.isArray(payload?.data) ? payload.data.map(normalizeSetting) : []
     return withLiveData({ items: list })
   } catch (error) {
@@ -1416,6 +1417,42 @@ export async function batchUpdateSettings(updates) {
   })
   const items = Array.isArray(payload?.data) ? payload.data.map(normalizeSetting) : []
   return { items }
+}
+
+export async function fetchReviewInvitationSummary() {
+  const payload = await requestJson('/admin/review-invitations/summary')
+  return payload?.data || {}
+}
+
+export async function fetchReviewInvitations(query = {}) {
+  const payload = await requestJson('/admin/review-invitations', {
+    query: {
+      page: query.page || 1,
+      size: query.pageSize || 20,
+      status: query.status && query.status !== 'ALL' ? query.status : undefined,
+      q: query.search || undefined,
+    },
+  })
+  return parseListPayload(payload, (item) => item, query.pageSize || 20)
+}
+
+export async function skipReviewInvitationAsRefunded(invitationId) {
+  const payload = await requestJson(`/admin/review-invitations/${invitationId}/skip`, {
+    method: 'POST',
+    body: { reason: 'REFUNDED' },
+  })
+  return payload?.data || { skipped: true }
+}
+
+export async function fetchReviewInvitationOptOuts(query = {}) {
+  const payload = await requestJson('/admin/review-invitation-opt-outs', {
+    query: {
+      page: query.page || 1,
+      size: query.pageSize || 20,
+      q: query.search || undefined,
+    },
+  })
+  return parseListPayload(payload, (item) => item, query.pageSize || 20)
 }
 
 // Editable "Phân công" guide text for the product create/edit banner.
@@ -1854,7 +1891,6 @@ function normalizeChatConversation(input) {
     customerDisplayName: safeChatString(s.customerDisplayName),
     turnCount: safeChatCount(s.turnCount),
     aiCallCount: safeChatCount(s.aiCallCount),
-    handoffStatus: safeChatString(s.handoffStatus),
     lastResultKind: safeChatString(s.lastResultKind),
     startedAt: safeChatString(s.startedAt),
     lastMessageAt: safeChatString(s.lastMessageAt),
@@ -1875,10 +1911,9 @@ function normalizeChatMessage(input) {
   return {
     id: safeChatString(s.id),
     sequenceNo: safeChatCount(s.sequenceNo),
-    role: ['USER', 'CUSTOMER', 'ASSISTANT', 'STAFF', 'SYSTEM'].includes(s.role)
+    role: ['USER', 'CUSTOMER', 'ASSISTANT', 'SYSTEM'].includes(s.role)
       ? (s.role === 'CUSTOMER' ? 'USER' : s.role)
       : 'ASSISTANT',
-    staffDisplayName: safeChatString(s.staffDisplayName),
     content: safeChatString(s.content),
     source: safeChatString(s.source),
     aiCalled: Boolean(s.aiCalled),
@@ -1907,7 +1942,6 @@ function normalizeChatDetail(input) {
     ...normalizeChatConversation(s),
     customerId: safeChatString(s.customerId),
     messages: Array.isArray(s.messages) ? s.messages.map(normalizeChatMessage) : [],
-    handoff: s.handoff ? normalizeChatHandoff(s.handoff) : null,
   }
 }
 
@@ -1971,87 +2005,6 @@ export async function fetchChatStats(input) {
   } catch (error) {
     throw normalizeError(error)
   }
-}
-
-function normalizeChatHandoff(input) {
-  const s = input && typeof input === 'object' ? input : {}
-  return {
-    id: safeChatString(s.id),
-    conversationId: safeChatString(s.conversationId),
-    status: ['WAITING', 'ACTIVE', 'RETURNED_TO_AI', 'CLOSED'].includes(s.status) ? s.status : 'WAITING',
-    triggerSource: safeChatString(s.triggerSource),
-    customerKind: s.customerKind === 'SIGNED_IN' ? 'SIGNED_IN' : 'GUEST',
-    questionSummary: safeChatString(s.questionSummary),
-    products: Array.isArray(s.products) ? s.products.map((item) => ({
-      slug: safeChatString(item?.slug),
-      name: safeChatString(item?.name),
-    })).filter((item) => item.slug && item.name).slice(0, 8) : [],
-    requestedAt: safeChatString(s.requestedAt),
-    waitingSeconds: safeChatCount(s.waitingSeconds),
-    acknowledgedAt: safeChatString(s.acknowledgedAt),
-    acknowledgedBy: safeChatString(s.acknowledgedBy),
-    assignedAt: safeChatString(s.assignedAt),
-    assignedAdminId: safeChatString(s.assignedAdminId),
-    assignedDisplayName: safeChatString(s.assignedDisplayName),
-    resolvedAt: safeChatString(s.resolvedAt),
-    resolution: safeChatString(s.resolution),
-    withinBusinessHours: s.withinBusinessHours === true,
-    nextOpenAt: safeChatString(s.nextOpenAt),
-  }
-}
-
-export async function fetchChatHandoffs() {
-  try {
-    const payload = await requestJson('/admin/chat/handoffs')
-    const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
-    return withLiveData({
-      waitingCount: safeChatCount(data.waitingCount),
-      items: Array.isArray(data.items)
-        ? data.items.map(normalizeChatHandoff).filter((item) => item.id && item.conversationId)
-        : [],
-    })
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
-export async function claimChatHandoff(id) {
-  try {
-    const payload = await requestJson(`/admin/chat/handoffs/${encodeURIComponent(id)}/claim`, { method: 'POST' })
-    return withLiveData(normalizeChatHandoff(payload?.data))
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
-export async function sendChatStaffMessage(conversationId, content, requestId = generateId()) {
-  try {
-    const payload = await requestJson(`/admin/chat/conversations/${encodeURIComponent(conversationId)}/messages`, {
-      method: 'POST',
-      body: { requestId, content },
-    })
-    return withLiveData(payload?.data ?? null)
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
-export async function returnChatToAi(id, locale = 'vi') {
-  try {
-    const payload = await requestJson(`/admin/chat/handoffs/${encodeURIComponent(id)}/return-to-ai`, {
-      method: 'POST', body: { locale },
-    })
-    return withLiveData(normalizeChatHandoff(payload?.data))
-  } catch (error) { throw normalizeError(error) }
-}
-
-export async function closeChatHandoff(id, locale = 'vi') {
-  try {
-    const payload = await requestJson(`/admin/chat/handoffs/${encodeURIComponent(id)}/close`, {
-      method: 'POST', body: { locale },
-    })
-    return withLiveData(normalizeChatHandoff(payload?.data))
-  } catch (error) { throw normalizeError(error) }
 }
 
 // Audit Logs
@@ -2139,6 +2092,10 @@ function normalizeAnalytics(payload) {
       revenue: Number(r.revenue ?? r.totalSpent) || 0,
       orderCount: Number(r.orderCount) || 0,
     })) : [],
+    scope: {
+      orderScope: String(p.scope?.orderScope || 'ALL'),
+      includesHistoricalOrders: p.scope?.includesHistoricalOrders !== false,
+    },
   }
 }
 
@@ -2221,6 +2178,8 @@ export async function exportOrdersCsv(filters = {}) {
     status: filters.status,
     from: filters.from,
     to: filters.to,
+    orderScope: filters.orderScope,
+    attention: filters.attention,
   }, 'orders.csv')
 }
 
@@ -2354,8 +2313,8 @@ export async function saveHomepageBlocks(featuredGrid) {
 }
 
 // ── Admin notifications (server-persisted, V102) ─────────────────────────────
-// Complements the realtime /topic/admin/orders WebSocket feed: lets an admin on a
-// new browser / after being offline catch up on order events the backend stored.
+// Complements the order and inventory WebSocket feeds so an offline admin can
+// catch up from the permission-filtered persistent store.
 function normalizeAdminNotification(input) {
   const s = input && typeof input === 'object' ? input : {}
   let parsed = {}
@@ -2375,18 +2334,10 @@ function normalizeAdminNotification(input) {
     total: parsed.total != null ? Number(parsed.total) : undefined,
     status: parsed.status,
     paymentMethod: parsed.paymentMethod,
-    handoffId: parsed.handoffId ? String(parsed.handoffId) : '',
-    conversationId: parsed.conversationId ? String(parsed.conversationId) : '',
-    questionSummary: safeChatString(parsed.questionSummary),
-    customerKind: safeChatString(parsed.customerKind),
-    contactPresent: parsed.contactPresent === true,
-    products: Array.isArray(parsed.products)
-      ? parsed.products.map((item) => ({
-        slug: safeChatString(item?.slug),
-        name: safeChatString(item?.name),
-      })).filter((item) => item.slug || item.name).slice(0, 8)
-      : [],
-    waitingCount: Number(parsed.waitingCount ?? 0),
+    count: Number(parsed.count) || 0,
+    thresholdDays: Number(parsed.thresholdDays) || 0,
+    cutoffAt: parsed.cutoffAt || undefined,
+    digest: s.type === 'INVENTORY_OUT_OF_STOCK_DIGEST' ? parsed : undefined,
     at: s.createdAt ? new Date(s.createdAt).getTime() : Date.now(),
     read: s.isRead === true,
     fromServer: true,

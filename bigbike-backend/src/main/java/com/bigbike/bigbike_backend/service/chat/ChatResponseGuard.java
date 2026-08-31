@@ -35,7 +35,7 @@ public class ChatResponseGuard {
      * allow-list exact so catalogue values such as {@code ronin-red} remain blocked.
      */
     private static final Set<String> SAFE_ENGLISH_HYPHENATED_TERMS = Set.of(
-            "12-question",
+            "40-question",
             "automated-chat",
             "destination-specific",
             "product-condition",
@@ -453,7 +453,7 @@ public class ChatResponseGuard {
         return digits.startsWith("84") ? "0" + digits.substring(2) : digits;
     }
 
-    /** Shared guard for greeting, quick-prompt and other widget copy. */
+    /** Shared guard for customer-visible assistant copy. */
     public boolean isSafeCustomerText(String value, String lang) {
         if (value == null || value.isBlank()) return false;
         String content = value.trim();
@@ -666,11 +666,6 @@ public class ChatResponseGuard {
                         || PRICE_AMOUNT_REFERENCE.matcher(normalized).find()
                 : containsAny(normalized, "tam gia", "muc gia", "khoang gia", "trong tam", "trong khoang")
                         || PRICE_AMOUNT_REFERENCE.matcher(normalized).find();
-    }
-
-    /** Settings greeting is assistant output too; quick prompts intentionally are not. */
-    public boolean isSafeGreeting(String value, String lang) {
-        return isSafeCustomerText(value, lang) && hasSafeAssistantTone(value, lang);
     }
 
     private static boolean hasWholeWord(String value, String word) {

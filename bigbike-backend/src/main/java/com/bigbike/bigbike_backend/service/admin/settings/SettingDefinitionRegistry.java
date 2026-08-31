@@ -65,6 +65,30 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Đoạn mô tả ngắn hiển thị trong panel thông tin shop trên header mobile (footer đã hardcode, không còn đọc key này).").build(),
 
+                // ── INVENTORY ALERTS ── (STOCK_ALERT_RULE_001..006).
+                // Private operational controls; the storefront must never receive them.
+                SettingDefinition.builder("inventory_out_of_stock_digest_enabled", "inventory", SettingValueType.BOOLEAN)
+                        .description("Bật/tắt bản tin hết hàng hằng ngày / Enable or disable the daily out-of-stock digest.").build(),
+                SettingDefinition.builder("inventory_out_of_stock_digest_time", "inventory", SettingValueType.STRING)
+                        .description("Giờ gửi theo giờ Việt Nam, định dạng HH:mm / Send time in Vietnam, HH:mm.").build(),
+
+                // ── ORDER OPERATIONS ── (ORDER_RULE_015 / NOTIFICATION_RULE_002).
+                // Private operational control; financial reports do not use this value.
+                SettingDefinition.builder("order_overdue_days", "order_operations", SettingValueType.INTEGER)
+                        .min(1)
+                        .description("Số ngày đơn thật còn chờ xác nhận trước khi nhắc / Days before an operational pending order is reminded.").build(),
+
+                // ── REVIEW INVITATIONS ── (REVIEW_RULE_014..016).
+                // Private operational controls; invite/opt-out tokens are never settings.
+                SettingDefinition.builder("review_invitation_enabled", "review_invitation", SettingValueType.BOOLEAN)
+                        .description("Bật/tắt thư mời đánh giá; mỗi lần bật tạo một mốc bắt đầu mới.").build(),
+                SettingDefinition.builder("review_invitation_delay_days", "review_invitation", SettingValueType.INTEGER)
+                        .min(1).max(90)
+                        .description("Số ngày chờ sau khi đơn hoàn tất trước khi gửi thư mời đánh giá.").build(),
+                SettingDefinition.builder("review_invitation_daily_limit", "review_invitation", SettingValueType.INTEGER)
+                        .min(1).max(50)
+                        .description("Số lần thử gửi thư mời đánh giá tối đa mỗi ngày theo giờ Việt Nam.").build(),
+
                 // ── CONTACT ──
                 SettingDefinition.builder("contact_email", "contact", SettingValueType.EMAIL)
                         .publicAllowed()
@@ -98,7 +122,7 @@ public class SettingDefinitionRegistry {
                         .description("Chữ hiển thị dòng Zalo trong floating chat (mặc định lấy từ link nếu để trống).").build(),
                 SettingDefinition.builder("youtube_url", "contact", SettingValueType.URL)
                         .publicAllowed()
-                        .description("URL kênh YouTube.").build(),
+                        .description("Kênh YouTube chính thức, dùng cho liên hệ và tự cập nhật video trang chủ hằng đêm.").build(),
                 SettingDefinition.builder("tiktok_url", "contact", SettingValueType.URL)
                         .publicAllowed()
                         .description("URL profile TikTok.").build(),

@@ -137,7 +137,13 @@ public class AdminReportService {
                 ))
                 .toList();
 
-        return new AdminAnalyticsResponse(summary, dailyRevenue, topProducts, topCustomers);
+        return new AdminAnalyticsResponse(
+                summary,
+                dailyRevenue,
+                topProducts,
+                topCustomers,
+                new AdminAnalyticsResponse.Scope("ALL", true)
+        );
     }
 
     public void recordExportAudit(

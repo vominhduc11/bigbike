@@ -65,6 +65,17 @@ export function StatusBadge({ status, type = 'order', className }) {
   } else if (type === 'review') {
     tone = REVIEW_STATUS_TONE[status] ?? 'muted'
     label = t(`reviews.status${String(status).charAt(0) + String(status).slice(1).toLowerCase()}`, { defaultValue: t('common.unknown') })
+  } else if (type === 'reviewInvitation') {
+    const invitationMeta = {
+      PENDING: { tone: 'warning', labelKey: 'settings.reviewInvitation.status.PENDING' },
+      SENDING: { tone: 'info', labelKey: 'settings.reviewInvitation.status.SENDING' },
+      SENT: { tone: 'success', labelKey: 'settings.reviewInvitation.status.SENT' },
+      FAILED: { tone: 'danger', labelKey: 'settings.reviewInvitation.status.FAILED' },
+      UNCERTAIN: { tone: 'warning', labelKey: 'settings.reviewInvitation.status.UNCERTAIN' },
+      SKIPPED: { tone: 'neutral', labelKey: 'settings.reviewInvitation.status.SKIPPED' },
+    }[status]
+    tone = invitationMeta?.tone ?? 'muted'
+    label = invitationMeta ? t(invitationMeta.labelKey) : t('common.unknown')
   } else if (type === 'adminUser') {
     const adminUserMeta = {
       INVITED: { tone: 'info', labelKey: 'adminUsers.statusInvited' },

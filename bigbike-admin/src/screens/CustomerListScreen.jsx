@@ -22,6 +22,7 @@ import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { exportCustomersCsv, fetchCustomers, fetchCustomerSummary, updateCustomerStatus } from '../lib/adminApi'
 import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters'
 import { useAdminList } from '../lib/useAdminList'
@@ -354,6 +355,10 @@ export function CustomerListScreen({ navigate, canUpdate }) {
 
       {/* O9 — Vừa xem gần đây */}
       <RecentItemsChips items={recentCustomerItems} onSelect={(item) => navigate(`/admin/customers/${item.id}`)} />
+
+      <Alert tone="info" size="sm" className="mb-4" role="status">
+        {t('customers.historyScopeDisclosure')}
+      </Alert>
 
       {/* Thẻ "Đang hoạt động" lọc đúng cùng tập tài khoản đăng ký như KPI:
           status=ACTIVE và synthetic=false. VIP/Mới 30 ngày chưa có bộ lọc danh sách

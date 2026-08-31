@@ -143,6 +143,7 @@ public class CheckoutService {
                 shippingCost,
                 total,
                 "checkout",
+                normalizeLocale(req.locale()),
                 clientIp,
                 userAgent,
                 now
@@ -289,6 +290,7 @@ public class CheckoutService {
             BigDecimal shipping,
             BigDecimal total,
             String source,
+            String locale,
             String clientIp,
             String userAgent,
             Instant now
@@ -315,12 +317,17 @@ public class CheckoutService {
         order.setTotalAmount(total);
         order.setPaidAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setSource(source);
+        order.setLocale(locale);
         order.setIpAddress(clientIp);
         order.setUserAgent(userAgent);
         order.setPlacedAt(now);
         order.setCreatedAt(now);
         order.setUpdatedAt(now);
         return order;
+    }
+
+    private static String normalizeLocale(String locale) {
+        return "en".equalsIgnoreCase(locale != null ? locale.trim() : null) ? "en" : "vi";
     }
 
     private PaymentEntity buildPayment(

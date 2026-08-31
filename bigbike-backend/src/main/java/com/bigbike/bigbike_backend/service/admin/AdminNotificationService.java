@@ -41,6 +41,35 @@ public class AdminNotificationService {
         notificationRepo.save(n);
     }
 
+    /**
+     * Persists one aggregate reminder inside the caller's transaction. Unlike the
+     * after-commit WebSocket path above, this must remain atomic with the daily run
+     * and per-order de-duplication ledgers.
+     */
+    @Transactional
+    public UUID persistOverdueOrderDigest(int count, int thresholdDays, Instant cutoffAt) {
+        AdminNotificationEntity notification = new AdminNotificationEntity();
+        notification.setType("ORDER_OVERDUE_DIGEST");
+        notification.setOrderId(null);
+        notification.setOrderNumber(null);
+        notification.setPayload("{\"schemaVersion\":1"
+                + ",\"count\":" + count
+                + ",\"thresholdDays\":" + thresholdDays
+                + ",\"cutoffAt\":\"" + cutoffAt + "\"}");
+        notification.setCreatedAt(Instant.now());
+        return notificationRepo.saveAndFlush(notification).getId();
+    }
+
+    /** Persists the immutable inventory snapshot inside the daily-run transaction. */
+    @Transactional
+    public UUID persistInventoryDigest(String payload, Instant createdAt) {
+        AdminNotificationEntity notification = new AdminNotificationEntity();
+        notification.setType("INVENTORY_OUT_OF_STOCK_DIGEST");
+        notification.setPayload(payload);
+        notification.setCreatedAt(createdAt);
+        return notificationRepo.saveAndFlush(notification).getId();
+    }
+
     /** One inbox item with the caller's own read state resolved. */
     public record NotificationView(AdminNotificationEntity notification, boolean read) {}
 
@@ -53,12 +82,24 @@ public class AdminNotificationService {
      */
     @Transactional(readOnly = true)
     public InboxView inboxFor(UUID adminId) {
+        return inboxFor(adminId, true, false);
+    }
+
+    @Transactional(readOnly = true)
+    public InboxView inboxFor(UUID adminId, boolean includeOrders, boolean includeInventory) {
+        if (!includeOrders && !includeInventory) {
+            throw new IllegalArgumentException("At least one notification scope is required.");
+        }
         Instant lastReadAt = readRepo.findById(adminId)
                 .map(AdminNotificationReadEntity::getLastReadAt)
                 .orElse(null);
 
-        List<AdminNotificationEntity> recent =
-                notificationRepo.findVisible(PageRequest.of(0, MAX_FETCH));
+        PageRequest page = PageRequest.of(0, MAX_FETCH);
+        List<AdminNotificationEntity> recent = includeOrders && includeInventory
+                ? notificationRepo.findAllVisible(page)
+                : includeOrders
+                        ? notificationRepo.findVisible(page)
+                        : notificationRepo.findInventoryVisible(page);
 
         List<NotificationView> items = recent.stream()
                 .map(n -> new NotificationView(n, isReadForAdmin(n, lastReadAt)))
@@ -66,11 +107,25 @@ public class AdminNotificationService {
 
         // No marker yet means this admin has never opened the bell — the whole visible
         // backlog is unread. Only the marked case may be counted with a since bound.
-        long unreadCount = lastReadAt == null
-                ? notificationRepo.countVisible()
-                : notificationRepo.countVisibleAfter(lastReadAt);
+        long unreadCount = countVisible(includeOrders, includeInventory, lastReadAt);
 
         return new InboxView(items, unreadCount);
+    }
+
+    private long countVisible(boolean includeOrders, boolean includeInventory, Instant lastReadAt) {
+        if (includeOrders && includeInventory) {
+            return lastReadAt == null
+                    ? notificationRepo.countAllVisible()
+                    : notificationRepo.countAllVisibleAfter(lastReadAt);
+        }
+        if (includeOrders) {
+            return lastReadAt == null
+                    ? notificationRepo.countVisible()
+                    : notificationRepo.countVisibleAfter(lastReadAt);
+        }
+        return lastReadAt == null
+                ? notificationRepo.countInventoryVisible()
+                : notificationRepo.countInventoryVisibleAfter(lastReadAt);
     }
 
     /**

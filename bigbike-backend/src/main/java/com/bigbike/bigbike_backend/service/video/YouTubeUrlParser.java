@@ -108,7 +108,7 @@ public final class YouTubeUrlParser {
         return isValidVideoId(segment) ? segment : null;
     }
 
-    private static boolean isValidVideoId(String value) {
+    public static boolean isValidVideoId(String value) {
         return value != null && VIDEO_ID_PATTERN.matcher(value).matches();
     }
 

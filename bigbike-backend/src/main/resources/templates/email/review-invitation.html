@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${english ? 'en' : 'vi'}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title th:text="${english ? 'How’s your new riding gear?' : 'Anh/chị thấy món đồ bảo hộ vừa nhận thế nào?'}">BigBike</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f6f8">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr th:replace="~{email/layout :: header-row}"></tr>
+        <tr>
+          <td style="background-color:#ffffff;padding:32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
+            <div th:if="${!english}">
+              <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#151515;">Đi đường ổn chứ anh/chị?</h1>
+              <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+                Chào <strong th:text="${customerName}">Anh/chị</strong>, đơn
+                <strong th:text="${orderNumber}">BB-0001</strong> đã về tay anh/chị được vài hôm rồi.
+                BigBike rất muốn nghe trải nghiệm thật của anh/chị. Chỉ mất khoảng một phút và không cần đăng nhập.
+              </p>
+            </div>
+            <div th:if="${english}">
+              <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:#151515;">How did the ride go?</h1>
+              <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+                Hi <strong th:text="${customerName}">Rider</strong>, you’ve had order
+                <strong th:text="${orderNumber}">BB-0001</strong> for a few days now.
+                We’d love your honest take. It takes about a minute and you won’t need to sign in.
+              </p>
+            </div>
+
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr th:each="product : ${products}">
+                <td style="padding:12px 0;border-top:1px solid #e5e7eb;">
+                  <p style="margin:0 0 10px;font-size:15px;font-weight:600;color:#151515;" th:text="${product.name}">Sản phẩm</p>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="background-color:#F90606;">
+                        <a th:href="${product.url}" href="#"
+                           style="display:inline-block;padding:12px 22px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;"
+                           th:text="${english ? 'Write a review →' : 'Viết đánh giá →'}">Viết đánh giá →</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <p th:if="${!english}" style="margin:24px 0 0;font-size:12px;color:#6b7280;line-height:1.6;">
+              Không muốn nhận loại thư này nữa?
+              <a th:href="${unsubscribeUrl}" href="#" style="color:#4b5563;">Từ chối vĩnh viễn tại đây</a>.
+            </p>
+            <p th:if="${english}" style="margin:24px 0 0;font-size:12px;color:#6b7280;line-height:1.6;">
+              Prefer not to receive review invitations?
+              <a th:href="${unsubscribeUrl}" href="#" style="color:#4b5563;">Opt out permanently here</a>.
+            </p>
+          </td>
+        </tr>
+        <tr th:replace="~{email/layout :: footer-row-localized}"></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

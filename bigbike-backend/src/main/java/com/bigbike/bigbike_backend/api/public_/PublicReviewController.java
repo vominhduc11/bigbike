@@ -76,7 +76,7 @@ public class PublicReviewController {
         validatePhotos(body.photos());
         publicReviewService.submitReview(
                 productId, body.authorName(), body.authorEmail(), body.rating(), body.comment(), body.photos(),
-                optionalCustomerId());
+                optionalCustomerId(), body.inviteToken());
         return apiResponseFactory.data(Map.of("success", true), request);
     }
 

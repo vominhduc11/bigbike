@@ -237,6 +237,33 @@ describe('OrderDetailScreen', () => {
     expect(screen.queryByRole('button', { name: 'orders.detail.actionCancelled' })).not.toBeInTheDocument()
   })
 
+  it('giữ đơn lịch sử ở chế độ tra cứu và hiển thị nguồn đánh dấu có thể kiểm tra lại', async () => {
+    mocks.fetchOrderDetail.mockResolvedValue({
+      item: {
+        ...baseOrder,
+        orderScope: 'HISTORICAL',
+        historyClassification: {
+          batchKey: 'LEGACY_WEB_IMPORT_2026_06_11',
+          labelVi: 'Đơn nhập từ website cũ ngày 11/06/2026',
+          labelEn: 'Legacy website order imported on 11 June 2026',
+          reasonVi: 'Chỉ dùng để tra cứu, không tính vào việc cần xử lý hôm nay.',
+          reasonEn: 'Searchable for reference, excluded from today\'s operational workload.',
+        },
+      },
+    })
+
+    renderScreen()
+
+    expect(await screen.findByText('BB-1001')).toBeInTheDocument()
+    expect(screen.getByText('orders.detail.historicalReadOnly')).toBeInTheDocument()
+    expect(screen.getByText('Đơn nhập từ website cũ ngày 11/06/2026')).toBeInTheDocument()
+    expect(screen.getByText('Chỉ dùng để tra cứu, không tính vào việc cần xử lý hôm nay.')).toBeInTheDocument()
+    expect(screen.getByText(/LEGACY_WEB_IMPORT_2026_06_11/)).toBeInTheDocument()
+    expect(mocks.fetchOrderAllowedTransitions).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'orders.detail.actionProcessing' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'orders.detail.actionCancelled' })).not.toBeInTheDocument()
+  })
+
   it('chỉ hiện chuyển trạng thái backend cho phép và gửi đúng trạng thái được chọn', async () => {
     const user = userEvent.setup()
     renderScreen()

@@ -17,7 +17,7 @@ Evidence:
 
 - `admin_notifications` is the shared notification backlog; application writes are append-only and the retention job may delete only expired rows. Active fields are `id`, `type`, optional `order_id`/`order_number`, `payload`, and `created_at`; the legacy shared `is_read` field is removed by the retention cleanup migration.
 - `admin_notification_reads` stores one `last_read_at` and `updated_at` per `admin_id`. It is never deleted by notification retention and is the only source used to derive `isRead` and `unreadCount` for the current admin.
-- The API returns at most 50 recent in-scope rows. The `unreadCount` in the response is the exact server count and can exceed the 30 rows cached/displayed by the admin bell. Order/chat scope remains permission-filtered, and this change adds no payload or browser-storage data.
+- The API returns at most 50 recent in-scope rows. The `unreadCount` in the response is the exact server count and can exceed the 30 rows cached/displayed by the admin bell. Order/inventory scope is permission-filtered: order rows require `orders.read`, and `INVENTORY_OUT_OF_STOCK_DIGEST` rows require `inventory.read`.
 - Rows older than six calendar months by `created_at` are deleted in daily batches; expiry is age-based and does not inspect or mutate per-admin read markers.
 
 Status: `OWNER_CONFIRMED_2026-08-28` / `CONFIRMED_FROM_CODE`
@@ -29,6 +29,44 @@ Evidence:
 - `AdminNotificationController.java`
 - `AdminNotificationRetentionCleanupService.java`
 - `V1067__admin_notification_retention_and_remove_legacy_read_state.sql`
+
+### Daily out-of-stock digest data
+
+`products` and `product_variants` each add nullable `out_of_stock_since TIMESTAMPTZ` plus non-null `out_of_stock_since_estimated BOOLEAN DEFAULT FALSE`. A future Còn → Hết transition sets the timestamp once with `estimated=false`; continued unavailability preserves it; restocking clears both fields. Rows already unavailable when the migration first runs are backfilled to the migration instant with `estimated=true`, which is a lower bound rather than invented history.
+
+`inventory_out_of_stock_digest_runs` is the one-row-per-Vietnam-calendar-date delivery ledger:
+
+| Field | Contract |
+|---|---|
+| `digest_date DATE` | Primary key; prevents a second aggregate for the same local date |
+| `outcome VARCHAR(16)` | `EMPTY` or `NOTIFIED` |
+| `notification_id UUID NULL` | Shared notification snapshot when `NOTIFIED`; `NULL` for `EMPTY` |
+| `email_attempted_at TIMESTAMPTZ NULL` | Claimed before SMTP is called, so an automatic retry cannot duplicate mail |
+| `email_accepted BOOLEAN NULL` | Whether the configured provider accepted that one attempt |
+| `created_at TIMESTAMPTZ` | Audit timestamp |
+
+The settings registry owns two private keys in group `inventory`: `inventory_out_of_stock_digest_enabled` (`BOOLEAN`, default `true`) and `inventory_out_of_stock_digest_time` (`STRING`, default `08:00`, strict 24-hour `HH:mm`). They reuse the existing settings API and never enter the public settings response.
+
+The `admin_notifications.payload` snapshot for type `INVENTORY_OUT_OF_STOCK_DIGEST` is immutable JSON with `schemaVersion`, `digestDate`, `generatedAt`, aggregate counts, `fullyOutOfStock[]`, and `partiallyOutOfStock[]`. Product rows contain stable product id, VI/EN name, SKU, `/admin/products/{id}` edit path, start timestamp, completed calendar days and the estimated/lower-bound flag. Partial product rows additionally contain all unavailable variants with the same age fields. The snapshot is the display/email source so a later stock edit cannot rewrite the morning bulletin.
+
+Status: `OWNER_CONFIRMED_2026-08-31`
+
+### Historical-order classification and overdue reminder data
+
+No column on `orders` is changed. Classification is additive and auditable:
+
+| Table | Contract |
+|---|---|
+| `order_history_batches` | One row per explicit batch: UUID id, unique `batch_key`, VI/EN label and reason, JSON criteria, expected total/PENDING/PROCESSING counts, `active`, created/activated/deactivated timestamps. The first key is `LEGACY_WEB_IMPORT_2026_06_11`; its selector is provenance `legacy_id IS NOT NULL`, not an application date cutoff. |
+| `order_history_batch_orders` | Unique `(batch_id, order_id)` membership plus `classified_at`; an order may belong to at most one batch. Foreign keys are restrictive so order/history audit cannot be cascaded away accidentally. |
+| `order_overdue_reminder_runs` | One row per Vietnam `run_date`, with threshold, cutoff, candidate count, nullable notification id and completion time. The date key serializes concurrent scheduler instances; zero candidates still records a completed run but creates no notification. |
+| `order_overdue_reminder_orders` | One immutable row per reminded `order_id`, linked to the run date and `reminded_at`; unique order id prevents daily repeat even after notification retention deletes the shared notification. |
+
+An order is `HISTORICAL` only while its batch is active; otherwise it is `OPERATIONAL`. The one-time classification command inserts batch/membership rows only, verifies expected 1,661/388/508 counts before write, is idempotent, and rolls back by setting `active=false`. It never updates/deletes `orders` or any monetary/content/status column.
+
+`admin_notifications` type `ORDER_OVERDUE_DIGEST` has null order reference and payload `{schemaVersion:1,count,thresholdDays,cutoffAt}`. It is `orders.read` scoped and contains no PII/order list. `order_overdue_days` is a private `INTEGER >= 1` setting, group `order_operations`, default `2`.
+
+Status: `OWNER_CONFIRMED_2026-08-31` — `ORDER_RULE_013`–`015`, `NOTIFICATION_RULE_002`.
 
 ### Media fields
 
@@ -270,6 +308,15 @@ The `orders.channel`, `orders.fulfillment_type`, and `orders.source` columns **s
 Status: `CONFIRMED_FROM_CODE`
 
 Evidence: `OrderEntity.cancelReason`, `AdminOrderService.updateOrderStatus`, `V351__add_orders_cancel_reason.sql`
+
+### Admin order history projection
+
+`AdminOrderListItemResponse` and `AdminOrderDetailResponse` add:
+
+- `orderScope`: `OPERATIONAL` or `HISTORICAL`.
+- `historyClassification`: nullable `{batchKey,labelVi,labelEn,reasonVi,reasonEn,classifiedAt}` resolved from active batch membership.
+
+These are admin-only projections; customer/guest order shapes do not change. Historical classification is not an order status, payment status, source replacement or monetary field.
 
 **Phone normalization:** `customers.phone` is stored in normalized form (`PhoneNumbers.normalize`: retain digits, `+84`/`84` → `0`) consistently across **online registration, login, profile update, admin customer edit, and new WordPress customer imports**. This makes phone a reliable identity key (the same person typing `+84…` or `0…` resolves to one profile). Identity and uniqueness lookups normalize the stored value inside the database query, so pre-existing `+84…` and formatted rows still match. There is no bulk backfill of existing database rows; the importer normalizes only rows processed from this change onward.
 
@@ -1204,6 +1251,57 @@ Status: `CONFIRMED_FROM_CODE` — `AdminReviewService.java`, `PublicReviewServic
 `ReviewJpaRepository.java`, `ProductEntity.java`, `UpsertProductRequest.java`,
 `WordPressProductMapper.java`, `ProductImporter.java`, `ReviewImporter.java`, migrations `V14`, `V18`, `V43`, `V63`, `V347`.
 
+### Review invitation campaign, delivery and opt-out data (V1074)
+
+`orders.locale` is a passive `varchar(2) NOT NULL DEFAULT 'vi'` snapshot with a check constraint limited to `vi|en`. Checkout writes the storefront locale; all historical/imported rows become `vi`. It changes no order state, price, payment or fulfillment behavior and is used only for post-purchase invitation language (`REVIEW_RULE_015`).
+
+`review_invitation_campaigns` creates a durable boundary for each enable cycle:
+
+| Column | Type / constraint | Meaning |
+|---|---|---|
+| `id` | `uuid PRIMARY KEY` | Campaign identifier. |
+| `activated_at` | `timestamptz NOT NULL` | Exact committed `false → true` cutoff; only orders completed at/after it qualify. |
+| `deactivated_at` | `timestamptz NULL` | Set once on disable; null only for the active campaign. |
+| `created_at`, `updated_at` | `timestamptz NOT NULL` | Audit timestamps. |
+
+At most one campaign may have `deactivated_at IS NULL` (partial unique index). `review_invitation_deliveries` stores one durable result per eligible order; `order_id` is globally unique, which is the final one-email-per-order guard even across later enable cycles.
+
+| Column | Type / constraint | Meaning |
+|---|---|---|
+| `id` | `uuid PRIMARY KEY` | Delivery identifier. |
+| `campaign_id` | `uuid NOT NULL`, FK campaign | Enable cycle that admitted the order. |
+| `order_id` | `uuid NOT NULL UNIQUE`, FK orders | One delivery maximum for the lifetime of an order. |
+| `order_number` | `varchar(64) NOT NULL` | Operator/email snapshot. |
+| `recipient_email`, `recipient_email_normalized` | `varchar(255) NOT NULL` | Delivery address and lowercase/trimmed global opt-out key. |
+| `locale` | `varchar(2) NOT NULL`, check `vi|en` | Email/product-link language snapshot. |
+| `status` | `varchar(16) NOT NULL` | `PENDING`, `SENDING`, `SENT`, `FAILED`, `UNCERTAIN`, `SKIPPED`. |
+| `completed_at`, `due_at` | `timestamptz NOT NULL` | Eligibility time and scheduled time (`completed_at + delay days`). |
+| `attempted_at`, `provider_accepted_at` | `timestamptz NULL` | Attempt audit; accepted means the SMTP provider accepted processing, not inbox delivery. |
+| `unsubscribe_token_hash` | `char(64) NULL UNIQUE` | SHA-256 hex only; raw token exists only while building the email URL. |
+| `skip_reason` | `varchar(40) NULL` | Closed vocabulary from the Admin API contract. |
+| `failure_code` | `varchar(64) NULL` | Stable operator filter/debug code. |
+| `failure_message` | `varchar(500) NULL` | Sanitized description; no token/credential. |
+| `created_at`, `updated_at` | `timestamptz NOT NULL` | Audit timestamps. |
+| `version` | `bigint NOT NULL DEFAULT 0` | Optimistic concurrency guard. |
+
+`review_invitation_items` contains distinct products for one delivery:
+
+| Column | Type / constraint | Meaning |
+|---|---|---|
+| `id` | `uuid PRIMARY KEY` | Item identifier. |
+| `delivery_id` | `uuid NOT NULL`, FK delivery `ON DELETE CASCADE` | Parent email. |
+| `product_id` | `varchar(64) NOT NULL` | Product from the order line; current public product data supplies localized name/slug at send time. |
+| `invite_token_hash` | `char(64) NULL UNIQUE` | One-use SHA-256 token hash for this product; never returned to admin/log. |
+| `review_id` | `bigint NULL`, FK reviews `ON DELETE SET NULL` | Review created through the invitation link. |
+| `reviewed_at` | `timestamptz NULL` | Durable consumed/already-reviewed marker. |
+| `created_at` | `timestamptz NOT NULL` | Audit timestamp. |
+
+Unique `(delivery_id, product_id)` removes repeated line items/variants from the email. Any review status counts as reviewed. Matching before send uses the item's `reviewed_at`, linked customer ID when present, and normalized order-email versus `reviews.author_email`; it never treats approval as the only evidence.
+
+`review_invitation_opt_outs` stores permanent global suppression: `id uuid PK`, original `email varchar(255)`, `email_normalized varchar(255) UNIQUE`, `source varchar(32)` (`EMAIL_LINK`), and `opted_out_at/created_at timestamptz`. There is no delete path. `review_invitation_daily_quotas` has `send_date date PRIMARY KEY` (Vietnam calendar date), `attempt_count integer NOT NULL`, `updated_at timestamptz`; row locking reserves quota atomically before each SMTP attempt and all outcomes consume the reservation.
+
+All invitation tables intentionally keep no raw secret token. The scheduler excludes `orders.legacy_id IS NOT NULL`, so migrated orders are not backfilled. Missing-email orders produce no delivery row (`REVIEW_RULE_014`–`016`).
+
 ### Review title — REMOVED (V298)
 
 The optional review "title" field (added alongside `reviews.photos` in `V234`) was removed entirely on 2026-07-01. `photos` (ảnh khách hàng) is unaffected and stays exactly as documented above. Migration `V298__drop_review_title.sql` drops `reviews.title`; `ReviewEntity.title`, `SubmitReviewRequest.title`, `PublicProductReviewsResponse.ReviewItem.title`, the `MAX_TITLE_LENGTH` validation in `PublicReviewController`, and the title handling in `PublicReviewService`/`AdminReviewService` are all deleted. The original `V234__add_review_title_photos.sql` file is left unchanged (Flyway is append-only).
@@ -1670,8 +1768,23 @@ Fallback: giống `PRODUCT_RULE_002` — `title` lùi về VI khi `title_en` nul
 Đọc public (`GET /api/v1/home-videos?lang=`) trả `title` đã resolve; đọc admin
 (`GET /api/v1/admin/home-videos`) trả thêm `titleEn` thô để editor sửa song ngữ.
 
-Status: `CONFIRMED_FROM_CODE` — `HomeVideoEntity.titleEn`, `HomeVideo.titleEn`,
-`PublicHomeVideoResponse.from(video, lang)`, migration `V161`.
+**Ngữ nghĩa đồng bộ YouTube (không đổi schema):**
+
+- `youtube_id` là khóa chống trùng nghiệp vụ trên toàn kho; bản ghi legacy có
+  `youtube_id=null` vẫn được so bằng mã suy ra từ `video_url`.
+- `is_active=false` là quyết định tắt bền vững của owner hoặc kết quả xác định video
+  YouTube đã xoá/riêng tư. Scheduler không bao giờ đổi `false→true` cho bản ghi đã có.
+- Video tự tạo ghi `title` đúng feed, `title_en=null`, `thumbnail=null`; storefront dùng
+  fallback VI và thumbnail tự động từ `youtube_id`.
+- `sort_order` vẫn duy nhất. Khi có video mới, hệ thống chèn chúng mới nhất trước rồi
+  đánh lại số collision-safe, giữ nguyên thứ tự tương đối của mọi bản ghi cũ. Public
+  chỉ đọc 10 bản ghi active đầu; active ngoài 10 vẫn còn trong kho và admin phân biệt
+  rõ với video thực sự đang trên trang chủ.
+- Không có cột đánh dấu “tự động” và không backfill 59 bản ghi hiện hữu; mọi chỉnh sửa
+  tay trên bản ghi đã có được giữ nguyên.
+
+Status: `OWNER_CONFIRMED_2026-08-31; CONFIRMED_FROM_CODE_AND_TEST` — `HOME_VIDEO_RULE_001`–`003`,
+`HomeVideoEntity`, `YouTubeHomeVideoSyncService`, `HomeVideoReadService`, migration `V161`.
 
 ### Article body blocks — `body_blocks` (V140)
 
@@ -1974,6 +2087,8 @@ populate historical customers.
 
 `AdminDashboardSummaryResponse` contains the following sections:
 
+It also exposes `scopes.operational={orderScope:"OPERATIONAL",includesHistoricalOrders:false}` and `scopes.financial={orderScope:"ALL",includesHistoricalOrders:true}`. Operational scope applies to `pendingOrders`, `orderStatusBreakdown` and `recentOrders`; financial scope applies to revenue/order-volume/top-product metrics while preserving each field's status rule.
+
 #### KPI Block (`kpi` field of type `KpiResponse`)
 
 | Field | Computation | Purpose |
@@ -2089,6 +2204,8 @@ Evidence: `CUSTOMER_RULE_009`, `AdminCustomerCsvExportService.java`, `AdminRepor
 
 `GET /api/v1/admin/reports/analytics` returns `AdminAnalyticsResponse`.
 
+The response adds `scope={orderScope:"ALL",includesHistoricalOrders:true}`. This is disclosure only: it does not change any formula or status exclusion below.
+
 ### PeriodSummary (summary field)
 
 | Field | Type | Description |
@@ -2131,7 +2248,7 @@ Evidence: `AdminAnalyticsResponse.java`, `AdminReportService.java`, `OrderJpaRep
 ## Order Export CSV Contract
 
 The `GET /api/v1/admin/reports/orders/export` endpoint accepts the same operational
-filters as the Orders list (`q`, `status`, `from`, `to`) and returns every matching
+filters as the Orders list (`q`, `status`, `from`, `to`, `orderScope`, `attention`) and returns every matching
 order across all pages. `from`/`to` are inclusive Vietnam calendar dates
 (`Asia/Ho_Chi_Minh`); the export has no 10,000-row truncation limit.
 
@@ -2149,8 +2266,13 @@ The CSV contains the following columns:
 11. `paid_at`
 12. `completed_at`
 13. `cancelled_at`
+14. `report_scope`
+15. `order_scope`
+16. `history_batch_key`
 
 *(Note: the "discount" column was removed on 2026-07-04 since discounts are no longer supported)*
+
+The API default is `orderScope=ALL`; `attention=OVERDUE` intersects active operational `PENDING` rows with the current setting. `X-Order-Scope` and a scope-bearing filename disclose the effective scope when the CSV has no data rows.
 
 ## Homepage Highlights Configuration (V362)
 
@@ -2185,8 +2307,10 @@ admin concurrency metadata.
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage SEO title and description (`seo_home_title`/`seo_home_description`), plus the homepage bottom SEO HTML block (`home_content_bottom_html`). The visible homepage H1 is the localized title of the introduction block, not a site-setting field. The former `seo_home_h1` row is retained in storage for compatibility but is no longer editable or part of the public homepage contract. | SEO website |
 | `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần mặc định 400 lượt AI/ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..12`, mặc định `12`) và công tắc diễn giải cách nói tự nhiên. Trần 40 lượt/hội thoại và hạn mức ảnh là hằng số phần mềm, không phải setting. Lịch sử lấy từ đúng conversation, che PII rồi cắt 450 ký tự/tin. Không chứa khoá AI. | Trợ lý BigBike |
-| `store` | Operational: low-stock threshold | Cửa hàng |
-| `inventory` | **No rows.** The `default_warranty_months` key was removed in V266 (warranty module dropped); `reservation_ttl_minutes` and `serial_inventory_only` in V259 (serial tracking dropped). No `inventory` group remains in the DB. | (không có tab — nhóm trống) |
+| `order_operations` | Private order-operations settings. Currently `order_overdue_days` (`INTEGER`, default `2`, minimum `1`); never exposed by public settings. | Vận hành đơn hàng |
+| `review_invitation` | Ba khóa private: bật/tắt thư mời đánh giá, số ngày chờ 1–90 (mặc định 7), trần thử gửi 1–50/ngày (mặc định 20). Bảng vận hành và danh sách từ chối hiển thị trong cùng tab. | Mời đánh giá |
+| `store` | **No active rows.** The former low-stock threshold was removed in V279 with the quantity-based inventory model; this group must not be used to recreate a “sắp hết hàng” tier. | (không có tab — nhóm trống) |
+| `inventory` | Hai khóa private cho bản tin hết hàng hằng ngày: `inventory_out_of_stock_digest_enabled` (`BOOLEAN`, mặc định `true`) và `inventory_out_of_stock_digest_time` (`STRING`, mặc định `08:00`, `HH:mm` giờ Việt Nam). Các khóa tồn kho/bảo hành cũ vẫn đã gỡ như mô tả ở trên; không có ngưỡng số lượng. | Cảnh báo hết hàng |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product AND content/article create/edit screens (shared data) — `product_assign_title` (STRING) + `product_assign_roles` (JSON array, 1–6 dynamic role entries, V318). **Super-admin-only writable** (see below). | Phân công sản phẩm |
 | `security` | **Removed 2026-06-24 (V273).** `login_max_attempts` + `session_timeout_minutes` were seeded (V29) but **never enforced** by any auth/session code (no account lockout, no idle-timeout); dropped from the DB and from `SettingDefinitionRegistry`. | (đã gỡ) |
 
@@ -2402,7 +2526,7 @@ Browser chỉ giữ signed visitor token, preference nhớ/tắt, conversation/t
 ### Dữ liệu bị xóa ở V1068 và V1070
 
 - Bảng: `chat_ai_usage_events`, `chat_evaluation_runs`, `chat_evaluation_model_results`, `chat_message_feedback`, `chat_leads`, `chat_interactions`, `chat_order_attributions`.
-- V1070 xóa `chat_handoff_requests`, dữ liệu/columns STAFF của chat, các cột handoff trên `chat_conversations`/`chat_messages`, notification `CHAT_HANDOFF_*`, và permission `chat.reply`.
+- V1070 xóa `chat_handoff_requests`, dữ liệu/columns STAFF của chat, notification `CHAT_HANDOFF_*`, và permission `chat.reply`; các cột lead/telemetry đã được dọn ở V1068.
 - Cột telemetry/model/interaction/lead-prompt của `chat_messages`; các cột lead-offer của `chat_conversations`; các cột attribution của `cart_items`.
 - Toàn bộ `chat_visitors` hiện có, notification loại `CHAT_LEAD` và settings đã bỏ (model lựa chọn, cost warning, template/abbreviation owner-editable, memory-days, proactive và image quota owner-editable).
 - V1070 xóa các setting `ai_assistant_image_enabled`, `ai_assistant_conversation_turn_limit`, `ai_assistant_greeting`, `ai_assistant_quick_prompts`, `ai_assistant_handoff_email_enabled`, `ai_assistant_handoff_email_recipient`, `ai_assistant_business_hours`.

@@ -28,7 +28,7 @@ class ChatSalesAdvisorServiceTest {
 
         var advice = advisor.advise(conversation(), "Shop có gì vậy?", "vi", settings(),
                 ChatToolService.ConversationContext.empty(), "Em có thể hỗ trợ.", List.of(),
-                "TOOL", "ANSWER", null, false, List.of());
+                "TOOL", "ANSWER", null, List.of());
 
         assertThat(advice.salesStage()).isEqualTo("BROWSING");
         assertThat(advice.nextStep().type()).isEqualTo("SHARE_NEED");
@@ -44,7 +44,7 @@ class ChatSalesAdvisorServiceTest {
 
         var advice = advisor.advise(conversation(), "Size M có còn không?", "vi", settings(),
                 context("mu-a"), "Size M còn hàng.", List.of(card("mu-a", "Mũ A", 1_500_000)),
-                "TOOL", "PRODUCT_RESULTS", null, false, List.of());
+                "TOOL", "PRODUCT_RESULTS", null, List.of());
 
         assertThat(advice.salesStage()).isEqualTo("DECIDING");
         assertThat(advice.nextStep().type()).isEqualTo("CHOOSE_SIZE");
@@ -66,7 +66,7 @@ class ChatSalesAdvisorServiceTest {
         var advice = advisor.advise(conversation(), "Mẫu này đắt quá", "vi", settings(),
                 context("mu-premium"), "Giá đang niêm yết.",
                 List.of(card("mu-premium", "Mũ Premium", 2_000_000)),
-                "TOOL", "PRODUCT_RESULTS", null, false, List.of());
+                "TOOL", "PRODUCT_RESULTS", null, List.of());
 
         assertThat(advice.products()).extracting(ChatProductCardResponse::slug)
                 .containsExactly("mu-tiet-kiem");

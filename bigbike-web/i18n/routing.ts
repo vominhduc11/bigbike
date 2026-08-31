@@ -49,6 +49,10 @@ export const routing = defineRouting({
     "/dang-ky": { vi: "/dang-ky", en: "/register" },
     "/quen-mat-khau": { vi: "/quen-mat-khau", en: "/forgot-password" },
     "/xac-nhan-email": { vi: "/xac-nhan-email", en: "/verify-email" },
+    "/tu-choi-thu-moi-danh-gia": {
+      vi: "/tu-choi-thu-moi-danh-gia",
+      en: "/review-invitations/unsubscribe",
+    },
     "/tim-kiem": { vi: "/tim-kiem", en: "/search" },
     "/lien-he": { vi: "/lien-he", en: "/contact" },
     "/gioi-thieu": { vi: "/gioi-thieu", en: "/about" },

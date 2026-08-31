@@ -331,6 +331,7 @@ From checkout behavior:
 | `CANCELLED` | any other status | Terminal state, no outgoing transitions. | Backend throws conflict. | `AdminOrderService.java` |
 | any status | unknown status | Not in `ALLOWED_ORDER_STATUSES`. | Backend validation error. | `AdminOrderService.java` |
 | same status | same status | Idempotent no-op; returns current detail. | Backend no write. | `AdminOrderService.java` |
+| active historical classification | any status mutation | Historical classification is an independent audit scope, not a new order status; owner requires the imported order snapshot to stay unchanged. | Backend throws `409 HISTORICAL_ORDER_READ_ONLY` before audit/email/notification/WebSocket writes. | `ORDER_RULE_013`, `ORDER_RULE_014` |
 
 ### Related Payment / Inventory / Shipping Impact
 
@@ -345,17 +346,19 @@ From checkout behavior:
 ### Frontend Behavior
 
 - Admin service has `listAllowedTransitions` for UI to hide invalid transition buttons.
-- Admin UI display/action behavior needs dedicated UI audit.
+- An actively classified historical order returns no allowed transitions; admin shows the classification label/reason and a read-only banner in both list and detail.
 
 ### Backend Enforcement
 
 - `ALLOWED_TRANSITIONS` map enforces transitions in `updateOrderStatus`.
+- Active membership in an order-history batch is checked before same-status or normal transition handling, so historical rows cannot be changed through an idempotent-looking request.
 - Unknown status is rejected.
 - Same status is idempotent no-op.
 
 ### Test Coverage
 
 - `Phase1HAdminOrderApiTest.processingAllowedTransitionsAreCancelledAndCompleted` and `.processingCanBeCancelledAndTerminalTransitionsStayBlocked` cover the allowed `PENDING -> PROCESSING -> COMPLETED` and `PENDING -> PROCESSING -> CANCELLED` paths, `cancelledAt`, audit logging, and terminal guards for both `CANCELLED` and `COMPLETED`.
+- Historical-order regression covers empty allowed transitions plus `409 HISTORICAL_ORDER_READ_ONLY` with unchanged status, content and monetary fields.
 - ~~Stock restore on cancel.~~ No longer applicable (V261) — availability is a manual boolean; cancel does not touch inventory.
 - Status: `CONFIRMED_TEST_COVERAGE` for the order transition map and terminal-state guards; restore-impact covered by `QaBug2StockRestoreTest`.
 
@@ -726,7 +729,7 @@ Order events are persisted in a shared admin notification backlog so staff who w
 - `V102__create_admin_notifications_table.sql` — persistent shared `admin_notifications` backlog.
 - `V339__admin_notification_per_admin_read_state.sql` — per-admin high-water mark; legacy shared flag is retired by the follow-up migration.
 - `AdminNotificationRetentionCleanupService.java` and `V1067__admin_notification_retention_and_remove_legacy_read_state.sql` — six-month batch retention and removal of the legacy shared column/index.
-- `AdminNotificationController.java` — `GET /api/v1/admin/notifications`, `POST /mark-all-read` (both require `orders.read` or `chat.read`).
+- `AdminNotificationController.java` — `GET /api/v1/admin/notifications`, `POST /mark-all-read` (both require `orders.read`; the retired chat notification feed is no longer a permission path).
 - `AdminNotificationService.java` — `inboxFor(adminId)`, `markAllReadFor(adminId)`.
 - `AdminNotificationServiceTest.java` — per-admin isolation, backlog retention, and payload coverage.
 - WS push via `AdminOrderWsService` supplements persistent store; admin offline will not miss events.
@@ -853,6 +856,20 @@ Forbidden: public bucket/URL; token trong query; reuse ảnh làm history provid
 
 Status: `OWNER_CONFIRMED_2026-08-30`; `CHAT_RULE_057`–`059`.
 
+## 15D. Review Invitation Delivery State Machine
+
+State field: `review_invitation_deliveries.status`; initial state `PENDING`.
+
+| From | To | Trigger / rule |
+|---|---|---|
+| `PENDING` | `SENDING` | Daytime dispatcher revalidates active campaign/order/email/opt-out/product eligibility, atomically reserves the Vietnam-day quota, stores token hashes and claims the row. |
+| `PENDING` | `SKIPPED` | Feature/campaign closes, order is cancelled, operator marks refunded, recipient opts out, or no product remains eligible. |
+| `SENDING` | `SENT` | Shared SMTP dispatcher accepts the message; `provider_accepted_at` is set. |
+| `SENDING` | `FAILED` | Dispatcher returns a known failure; sanitized code/message are retained. |
+| `SENDING` | `UNCERTAIN` | Still `SENDING` after 30 minutes, meaning the outcome cannot be proven. |
+
+`SENT`, `FAILED`, `UNCERTAIN` and `SKIPPED` are terminal. There is no retry transition and no way back to `PENDING`. A delivery can be marked refunded only while `PENDING`; final/attempted deliveries return conflict. Disabling a campaign transitions all its `PENDING` rows to `SKIPPED(CAMPAIGN_CLOSED)` and re-enable creates a new campaign cutoff. `orders.status` remains authoritative: a later `CANCELLED` observation skips a pending delivery but this feature never changes the order state. See `REVIEW_RULE_014`–`016`.
+
 ## 16. Cross-Entity State Dependencies
 
 | Source Entity | Source State | Affected Entity | Required / Resulting State | Reason | Status |
@@ -909,6 +926,7 @@ Status: `OWNER_CONFIRMED_2026-08-30`; `CHAT_RULE_057`–`059`.
 | Media | Upload active, update inactive/deleted, restore active, hard delete | Needed | Needed for invalid status/MIME/size | `MISSING_TEST_COVERAGE` |
 | Notification | Per-admin read/unread high-water mark + six-month retention | `markAllRead_isPerAdmin_doesNotClearUnreadForOtherAdmins`, `inbox_keepsBacklogVisibleAfterMarkAllRead`, `retentionDeletesExpiredRowsWithoutChangingPerAdminReadMarker`, `retiresSharedReadStateAndKeepsPerAdminReadTable` | Cross-admin marker preservation, batch cleanup and legacy-column/index removal | `CONFIRMED_TEST_COVERAGE` (`AdminNotificationServiceTest`, `AdminNotificationPostgresQueryTest`, `AdminNotificationRetentionMigrationPostgresTest`) |
 | Customer | Real-customer changes among all four stored statuses; non-active session revocation | `Phase1IAdminManagementApiTest`, `Phase1I1CustomerStatusLoginTest` | Unknown status and synthetic status-change conflict covered by Customer Admin audit tests | `CONFIRMED_TEST_COVERAGE` |
+| Review invitation delivery | `PENDING → SENDING|SKIPPED`; `SENDING → SENT|FAILED|UNCERTAIN`; final states terminal | Required focused scheduler/service/API tests | Required concurrency/quota/no-retry/invalid-manual-skip tests | `REQUIRED_FOR_REVIEW_RULE_014_016` |
 
 Notes:
 
@@ -924,6 +942,7 @@ Notes:
 | Serial lifecycle | `REMOVED` | Serial-number tracking was removed platform-wide (2026-06-23, V259). There is no serial lifecycle. Inventory is manual boolean availability only. |
 | Settings lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Settings APIs exist; no state machine confirmed. |
 | Review moderation lifecycle | `CONFIRMED_OWNER_RULE` | Controlled graph, optimistic concurrency, trash restore and Super-Admin-only permanent deletion are specified in §15A and `REVIEW_RULE_009`/`010`. The automatic (banned-word + AI) moderator actor is specified in §15A "Automatic moderation actor" and `REVIEW_RULE_012`/`013`. |
+| Review invitation delivery lifecycle | `CONFIRMED_OWNER_RULE` | One-way delivery graph and no-retry terminal outcomes are specified in §15D and `REVIEW_RULE_014`–`016`. |
 | Admin role lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Custom role CRUD exists, but role active/inactive lifecycle not confirmed. |
 | POS order lifecycle | `REMOVED` | POS (point of sale / walk-in / `IN_STORE`) was removed platform-wide (owner decision 2026-06-23, online-only). There is no longer a POS create-order path, no auto-complete-at-counter order, and no `IN_STORE` fulfillment branch. Every order now flows through the online order + delivery state machines above. |
 
@@ -947,6 +966,7 @@ Notes:
 | Security/permissions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java`, admin controllers | Admin/customer/public access boundary and role protection. | High |
 | Existing business rules | `docs/business/BUSINESS_RULES.md` | Rule baseline for state-machine extraction. | High |
 | Existing workflow overview | `docs/business/WORKFLOW_OVERVIEW.md` | Workflow context and cross-entity side effects. | High |
+| Review invitation lifecycle | `REVIEW_RULE_014`–`016`, invitation services/entities/tests | Campaign cutoff, delivery transitions, quota and permanent opt-out. | High |
 | Existing role doc | `docs/business/USER_ROLES.md` | Actor/role context for transitions. | High |
 
 ## 22. Known Ambiguities / Needs Verification

@@ -40,6 +40,24 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     List<OrderEntity> findByStatus(String status);
 
+    @Query(value = """
+            select orders_row.*
+            from orders orders_row
+            where orders_row.status = 'COMPLETED'
+              and orders_row.legacy_id is null
+              and orders_row.completed_at >= :activatedAt
+              and orders_row.customer_email is not null
+              and btrim(orders_row.customer_email) <> ''
+              and not exists (
+                  select 1 from review_invitation_deliveries delivery
+                  where delivery.order_id = orders_row.id
+              )
+            order by orders_row.completed_at, orders_row.id
+            """, nativeQuery = true)
+    List<OrderEntity> findReviewInvitationCandidates(
+            @Param("activatedAt") Instant activatedAt,
+            Pageable pageable);
+
     List<OrderEntity> findByCustomerPhone(String customerPhone);
 
     List<OrderEntity> findByCustomerEmail(String customerEmail);
@@ -112,6 +130,19 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
 
     long countByStatus(String status);
 
+    @Query(value = """
+            select count(*)
+            from orders orders_row
+            where orders_row.status = :status
+              and not exists (
+                  select 1
+                  from order_history_batch_orders membership
+                  join order_history_batches batch on batch.id = membership.batch_id
+                  where membership.order_id = orders_row.id and batch.active = true
+              )
+            """, nativeQuery = true)
+    long countOperationalByStatus(@Param("status") String status);
+
     // ── Dashboard: revenue series (native, VN timezone, avoids full entity load) ─
 
     @Query(value =
@@ -129,10 +160,57 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, Jp
     @Query("SELECT o.status, COUNT(o) FROM OrderEntity o WHERE o.placedAt >= :from GROUP BY o.status")
     List<Object[]> countGroupedByStatusSince(@Param("from") Instant from);
 
+    @Query(value = """
+            select orders_row.status, count(*)
+            from orders orders_row
+            where orders_row.placed_at >= :from
+              and not exists (
+                  select 1
+                  from order_history_batch_orders membership
+                  join order_history_batches batch on batch.id = membership.batch_id
+                  where membership.order_id = orders_row.id and batch.active = true
+              )
+            group by orders_row.status
+            """, nativeQuery = true)
+    List<Object[]> countOperationalGroupedByStatusSince(@Param("from") Instant from);
+
     // ── Dashboard: recent orders ───────────────────────────────────────────────
 
     @Query("SELECT o FROM OrderEntity o WHERE o.placedAt IS NOT NULL ORDER BY o.placedAt DESC")
     List<OrderEntity> findRecentOrders(Pageable pageable);
+
+    @Query(value = """
+            select orders_row.*
+            from orders orders_row
+            where orders_row.placed_at is not null
+              and not exists (
+                  select 1
+                  from order_history_batch_orders membership
+                  join order_history_batches batch on batch.id = membership.batch_id
+                  where membership.order_id = orders_row.id and batch.active = true
+              )
+            order by orders_row.placed_at desc, orders_row.created_at desc, orders_row.id desc
+            """, nativeQuery = true)
+    List<OrderEntity> findRecentOperationalOrders(Pageable pageable);
+
+    @Query(value = """
+            select orders_row.*
+            from orders orders_row
+            where orders_row.status = 'PENDING'
+              and coalesce(orders_row.placed_at, orders_row.created_at) < :cutoff
+              and not exists (
+                  select 1
+                  from order_history_batch_orders membership
+                  join order_history_batches batch on batch.id = membership.batch_id
+                  where membership.order_id = orders_row.id and batch.active = true
+              )
+              and not exists (
+                  select 1 from order_overdue_reminder_orders reminder
+                  where reminder.order_id = orders_row.id
+              )
+            order by coalesce(orders_row.placed_at, orders_row.created_at), orders_row.id
+            """, nativeQuery = true)
+    List<OrderEntity> findUnremindedOverdueOperationalPending(@Param("cutoff") Instant cutoff);
 
     @Query("SELECT o.customerEmail, SUM(o.totalAmount), COUNT(o) " +
            "FROM OrderEntity o " +

@@ -3,7 +3,6 @@ import type {
   ChatClarification,
   ChatClarificationSelection,
   ChatProductCard,
-  ChatHandoffStatus,
   ChatImage,
   ChatNextStep,
   ChatSalesStage,
@@ -14,7 +13,7 @@ export const CHAT_STORAGE_KEY = "bb_ai_chat_session_v1";
 // display cache so a reopened tab is quick without turning UI text into a hidden profile.
 export const CHAT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
-const CHAT_SNAPSHOT_VERSION = 4 as const;
+const CHAT_SNAPSHOT_VERSION = 5 as const;
 const MAX_MESSAGES = 64;
 const MAX_CONTENT_LENGTH = 4000;
 const MAX_PRODUCT_FIELDS_LENGTH = 500;
@@ -23,15 +22,13 @@ const MAX_CLARIFICATION_OPTIONS = 12;
 
 export type ChatPersistenceMessage = {
   id: string;
-  role: "USER" | "ASSISTANT" | "STAFF" | "SYSTEM";
+  role: "USER" | "ASSISTANT" | "SYSTEM";
   content: string;
   sequenceNo?: number;
-  staffDisplayName?: string;
   products?: ChatProductCard[];
   crossSellProducts?: ChatProductCard[];
   salesStage?: ChatSalesStage;
   nextStep?: ChatNextStep;
-  handoff?: ChatHandoffStatus;
   clarification?: ChatClarification;
   clarificationSelection?: ChatClarificationSelection;
   actions?: ChatAction[];
@@ -106,7 +103,6 @@ function readAction(value: unknown): ChatAction | undefined {
     "FIND_PRODUCTS",
     "RELATED_ARTICLE_QUESTION",
     "CHANGE_NEEDS",
-    "CONTACT_STAFF",
     "LOGIN",
     "ORDER_HISTORY",
     "ORDER_LOOKUP",
@@ -219,7 +215,7 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
   const id = boundedString(value.id, 120);
   const content = boundedString(value.content, MAX_CONTENT_LENGTH);
   const role = value.role;
-  if (!id || !content || !["USER", "ASSISTANT", "STAFF", "SYSTEM"].includes(String(role))) return undefined;
+  if (!id || !content || !["USER", "ASSISTANT", "SYSTEM"].includes(String(role))) return undefined;
 
   const message: ChatPersistenceMessage = {
     id,
@@ -229,11 +225,6 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
   if (value.sequenceNo != null) {
     if (typeof value.sequenceNo !== "number" || !Number.isSafeInteger(value.sequenceNo) || value.sequenceNo < 0) return undefined;
     message.sequenceNo = value.sequenceNo;
-  }
-  if (value.staffDisplayName != null) {
-    const staffDisplayName = boundedString(value.staffDisplayName, 160);
-    if (!staffDisplayName) return undefined;
-    message.staffDisplayName = staffDisplayName;
   }
   if (value.products != null) {
     if (!Array.isArray(value.products) || value.products.length > 8) return undefined;
@@ -258,12 +249,6 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
       ? null : boundedString(value.nextStep.clarificationId, 120);
     if (!type || productSlug === undefined || clarificationId === undefined) return undefined;
     message.nextStep = { type, productSlug, clarificationId };
-  }
-  if (isRecord(value.handoff)) {
-    const id = boundedString(value.handoff.id, 120);
-    const requestedAt = boundedString(value.handoff.requestedAt, 80);
-    if (!id || !requestedAt || !["WAITING", "ACTIVE", "RETURNED_TO_AI", "CLOSED"].includes(String(value.handoff.status))) return undefined;
-    message.handoff = { id, status: value.handoff.status as ChatHandoffStatus["status"], requestedAt };
   }
   if (value.clarification != null) {
     const clarification = readClarification(value.clarification);

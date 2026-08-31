@@ -18,7 +18,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": ["search_products"],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": true,
       "expectedNumbers": [],
       "forbiddenTerms": ["chắc chắn còn", "sắp hết hàng", "giảm giá hôm nay"]
@@ -30,7 +29,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": ["search_products"],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": true,
       "expectedNumbers": [],
       "forbiddenTerms": ["guaranteed in stock", "limited time discount"]
@@ -42,7 +40,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": ["search_products"],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": true,
       "expectedNumbers": [],
       "forbiddenTerms": ["tốt nhất cho tất cả mọi người", "chắc chắn vừa"]
@@ -54,7 +51,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": ["search_products", "get_product"],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": true,
       "expectedNumbers": [],
       "forbiddenTerms": ["I assume", "probably in stock", "guaranteed to fit"]
@@ -66,7 +62,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": [],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": ["chắc chắn size S", "chắc chắn size M", "chắc chắn size L", "nhìn là biết"]
@@ -78,7 +73,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": [],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": ["definitely size S", "definitely size M", "definitely size L"]
@@ -90,7 +84,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": ["get_policy"],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": ["bảo hành trọn đời", "đổi mới vô điều kiện"]
@@ -102,7 +95,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": ["get_policy"],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": ["unconditional lifetime returns", "free return shipping"]
@@ -114,7 +106,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": [],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": ["đơn của anh/chị đang giao", "đơn đã thanh toán"]
@@ -126,7 +117,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": [],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": ["your order is being delivered", "your order is paid"]
@@ -138,7 +128,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": [],
       "expectedOffTopic": false,
-      "expectedHandoff": false,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": ["đây là lựa chọn tốt nhất", "chắc chắn phù hợp"]
@@ -150,7 +139,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": [],
       "expectedOffTopic": true,
-      "expectedHandoff": false,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": []
@@ -162,7 +150,6 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": [],
       "expectedOffTopic": true,
-      "expectedHandoff": false,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": []
@@ -174,7 +161,7 @@
       "sourceClass": "CANONICAL_ACCEPTANCE",
       "requiredTools": [],
       "expectedOffTopic": false,
-      "expectedHandoff": true,
+      "expectedDirectContact": true,
       "requireProducts": false,
       "expectedNumbers": [],
       "forbiddenTerms": ["chắc chắn được bảo hành", "chắc chắn không được bảo hành"]

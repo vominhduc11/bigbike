@@ -60,7 +60,6 @@ export const BUILTIN_CATALOG = [
       perm('roles.write', 'roles', 'WRITE', true, ['roles.read']),
       perm('audit-logs.read', 'audit-logs', 'READ', true),
       perm('chat.read', 'chat', 'READ', true),
-      perm('chat.reply', 'chat', 'WRITE', true, ['chat.read']),
     ],
   },
 ]
@@ -103,7 +102,6 @@ export const PERM_LABEL_KEY_MAP = {
   'roles.write':                'roles.permRolesWrite',
   'audit-logs.read':            'roles.permAuditLogsRead',
   'chat.read':                  'roles.permChatRead',
-  'chat.reply':                 'roles.permChatReply',
 }
 
 // Permissions an admin must never be able to strip from their OWN role —

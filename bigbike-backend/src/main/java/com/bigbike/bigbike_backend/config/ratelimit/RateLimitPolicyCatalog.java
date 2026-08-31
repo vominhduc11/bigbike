@@ -70,6 +70,9 @@ public class RateLimitPolicyCatalog {
             if (isProductReviewPath(path)) {
                 return Optional.of(RateLimitTier.REVIEW);
             }
+            if ("/api/v1/review-invitations/unsubscribe".equals(path)) {
+                return Optional.of(RateLimitTier.REVIEW);
+            }
         }
 
         if (isCustomerAvatarPath(path) && WRITE_METHODS.contains(method)) {

@@ -45,7 +45,7 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 | Media | `media.read` | — | `media.write` | hard delete: wildcard `*` |
 | Menu | `menus.read` | — | `menus.write` | category target picker: `catalog.read` |
 | Slider | `sliders.read` | `sliders.write` + `products.read` + `media.read` | toggle/reorder/delete: `sliders.write` | upload: `media.write` |
-| Home Videos | `home_videos.read` | — | URL/provider: `home_videos.write` | internal picker: `media.read`; upload: `media.write` |
+| Home Videos | `home_videos.read`; cấu hình kênh chỉ đọc khi có thêm `settings.read` | — | URL/provider/trạng thái/thứ tự: `home_videos.write`; đổi kênh YouTube: `settings.write` | internal picker: `media.read`; upload: `media.write`; scheduler chạy bằng hệ thống, không mượn quyền người dùng |
 | Home Highlights | `home_highlights.read` | — | save: `home_highlights.write` + `products.read` | Product picker must not query without `products.read` |
 | Redirects / Settings | corresponding `.read` | — | corresponding `.write` | Settings “Phân công”: wildcard `*`; media picker rules apply |
 | Admin Users | `admin-users.read` | — | `admin-users.write` | role list/assignment: `roles.read` |
@@ -85,13 +85,22 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 
 (Bổ sung 2026-07-15, AUD-076 — hai quyền này đã tồn tại trong seed/catalog từ trước nhưng chưa được ghi vào matrix. Không có quyền `reviews.moderate`.)
 
+### Review invitation permissions
+
+| Permission | Endpoint / action | Evidence |
+|---|---|---|
+| `settings.read` | Xem tổng quan, danh sách kết quả gửi và danh sách email đã từ chối: `GET /api/v1/admin/review-invitations/summary`, `GET /api/v1/admin/review-invitations`, `GET /api/v1/admin/review-invitation-opt-outs` | `REVIEW_RULE_014`–`016`, `AdminReviewInvitationController.java` |
+| `settings.write` | Bật/tắt, đổi ngày chờ/trần ngày qua Settings hiện có; đánh dấu thư đang chờ **Không gửi — đã hoàn tiền** qua `POST /api/v1/admin/review-invitations/{id}/skip` | `REVIEW_RULE_014`–`016`, settings/admin invitation controllers |
+| Public, no auth | Gửi review bằng link bí mật hiện có và `POST /api/v1/review-invitations/unsubscribe`; không cấp thêm quyền, không thay đổi quyền kiểm duyệt | `REVIEW_RULE_015`–`016`, `SecurityConfig.java` |
+
+Danh sách từ chối không có thao tác xoá, kể cả `SUPER_ADMIN`; việc từ chối là vĩnh viễn theo quyết định owner. Mã bí mật không xuất hiện ở bất kỳ API admin nào.
+
 ### Trợ lý BigBike permissions
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
-| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Hội thoại/detail, ảnh riêng tư, hàng chờ và stats quota/chất lượng không chứa transcript ngoài phạm vi | `CHAT_RULE_013`, `CHAT_RULE_040`–`047`, `PermissionCatalog`, migrations `V1016`/`V1052` |
 | `settings.read` | Theo ma trận settings hiện hành | Snapshot quota/chất lượng không chứa transcript/PII và các cài đặt Trợ lý còn được giữ | `CHAT_RULE_010`, `API_CONTRACT.md` §Admin chat history |
-| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Xem danh sách, transcript, ảnh và thống kê hội thoại | `CHAT_RULE_013`, `CHAT_RULE_047`, `PermissionCatalog`, migration `V1056` |
+| `chat.read` | `SUPER_ADMIN` qua wildcard `*`; không tự cấp cho vai trò thường | Xem danh sách, transcript, ảnh và thống kê hội thoại; không có hàng chờ hay thao tác ghi | `CHAT_RULE_013`, `CHAT_RULE_047`, `PermissionCatalog`, migration `V1070` |
 
 `chat.read` là quyền chỉ đọc, không có dependency và có thể được owner gán cho custom role. `chat.reply` đã bị xoá theo quyết định của chủ shop ngày 2026-08-30; không còn quyền nhận, gửi, bàn giao hoặc đóng chat người thật. Không thay đổi các quyền khác của các vai trò.
 
@@ -211,13 +220,15 @@ HMAC identity limiter rather than a new account-lock state. Admin mutations use 
 | `/api/v1/admin/**` | Spring Security URL gate requires an authenticated non-customer admin principal. Customer session cookies are intentionally ignored on this namespace, so a customer-only request receives `401` rather than creating an authenticated customer context that could interfere with an admin refresh; fine-grained permission is then enforced at controller level by `requirePermission()`. | `OWNER_CONFIRMED_2026-07-31` | `SecurityConfig.java`, `CustomerSessionFilter.java`, `DevAdminAuthService.requirePermission`, admin controllers |
 | `POST /api/v1/admin/products/preview` | `products.update` (live preview dry-run; no persistence) | `CONFIRMED_FROM_CODE` | `AdminCatalogController.previewProduct`, `AdminCatalogMutationService.previewProduct` |
 | `/api/v1/admin/dashboard` GET | `orders.read` only; no exact-role restriction | `OWNER_CONFIRMED_2026-07-31` | `AdminDashboardController.java`, `SecurityConfig.java` |
-| `/api/v1/admin/notifications` GET and `/mark-all-read` POST | At least one of `orders.read` or `chat.read`; each response is filtered to the held scope | `CONFIRMED_FROM_CODE` | `AdminNotificationController.java`, `AdminNotificationService.java` |
+| `/api/v1/admin/notifications` GET and `/mark-all-read` POST | At least one of `orders.read` or `inventory.read`; each response is filtered to the caller’s scopes. Order events and `ORDER_OVERDUE_DIGEST` require `orders.read`; daily out-of-stock digest rows require `inventory.read`. | `OWNER_CONFIRMED_2026-08-31` | `AdminNotificationController.java`, `AdminNotificationService.java`, `NOTIFICATION_RULE_002`, `STOCK_ALERT_RULE_003` |
 | `/api/v1/admin/orders` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listOrders` |
 | `/api/v1/admin/orders/{orderId}` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.getOrderDetail` |
 | `/api/v1/admin/orders/{orderId}/allowed-transitions` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAllowedTransitions` |
 | `/api/v1/admin/orders/{orderId}/status` PATCH | `orders.write` | `CONFIRMED_FROM_CODE` | `AdminOrderController.updateOrderStatus` |
 | `/api/v1/admin/orders/{orderId}/audit` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
 | `/api/v1/customer/orders/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
+
+Historical classification adds no permission. `orders.read` covers the operational/historical filters and classification metadata; `orders.write` remains necessary but is insufficient to mutate an active historical order. `settings.read/settings.write` cover `order_overdue_days`; the 04:20 scheduler runs as the system and borrows no user role.
 | `/api/v1/customer/addresses/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `POST`/`DELETE /api/v1/customer/me/avatar` | `ROLE_CUSTOMER` (own account only — no admin-upload path exists) | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
 | `GET /api/v1/admin/customers`, `/summary`, `/{customerId}` | `customers.read` | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |

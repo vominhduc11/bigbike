@@ -34,6 +34,7 @@ import { formatCurrencyVnd, formatDateTime, formatText } from '../lib/formatters
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { FormField, Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -465,6 +466,10 @@ export function CustomerDetailScreen({ customerId, navigate, canUpdate }) {
       {!canUpdate && (
         <ReadOnlyBanner warning={t('customers.detail.readOnlyHint', { defaultValue: 'Bạn chỉ có quyền xem hồ sơ khách hàng. Liên hệ quản trị để được cấp quyền chỉnh sửa.' })} />
       )}
+
+      <Alert tone="info" size="sm" className="mb-4" role="status">
+        {t('customers.historyScopeDisclosure')}
+      </Alert>
 
       <div className="bb-kpi-grid bb-kpi-grid-4">
         <MetricCard

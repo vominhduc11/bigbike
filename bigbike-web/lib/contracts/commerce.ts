@@ -1,229 +1,230 @@
-import type { ImageAsset } from "@/lib/contracts/public"
+import type { ImageAsset } from "@/lib/contracts/public";
 
 export type CartItem = {
-  id: string
-  productId: string | null
-  productVariantId: string | null
-  sku: string | null
-  productName: string
-  variantName: string | null
-  image?: ImageAsset | null
-  quantity: number
-  unitPrice: number
-  lineSubtotal: number
-  lineDiscount: number
-  lineTotal: number
-  available: boolean
-}
+  id: string;
+  productId: string | null;
+  productVariantId: string | null;
+  sku: string | null;
+  productName: string;
+  variantName: string | null;
+  image?: ImageAsset | null;
+  quantity: number;
+  unitPrice: number;
+  lineSubtotal: number;
+  lineDiscount: number;
+  lineTotal: number;
+  available: boolean;
+};
 
- type CartTotals = {
-  subtotalAmount: number
-  discountAmount: number
-  shippingAmount: number
-  feeAmount: number
-  totalAmount: number
-}
+type CartTotals = {
+  subtotalAmount: number;
+  discountAmount: number;
+  shippingAmount: number;
+  feeAmount: number;
+  totalAmount: number;
+};
 
 export type Cart = {
-  id: string
-  status: string
-  currency: string
-  items: CartItem[]
-  totals: CartTotals
-}
+  id: string;
+  status: string;
+  currency: string;
+  items: CartItem[];
+  totals: CartTotals;
+};
 
- type CheckoutAddress = {
-  fullName: string
-  email: string
-  phone: string
-  country: string
-  province: string
-  ward: string
-  addressLine1: string
-  addressLine2?: string
-}
+type CheckoutAddress = {
+  fullName: string;
+  email: string;
+  phone: string;
+  country: string;
+  province: string;
+  ward: string;
+  addressLine1: string;
+  addressLine2?: string;
+};
 
 export type CheckoutPayload = {
-  billingAddress: CheckoutAddress
-  shippingAddress?: CheckoutAddress | null
+  billingAddress: CheckoutAddress;
+  shippingAddress?: CheckoutAddress | null;
   // Storefront chọn COD hoặc BANK_TRANSFER; backend giữ COD mặc định khi field bị bỏ qua
   // và từ chối mọi mã khác (PAY_RULE_001).
-  paymentMethod?: string
-  customerNote?: string
-}
+  paymentMethod?: string;
+  customerNote?: string;
+  // Passive language snapshot for a later review invitation; no checkout behavior changes.
+  locale?: "vi" | "en";
+};
 
 // CheckoutOptions/PaymentMethodOption đã xóa 2026-07-15 (AUD-056): endpoint
 // GET /checkout/options bị gỡ — COD là phương thức duy nhất, không còn bước chọn.
 
 export type PriceChange = {
-  productName: string
-  oldPrice: number
-  newPrice: number
-}
+  productName: string;
+  oldPrice: number;
+  newPrice: number;
+};
 
 export type OrderSummary = {
-  id: string
-  orderNumber: string
-  orderKey: string
-  status: string
-  paymentMethod: string
-  subtotalAmount: number
-  shippingAmount: number
-  discountAmount: number
-  totalAmount: number
-  currency: string
-  priceChanges?: PriceChange[]
-}
+  id: string;
+  orderNumber: string;
+  orderKey: string;
+  status: string;
+  paymentMethod: string;
+  subtotalAmount: number;
+  shippingAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  currency: string;
+  priceChanges?: PriceChange[];
+};
 
 export type OrderLineItem = {
-  id: string
-  productId: string | null
-  productVariantId: string | null
-  sku: string | null
-  productName: string
-  variantName: string | null
-  quantity: number
-  unitPrice: number
-  lineSubtotal: number
-  lineDiscount: number
-  lineTotal: number
+  id: string;
+  productId: string | null;
+  productVariantId: string | null;
+  sku: string | null;
+  productName: string;
+  variantName: string | null;
+  quantity: number;
+  unitPrice: number;
+  lineSubtotal: number;
+  lineDiscount: number;
+  lineTotal: number;
   /** Current catalog image of the product; null when the product no longer exists. */
-  productThumbnailUrl: string | null
-}
+  productThumbnailUrl: string | null;
+};
 
 export type OrderAddress = {
-  type: string
-  fullName: string
-  email: string | null
-  phone: string | null
-  country: string | null
-  province: string | null
-  district: string | null
-  ward: string | null
-  addressLine1: string | null
-  addressLine2: string | null
-}
+  type: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  country: string | null;
+  province: string | null;
+  district: string | null;
+  ward: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+};
 
- export type OrderShippingItem = {
-  id: string
-  methodCode: string | null
-  methodTitle: string
-  amount: number
-}
+export type OrderShippingItem = {
+  id: string;
+  methodCode: string | null;
+  methodTitle: string;
+  amount: number;
+};
 
- export type OrderPayment = {
-  id: string
-  paymentMethod: string
-  status: string
-  amount: number
-  currency: string
-  paidAt: string | null
-}
+export type OrderPayment = {
+  id: string;
+  paymentMethod: string;
+  status: string;
+  amount: number;
+  currency: string;
+  paidAt: string | null;
+};
 
- type OrderNote = {
-  id: string
-  noteType?: string
-  content: string
-  createdAt: string
-}
+type OrderNote = {
+  id: string;
+  noteType?: string;
+  content: string;
+  createdAt: string;
+};
 
 export type OrderDetail = {
-  id: string
-  orderNumber: string
-  orderKey: string | null
-  status: string
-  customerEmail: string | null
-  customerPhone: string | null
-  customerNote: string | null
-  currency: string
-  subtotalAmount: number
-  discountAmount: number
-  shippingAmount: number
-  feeAmount: number
-  taxAmount: number
-  totalAmount: number
-  paidAmount: number
-  placedAt: string
-  channel?: string
-  lineItems: OrderLineItem[]
-  addresses: OrderAddress[]
-  shippingItems: OrderShippingItem[]
-  payments: OrderPayment[]
-  notes: OrderNote[]
-}
+  id: string;
+  orderNumber: string;
+  orderKey: string | null;
+  status: string;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  customerNote: string | null;
+  currency: string;
+  subtotalAmount: number;
+  discountAmount: number;
+  shippingAmount: number;
+  feeAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+  paidAmount: number;
+  placedAt: string;
+  channel?: string;
+  lineItems: OrderLineItem[];
+  addresses: OrderAddress[];
+  shippingItems: OrderShippingItem[];
+  payments: OrderPayment[];
+  notes: OrderNote[];
+};
 
 export type CustomerProfile = {
-  id: string
-  email: string
-  phone: string | null
-  displayName: string | null
-  status: string
-  gender?: string | null
-  dob?: string | null
-  emailVerified?: boolean
-  avatarUrl?: string | null
+  id: string;
+  email: string;
+  phone: string | null;
+  displayName: string | null;
+  status: string;
+  gender?: string | null;
+  dob?: string | null;
+  emailVerified?: boolean;
+  avatarUrl?: string | null;
   /** True when ≥1 Google/Facebook identity is linked — profile fields are then provider-managed
    *  (read-only on BigBike, synced from the provider on each OAuth login) rather than self-editable. */
-  oauthManaged?: boolean
-}
+  oauthManaged?: boolean;
+};
 
 export type CustomerAuthData = {
   customer: {
-    id: string
-    email: string
-    phone: string | null
-    displayName: string | null
-    status: string
-  }
-  csrfToken: string
-}
+    id: string;
+    email: string;
+    phone: string | null;
+    displayName: string | null;
+    status: string;
+  };
+  csrfToken: string;
+};
 
 export type OrderListItem = {
-  id: string
-  orderNumber: string
-  status: string
-  totalAmount: number
-  currency: string
-  placedAt: string
-  itemCount: number
-  productNames?: string[]
-  channel?: string
-}
+  id: string;
+  orderNumber: string;
+  status: string;
+  totalAmount: number;
+  currency: string;
+  placedAt: string;
+  itemCount: number;
+  productNames?: string[];
+  channel?: string;
+};
 
 export type CustomerAddress = {
-  id: string
-  type: string
-  fullName: string | null
-  phone: string | null
-  email: string | null
-  country: string
-  province: string | null
-  district: string | null
-  ward: string | null
-  addressLine1: string | null
-  addressLine2: string | null
-  isDefault: boolean
-}
+  id: string;
+  type: string;
+  fullName: string | null;
+  phone: string | null;
+  email: string | null;
+  country: string;
+  province: string | null;
+  district: string | null;
+  ward: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  isDefault: boolean;
+};
 
 export type UpdateCustomerProfilePayload = {
-  displayName?: string
-  phone?: string
-  email?: string
-  currentPassword?: string
-  newPassword?: string
-  gender?: string
-  dob?: string
-}
+  displayName?: string;
+  phone?: string;
+  email?: string;
+  currentPassword?: string;
+  newPassword?: string;
+  gender?: string;
+  dob?: string;
+};
 
 export type SaveAddressPayload = {
-  type: string
-  fullName: string
-  phone: string
-  email?: string
-  province: string
-  ward: string
-  addressLine1: string
-  addressLine2?: string
-  isDefault?: boolean
-}
-
+  type: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  province: string;
+  ward: string;
+  addressLine1: string;
+  addressLine2?: string;
+  isDefault?: boolean;
+};

@@ -6,9 +6,9 @@
 |---|---|---|---|
 | PostgreSQL | Primary persistence store for backend and CI | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml`, `.github/workflows/ci.yml` |
 | MinIO | Media/object storage | `CONFIRMED_FROM_CODE` + `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml`, `AdminMediaService.java` |
-| SMTP mail | Transactional email path exists when env is configured. All mail goes through `EmailDispatchService.send(to, subject, template, ctx)` rendering a Thymeleaf template under `templates/email/`. Templates include customer `password-reset`, `password-change-alert`, order confirmation, and **admin `admin-invite`** (set-password link for newly invited admins; degrades gracefully — when no `JavaMailSender` bean is configured, `isEnabled()` is false and the caller surfaces the invite link instead). The shop-owned internal recipient is declared once as required `BIGBIKE_MAIL_ADMIN` for order notifications. Startup rejects a missing/invalid value. A successful SMTP call means only that the provider accepted the message for processing, not that the recipient received it. | `CONFIRMED_FROM_CODE` + `CONFIRMED_FROM_CONFIG` | `EmailDispatchService.java`, `AdminInviteService.java`, `templates/email/admin-invite.html` |
+| SMTP mail | Transactional email path exists when env is configured. All mail goes through the shared `EmailDispatchService`, rendering Thymeleaf templates under `templates/email/`. Templates include customer mail, **admin `admin-invite`**, the bilingual daily out-of-stock digest, and the bilingual post-purchase review invitation. Review invitations use the same ordinary Gmail mailbox but are paced separately: one attempt per 10-minute tick during 09:00–20:50 Vietnam time and a configurable default ceiling of 20/day; they never retry. Transactional calls remain immediate and do not consume this marketing quota. A successful SMTP call means only that the provider accepted the message for processing, not that the recipient received it. | `OWNER_CONFIRMED_2026-08-31` | `EmailDispatchService.java`, invitation/digest email services and templates |
 | Web revalidation | Backend can call Next.js revalidation endpoint with shared secret | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml` |
-| WebSocket/STOMP | Admin order, inventory, review, customer and edit-presence channels are live. Each admin also subscribes to `/user/queue/admin/access`: role/permission changes cause a canonical profile refresh, while disable/suspend/password reset forces sign-in again. The admin client also reconciles `/auth/me` on reconnect, focus and every 30 seconds while visible; all data-topic deliveries recheck the current access server-side. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminAccessChangeService.java`, `auth.jsx`, `adminWebSocket.js` |
+| WebSocket/STOMP | Admin order, inventory, review, customer and edit-presence channels are live. The inventory topic also carries a lightweight `INVENTORY_OUT_OF_STOCK_DIGEST_READY` refresh event after the persistent morning snapshot commits; it does not duplicate the long list in the frame. Each admin also subscribes to `/user/queue/admin/access`; all topic deliveries recheck current access server-side. | `OWNER_CONFIRMED_2026-08-31` | `WebSocketConfig.java`, `AdminInventoryWsService.java`, `AdminAccessChangeService.java`, `adminWebSocket.js` |
 | Customer order tracking | Customer order detail and guest confirmation pages poll their existing authenticated/secret-link order-read endpoint every 15 seconds while visible, refetch on focus, and stop at `COMPLETED`/`CANCELLED`; no customer WebSocket channel | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web/lib/query/hooks.ts`, `bigbike-web/app/don-hang/xac-nhan/OrderConfirmClient.tsx` |
 | VN address data | Dữ liệu hai cấp tỉnh/thành → phường/xã có ở cả API đọc backend và bundle web. Storefront dùng bundle `VN_PROVINCES`; hiện không có caller nội bộ cho API. | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address.json`, `vn-address-data.ts`, `VnAddressFields.tsx` |
 | Google Gemini (shared backend credential) | Review moderation and Trợ lý BigBike share one backend-only credential but remain separate features. The assistant is fixed to Gemini 3.7 Flash with same-model retries; review moderation keeps its independent model/switch/failure behavior. **Not** a translation path. | `OWNER_CONFIRMED_2026-08-29` | `AiReviewModerationClient.java`, `AiChatClient.java`, `CHAT_RULE_019`, `REVIEW_RULE_012`/`013` |
@@ -21,6 +21,12 @@ fallback. New-order notifications read this resolved value. The backend fails du
 `BIGBIKE_MAIL_ADMIN` is missing or is not a valid email address, so a deployment cannot
 silently queue internal alerts to nowhere. The sender address and customer-email paths are
 separate and are unchanged by this setting.
+
+### Post-purchase review invitation mail
+
+No new SMTP account, broker or scheduling infrastructure is introduced. The 04:30 Vietnam-time queue job and the 10-minute daytime dispatcher reuse Spring scheduling and the shared mail renderer. The dispatcher atomically reserves one row in the Vietnam-date quota ledger before handing an email to SMTP. `FAILED` and stale `SENDING → UNCERTAIN` are final, not retryable; this favors avoiding duplicate/bulk mail over maximizing delivery. Transactional order/account/review-approved mail does not enter this queue and therefore keeps priority.
+
+The template receives only the recipient display name, order number, localized product names/URLs and an unsubscribe URL. Product and unsubscribe secrets are random URL-safe values; persistence receives SHA-256 hashes only. Product URLs put the secret after `#write-review=` and the unsubscribe URL after `#token=`, so browsers do not send it in the initial HTTP request or ordinary referrer. Tests inject a fake dispatcher and render locally; they must never configure or contact the real Gmail account (`REVIEW_RULE_014`–`016`).
 
 > **Gemini auto-translation — STILL REMOVED (2026-07-03).** The VI→EN auto-translation integration
 > (Google Gemini `generateContent` API, `GeminiTranslationService`, `AdminTranslateController`,
@@ -92,6 +98,32 @@ The master switch and the four category toggles are **settings**, not env — se
 Environment: `GEMINI_API_KEY`, `BIGBIKE_CHAT_MODEL=gemini-3.7-flash`, `BIGBIKE_CHAT_TIMEOUT_SECONDS=65`, `MINIO_CHAT_PRIVATE_BUCKET=bigbike-chat-private`. The model property is validated at startup and is not an owner setting. Declare variables in `.env.example`, `.env.vps.example` and Compose; populated `.env`/`.env.vps` are never committed.
 
 Review moderation remains a separate Google-Gemini client with its own model, timeout, setting group and failure policy. Changing the assistant must not alter that integration.
+
+## Homepage YouTube Video Feed
+
+`HOME_VIDEO_RULE_001`–`003` dùng duy nhất site setting `youtube_url`. Không có API key,
+biến môi trường hoặc hạ tầng mới; TikTok/Facebook không có client, placeholder hay nhánh
+dự phòng trong luồng tự động.
+
+1. Scheduler chạy `0 10 4 * * *`, zone `Asia/Ho_Chi_Minh`.
+2. URL `/channel/UC...` tạo thẳng feed `https://www.youtube.com/feeds/videos.xml?channel_id=...`;
+   URL `/@handle` đọc đúng trang kênh và lấy RSS alternate link, chỉ chấp nhận host/path feed
+   cố định của YouTube.
+3. Feed tối đa 15 entry phải có channel id khớp, video id/title/published/link hợp lệ. Client
+   đặt timeout, giới hạn kích thước response và không theo redirect ra ngoài allowlist.
+4. Trước khi ghi, dịch vụ duyệt lần lượt các ứng viên có thể lên 10 vị trí. Entry còn trong
+   feed là available; video YouTube cũ dùng `https://www.youtube.com/oembed` công khai:
+   `200` = available, `401/404/410` = removed/private, mọi status/lỗi khác = UNKNOWN.
+5. Bất kỳ UNKNOWN, feed lỗi/rỗng/sai cấu trúc hoặc setting đổi trong lúc chạy đều no-op toàn
+   bộ. Network hoàn tất trước transaction; transaction đọc lại setting/kho, chống trùng lần
+   cuối, chỉ insert mới hoặc đổi `is_active` sang false, rồi revalidate `home-videos` after commit.
+
+Không kiểm tra video TikTok/Facebook/upload nhập tay. Video YouTube active nằm ngoài nhóm có
+thể lên 10 vị trí cũng chưa cần gọi availability; khi nó trở thành ứng viên, lần chạy kế tiếp
+sẽ kiểm tra trước khi cho nó nằm trong danh sách cuối.
+
+Status: `OWNER_CONFIRMED_2026-08-31; CONFIRMED_FROM_CODE_AND_TEST` — `HOME_VIDEO_RULE_001`–`003`.
+
 ## Web Revalidation (ISR on-demand)
 
 `WebRevalidationService` POSTs cache tags to the Next.js web app's `POST /api/revalidate`
@@ -169,6 +201,8 @@ Tag map — catalog / commerce / home cluster (entity mutation → tags emitted)
 > Article mutations emit `articles` and `article:<slug>`. Settings, slider, menu and
 > home-video mutations emit `settings`, `sliders`, `menus` and `home-videos` from their
 > respective admin services, read by the matching `public-api.ts` functions.
+> The nightly YouTube sync emits `home-videos` only when its committed transaction actually
+> inserted or disabled at least one row; a failed/no-change run emits nothing.
 >
 > Static hardcoded pages under `bigbike-web/lib/content/static-pages.*` are build-time SSG
 > content. They intentionally have no `pages` cache tag and are not included in startup

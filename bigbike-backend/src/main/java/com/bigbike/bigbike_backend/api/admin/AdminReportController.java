@@ -9,6 +9,7 @@ import com.bigbike.bigbike_backend.domain.commerce.OrderStatus;
 import com.bigbike.bigbike_backend.domain.customer.CustomerStatus;
 import com.bigbike.bigbike_backend.service.admin.AdminCustomerCsvExportService;
 import com.bigbike.bigbike_backend.service.admin.AdminOrderCsvExportService;
+import com.bigbike.bigbike_backend.service.admin.AdminOrderCsvExportService.ExportPlan;
 import com.bigbike.bigbike_backend.service.admin.AdminReportService;
 import com.bigbike.bigbike_backend.service.auth.DevAdminAuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -70,6 +71,8 @@ public class AdminReportController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
+            @RequestParam(defaultValue = "ALL") String orderScope,
+            @RequestParam(required = false) String attention,
             HttpServletRequest request
     ) {
         AdminUserProfile actor = devAdminAuthService.requirePermission(request, "reports.export");
@@ -79,6 +82,7 @@ public class AdminReportController {
             throw ValidationException.fromField("status", "INVALID_ORDER_STATUS",
                     "Unknown order status: " + status);
         }
+        ExportPlan exportPlan = adminOrderCsvExportService.prepare(orderScope, attention);
         RateLimitConcurrencyGuard.Lease exportLease = rateLimitConcurrencyGuard.acquireAdminExport();
         try {
             adminReportService.recordExportAudit(
@@ -88,7 +92,10 @@ public class AdminReportController {
                             "searchApplied", q != null && !q.isBlank(),
                             "status", blankToNull(status),
                             "from", blankToNull(from),
-                            "to", blankToNull(to)
+                            "to", blankToNull(to),
+                            "orderScope", exportPlan.queryOptions().orderScope().name(),
+                            "effectiveOrderScope", exportPlan.effectiveScope().name(),
+                            "attention", exportPlan.queryOptions().attentionValue()
                     ),
                     null,
                     true,
@@ -98,12 +105,15 @@ public class AdminReportController {
             return completeOrderCsvResponse(
                     outputStream -> {
                         try {
-                            adminOrderCsvExportService.writeTo(outputStream, status, q, from, to);
+                            adminOrderCsvExportService.writeTo(
+                                    outputStream, status, q, from, to, exportPlan);
                         } finally {
                             exportLease.close();
                         }
                     },
-                    "orders_" + LocalDate.now().format(FILE_DATE) + ".csv"
+                    "orders_" + exportPlan.effectiveScope().name().toLowerCase(Locale.ROOT)
+                            + "_" + LocalDate.now().format(FILE_DATE) + ".csv",
+                    exportPlan.effectiveScope().name()
             );
         } catch (RuntimeException | Error ex) {
             exportLease.close();
@@ -220,12 +230,13 @@ public class AdminReportController {
     }
 
     private ResponseEntity<StreamingResponseBody> completeOrderCsvResponse(
-            StreamingResponseBody body, String filename
+            StreamingResponseBody body, String filename, String orderScope
     ) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
         headers.set("X-Export-Uncapped", "true");
+        headers.set("X-Order-Scope", orderScope);
         return ResponseEntity.ok().headers(headers).body(body);
     }
 

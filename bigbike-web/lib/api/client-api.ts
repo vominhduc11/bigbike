@@ -169,8 +169,6 @@ export type ChatImage = {
 export type ChatAvailability = {
   mode: "AI" | "CONTACT";
   reason?: string | null;
-  greeting?: string | null;
-  quickPrompts: string[];
   maxTurns: number;
   contacts: ChatContact;
   images: {
@@ -193,7 +191,6 @@ export type ChatActionType =
   | "FIND_PRODUCTS"
   | "RELATED_ARTICLE_QUESTION"
   | "CHANGE_NEEDS"
-  | "CONTACT_STAFF"
   | "LOGIN"
   | "ORDER_HISTORY"
   | "ORDER_LOOKUP"
@@ -222,20 +219,6 @@ export type ChatNextStep = {
   productSlug?: string | null;
   clarificationId?: string | null;
 };
-
-export type ChatHandoffStatus = {
-  id: string;
-  status: "WAITING" | "ACTIVE" | "RETURNED_TO_AI" | "CLOSED";
-  requestedAt: string;
-  channelState?: string | null;
-  assignedDisplayName?: string | null;
-  withinBusinessHours?: boolean;
-  nextOpenAt?: string | null;
-  businessHoursText?: string | null;
-};
-
-export type ChatChannelState =
-  "AI_ACTIVE" | "WAITING_FOR_STAFF" | "STAFF_ACTIVE" | "AI_RESUMED" | "CLOSED";
 
 export type ChatContinuation = {
   available: boolean;
@@ -286,14 +269,11 @@ export type ChatMessageResult = {
   crossSellProducts: ChatProductCard[];
   salesStage: ChatSalesStage;
   nextStep?: ChatNextStep | null;
-  handoff?: ChatHandoffStatus | null;
   clarification?: ChatClarification | null;
-  handoffRecommended: boolean;
   actions: ChatAction[];
   contacts: ChatContact;
   answerFormat: "PLAIN_TEXT" | "MARKDOWN";
   resultKind: string;
-  channelState: ChatChannelState;
   countedTurns: number;
   turnLimit: number;
   turnsRemaining: number;
@@ -312,7 +292,6 @@ const CHAT_ACTION_TYPES = new Set<ChatActionType>([
   "FIND_PRODUCTS",
   "RELATED_ARTICLE_QUESTION",
   "CHANGE_NEEDS",
-  "CONTACT_STAFF",
   "LOGIN",
   "ORDER_HISTORY",
   "ORDER_LOOKUP",
@@ -512,46 +491,7 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
               : null,
         }
       : null;
-  const handoffSource =
-    source.handoff && typeof source.handoff === "object"
-      ? (source.handoff as Record<string, unknown>)
-      : null;
-  const handoffStatuses = new Set(["WAITING", "ACTIVE", "RETURNED_TO_AI", "CLOSED"]);
-  const handoff =
-    handoffSource &&
-    typeof handoffSource.id === "string" &&
-    typeof handoffSource.status === "string" &&
-    handoffStatuses.has(handoffSource.status) &&
-    typeof handoffSource.requestedAt === "string"
-      ? {
-          id: handoffSource.id,
-          status: handoffSource.status as ChatHandoffStatus["status"],
-          requestedAt: handoffSource.requestedAt,
-          channelState:
-            typeof handoffSource.channelState === "string" ? handoffSource.channelState : null,
-          assignedDisplayName:
-            typeof handoffSource.assignedDisplayName === "string"
-              ? handoffSource.assignedDisplayName
-              : null,
-          withinBusinessHours: handoffSource.withinBusinessHours === true,
-          nextOpenAt:
-            typeof handoffSource.nextOpenAt === "string" ? handoffSource.nextOpenAt : null,
-          businessHoursText:
-            typeof handoffSource.businessHoursText === "string"
-              ? handoffSource.businessHoursText.trim()
-              : null,
-        }
-      : null;
   const mode = source.mode === "AI" && safeAnswer && !unsafe ? "AI" : "CONTACT";
-  const channelState = [
-    "AI_ACTIVE",
-    "WAITING_FOR_STAFF",
-    "STAFF_ACTIVE",
-    "AI_RESUMED",
-    "CLOSED",
-  ].includes(String(source.channelState))
-    ? (source.channelState as ChatChannelState)
-    : "AI_ACTIVE";
   return {
     conversationId: typeof source.conversationId === "string" ? source.conversationId : null,
     assistantMessageId:
@@ -566,9 +506,7 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
     crossSellProducts: unsafe ? [] : normalizedCrossSell.products.slice(0, 2),
     salesStage: stage,
     nextStep: unsafe ? null : nextStep,
-    handoff: unsafe ? null : handoff,
     clarification: unsafe ? null : normalizedClarification.clarification,
-    handoffRecommended: mode === "CONTACT" || source.handoffRecommended === true,
     actions:
       unsafe || !answer || normalizedClarification.clarification
         ? []
@@ -579,7 +517,6 @@ function normalizeChatMessageResult(value: unknown, lang: "vi" | "en"): ChatMess
       typeof source.resultKind === "string" && source.resultKind.trim()
         ? source.resultKind.trim()
         : mode,
-    channelState,
     countedTurns:
       typeof source.countedTurns === "number"
         ? source.countedTurns
@@ -625,17 +562,10 @@ export function fetchChatAvailability(lang: "vi" | "en"): Promise<ChatAvailabili
   return clientRequest<ChatAvailability>("GET", `/api/v1/chat/availability?lang=${lang}`).then(
     (value) => {
       const source = value && typeof value === "object" ? value : ({} as ChatAvailability);
-      const quickPrompts = Array.isArray(source.quickPrompts)
-        ? source.quickPrompts
-            .filter((prompt): prompt is string => isSafeChatDisplayText(prompt, lang))
-            .slice(0, 4)
-        : [];
       return {
         ...source,
         mode: source.mode === "AI" ? "AI" : "CONTACT",
-        greeting: isSafeChatDisplayText(source.greeting, lang) ? source.greeting : null,
-        quickPrompts,
-        maxTurns: Number.isFinite(source.maxTurns) ? source.maxTurns : 16,
+        maxTurns: Number.isFinite(source.maxTurns) ? source.maxTurns : 40,
         contacts: normalizeChatContacts(source.contacts),
         images: {
           enabled: source.images?.enabled === true,
@@ -645,7 +575,7 @@ export function fetchChatAvailability(lang: "vi" | "en"): Promise<ChatAvailabili
           maxPerTurn: Number.isFinite(source.images?.maxPerTurn) ? source.images.maxPerTurn : 1,
           maxPerConversation: Number.isFinite(source.images?.maxPerConversation)
             ? source.images.maxPerConversation
-            : 5,
+            : 3,
           dailyLimit: Number.isFinite(source.images?.dailyLimit) ? source.images.dailyLimit : 0,
           disclosure: isSafeChatDisplayText(source.images?.disclosure, lang)
             ? source.images.disclosure
@@ -773,30 +703,6 @@ export async function streamChatMessage(
   return result;
 }
 
-export function requestChatHandoff(input: {
-  requestId: string;
-  conversationId?: string;
-  locale: "vi" | "en";
-  visitorToken?: string;
-}): Promise<{
-  conversationId: string;
-  handoffId: string;
-  status: "WAITING" | "ACTIVE";
-  requestedAt: string;
-  channelState: ChatChannelState;
-  withinBusinessHours: boolean;
-  nextOpenAt?: string | null;
-  businessHoursText?: string | null;
-}> {
-  return clientRequest("POST", "/api/v1/chat/handoffs", {
-    requestId: input.requestId,
-    conversationId: input.conversationId ?? null,
-    locale: input.locale,
-    trigger: "BUTTON",
-    visitorToken: input.visitorToken || null,
-  });
-}
-
 export type ChatSession = {
   visitorToken: string;
   rememberedThrough: string;
@@ -808,12 +714,11 @@ export type ChatSession = {
 export type ChatHistoryMessage = {
   id: string;
   sequenceNo: number;
-  role: "CUSTOMER" | "ASSISTANT" | "STAFF" | "SYSTEM";
+  role: "CUSTOMER" | "ASSISTANT" | "SYSTEM";
   content: string;
   source?: string | null;
   answerFormat?: "PLAIN_TEXT" | "MARKDOWN" | null;
   resultKind?: string | null;
-  staffDisplayName?: string | null;
   createdAt: string;
   images: ChatImage[];
 };
@@ -821,10 +726,8 @@ export type ChatHistoryMessage = {
 export type ChatHistory = {
   conversationId: string;
   threadId: string;
-  channelState: ChatChannelState;
   latestSequence: number;
   messages: ChatHistoryMessage[];
-  handoff?: ChatHandoffStatus | null;
 };
 
 export function openChatSession(input: {
@@ -928,16 +831,6 @@ export function deleteChatHistory(visitorToken?: string): Promise<{ deleted: boo
     undefined,
     visitorToken ? { "X-Chat-Visitor-Token": visitorToken } : undefined,
   );
-}
-
-export function createChatRealtimeToken(
-  conversationId: string,
-  visitorToken?: string,
-): Promise<{ token: string; expiresAt: string }> {
-  return clientRequest("POST", "/api/v1/chat/realtime-token", {
-    conversationId,
-    visitorToken: visitorToken || null,
-  });
 }
 
 export function fetchCart(): Promise<Cart> {

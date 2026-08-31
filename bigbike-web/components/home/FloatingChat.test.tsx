@@ -8,8 +8,6 @@ const api = vi.hoisted(() => ({
   openChatSession: vi.fn(),
   fetchChatHistory: vi.fn(),
   deleteChatHistory: vi.fn(),
-  createChatRealtimeToken: vi.fn(),
-  requestChatHandoff: vi.fn(),
   streamChatMessage: vi.fn(),
   uploadChatImage: vi.fn(),
   fetchChatImageBlob: vi.fn(),
@@ -47,10 +45,8 @@ const defaultResult = {
   products: [{ slug: "mu-34", name: "Mũ 3/4", retailPrice: 1_590_000, currency: "VND", stockState: "IN_STOCK" }],
   crossSellProducts: [],
   salesStage: "BROWSING",
-  handoffRecommended: false,
   actions: [],
   contacts: {},
-  channelState: "AI_ACTIVE",
   countedTurns: 1,
   turnLimit: 40,
   turnsRemaining: 39,
@@ -60,19 +56,15 @@ beforeEach(() => {
   vi.resetAllMocks();
   window.localStorage.clear();
   api.fetchChatAvailability.mockResolvedValue({
-    mode: "AI", greeting: "Xin chào", quickPrompts: ["Tìm mũ"], maxTurns: 40, contacts: {},
-    images: { enabled: false, maxBytes: 8 * 1024 * 1024, maxPerTurn: 1, maxPerConversation: 3, dailyLimit: 20, disclosure: "" },
+    mode: "AI", maxTurns: 40, contacts: {},
+    images: { enabled: true, maxBytes: 8 * 1024 * 1024, maxPerTurn: 1, maxPerConversation: 3, dailyLimit: 20, disclosure: "imageDisclosure" },
   });
   api.openChatSession.mockResolvedValue({
     visitorToken: "visitor-token", rememberedThrough: "2026-09-28T00:00:00Z", memoryEnabled: true,
     activeConversationId: null, rememberedContextSummary: null,
   });
-  api.fetchChatHistory.mockResolvedValue({ conversationId: "conversation-1", threadId: "thread-1", channelState: "AI_ACTIVE", latestSequence: 0, messages: [] });
-  api.createChatRealtimeToken.mockRejectedValue(new Error("disabled in test"));
+  api.fetchChatHistory.mockResolvedValue({ conversationId: "conversation-1", threadId: "thread-1", latestSequence: 0, messages: [] });
   api.streamChatMessage.mockResolvedValue(defaultResult);
-  api.requestChatHandoff.mockImplementation(async ({ conversationId }: { conversationId?: string }) => ({
-    conversationId: conversationId || "conversation-handoff", handoffId: "handoff-1", status: "WAITING", channelState: "WAITING_FOR_STAFF", withinBusinessHours: true,
-  }));
   api.deleteChatHistory.mockResolvedValue({ deleted: true });
   HTMLElement.prototype.scrollTo = vi.fn();
   window.matchMedia = vi.fn().mockReturnValue({ matches: true });
@@ -101,35 +93,51 @@ describe("FloatingChat", () => {
     expect(screen.getByText("Mũ 3/4")).toBeInTheDocument();
   });
 
-  it("lets the customer request a staff handoff", async () => {
+  it("shows the bilingual AI disclosure and opens direct shop contacts without creating a request", async () => {
     const user = userEvent.setup();
     await openReadyChat(user);
-    await user.click(screen.getByRole("button", { name: "talkToStaff" }));
+    expect(screen.getByText("aiDisclosure")).toBeInTheDocument();
+    expect(screen.getByLabelText("messageLabel")).toBeVisible();
+    expect(screen.queryByText("defaultGreeting")).not.toBeInTheDocument();
+    expect(screen.queryByText("quickFind")).not.toBeInTheDocument();
+    expect(screen.queryByText("quickFilter")).not.toBeInTheDocument();
+    expect(screen.queryByText("quickCompare")).not.toBeInTheDocument();
+    expect(screen.queryByText("quickCheck")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "contactToggleOpen" }));
 
-    await waitFor(() => expect(api.requestChatHandoff).toHaveBeenCalledWith(expect.objectContaining({
-      locale: "vi", visitorToken: "visitor-token",
-    })));
-    expect(await screen.findAllByText("handoffContinue")).not.toHaveLength(0);
+    expect(await screen.findByText("contactTitle")).toBeInTheDocument();
+    expect(api.streamChatMessage).not.toHaveBeenCalled();
   });
 
-  it("shows the staff option when the provider-unavailable reply requests it", async () => {
+  it("does not expose a human-chat action when the assistant cannot answer", async () => {
     api.streamChatMessage.mockResolvedValue({
       ...defaultResult,
       products: [],
-      answer: "Xin lỗi, Trợ lý BigBike đang bận. Anh/chị có thể gặp nhân viên hỗ trợ.",
+      answer: "Vui lòng liên hệ shop qua các kênh bên dưới.",
       resultKind: "CONTACT",
-      actions: [{ type: "CONTACT_STAFF" }],
+      mode: "CONTACT",
+      actions: [],
     });
     const user = userEvent.setup();
     const input = await openReadyChat(user);
     await user.type(input, "Kiểm tra size M");
     await user.click(screen.getByRole("button", { name: "send" }));
 
-    await user.click((await screen.findAllByRole("button", { name: "talkToStaff" }))[0]);
-    await waitFor(() => expect(api.requestChatHandoff).toHaveBeenCalled());
+    expect(screen.queryByRole("button", { name: /staff|nhân viên/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "contactToggleOpen" })).toBeInTheDocument();
   });
 
-  it("keeps image upload hidden while the owner has it turned off", async () => {
+  it("keeps image upload available without an owner setting", async () => {
+    const user = userEvent.setup();
+    await openReadyChat(user);
+    expect(screen.getByRole("button", { name: "chooseImage" })).toBeInTheDocument();
+  });
+
+  it("hides the image control when the AI image service is unavailable", async () => {
+    api.fetchChatAvailability.mockResolvedValueOnce({
+      mode: "AI", maxTurns: 40, contacts: {},
+      images: { enabled: false, maxBytes: 8 * 1024 * 1024, maxPerTurn: 1, maxPerConversation: 3, dailyLimit: 20, disclosure: "" },
+    });
     const user = userEvent.setup();
     await openReadyChat(user);
     expect(screen.queryByLabelText("chooseImage")).not.toBeInTheDocument();

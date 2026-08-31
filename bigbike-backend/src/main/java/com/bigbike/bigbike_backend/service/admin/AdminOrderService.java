@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.admin;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderDetailResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.AdminOrderListItemResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.OrderAuditLogResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.order.OrderHistoryClassificationResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.order.UpdateOrderStatusRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
@@ -43,12 +44,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.DateTimeException;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -99,6 +103,8 @@ public class AdminOrderService {
     private final OrderAddressMapper orderAddressMapper;
     private final ShippingMapper shippingMapper;
     private final PaymentMapper paymentMapper;
+    private final OrderHistoryClassificationService historyClassificationService;
+    private final OrderOperationsSettings orderOperationsSettings;
 
     // List
 
@@ -106,10 +112,28 @@ public class AdminOrderService {
     public PageResult<AdminOrderListItemResponse> listOrders(
             int page, int size, String status, String q, String from, String to, String sort
     ) {
+        return listOrders(page, size, status, q, from, to, sort, "ALL", null);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResult<AdminOrderListItemResponse> listOrders(
+            int page,
+            int size,
+            String status,
+            String q,
+            String from,
+            String to,
+            String sort,
+            String orderScope,
+            String attention
+    ) {
         int normalizedPage = Math.max(1, page);
         int normalizedSize = (size <= 0) ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
 
-        Specification<OrderEntity> spec = buildFilterSpecification(status, q, from, to);
+        AdminOrderQueryOptions queryOptions = AdminOrderQueryOptions.from(orderScope, attention);
+        Instant overdueCutoff = resolveOverdueCutoff(queryOptions);
+        Specification<OrderEntity> spec = buildFilterSpecification(
+                status, q, from, to, queryOptions, overdueCutoff);
 
         PageRequest pageable = PageRequest.of(
                 normalizedPage - 1, normalizedSize,
@@ -120,11 +144,15 @@ public class AdminOrderService {
         List<UUID> orderIds = orderPage.getContent().stream().map(OrderEntity::getId).toList();
         Map<UUID, Long> itemCountMap = batchCountLineItems(orderIds);
         Map<UUID, String> fallbackNameMap = batchShippingNames(orderIds);
+        Map<UUID, OrderHistoryClassificationResponse> classificationMap =
+                historyClassificationService.activeClassifications(orderIds);
         List<AdminOrderListItemResponse> items = orderPage.getContent()
                 .stream()
-                .map(o -> withResolvedCustomerName(
-                        toListItem(o, itemCountMap.getOrDefault(o.getId(), 0L)),
-                        fallbackNameMap))
+                .map(o -> enrichListItem(
+                        withResolvedCustomerName(
+                                toListItem(o, itemCountMap.getOrDefault(o.getId(), 0L)),
+                                fallbackNameMap),
+                        classificationMap.get(o.getId())))
                 .toList();
 
         return new PageResult<>(items, normalizedPage, normalizedSize,
@@ -145,6 +173,9 @@ public class AdminOrderService {
     public List<String> listAllowedTransitions(UUID orderId) {
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
+        if (historyClassificationService.isHistorical(orderId)) {
+            return List.of();
+        }
         Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(order.getStatus(), Set.of());
         return allowed.stream().sorted().toList();
     }
@@ -161,6 +192,13 @@ public class AdminOrderService {
 
         OrderEntity order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
+
+        if (historyClassificationService.isHistorical(orderId)) {
+            throw new ConflictException(
+                    "HISTORICAL_ORDER_READ_ONLY",
+                    "Historical orders are read-only and cannot change status."
+            );
+        }
 
         String currentStatus = order.getStatus();
 
@@ -244,6 +282,49 @@ public class AdminOrderService {
         return orderMapper.toAdminListItem(order, (int) itemCount);
     }
 
+    private AdminOrderListItemResponse enrichListItem(
+            AdminOrderListItemResponse dto,
+            OrderHistoryClassificationResponse classification
+    ) {
+        return new AdminOrderListItemResponse(
+                dto.id(),
+                dto.orderNumber(),
+                dto.status(),
+                dto.fulfillmentType(),
+                dto.customerEmail(),
+                dto.customerPhone(),
+                dto.customerName(),
+                dto.totalAmount(),
+                dto.currency(),
+                dto.placedAt(),
+                dto.itemCount(),
+                dto.source(),
+                classification == null ? "OPERATIONAL" : "HISTORICAL",
+                classification
+        );
+    }
+
+    private Instant resolveOverdueCutoff(AdminOrderQueryOptions queryOptions) {
+        if (!queryOptions.overdueOnly()) return null;
+        OptionalInt configuredDays = orderOperationsSettings.overdueDays();
+        if (configuredDays.isEmpty()) {
+            throw ValidationException.fromField(
+                    "attention",
+                    "ORDER_OVERDUE_SETTING_UNAVAILABLE",
+                    "The overdue-order threshold is missing or invalid."
+            );
+        }
+        try {
+            return Instant.now().minus(Duration.ofDays(configuredDays.getAsInt()));
+        } catch (DateTimeException | ArithmeticException exception) {
+            throw ValidationException.fromField(
+                    "attention",
+                    "ORDER_OVERDUE_SETTING_UNAVAILABLE",
+                    "The overdue-order threshold is out of range."
+            );
+        }
+    }
+
     /**
      * Batch-loads the shipping-address full name for the given orders, keyed by
      * order id. Used as a fallback for legacy orders whose own customer_name is
@@ -285,6 +366,9 @@ public class AdminOrderService {
                         .map(OrderAddressResponse::fullName)
                         .filter(s -> s != null && !s.isBlank())
                         .orElse(null);
+        OrderHistoryClassificationResponse classification = historyClassificationService
+                .activeClassification(order.getId())
+                .orElse(null);
 
         return new AdminOrderDetailResponse(
                 order.getId(),
@@ -313,7 +397,9 @@ public class AdminOrderService {
                 lineItems,
                 addresses,
                 shippingItems,
-                payments
+                payments,
+                classification == null ? "OPERATIONAL" : "HISTORICAL",
+                classification
         );
     }
 

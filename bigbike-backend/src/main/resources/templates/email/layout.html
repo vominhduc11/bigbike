@@ -37,5 +37,37 @@
   </td>
 </tr>
 
+<tr th:fragment="internal-footer-row">
+  <td style="background-color:#f7f7f8;padding:20px 32px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;border-top:none;">
+    <p style="margin:0 0 6px 0;font-size:12px;color:#6b7280;line-height:1.6;">
+      BigBike Shop — 79/30/52 Âu Cơ, P.14, Q.11, TP.HCM<br/>
+      Hotline: <a href="tel:09069024040" style="color:#F90606;text-decoration:none;">0906.902.404</a>
+      &nbsp;|&nbsp;
+      <a href="https://bigbike.vn" style="color:#F90606;text-decoration:none;">bigbike.vn</a>
+    </p>
+    <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
+      Đây là email nội bộ tự động, vui lòng không trả lời trực tiếp.<br/>
+      This is an automated internal email. Please do not reply directly.
+    </p>
+  </td>
+</tr>
+
+<tr th:fragment="footer-row-localized">
+  <td style="background-color:#f7f7f8;padding:20px 32px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;border-top:none;">
+    <p style="margin:0 0 6px 0;font-size:12px;color:#6b7280;line-height:1.6;">
+      BigBike Shop — 79/30/52 Âu Cơ, P.14, Q.11, TP.HCM<br/>
+      Hotline: <a href="tel:09069024040" style="color:#F90606;text-decoration:none;">0906.902.404</a>
+      &nbsp;|&nbsp;
+      <a href="https://bigbike.vn" style="color:#F90606;text-decoration:none;">bigbike.vn</a>
+    </p>
+    <p th:if="${!english}" style="margin:0;font-size:11px;color:#9ca3af;">
+      Đây là email tự động, vui lòng không trả lời trực tiếp email này.
+    </p>
+    <p th:if="${english}" style="margin:0;font-size:11px;color:#9ca3af;">
+      This is an automated email. Please do not reply directly.
+    </p>
+  </td>
+</tr>
+
 </body>
 </html>

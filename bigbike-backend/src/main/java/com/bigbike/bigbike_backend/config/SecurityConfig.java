@@ -72,6 +72,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/products/*/reviews").permitAll()
                         // Public review photo upload — no auth, image-only + size + rate-limited (REVIEW_RULE_005)
                         .requestMatchers(HttpMethod.POST, "/api/v1/products/*/reviews/photos").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/review-invitations/unsubscribe").permitAll()
                         // Catalog filter facets — public, powers the storefront filter sidebar
                         .requestMatchers(HttpMethod.GET, "/api/v1/catalog/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()

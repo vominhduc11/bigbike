@@ -102,6 +102,7 @@ vi.mock('../components/AdminTable', () => ({
     rows,
     loading,
     selectable,
+    isRowSelectable,
     selectedIds,
     onSelectionChange,
   }) => (
@@ -112,7 +113,7 @@ vi.mock('../components/AdminTable', () => ({
     >
       {!loading && rows.map((row) => (
         <article key={row.id} data-testid={`order-row-${row.id}`}>
-          {selectable ? (
+          {selectable && (!isRowSelectable || isRowSelectable(row)) ? (
             <input
               type="checkbox"
               aria-label={`select-${row.id}`}
@@ -168,6 +169,7 @@ const pendingOrder = {
   createdAt: '2026-07-24T03:00:00Z',
   total: 2_500_000,
   orderStatus: 'PENDING',
+  orderScope: 'OPERATIONAL',
 }
 
 const completedOrder = {
@@ -178,6 +180,19 @@ const completedOrder = {
   createdAt: '2026-07-23T03:00:00Z',
   total: 1_200_000,
   orderStatus: 'COMPLETED',
+  orderScope: 'OPERATIONAL',
+}
+
+const historicalOrder = {
+  ...pendingOrder,
+  id: 'order-historical',
+  orderNumber: 'BB-LEGACY-0001',
+  orderScope: 'HISTORICAL',
+  historyClassification: {
+    batchKey: 'LEGACY_WEB_IMPORT_2026_06_11',
+    labelVi: 'Đơn lịch sử',
+    labelEn: 'Historical order',
+  },
 }
 
 function orderResponse({
@@ -237,7 +252,7 @@ describe('OrderListScreen', () => {
     renderScreen()
 
     expect(screen.getByTestId('order-table')).toHaveAttribute('data-loading', 'true')
-    expect(screen.getByRole('status')).toHaveTextContent('orders.loading')
+    expect(screen.getByText('orders.loading')).toHaveAttribute('role', 'status')
   })
 
   it('hiển thị lỗi tải và thử lại thành công', async () => {
@@ -377,6 +392,29 @@ describe('OrderListScreen', () => {
     expect(screen.queryByLabelText('select-order-pending')).not.toBeInTheDocument()
   })
 
+  it('mặc định chỉ lấy đơn vận hành và cho lọc xem đơn lịch sử ở chế độ chỉ đọc', async () => {
+    const user = userEvent.setup()
+    mocks.fetchOrders.mockImplementation(async (query) => orderResponse({
+      items: query.orderScope === 'HISTORICAL' ? [historicalOrder] : [pendingOrder],
+    }))
+
+    renderScreen()
+    await screen.findByText('BB-2026-0001')
+    expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
+      expect.objectContaining({ orderScope: 'OPERATIONAL', attention: 'ALL' }),
+    )
+
+    await user.selectOptions(screen.getByLabelText('orders.filterScope'), 'HISTORICAL')
+
+    expect(await screen.findByText('BB-LEGACY-0001')).toBeInTheDocument()
+    expect(screen.getByText('orders.historicalBadge')).toBeInTheDocument()
+    expect(screen.queryByLabelText('orders.processingOrderLabel')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('select-order-historical')).not.toBeInTheDocument()
+    expect(mocks.fetchOrders).toHaveBeenLastCalledWith(
+      expect.objectContaining({ orderScope: 'HISTORICAL', attention: 'ALL' }),
+    )
+  })
+
   it('chuyển nhanh đơn đang chờ sang đang xử lý và báo kết quả', async () => {
     const user = userEvent.setup()
     renderScreen()
@@ -474,6 +512,8 @@ describe('OrderListScreen', () => {
       status: 'PROCESSING',
       from: '2026-07-20',
       to: '2026-07-24',
+      orderScope: 'OPERATIONAL',
+      attention: undefined,
     }))
     expect(mocks.toast.success).toHaveBeenCalledWith('common.exportCsvDone')
     expect(mocks.toast.warning).not.toHaveBeenCalled()

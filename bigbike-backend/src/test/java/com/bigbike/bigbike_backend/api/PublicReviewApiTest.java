@@ -6,11 +6,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal;
+import com.bigbike.bigbike_backend.domain.review.ReviewInvitationStatus;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.ReviewPhotoUploadEntity;
 import com.bigbike.bigbike_backend.persistence.entity.customer.CustomerEntity;
+import com.bigbike.bigbike_backend.persistence.entity.review.ReviewInvitationDeliveryEntity;
+import com.bigbike.bigbike_backend.persistence.entity.review.ReviewInvitationItemEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ReviewPhotoUploadJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.review.ReviewInvitationDeliveryJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.review.ReviewInvitationItemJpaRepository;
+import com.bigbike.bigbike_backend.service.review.invitation.ReviewInvitationTokenService;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -45,6 +51,9 @@ class PublicReviewApiTest {
     @Autowired ReviewJpaRepository reviewRepo;
     @Autowired ReviewPhotoUploadJpaRepository reviewPhotoUploadRepo;
     @Autowired CustomerJpaRepository customerRepo;
+    @Autowired ReviewInvitationDeliveryJpaRepository invitationDeliveryRepo;
+    @Autowired ReviewInvitationItemJpaRepository invitationItemRepo;
+    @Autowired ReviewInvitationTokenService invitationTokenService;
 
     private MockMvc mockMvc;
 
@@ -66,6 +75,52 @@ class PublicReviewApiTest {
                         .content("{\"authorName\":\"" + author + "\",\"rating\":5,\"comment\":\"San pham tot.\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.success").value(true));
+    }
+
+    @Test
+    void submitReview_invitedGuestNeedsNoAccountAndConsumesOnlyThatProductLink() throws Exception {
+        Instant now = Instant.now();
+        String rawToken = "guest-review-" + UUID.randomUUID();
+
+        ReviewInvitationDeliveryEntity delivery = new ReviewInvitationDeliveryEntity();
+        delivery.setCampaignId(UUID.randomUUID());
+        delivery.setOrderId(UUID.randomUUID());
+        delivery.setOrderNumber("BB-GUEST-" + UUID.randomUUID().toString().substring(0, 8));
+        delivery.setRecipientEmail("invited-guest@example.test");
+        delivery.setRecipientEmailNormalized("invited-guest@example.test");
+        delivery.setLocale("vi");
+        delivery.setStatus(ReviewInvitationStatus.SENT);
+        delivery.setCompletedAt(now.minusSeconds(8 * 86_400L));
+        delivery.setDueAt(now.minusSeconds(86_400L));
+        delivery.setAttemptedAt(now.minusSeconds(60));
+        delivery.setProviderAcceptedAt(now.minusSeconds(60));
+        delivery.setCreatedAt(now.minusSeconds(8 * 86_400L));
+        delivery.setUpdatedAt(now.minusSeconds(60));
+        delivery = invitationDeliveryRepo.saveAndFlush(delivery);
+
+        ReviewInvitationItemEntity item = new ReviewInvitationItemEntity();
+        item.setDeliveryId(delivery.getId());
+        item.setProductId(PRODUCT_ID);
+        item.setInviteTokenHash(invitationTokenService.hash(rawToken));
+        item.setCreatedAt(now.minusSeconds(60));
+        item = invitationItemRepo.saveAndFlush(item);
+
+        String author = "Khách được mời " + UUID.randomUUID();
+        mockMvc.perform(post(REVIEWS_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"authorName\":\"" + author + "\",\"rating\":5,"
+                                + "\"comment\":\"Đánh giá từ đường dẫn trong thư.\","
+                                + "\"inviteToken\":\"" + rawToken + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.success").value(true));
+
+        ReviewInvitationItemEntity consumed = invitationItemRepo.findById(item.getId()).orElseThrow();
+        assertThat(consumed.getReviewedAt()).isNotNull();
+        assertThat(consumed.getReviewId()).isNotNull();
+        var review = reviewRepo.findById(consumed.getReviewId()).orElseThrow();
+        assertThat(review.getCustomerId()).isNull();
+        assertThat(review.getAuthorEmail()).isNull();
+        assertThat(review.getStatus()).isEqualTo("PENDING");
     }
 
     // ── 2. Honeypot — stealth drop ────────────────────────────────────────────

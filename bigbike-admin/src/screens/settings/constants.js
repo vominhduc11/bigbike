@@ -4,7 +4,7 @@
 import {
   Store, Phone, Globe, Settings,
   Image as ImageIcon, Users,
-  Bot, FileText, Landmark, ShieldCheck,
+  Bot, Clock3, FileText, Landmark, Mail, PackageX, ShieldCheck,
 } from 'lucide-react'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 
@@ -42,6 +42,7 @@ const INPUT_TYPE_MAP = {
 
 export function inputTypeFor(key) {
   const k = key.toLowerCase()
+  if (k === 'inventory_out_of_stock_digest_time') return 'time'
   for (const [seg, type] of Object.entries(INPUT_TYPE_MAP)) {
     if (k.includes(seg)) return type
   }
@@ -61,6 +62,7 @@ const PLACEHOLDER_MAP = {
 
 export function placeholderFor(key) {
   const k = key.toLowerCase()
+  if (k === 'inventory_out_of_stock_digest_time') return '08:00'
   for (const [seg, ph] of Object.entries(PLACEHOLDER_MAP)) {
     if (k.includes(seg)) return ph
   }
@@ -115,6 +117,10 @@ export function sectionTitle(sec, t) {
 export function validateValue(key, value) {
   if (!value) return null
   const k = key.toLowerCase()
+  if (k === 'inventory_out_of_stock_digest_time'
+      && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)) {
+    return 'settings.valTime'
+  }
   if (k.includes('email')) {
     if (!value.includes('@')) return 'settings.valEmail'
   }
@@ -134,6 +140,18 @@ export function validateValue(key, value) {
     if (Number.isNaN(n) || n < 0) {
       return 'settings.valNumber'
     }
+  }
+  if (k === 'order_overdue_days') {
+    const n = Number(value)
+    if (!Number.isInteger(n) || n < 1) return 'settings.valPositiveInteger'
+  }
+  if (k === 'review_invitation_delay_days') {
+    const n = Number(value)
+    if (!Number.isInteger(n) || n < 1 || n > 90) return 'settings.valReviewInvitationDelay'
+  }
+  if (k === 'review_invitation_daily_limit') {
+    const n = Number(value)
+    if (!Number.isInteger(n) || n < 1 || n > 50) return 'settings.valReviewInvitationLimit'
   }
   return null
 }
@@ -178,8 +196,8 @@ export const MIN_ASSIGNMENT_ROLES = 1
 export const MAX_ASSIGNMENT_ROLES = 6
 
 export const TAB_ORDER = [
-  'GENERAL', 'CONTACT', 'PAYMENT', 'PUBLIC_HERO', 'SEO',
-  'PRODUCT_ASSIGN', 'STORE_POLICY', 'REVIEW_MODERATION', 'AI_ASSISTANT',
+  'GENERAL', 'INVENTORY', 'CONTACT', 'PAYMENT', 'ORDER_OPERATIONS', 'PUBLIC_HERO', 'SEO',
+  'PRODUCT_ASSIGN', 'STORE_POLICY', 'REVIEW_INVITATION', 'REVIEW_MODERATION', 'AI_ASSISTANT',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
@@ -215,6 +233,11 @@ export const TAB_META = {
     labelKey: 'settings.group_general',
     descriptionKey: 'settings.groupDescription.general',
   },
+  INVENTORY: {
+    icon: PackageX,
+    labelKey: 'settings.group_inventory',
+    descriptionKey: 'settings.groupDescription.inventory',
+  },
   CONTACT: {
     icon: Phone,
     labelKey: 'settings.group_contact',
@@ -224,6 +247,11 @@ export const TAB_META = {
     icon: Landmark,
     labelKey: 'settings.group_payment',
     descriptionKey: 'settings.groupDescription.payment',
+  },
+  ORDER_OPERATIONS: {
+    icon: Clock3,
+    labelKey: 'settings.group_order_operations',
+    descriptionKey: 'settings.groupDescription.orderOperations',
   },
   PUBLIC_HERO: {
     icon: ImageIcon,
@@ -245,6 +273,11 @@ export const TAB_META = {
     labelKey: 'settings.group_review_moderation',
     descriptionKey: 'settings.groupDescription.reviewModeration',
   },
+  REVIEW_INVITATION: {
+    icon: Mail,
+    labelKey: 'settings.group_review_invitation',
+    descriptionKey: 'settings.groupDescription.reviewInvitation',
+  },
   STORE_POLICY: {
     icon: FileText,
     labelKey: 'settings.group_store_policy',
@@ -259,10 +292,17 @@ export const TAB_META = {
 
 // Bản dịch tiếng Việt cho từng setting key (admin shop motor đọc dễ hiểu hơn description English từ migrations)
 export const KEY_LABELS_VI = {
+  // inventory
+  inventory_out_of_stock_digest_enabled: 'Bật bản tin hết hàng hằng ngày',
+  inventory_out_of_stock_digest_time: 'Giờ gửi bản tin (giờ Việt Nam)',
   // general
   site_name: 'Tên shop (SEO trang chủ/bài viết, khối liên hệ trang sản phẩm)',
   // footer_tagline/bct_url/business_registration: gỡ V308 — footer đã hardcode, không còn tác dụng.
   footer_description: 'Mô tả ngắn (panel thông tin shop trên header mobile)',
+  order_overdue_days: 'Nhắc khi đơn chờ quá số ngày',
+  review_invitation_enabled: 'Bật email mời đánh giá',
+  review_invitation_delay_days: 'Gửi sau khi hoàn tất (số ngày)',
+  review_invitation_daily_limit: 'Số thư mời tối đa mỗi ngày',
   // contact
   hotline_2: 'Hotline phụ',
   hotline_3: 'Hotline thứ ba',
@@ -330,6 +370,18 @@ export const KEY_LABELS_VI = {
 }
 
 export const KEY_HINTS_VI = {
+  inventory_out_of_stock_digest_enabled:
+    'Tắt để hệ thống im lặng hoàn toàn. Khi bật, mỗi ngày chỉ có một bản tin gộp nếu thực sự có hàng hết.',
+  inventory_out_of_stock_digest_time:
+    'Dùng giờ Việt Nam theo định dạng 24 giờ. Nếu máy chủ khởi động muộn sau giờ này, hệ thống chạy bù một lần trong ngày.',
+  order_overdue_days:
+    'Mặc định 2 ngày. Chỉ tính đơn vận hành còn Chờ xác nhận; đơn lịch sử không bao giờ bị nhắc.',
+  review_invitation_enabled:
+    'Mỗi lần bật chỉ áp dụng cho đơn hoàn tất từ thời điểm đó trở đi. Tắt sẽ không gửi các thư đang chờ và không gửi bù khi bật lại.',
+  review_invitation_delay_days:
+    'Chọn từ 1 đến 90 ngày; mặc định 7 ngày sau khi đơn hoàn tất.',
+  review_invitation_daily_limit:
+    'Chọn từ 1 đến 50 thư mỗi ngày. Thư xác nhận đơn và các thư giao dịch luôn được gửi trước.',
   review_moderation_enabled:
     'Phải khai khoá dịch vụ AI ở máy chủ trước. Chưa khai thì mọi đánh giá vẫn nằm ở Chờ duyệt như hiện nay.',
   review_moderation_daily_limit:
@@ -391,6 +443,10 @@ export function tabDescription(group, t) {
 
 // Khối hiển thị → tiêu đề.
 export const SECTION_GUIDE = {
+  inventory_digest: {
+    title: 'Bản tin hết hàng mỗi sáng',
+    description: 'Gửi một bản gộp vào chuông quản trị và hộp thư nội bộ; không có hàng hết thì không gửi.',
+  },
   general_brand: {
     title: 'SEO & thông tin shop — mọi trang',
     description: 'Thông tin nhận diện chính được dùng xuyên suốt website.',
@@ -406,6 +462,14 @@ export const SECTION_GUIDE = {
   payment_bank: {
     title: 'Tài khoản nhận chuyển khoản',
     description: 'Thông tin hiển thị cho khách khi chọn thanh toán chuyển khoản.',
+  },
+  order_operations_reminders: {
+    title: 'Nhắc đơn cần xử lý',
+    description: 'Mỗi ngày hệ thống gộp các đơn thật đã chờ quá lâu thành một thông báo trong chuông quản trị.',
+  },
+  review_invitation_delivery: {
+    title: 'Lịch gửi lời mời đánh giá',
+    description: 'Chỉ áp dụng cho đơn thật hoàn tất sau lần bật gần nhất; mỗi đơn tối đa một thư và không nhắc lại.',
   },
   hero_products: {
     title: 'Banner đầu trang Tất cả sản phẩm',
@@ -452,6 +516,8 @@ export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
 // Mỗi ô → [id khối, vị trí cụ thể]. Dòng "📍 vị trí" hiện dưới nhãn để admin biết ô render ở đâu.
 export const KEY_GUIDE = {
+  inventory_out_of_stock_digest_enabled: ['inventory_digest', 'bật/tắt toàn bộ bản tin'],
+  inventory_out_of_stock_digest_time: ['inventory_digest', 'giờ gửi theo múi giờ Việt Nam'],
   site_name:             ['general_brand', ''],
   // footer_tagline/bct_url/business_registration: gỡ V308 — footer đã hardcode.
   footer_description:    ['general_brand', ''],
@@ -478,6 +544,10 @@ export const KEY_GUIDE = {
   bank_account_number:   ['payment_bank', 'số tài khoản'],
   bank_name:             ['payment_bank', 'tên ngân hàng'],
   bank_branch:           ['payment_bank', 'chi nhánh'],
+  order_overdue_days:    ['order_operations_reminders', 'ngưỡng nhắc trong chuông quản trị'],
+  review_invitation_enabled: ['review_invitation_delivery', 'bật/tắt toàn bộ thư mời đánh giá'],
+  review_invitation_delay_days: ['review_invitation_delivery', 'số ngày chờ sau khi đơn hoàn tất'],
+  review_invitation_daily_limit: ['review_invitation_delivery', 'trần riêng cho thư mời theo ngày giờ Việt Nam'],
 
 
   hero_products_image_url:        ['hero_products', 'ảnh nền banner (desktop)'],

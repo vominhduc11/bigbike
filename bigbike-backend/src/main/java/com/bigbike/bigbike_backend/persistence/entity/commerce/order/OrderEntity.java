@@ -91,6 +91,9 @@ public class OrderEntity {
     @Column(length = 100)
     private String source;
 
+    @Column(nullable = false, length = 2)
+    private String locale = "vi";
+
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 

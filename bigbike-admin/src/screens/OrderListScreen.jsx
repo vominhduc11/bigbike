@@ -23,6 +23,7 @@ import { showConfirm } from '../lib/confirm'
 import { StatusBadge } from '../components/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { orderRowAccent } from '../lib/statusTone'
 import { useAdminList } from '../lib/useAdminList'
@@ -35,6 +36,8 @@ import { getOrderMutationError } from './order-detail/constants'
 const ORDER_STATUS_KEYS = ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED']
 const ORDER_SORT_KEYS = ['createdAt:desc', 'createdAt:asc', 'total:desc']
 const ORDER_PAGE_SIZES = [20, 50, 100]
+const ORDER_SCOPE_KEYS = ['OPERATIONAL', 'HISTORICAL', 'ALL']
+const ORDER_ATTENTION_KEYS = ['ALL', 'OVERDUE']
 
 // T2 — CTA cho trạng thái "chưa từng có đơn nào" (không phải do lọc).
 const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(/\/$/, '')
@@ -52,6 +55,8 @@ const INITIAL_QUERY = {
   pageSize: 20,
   from: '',
   to: '',
+  orderScope: 'OPERATIONAL',
+  attention: 'ALL',
 }
 
 function isIsoCalendarDate(value) {
@@ -79,6 +84,12 @@ function readInitialOrderQuery() {
     pageSize: ORDER_PAGE_SIZES.includes(query.pageSize) ? query.pageSize : INITIAL_QUERY.pageSize,
     from: isIsoCalendarDate(query.from) ? query.from : INITIAL_QUERY.from,
     to: isIsoCalendarDate(query.to) ? query.to : INITIAL_QUERY.to,
+    orderScope: ORDER_SCOPE_KEYS.includes(query.orderScope)
+      ? query.orderScope
+      : INITIAL_QUERY.orderScope,
+    attention: ORDER_ATTENTION_KEYS.includes(query.attention)
+      ? query.attention
+      : INITIAL_QUERY.attention,
   }
 }
 
@@ -152,6 +163,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
       orderStatus: INITIAL_QUERY.orderStatus,
       from: INITIAL_QUERY.from,
       to: INITIAL_QUERY.to,
+      orderScope: INITIAL_QUERY.orderScope,
+      attention: INITIAL_QUERY.attention,
       page: 1,
     }))
   }
@@ -161,7 +174,12 @@ export function OrderListScreen({ navigate, canUpdate }) {
   const hasCachedPage = state.status === 'error' && pagination !== null
   const listStatus = hasCachedPage ? 'success' : state.status
   const mutationsDisabled = state.isFetching || state.status === 'error'
-  const isFiltered = !!query.search || query.orderStatus !== 'ALL' || !!query.from || !!query.to
+  const isFiltered = !!query.search
+    || query.orderStatus !== 'ALL'
+    || !!query.from
+    || !!query.to
+    || query.orderScope !== INITIAL_QUERY.orderScope
+    || query.attention !== INITIAL_QUERY.attention
   const filterChips = [
     query.search
       ? {
@@ -180,6 +198,22 @@ export function OrderListScreen({ navigate, canUpdate }) {
             value: t(`status.order.${query.orderStatus}`, { defaultValue: t('common.unknown') }),
           }),
           onRemove: () => updateQuery({ orderStatus: 'ALL' }, { resetPage: true }),
+        }
+      : null,
+    query.orderScope !== INITIAL_QUERY.orderScope
+      ? {
+          key: 'orderScope',
+          label: t('orders.filterScopeChip', {
+            value: t(`orders.scope.${query.orderScope}`),
+          }),
+          onRemove: () => updateQuery({ orderScope: INITIAL_QUERY.orderScope }, { resetPage: true }),
+        }
+      : null,
+    query.attention === 'OVERDUE'
+      ? {
+          key: 'attention',
+          label: t('orders.filterOverdue'),
+          onRemove: () => updateQuery({ attention: 'ALL' }, { resetPage: true }),
         }
       : null,
     query.from
@@ -226,7 +260,11 @@ export function OrderListScreen({ navigate, canUpdate }) {
   async function runBulkProcessing() {
     if (!canUpdate || bulkConfirming || bulkProgress || mutationsDisabled) return
     const byId = new Map(items.map((o) => [o.id, o]))
-    const ids = selectedIds.filter((id) => INLINE_STATUS_TARGETS[byId.get(id)?.orderStatus]?.includes('PROCESSING'))
+    const ids = selectedIds.filter((id) => {
+      const order = byId.get(id)
+      return order?.orderScope !== 'HISTORICAL'
+        && INLINE_STATUS_TARGETS[order?.orderStatus]?.includes('PROCESSING')
+    })
     if (ids.length === 0) {
       toast.error(t('orders.bulkNoEligible', { defaultValue: 'Không có đơn nào đủ điều kiện chuyển "Đang xử lý" trong lựa chọn.' }))
       return
@@ -294,6 +332,9 @@ export function OrderListScreen({ navigate, canUpdate }) {
       render: (order) => (
           <span className="flex items-center gap-2 font-mono">
           {formatText(order.orderNumber)}
+          {order.orderScope === 'HISTORICAL' ? (
+            <Badge variant="muted" className="font-sans">{t('orders.historicalBadge')}</Badge>
+          ) : null}
         </span>
       ),
     },
@@ -334,7 +375,9 @@ export function OrderListScreen({ navigate, canUpdate }) {
       key: 'orderStatus',
       label: t('orders.colStatus'),
       render: (order) => {
-        const inlineTargets = canUpdate ? (INLINE_STATUS_TARGETS[order.orderStatus] ?? []) : []
+        const inlineTargets = canUpdate && order.orderScope !== 'HISTORICAL'
+          ? (INLINE_STATUS_TARGETS[order.orderStatus] ?? [])
+          : []
         return (
           <div className="flex items-center gap-2 flex-wrap">
             <StatusBadge type="order" status={order.orderStatus} />
@@ -368,11 +411,16 @@ export function OrderListScreen({ navigate, canUpdate }) {
   const mobileCard = (order) => {
     // O4/O6 mobile parity — cùng nút đổi trạng thái nhanh như desktop, hiện ở khu action
     // của thẻ (không lồng trong vùng bấm mở chi tiết).
-    const inlineTargets = canUpdate ? (INLINE_STATUS_TARGETS[order.orderStatus] ?? []) : []
+    const inlineTargets = canUpdate && order.orderScope !== 'HISTORICAL'
+      ? (INLINE_STATUS_TARGETS[order.orderStatus] ?? [])
+      : []
     return {
       title: (
         <span className="flex items-center gap-2">
           {formatText(order.orderNumber)}
+          {order.orderScope === 'HISTORICAL' ? (
+            <Badge variant="muted">{t('orders.historicalBadge')}</Badge>
+          ) : null}
         </span>
       ),
       subtitle: formatText(order.customerName, '') || formatText(order.customerEmail),
@@ -419,6 +467,8 @@ export function OrderListScreen({ navigate, canUpdate }) {
                   status: query.orderStatus !== 'ALL' ? query.orderStatus : undefined,
                   from: query.from || undefined,
                   to: query.to || undefined,
+                  orderScope: query.orderScope,
+                  attention: query.attention !== 'ALL' ? query.attention : undefined,
                 })
                 toast.success(t('common.exportCsvDone', { defaultValue: 'Đã tải tệp dữ liệu' }))
               }}
@@ -441,6 +491,10 @@ export function OrderListScreen({ navigate, canUpdate }) {
         </Alert>
       ) : null}
 
+      <Alert tone={query.orderScope === 'HISTORICAL' ? 'warning' : 'info'} size="sm" className="mb-4" role="status">
+        {t(`orders.scopeDisclosure.${query.orderScope}`)}
+      </Alert>
+
       <ResponsiveFilterBar
         ariaLabel={t('orders.filterAria')}
         className="items-center"
@@ -453,6 +507,32 @@ export function OrderListScreen({ navigate, canUpdate }) {
           placeholder={t('orders.searchPlaceholder')}
           className="min-h-11"
           wrapperClassName="w-full min-w-0 sm:min-w-48 sm:flex-1"
+        />
+        <FilterSelect
+          value={query.orderScope}
+          onValueChange={(value) => updateQuery({
+            orderScope: value,
+            attention: value === 'HISTORICAL' ? 'ALL' : query.attention,
+          }, { resetPage: true })}
+          ariaLabel={t('orders.filterScope')}
+          className="min-h-11"
+          options={ORDER_SCOPE_KEYS.map((scope) => ({
+            value: scope,
+            label: t(`orders.scope.${scope}`),
+          }))}
+        />
+        <FilterSelect
+          value={query.attention}
+          onValueChange={(value) => updateQuery({
+            attention: value,
+            orderScope: value === 'OVERDUE' ? 'OPERATIONAL' : query.orderScope,
+          }, { resetPage: true })}
+          ariaLabel={t('orders.filterAttention')}
+          className="min-h-11"
+          options={[
+            { value: 'ALL', label: t('orders.filterAttentionAll') },
+            { value: 'OVERDUE', label: t('orders.filterOverdue') },
+          ]}
         />
         <FilterSelect
           value={query.orderStatus}
@@ -587,6 +667,7 @@ export function OrderListScreen({ navigate, canUpdate }) {
               loading={listStatus === 'loading'}
               pageSize={query.pageSize}
               selectable={canUpdate}
+              isRowSelectable={(order) => order.orderScope !== 'HISTORICAL'}
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
               onRowClick={(order) => navigate(`/admin/orders/${order.id}`)}

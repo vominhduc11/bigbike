@@ -93,6 +93,10 @@
       "description": "Admin site settings read/update — requires Admin JWT"
     },
     {
+      "name": "Admin Notifications",
+      "description": "Permission-scoped order and daily inventory notifications — requires Admin JWT"
+    },
+    {
       "name": "Admin Menus",
       "description": "Admin menu and menu item CRUD + reorder — requires Admin JWT"
     },
@@ -518,6 +522,34 @@
           "429": {
             "description": "Review-photo upload rate limit exceeded."
           }
+        }
+      }
+    },
+    "/api/v1/review-invitations/unsubscribe": {
+      "post": {
+        "tags": ["Public Reviews"],
+        "summary": "Permanently opt an email address out of review invitations",
+        "operationId": "unsubscribeReviewInvitations",
+        "description": "Anonymous endpoint reached from the email link. It blocks only review invitations; transactional emails remain unaffected.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewInvitationUnsubscribeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The recipient is permanently opted out; repeating the same request is safe.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewInvitationUnsubscribeDataResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "429": { "description": "Rate limit exceeded" }
         }
       }
     },
@@ -1877,6 +1909,31 @@
               "type": "string",
               "default": "placedAt:desc"
             }
+          },
+          {
+            "name": "orderScope",
+            "in": "query",
+            "description": "ALL preserves the API compatibility default; admin operations screens explicitly request OPERATIONAL. HISTORICAL remains searchable for customer lookup.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "OPERATIONAL",
+                "HISTORICAL"
+              ],
+              "default": "ALL"
+            }
+          },
+          {
+            "name": "attention",
+            "in": "query",
+            "description": "OVERDUE selects operational PENDING orders strictly older than the configured order-overdue threshold.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OVERDUE"
+              ]
+            }
           }
         ],
         "responses": {
@@ -1955,7 +2012,7 @@
           "Admin Orders"
         ],
         "summary": "Update order status",
-        "description": "When transitioning into CANCELLED, cancelReason is required and stored on orders.cancel_reason. Repeating the current status is an idempotent no-op.",
+        "description": "When transitioning into CANCELLED, cancelReason is required and stored on orders.cancel_reason. Repeating the current status is an idempotent no-op. Historical orders are read-only and return 409 with code HISTORICAL_ORDER_READ_ONLY.",
         "operationId": "adminUpdateOrderStatus",
         "security": [
           {
@@ -2994,7 +3051,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "Dashboard summary"
+            "description": "Dashboard summary with explicit operational and financial order scopes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDashboardSummaryResponse"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -5810,6 +5874,112 @@
         }
       }
     },
+    "/api/v1/admin/review-invitations/summary": {
+      "get": {
+        "tags": ["Admin Review Invitations"],
+        "summary": "Get review invitation operational summary",
+        "operationId": "adminReviewInvitationSummary",
+        "security": [{ "AdminBearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Counts, current settings and Vietnam-day quota usage",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminReviewInvitationSummaryDataResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/admin/review-invitations": {
+      "get": {
+        "tags": ["Admin Review Invitations"],
+        "summary": "List one-time review invitation deliveries",
+        "operationId": "adminListReviewInvitations",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1, "minimum": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "SENDING", "SENT", "FAILED", "UNCERTAIN", "SKIPPED"]
+            }
+          },
+          { "name": "q", "in": "query", "description": "Order number or recipient email", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated invitation history without secret tokens",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminReviewInvitationListResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/v1/admin/review-invitations/{id}/skip": {
+      "post": {
+        "tags": ["Admin Review Invitations"],
+        "summary": "Permanently skip a pending invitation for a refunded order",
+        "operationId": "adminSkipRefundedReviewInvitation",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SkipReviewInvitationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Invitation marked as skipped" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/api/v1/admin/review-invitation-opt-outs": {
+      "get": {
+        "tags": ["Admin Review Invitations"],
+        "summary": "List permanent review-invitation opt-outs",
+        "operationId": "adminListReviewInvitationOptOuts",
+        "security": [{ "AdminBearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1, "minimum": 1 } },
+          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
+          { "name": "q", "in": "query", "description": "Recipient email", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated permanent opt-out list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AdminReviewInvitationOptOutListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
     "/api/v1/admin/reviews": {
       "get": {
         "tags": [
@@ -6526,7 +6696,7 @@
           "Admin Reports"
         ],
         "summary": "Export every matching order as CSV (admin)",
-        "description": "Streams every order matching q, status, from and to across all result pages. The order export is not capped.",
+        "description": "Streams every order matching q, status, from, to, orderScope and attention across all result pages. The order export is not capped. The CSV and response headers explicitly disclose the effective historical-order scope.",
         "operationId": "adminReportsOrdersExport",
         "security": [
           {
@@ -6572,6 +6742,30 @@
               "type": "string",
               "format": "date"
             }
+          },
+          {
+            "name": "orderScope",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "OPERATIONAL",
+                "HISTORICAL"
+              ],
+              "default": "ALL"
+            }
+          },
+          {
+            "name": "attention",
+            "in": "query",
+            "description": "OVERDUE forces the effective export scope to OPERATIONAL.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OVERDUE"
+              ]
+            }
           }
         ],
         "responses": {
@@ -6584,6 +6778,17 @@
                   "type": "string",
                   "enum": [
                     "true"
+                  ]
+                }
+              },
+              "X-Order-Scope": {
+                "description": "Effective scope used by this export.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "ALL",
+                    "OPERATIONAL",
+                    "HISTORICAL"
                   ]
                 }
               }
@@ -7490,9 +7695,24 @@
         "tags": [
           "Public Content"
         ],
-        "summary": "List active home videos",
+        "summary": "List the first 10 active home videos",
         "operationId": "listHomeVideos",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "description": "Resolved title language; English falls back to Vietnamese when titleEn is blank.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "default": "vi"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Home video list",
@@ -8138,7 +8358,7 @@
     "/api/v1/chat/availability": {
       "get": {
         "tags": ["AI Assistant"],
-        "summary": "Get BigBike Assistant availability, greeting, prompts and contact fallback",
+        "summary": "Get BigBike Assistant availability and contact fallback",
         "operationId": "getChatAvailability",
         "parameters": [{"name":"lang","in":"query","schema":{"type":"string","enum":["vi","en"],"default":"vi"}}],
         "responses": {"200":{"description":"AI or contact mode; never calls Gemini"}}
@@ -8195,18 +8415,6 @@
         "responses": {"200":{"description":"text/event-stream: UNDERSTANDING, optional CHECKING_PRODUCTS, FINALIZING, then one guarded result with optional clarification; never model draft"},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded"}}
       }
     },
-    "/api/v1/chat/handoffs": {
-      "post": {
-        "tags": ["AI Assistant"],
-        "summary": "Request staff help idempotently without closing the assistant conversation",
-        "operationId": "requestChatHandoff",
-        "requestBody": {
-          "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["requestId","trigger"],"properties":{"requestId":{"type":"string","format":"uuid"},"conversationId":{"type":"string","format":"uuid","nullable":true},"locale":{"type":"string","enum":["vi","en"],"default":"vi"},"trigger":{"type":"string","enum":["BUTTON","MESSAGE"]},"visitorToken":{"type":"string","maxLength":128,"nullable":true}}}}}
-        },
-        "responses": {"200":{"description":"WAITING handoff with handoffId, conversationId and requestedAt; realtime/email are dispatched after commit"},"400":{"$ref":"#/components/responses/ValidationError"},"404":{"$ref":"#/components/responses/NotFound"},"429":{"description":"CHAT tier exceeded"}}
-      }
-    },
     "/api/v1/chat/sessions": {
       "post": {
         "tags": ["AI Assistant"],
@@ -8226,7 +8434,7 @@
           {"name":"afterSequence","in":"query","schema":{"type":"integer","format":"int64","minimum":0,"default":0}},
           {"name":"X-Chat-Visitor-Token","in":"header","schema":{"type":"string","maxLength":128}}
         ],
-        "responses": {"200":{"description":"REST-authoritative ordered transcript and live channel state"},"404":{"$ref":"#/components/responses/NotFound"}}
+        "responses": {"200":{"description":"REST-authoritative ordered transcript with customer, assistant and system messages"},"404":{"$ref":"#/components/responses/NotFound"}}
       }
     },
     "/api/v1/chat/history": {
@@ -8236,15 +8444,6 @@
         "operationId": "deleteOwnChatHistory",
         "parameters": [{"name":"X-Chat-Visitor-Token","in":"header","schema":{"type":"string","maxLength":128}}],
         "responses": {"200":{"description":"Own chat history was hard-deleted"},"404":{"$ref":"#/components/responses/NotFound"}}
-      }
-    },
-    "/api/v1/chat/realtime-token": {
-      "post": {
-        "tags": ["AI Assistant"],
-        "summary": "Issue a five-minute read-only STOMP token for one owned conversation",
-        "operationId": "createCustomerChatRealtimeToken",
-        "requestBody": {"required":true,"content":{"application/json":{"schema":{"type":"object","required":["conversationId"],"properties":{"conversationId":{"type":"string","format":"uuid"},"visitorToken":{"type":"string","maxLength":128,"nullable":true}}}}}},
-        "responses": {"200":{"description":"Short-lived conversation-scoped token and expiry"},"404":{"$ref":"#/components/responses/NotFound"}}
       }
     },
     "/api/v1/admin/chat/images/{id}/content": {
@@ -8272,58 +8471,6 @@
         "responses": {"200":{"description":"Paginated conversation summaries"},"403":{"$ref":"#/components/responses/Forbidden"}}
       }
     },
-    "/api/v1/admin/chat/handoffs": {
-      "get": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "List all customers currently waiting for staff, oldest first",
-        "operationId": "listWaitingChatHandoffs",
-        "security": [{"AdminBearerAuth":[]}],
-        "responses": {"200":{"description":"waitingCount and live handoff items with elapsed seconds and conversation context"},"403":{"$ref":"#/components/responses/Forbidden"}}
-      }
-    },
-    "/api/v1/admin/chat/handoffs/{id}/claim": {
-      "post": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Atomically claim a waiting customer with chat.reply permission",
-        "operationId": "claimChatHandoff",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
-        "responses": {"200":{"description":"Handoff is ACTIVE and assigned to the current employee"},"403":{"$ref":"#/components/responses/Forbidden"},"404":{"$ref":"#/components/responses/NotFound"},"409":{"description":"Another employee already claimed or resolved the handoff"}}
-      }
-    },
-    "/api/v1/admin/chat/conversations/{id}/messages": {
-      "post": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Send an ordered staff-labelled message to the open customer chat",
-        "operationId": "sendStaffChatMessage",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
-        "requestBody": {"required":true,"content":{"application/json":{"schema":{"type":"object","required":["requestId","content"],"properties":{"requestId":{"type":"string","format":"uuid"},"content":{"type":"string","minLength":1,"maxLength":2000}}}}}},
-        "responses": {"200":{"description":"Persisted STAFF message with global sequence and display label"},"400":{"$ref":"#/components/responses/ValidationError"},"403":{"$ref":"#/components/responses/Forbidden"},"409":{"description":"Conversation is not assigned to this employee"}}
-      }
-    },
-    "/api/v1/admin/chat/handoffs/{id}/return-to-ai": {
-      "post": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Hand the conversation back so the assistant can continue",
-        "operationId": "returnChatHandoffToAssistant",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
-        "requestBody": {"content":{"application/json":{"schema":{"type":"object","properties":{"locale":{"type":"string","enum":["vi","en"]}}}}}},
-        "responses": {"200":{"description":"Handoff is RETURNED_TO_AI and customer receives a system notice"},"403":{"$ref":"#/components/responses/Forbidden"},"409":{"description":"Conversation is not assigned to this employee"}}
-      }
-    },
-    "/api/v1/admin/chat/handoffs/{id}/close": {
-      "post": {
-        "tags": ["Admin AI Assistant"],
-        "summary": "Close staff assistance with a customer-facing next step",
-        "operationId": "closeChatHandoff",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
-        "requestBody": {"content":{"application/json":{"schema":{"type":"object","properties":{"locale":{"type":"string","enum":["vi","en"]}}}}}},
-        "responses": {"200":{"description":"Handoff is CLOSED and customer receives a system notice"},"403":{"$ref":"#/components/responses/Forbidden"},"409":{"description":"Conversation is not assigned to this employee"}}
-      }
-    },
     "/api/v1/policies/{topic}": {
       "get": {
         "tags": ["Public Store Policies"],
@@ -8339,7 +8486,7 @@
     "/api/v1/admin/chat/conversations/{id}": {
       "get": {
         "tags": ["Admin AI Assistant"],
-        "summary": "Get one BigBike Assistant conversation with messages, images and staff-handoff status",
+        "summary": "Get one BigBike Assistant conversation with messages and private images",
         "operationId": "getChatConversation",
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
@@ -8354,6 +8501,36 @@
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [{"name":"date","in":"query","schema":{"type":"string","format":"date"},"description":"Snapshot anchor for today, current month and 14-day monitoring."},{"name":"from","in":"query","schema":{"type":"string","format":"date"},"description":"Inclusive selected-period start in Asia/Ho_Chi_Minh."},{"name":"to","in":"query","schema":{"type":"string","format":"date"},"description":"Inclusive selected-period end in Asia/Ho_Chi_Minh."}],
         "responses": {"200":{"description":"Daily AI quota plus selected-period reply-quality stats. Response includes periodFrom and periodTo."},"403":{"$ref":"#/components/responses/Forbidden"}}
+      }
+    },
+    "/api/v1/admin/notifications": {
+      "get": {
+        "tags": ["Admin Notifications"],
+        "summary": "List permission-scoped persistent notifications",
+        "operationId": "listAdminNotifications",
+        "security": [{"AdminBearerAuth":[]}],
+        "responses": {
+          "200": {
+            "description": "Recent order and/or inventory notifications with exact unread count",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/AdminNotificationInboxResponse"}}}
+          },
+          "403": {"$ref":"#/components/responses/Forbidden"}
+        }
+      }
+    },
+    "/api/v1/admin/notifications/mark-all-read": {
+      "post": {
+        "tags": ["Admin Notifications"],
+        "summary": "Mark all notification scopes visible to the current admin as read",
+        "operationId": "markAllAdminNotificationsRead",
+        "security": [{"AdminBearerAuth":[]}],
+        "responses": {
+          "200": {
+            "description": "Unread count after advancing this admin read marker",
+            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/AdminNotificationMarkReadResponse"}}}
+          },
+          "403": {"$ref":"#/components/responses/Forbidden"}
+        }
       }
     }
   },
@@ -8937,6 +9114,84 @@
             }
           }
         ]
+      },
+      "AdminReviewInvitationSummary": {
+        "type": "object",
+        "required": ["pending", "sent", "failed", "uncertain", "skipped", "optedOut", "attemptedToday", "dailyLimit", "enabled", "delayDays"],
+        "properties": {
+          "pending": { "type": "integer", "format": "int64", "minimum": 0 },
+          "sent": { "type": "integer", "format": "int64", "minimum": 0 },
+          "failed": { "type": "integer", "format": "int64", "minimum": 0 },
+          "uncertain": { "type": "integer", "format": "int64", "minimum": 0 },
+          "skipped": { "type": "integer", "format": "int64", "minimum": 0 },
+          "optedOut": { "type": "integer", "format": "int64", "minimum": 0 },
+          "attemptedToday": { "type": "integer", "minimum": 0 },
+          "dailyLimit": { "type": "integer", "minimum": 1, "maximum": 50 },
+          "enabled": { "type": "boolean" },
+          "delayDays": { "type": "integer", "minimum": 1, "maximum": 90 }
+        }
+      },
+      "AdminReviewInvitationSummaryDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/AdminReviewInvitationSummary" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "AdminReviewInvitationItem": {
+        "type": "object",
+        "required": ["id", "orderId", "orderNumber", "recipientEmail", "locale", "status", "completedAt", "dueAt", "productCount", "reviewedProductCount", "createdAt"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "orderId": { "type": "string", "format": "uuid" },
+          "orderNumber": { "type": "string" },
+          "recipientEmail": { "type": "string", "format": "email" },
+          "locale": { "type": "string", "enum": ["vi", "en"] },
+          "status": { "type": "string", "enum": ["PENDING", "SENDING", "SENT", "FAILED", "UNCERTAIN", "SKIPPED"] },
+          "completedAt": { "type": "string", "format": "date-time" },
+          "dueAt": { "type": "string", "format": "date-time" },
+          "attemptedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "providerAcceptedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "skipReason": { "type": "string", "nullable": true },
+          "failureCode": { "type": "string", "nullable": true },
+          "failureMessage": { "type": "string", "nullable": true },
+          "productCount": { "type": "integer", "format": "int64", "minimum": 0 },
+          "reviewedProductCount": { "type": "integer", "format": "int64", "minimum": 0 },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "description": "Operational delivery row. Raw review and unsubscribe tokens are intentionally absent."
+      },
+      "AdminReviewInvitationListResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AdminReviewInvitationItem" } },
+          "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "AdminReviewInvitationOptOut": {
+        "type": "object",
+        "required": ["email", "optedOutAt", "source"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "optedOutAt": { "type": "string", "format": "date-time" },
+          "source": { "type": "string", "enum": ["EMAIL_LINK"] }
+        }
+      },
+      "AdminReviewInvitationOptOutListResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AdminReviewInvitationOptOut" } },
+          "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
+        }
+      },
+      "SkipReviewInvitationRequest": {
+        "type": "object",
+        "required": ["reason"],
+        "properties": {
+          "reason": { "type": "string", "enum": ["REFUNDED"] }
+        }
       },
       "AdminReviewListResponse": {
         "type": "object",
@@ -9532,6 +9787,198 @@
           }
         }
       },
+      "OrderScopeDisclosure": {
+        "type": "object",
+        "required": [
+          "orderScope",
+          "includesHistoricalOrders"
+        ],
+        "properties": {
+          "orderScope": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "OPERATIONAL",
+              "HISTORICAL"
+            ]
+          },
+          "includesHistoricalOrders": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminDashboardScopes": {
+        "type": "object",
+        "properties": {
+          "operational": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderScopeDisclosure"
+              }
+            ],
+            "description": "Scope for pending-order warnings, status breakdown and recent orders; excludes historical orders."
+          },
+          "financial": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderScopeDisclosure"
+              }
+            ],
+            "description": "Scope for revenue, order-count and top-product metrics; includes historical orders and preserves existing financial totals."
+          }
+        }
+      },
+      "AdminDashboardKpiResponse": {
+        "type": "object",
+        "properties": {
+          "todayRevenue": {
+            "type": "number"
+          },
+          "todayPaidRevenue": {
+            "type": "number"
+          },
+          "todayRevenuePct": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "todayOrders": {
+            "type": "integer"
+          },
+          "todayOrdersDelta": {
+            "type": "integer"
+          },
+          "pendingOrders": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Operational PENDING orders only; historical orders are excluded."
+          },
+          "activeProducts": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AdminDashboardRevenueDayResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "revenue": {
+            "type": "number"
+          },
+          "orders": {
+            "type": "integer"
+          }
+        }
+      },
+      "AdminDashboardOrderStatusBreakdownItem": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AdminDashboardRecentOrderItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "customerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "total": {
+            "type": "number"
+          },
+          "orderStatus": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "AdminDashboardTopProductItem": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "revenue": {
+            "type": "number"
+          },
+          "units": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "AdminDashboardSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "kpi": {
+            "$ref": "#/components/schemas/AdminDashboardKpiResponse"
+          },
+          "revenueData": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDashboardRevenueDayResponse"
+            }
+          },
+          "orderStatusBreakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDashboardOrderStatusBreakdownItem"
+            }
+          },
+          "recentOrders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDashboardRecentOrderItem"
+            }
+          },
+          "topProducts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDashboardTopProductItem"
+            }
+          },
+          "scopes": {
+            "$ref": "#/components/schemas/AdminDashboardScopes"
+          }
+        }
+      },
       "AdminAnalyticsResponse": {
         "type": "object",
         "properties": {
@@ -9555,6 +10002,9 @@
             "items": {
               "$ref": "#/components/schemas/AdminAnalyticsTopCustomer"
             }
+          },
+          "scope": {
+            "$ref": "#/components/schemas/OrderScopeDisclosure"
           }
         }
       },
@@ -9996,6 +10446,37 @@
           },
           "notes": {
             "type": "string"
+          },
+          "locale": {
+            "type": "string",
+            "enum": ["vi", "en"],
+            "default": "vi",
+            "description": "Storefront language used when the order was placed; retained for later customer communication."
+          }
+        }
+      },
+      "OrderHistoryClassificationResponse": {
+        "type": "object",
+        "description": "Auditable and reversible classification of an imported historical order.",
+        "properties": {
+          "batchKey": {
+            "type": "string"
+          },
+          "labelVi": {
+            "type": "string"
+          },
+          "labelEn": {
+            "type": "string"
+          },
+          "reasonVi": {
+            "type": "string"
+          },
+          "reasonEn": {
+            "type": "string"
+          },
+          "classifiedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -10050,6 +10531,21 @@
           },
           "source": {
             "type": "string"
+          },
+          "orderScope": {
+            "type": "string",
+            "enum": [
+              "OPERATIONAL",
+              "HISTORICAL"
+            ]
+          },
+          "historyClassification": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderHistoryClassificationResponse"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -10266,6 +10762,21 @@
             "items": {
               "$ref": "#/components/schemas/OrderPaymentResponse"
             }
+          },
+          "orderScope": {
+            "type": "string",
+            "enum": [
+              "OPERATIONAL",
+              "HISTORICAL"
+            ]
+          },
+          "historyClassification": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderHistoryClassificationResponse"
+              }
+            ],
+            "nullable": true
           }
         }
       },
@@ -10564,7 +11075,38 @@
             "type": "string",
             "description": "Honeypot field — real clients leave this empty/omitted. Non-empty value (after trim) is silently dropped server-side: response is success-shaped 201 but no review is persisted.",
             "example": ""
+          },
+          "inviteToken": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "Optional anonymous one-time token from a review invitation product link. The raw token is never returned by an API or stored in the database."
           }
+        }
+      },
+      "ReviewInvitationUnsubscribeRequest": {
+        "type": "object",
+        "required": ["token"],
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "description": "Opaque token from the email URL fragment."
+          }
+        }
+      },
+      "ReviewInvitationUnsubscribeResult": {
+        "type": "object",
+        "required": ["unsubscribed"],
+        "properties": {
+          "unsubscribed": { "type": "boolean", "enum": [true] }
+        }
+      },
+      "ReviewInvitationUnsubscribeDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ReviewInvitationUnsubscribeResult" },
+          "meta": { "$ref": "#/components/schemas/ApiMeta" }
         }
       },
       "SubmitReviewSuccess": {
@@ -13590,6 +14132,7 @@
         "properties": {
           "data": {
             "type": "array",
+            "maxItems": 10,
             "items": {
               "$ref": "#/components/schemas/PublicHomeVideoResponse"
             }
@@ -13837,6 +14380,103 @@
           "sourcePattern": { "type": "string" },
           "targetUrl": { "type": "string" },
           "statusCode": { "type": "integer", "enum": [301, 410] }
+        }
+      },
+      "InventoryOutOfStockDigestCounts": {
+        "type": "object",
+        "required": ["fullyOutOfStockProducts", "partiallyOutOfStockProducts", "unavailableVariants"],
+        "properties": {
+          "fullyOutOfStockProducts": {"type":"integer","minimum":0},
+          "partiallyOutOfStockProducts": {"type":"integer","minimum":0},
+          "unavailableVariants": {"type":"integer","minimum":0}
+        }
+      },
+      "InventoryOutOfStockProductItem": {
+        "type": "object",
+        "required": ["productId","nameVi","nameEn","sku","editPath","outOfStockSince","outOfStockDays","outOfStockSinceEstimated"],
+        "properties": {
+          "productId": {"type":"string"},
+          "nameVi": {"type":"string"},
+          "nameEn": {"type":"string"},
+          "sku": {"type":"string"},
+          "editPath": {"type":"string","pattern":"^/admin/products/"},
+          "outOfStockSince": {"type":"string","format":"date-time"},
+          "outOfStockDays": {"type":"integer","format":"int64","minimum":0},
+          "outOfStockSinceEstimated": {"type":"boolean"}
+        }
+      },
+      "InventoryOutOfStockVariantItem": {
+        "type": "object",
+        "required": ["variantId","nameVi","nameEn","sku","outOfStockSince","outOfStockDays","outOfStockSinceEstimated"],
+        "properties": {
+          "variantId": {"type":"string"},
+          "nameVi": {"type":"string"},
+          "nameEn": {"type":"string"},
+          "sku": {"type":"string"},
+          "outOfStockSince": {"type":"string","format":"date-time"},
+          "outOfStockDays": {"type":"integer","format":"int64","minimum":0},
+          "outOfStockSinceEstimated": {"type":"boolean"}
+        }
+      },
+      "InventoryPartiallyOutOfStockProductItem": {
+        "allOf": [
+          {"$ref":"#/components/schemas/InventoryOutOfStockProductItem"},
+          {"type":"object","required":["unavailableVariants"],"properties":{
+            "unavailableVariants":{"type":"array","items":{"$ref":"#/components/schemas/InventoryOutOfStockVariantItem"}}
+          }}
+        ]
+      },
+      "InventoryOutOfStockDigestPayload": {
+        "type": "object",
+        "required": ["schemaVersion","digestDate","generatedAt","counts","fullyOutOfStock","partiallyOutOfStock"],
+        "properties": {
+          "schemaVersion": {"type":"integer","enum":[1]},
+          "digestDate": {"type":"string","format":"date"},
+          "generatedAt": {"type":"string","format":"date-time"},
+          "counts": {"$ref":"#/components/schemas/InventoryOutOfStockDigestCounts"},
+          "fullyOutOfStock": {"type":"array","items":{"$ref":"#/components/schemas/InventoryOutOfStockProductItem"}},
+          "partiallyOutOfStock": {"type":"array","items":{"$ref":"#/components/schemas/InventoryPartiallyOutOfStockProductItem"}}
+        }
+      },
+      "AdminNotificationItem": {
+        "type": "object",
+        "required": ["id","type","orderId","orderNumber","payload","isRead","createdAt"],
+        "properties": {
+          "id": {"type":"string","format":"uuid"},
+          "type": {"type":"string"},
+          "orderId": {"type":"string"},
+          "orderNumber": {"type":"string"},
+          "payload": {
+            "oneOf": [
+              {"$ref":"#/components/schemas/InventoryOutOfStockDigestPayload"},
+              {"type":"object","additionalProperties":true}
+            ]
+          },
+          "isRead": {"type":"boolean"},
+          "createdAt": {"type":"string","format":"date-time"}
+        }
+      },
+      "AdminNotificationInboxResponse": {
+        "type": "object",
+        "required": ["data","meta"],
+        "properties": {
+          "data": {
+            "type":"object",
+            "required":["unreadCount","items"],
+            "properties": {
+              "unreadCount":{"type":"integer","format":"int64","minimum":0},
+              "items":{"type":"array","maxItems":50,"items":{"$ref":"#/components/schemas/AdminNotificationItem"}}
+            }
+          },
+          "meta":{"$ref":"#/components/schemas/ApiMeta"}
+        }
+      },
+      "AdminNotificationMarkReadResponse": {
+        "type":"object",
+        "required":["data","meta"],
+        "properties": {
+          "data":{"type":"object","required":["unreadCount"],"properties":{"unreadCount":{"type":"integer","format":"int64","minimum":0}}},
+          "meta":{"$ref":"#/components/schemas/ApiMeta"}
         }
       }
     }

@@ -26,5 +26,20 @@ public record SubmitReviewRequest(
         @Size(max = 10, message = "Chỉ được đính kèm tối đa 10 ảnh.")
         List<String> photos,
 
-        String website
-) {}
+        String website,
+
+        @Size(max = 256, message = "Đường dẫn mời đánh giá không hợp lệ.")
+        String inviteToken
+) {
+    /** Source-compatible constructor for existing callers that do not use an invitation. */
+    public SubmitReviewRequest(
+            String authorName,
+            String authorEmail,
+            BigDecimal rating,
+            String comment,
+            List<String> photos,
+            String website
+    ) {
+        this(authorName, authorEmail, rating, comment, photos, website, null);
+    }
+}

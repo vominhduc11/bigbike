@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.admin.settings;
 
 import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.service.security.SafeMediaAssetUrlPolicy;
+import com.bigbike.bigbike_backend.service.security.YouTubeChannelUrlPolicy;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,6 +23,7 @@ public class SettingValueValidator {
     // the admin media picker stores relative /media/... paths, so reuse the shared whitelist
     // policy instead of the generic URL check (which rejected relative paths → HTTP 400 on save).
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
+    private final YouTubeChannelUrlPolicy youTubeChannelUrlPolicy;
     private final ObjectMapper objectMapper;
 
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
@@ -29,6 +31,8 @@ public class SettingValueValidator {
     private static final Pattern PHONE_PATTERN = Pattern.compile(
             "^[+0-9][0-9 .()\\-]{4,30}$");
     private static final Pattern INTEGER_PATTERN = Pattern.compile("^-?\\d+$");
+    private static final Pattern TIME_24_HOUR_PATTERN = Pattern.compile("^(?:[01]\\d|2[0-3]):[0-5]\\d$");
+    private static final String OUT_OF_STOCK_DIGEST_TIME_KEY = "inventory_out_of_stock_digest_time";
 
     private static final int MAX_STRING_LENGTH = 1_000;
     private static final int MAX_LONG_TEXT_LENGTH = 65_536;
@@ -37,9 +41,11 @@ public class SettingValueValidator {
     @Autowired
     public SettingValueValidator(
             SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy,
+            YouTubeChannelUrlPolicy youTubeChannelUrlPolicy,
             ObjectMapper objectMapper
     ) {
         this.safeMediaAssetUrlPolicy = safeMediaAssetUrlPolicy;
+        this.youTubeChannelUrlPolicy = youTubeChannelUrlPolicy;
         this.objectMapper = objectMapper;
     }
 
@@ -85,7 +91,13 @@ public class SettingValueValidator {
 
     private void validateByType(String key, String rawValue, SettingDefinition def) {
         switch (def.type()) {
-            case STRING -> validateLength(key, rawValue, MAX_STRING_LENGTH);
+            case STRING -> {
+                validateLength(key, rawValue, MAX_STRING_LENGTH);
+                if (OUT_OF_STOCK_DIGEST_TIME_KEY.equals(key)
+                        && !TIME_24_HOUR_PATTERN.matcher(rawValue).matches()) {
+                    throw fail(key, "INVALID_TIME", "Value must use 24-hour HH:mm format.");
+                }
+            }
             case LONG_TEXT -> validateLength(key, rawValue, MAX_LONG_TEXT_LENGTH);
             case HTML -> {
                 validateLength(key, rawValue, MAX_HTML_LENGTH);
@@ -95,7 +107,9 @@ public class SettingValueValidator {
             case INTEGER -> validateInteger(key, rawValue, def);
             case DECIMAL, MONEY -> validateDecimal(key, rawValue, def);
             case URL -> {
-                if (GOOGLE_MAPS_ONLY_KEYS.contains(key)) {
+                if ("youtube_url".equals(key)) {
+                    youTubeChannelUrlPolicy.validateOrThrow(rawValue, "value");
+                } else if (GOOGLE_MAPS_ONLY_KEYS.contains(key)) {
                     validateGoogleMapsUrl(key, rawValue);
                 } else {
                     validateUrl(key, rawValue, true);

@@ -14,7 +14,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ChevronDown, History, ImagePlus, Loader2, MessageCircle, Minus, Phone, RefreshCw, Send, Trash2, UserRound, X } from "lucide-react";
+import {
+  ChevronDown,
+  History,
+  ImagePlus,
+  Loader2,
+  MessageCircle,
+  Minus,
+  Phone,
+  RefreshCw,
+  Send,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,13 +38,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  createChatRealtimeToken,
   deleteChatHistory,
   fetchChatAvailability,
   fetchChatImageBlob,
   fetchChatHistory,
   openChatSession,
-  requestChatHandoff,
   streamChatMessage,
   uploadChatImage,
   ApiClientError,
@@ -43,9 +53,7 @@ import {
   type ChatContact,
   type ChatProgressCode,
   type ChatProductCard,
-  type ChatHandoffStatus,
   type ChatImage,
-  type ChatChannelState,
   type ChatNextStep,
   type ChatSalesStage,
 } from "@/lib/api/client-api";
@@ -66,7 +74,6 @@ import {
   setChatMemoryPreference,
   type ChatIdentity,
 } from "@/lib/chat/chat-identity";
-import { connectCustomerChatRealtime } from "@/lib/chat/chat-realtime";
 import { toLoginPath, toOrderHistoryPath, toOrderLookupPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { BigBikeContactPanel } from "./floating-chat/BigBikeContactPanel";
@@ -87,15 +94,13 @@ type PromptIntent = "PRODUCT_FINDING" | "PRODUCT_ACTION" | "UNKNOWN";
 
 type ChatMessage = {
   id: string;
-  role: "USER" | "ASSISTANT" | "STAFF" | "SYSTEM";
+  role: "USER" | "ASSISTANT" | "SYSTEM";
   content: string;
   sequenceNo?: number;
-  staffDisplayName?: string;
   products?: ChatProductCard[];
   crossSellProducts?: ChatProductCard[];
   salesStage?: ChatSalesStage;
   nextStep?: ChatNextStep;
-  handoff?: ChatHandoffStatus;
   clarification?: ChatClarification;
   clarificationSelection?: ChatClarificationSelection;
   actions?: ChatAction[];
@@ -112,13 +117,6 @@ type ChatMessage = {
 type PendingChatImage = {
   file: File;
   previewUrl: string;
-};
-
-type ComposerAction = {
-  id: string;
-  label: string;
-  kind: "MESSAGE" | "CONTACT";
-  intent: PromptIntent;
 };
 
 const DEFAULT_MAX_TURNS = 40;
@@ -187,7 +185,10 @@ function RemotePrivateChatImage({
   }
   if (!source) {
     return (
-      <div className="flex min-h-24 items-center justify-center border border-border bg-muted" role="status">
+      <div
+        className="flex min-h-24 items-center justify-center border border-border bg-muted"
+        role="status"
+      >
         <Loader2 className="size-5 animate-spin text-chat" aria-hidden="true" />
       </div>
     );
@@ -282,10 +283,6 @@ function BigBikeAvatar({ size }: { size: BigBikeAvatarSize }) {
       />
     </span>
   );
-}
-
-function normalizedLabel(value: string): string {
-  return value.trim().toLocaleLowerCase().replace(/\s+/g, " ");
 }
 
 function validTurnCount(value: number | null | undefined, fallback: number): number {
@@ -389,7 +386,6 @@ export function FloatingChat({
     }
   }, [pathname]);
   const auth = useAuth();
-  const defaultGreeting = t("defaultGreeting");
   const fallbackContacts = useMemo<ChatContact>(
     () => ({
       hotline,
@@ -401,59 +397,10 @@ export function FloatingChat({
     [hotline, messengerDisplay, messengerUrl, zaloDisplay, zaloUrl],
   );
 
-  const fallbackPrompts = useMemo<ComposerAction[]>(
-    () => [
-      {
-        id: "initial-needs",
-        label: t("quickFindByNeed"),
-        kind: "MESSAGE",
-        intent: "PRODUCT_FINDING",
-      },
-      {
-        id: "initial-budget",
-        label: t("quickFilterByBudget"),
-        kind: "MESSAGE",
-        intent: "PRODUCT_FINDING",
-      },
-      {
-        id: "initial-compare",
-        label: t("quickCompareProducts"),
-        kind: "MESSAGE",
-        intent: "PRODUCT_ACTION",
-      },
-      {
-        id: "initial-stock",
-        label: t("quickCheckStock"),
-        kind: "MESSAGE",
-        intent: "PRODUCT_FINDING",
-      },
-    ],
-    [t],
-  );
-  const findingPromptLabels = useMemo(
-    () =>
-      new Set(
-        [
-          t("quickFindByNeed"),
-          t("quickFilterByBudget"),
-          t("quickCheckStock"),
-          t("changeBudget"),
-          t("changeNeeds"),
-        ].map(normalizedLabel),
-      ),
-    [t],
-  );
-  const productActionLabels = useMemo(
-    () => new Set([t("quickCompareProducts"), t("compareProducts")].map(normalizedLabel)),
-    [t],
-  );
-
   const [panelState, setPanelState] = useState<PanelState>("closed");
   const [serviceMode, setServiceMode] = useState<"AI" | "CONTACT">("AI");
   const [availabilityState, setAvailabilityState] = useState<AvailabilityState>("idle");
   const [contacts, setContacts] = useState<ChatContact>(fallbackContacts);
-  const [greeting, setGreeting] = useState("");
-  const [initialPrompts, setInitialPrompts] = useState<ComposerAction[]>(fallbackPrompts);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string>();
   const [draft, setDraft] = useState("");
@@ -475,10 +422,6 @@ export function FloatingChat({
   const [announcement, setAnnouncement] = useState("");
   const [hasInteracted, setHasInteracted] = useState(false);
   const [expandedProductMessages, setExpandedProductMessages] = useState<string[]>([]);
-  const [handoffPending, setHandoffPending] = useState(false);
-  const [activeHandoffId, setActiveHandoffId] = useState<string>();
-  const [channelState, setChannelState] = useState<ChatChannelState>("AI_ACTIVE");
-  const [waitingOutsideHours, setWaitingOutsideHours] = useState(false);
   const [visitorToken, setVisitorToken] = useState<string>();
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [memorySummary, setMemorySummary] = useState("");
@@ -491,8 +434,8 @@ export function FloatingChat({
     enabled: false,
     maxBytes: 8 * 1024 * 1024,
     maxPerTurn: 1,
-    maxPerConversation: 5,
-    dailyLimit: 0,
+    maxPerConversation: 3,
+    dailyLimit: 20,
     disclosure: "",
   });
   const [pendingImage, setPendingImage] = useState<PendingChatImage | null>(null);
@@ -513,7 +456,6 @@ export function FloatingChat({
   const persistenceReadyRef = useRef(false);
   const persistenceExpiresAtRef = useRef<number | null>(null);
   const restoredSessionRef = useRef(false);
-  const restoredServiceModeRef = useRef<"AI" | "CONTACT" | null>(null);
   const expiryTimerRef = useRef<number | null>(null);
   const previousAuthStatusRef = useRef(auth.status);
   const conversationGenerationRef = useRef(0);
@@ -533,92 +475,78 @@ export function FloatingChat({
         sequenceNo: item.sequenceNo,
         role: item.role === "CUSTOMER" ? "USER" : item.role,
         content: item.content.trim(),
-        staffDisplayName: item.staffDisplayName?.trim() || undefined,
         answerFormat: item.answerFormat === "MARKDOWN" ? "MARKDOWN" : "PLAIN_TEXT",
         resultKind: item.resultKind || undefined,
         images: item.images || [],
       }));
-    setMessages((current) => mapped.map((item) => ({
-      ...current.find((existing) => existing.id === item.id),
-      ...item,
-      animate: false,
-    })));
-    setConversationId(history.conversationId);
-    const nextChannel = history.channelState || "AI_ACTIVE";
-    setChannelState(nextChannel);
-    setWaitingOutsideHours(
-      nextChannel === "WAITING_FOR_STAFF" && history.handoff?.withinBusinessHours === false,
+    setMessages((current) =>
+      mapped.map((item) => ({
+        ...current.find((existing) => existing.id === item.id),
+        ...item,
+        animate: false,
+      })),
     );
-    if (history.handoff?.id) setActiveHandoffId(history.handoff.id);
-    else setActiveHandoffId(undefined);
-    if (nextChannel === "STAFF_ACTIVE") {
-      setServiceMode("CONTACT");
-      setContactNotice(t("staffIsReplying", {
-        name: history.handoff?.assignedDisplayName || t("staffFallback"),
-      }));
-    } else if (nextChannel === "WAITING_FOR_STAFF") {
-      setServiceMode("AI");
-      setContactNotice(t("waitingForStaff"));
-    } else if (nextChannel === "CLOSED") {
-      setServiceMode("AI");
-      setContactNotice(t("staffLeftAssistantContinues"));
-    } else {
-      setServiceMode("AI");
-      setContactNotice(nextChannel === "AI_RESUMED" ? t("staffLeftAssistantContinues") : "");
-    }
-  }, [t]);
+    setConversationId(history.conversationId);
+    setServiceMode("AI");
+  }, []);
 
-  const syncHistory = useCallback(async (id: string, token?: string) => {
-    try {
-      const history = await fetchChatHistory(id, token, 0);
-      if (mountedRef.current) applyHistory(history);
-    } catch {
-      // A push is only a refresh hint. The next reconnect or explicit open retries REST history.
-    }
-  }, [applyHistory]);
-
-  const initializeVisitorSession = useCallback(async (memoryOverride?: boolean) => {
-    if (typeof window === "undefined") return;
-    let identity = readOrCreateChatIdentity();
-    if (memoryOverride != null) identity = { ...identity, memoryEnabled: memoryOverride };
-    identityRef.current = identity;
-    try {
-      let session;
+  const syncHistory = useCallback(
+    async (id: string, token?: string) => {
       try {
-        session = await openChatSession({
-          visitorId: identity.visitorId,
-          visitorToken: identity.visitorToken,
-          locale: activeLocale,
-          memoryEnabled: identity.memoryEnabled,
-        });
+        const history = await fetchChatHistory(id, token, 0);
+        if (mountedRef.current) applyHistory(history);
       } catch {
-        clearChatIdentity();
-        identity = readOrCreateChatIdentity();
-        if (memoryOverride != null) identity = { ...identity, memoryEnabled: memoryOverride };
-        identityRef.current = identity;
-        session = await openChatSession({
-          visitorId: identity.visitorId,
-          locale: activeLocale,
-          memoryEnabled: identity.memoryEnabled,
-        });
+        // A push is only a refresh hint. The next reconnect or explicit open retries REST history.
       }
-      if (!mountedRef.current) return;
-      saveChatIdentityToken(session.visitorToken);
-      identityRef.current = { ...identity, visitorToken: session.visitorToken };
-      setVisitorToken(session.visitorToken);
-      setMemoryEnabled(session.memoryEnabled);
-      setMemorySummary(session.rememberedContextSummary?.trim() || "");
-      if (session.rememberedThrough) {
-        persistenceExpiresAtRef.current = new Date(session.rememberedThrough).getTime();
+    },
+    [applyHistory],
+  );
+
+  const initializeVisitorSession = useCallback(
+    async (memoryOverride?: boolean) => {
+      if (typeof window === "undefined") return;
+      let identity = readOrCreateChatIdentity();
+      if (memoryOverride != null) identity = { ...identity, memoryEnabled: memoryOverride };
+      identityRef.current = identity;
+      try {
+        let session;
+        try {
+          session = await openChatSession({
+            visitorId: identity.visitorId,
+            visitorToken: identity.visitorToken,
+            locale: activeLocale,
+            memoryEnabled: identity.memoryEnabled,
+          });
+        } catch {
+          clearChatIdentity();
+          identity = readOrCreateChatIdentity();
+          if (memoryOverride != null) identity = { ...identity, memoryEnabled: memoryOverride };
+          identityRef.current = identity;
+          session = await openChatSession({
+            visitorId: identity.visitorId,
+            locale: activeLocale,
+            memoryEnabled: identity.memoryEnabled,
+          });
+        }
+        if (!mountedRef.current) return;
+        saveChatIdentityToken(session.visitorToken);
+        identityRef.current = { ...identity, visitorToken: session.visitorToken };
+        setVisitorToken(session.visitorToken);
+        setMemoryEnabled(session.memoryEnabled);
+        setMemorySummary(session.rememberedContextSummary?.trim() || "");
+        if (session.rememberedThrough) {
+          persistenceExpiresAtRef.current = new Date(session.rememberedThrough).getTime();
+        }
+        if (!session.memoryEnabled) clearChatSnapshot();
+        if (session.activeConversationId) {
+          await syncHistory(session.activeConversationId, session.visitorToken);
+        }
+      } catch {
+        if (mountedRef.current) setMemorySummary(t("memoryUnavailable"));
       }
-      if (!session.memoryEnabled) clearChatSnapshot();
-      if (session.activeConversationId) {
-        await syncHistory(session.activeConversationId, session.visitorToken);
-      }
-    } catch {
-      if (mountedRef.current) setMemorySummary(t("memoryUnavailable"));
-    }
-  }, [activeLocale, syncHistory, t]);
+    },
+    [activeLocale, syncHistory, t],
+  );
 
   const clearConversation = useCallback(
     (closePanel = false) => {
@@ -626,7 +554,6 @@ export function FloatingChat({
       clearChatSnapshot();
       persistenceExpiresAtRef.current = null;
       restoredSessionRef.current = false;
-      restoredServiceModeRef.current = null;
       availabilityLocaleRef.current = undefined;
       if (expiryTimerRef.current != null && typeof window !== "undefined") {
         window.clearTimeout(expiryTimerRef.current);
@@ -650,8 +577,6 @@ export function FloatingChat({
       setServiceMode("AI");
       setAvailabilityState("idle");
       setContacts(fallbackContacts);
-      setGreeting("");
-      setInitialPrompts(fallbackPrompts);
       setMemoryExpanded(false);
       setContactNotice("");
       setContactOpen(false);
@@ -660,14 +585,10 @@ export function FloatingChat({
       setProgressCode(null);
       setPendingRequestId(undefined);
       setAnnouncement("");
-      setHandoffPending(false);
-      setActiveHandoffId(undefined);
-      setChannelState("AI_ACTIVE");
-      setWaitingOutsideHours(false);
       setConfirmDelete(false);
       if (closePanel) setPanelState("closed");
     },
-    [fallbackContacts, fallbackPrompts],
+    [fallbackContacts],
   );
 
   useEffect(() => {
@@ -680,7 +601,6 @@ export function FloatingChat({
     persistenceReadyRef.current = true;
     if (snapshot) {
       restoredSessionRef.current = true;
-      restoredServiceModeRef.current = snapshot.serviceMode;
       persistenceExpiresAtRef.current = snapshot.expiresAt;
       queueMicrotask(() => {
         if (!mountedRef.current) return;
@@ -740,41 +660,6 @@ export function FloatingChat({
   }, [auth.status, clearConversation]);
 
   useEffect(() => {
-    if (!conversationId || !visitorToken) return;
-    let disposed = false;
-    let disconnect: (() => void) | undefined;
-    let refreshTimer: number | undefined;
-
-    const connect = async () => {
-      disconnect?.();
-      try {
-        const access = await createChatRealtimeToken(conversationId, visitorToken);
-        if (disposed || !access.token) return;
-        disconnect = connectCustomerChatRealtime(
-          access.token,
-          (event) => {
-            if (event.conversationId !== conversationId) return;
-            if (["AI_ACTIVE", "WAITING_FOR_STAFF", "STAFF_ACTIVE", "AI_RESUMED", "CLOSED"].includes(event.channelState)) {
-              setChannelState(event.channelState as ChatChannelState);
-            }
-            void syncHistory(conversationId, visitorToken);
-          },
-          () => void syncHistory(conversationId, visitorToken),
-        );
-        refreshTimer = window.setTimeout(connect, 4 * 60 * 1000);
-      } catch {
-        // REST history is retried when the customer reopens chat; deployment docs cover proxy checks.
-      }
-    };
-    void connect();
-    return () => {
-      disposed = true;
-      disconnect?.();
-      if (refreshTimer != null) window.clearTimeout(refreshTimer);
-    };
-  }, [conversationId, syncHistory, visitorToken]);
-
-  useEffect(() => {
     function handleStorage(event: StorageEvent) {
       if (event.key === CHAT_STORAGE_KEY && event.newValue === null) {
         clearConversation(false);
@@ -797,7 +682,7 @@ export function FloatingChat({
     }
 
     const snapshot: ChatPersistenceSnapshot = {
-      version: 4,
+      version: 5,
       expiresAt: persistenceExpiresAtRef.current,
       locale: activeLocale,
       conversationId,
@@ -851,93 +736,64 @@ export function FloatingChat({
     return () => cancelAnimationFrame(frame);
   }, [contactOpen, messages, panelState, sending]);
 
-  const promptIntent = useCallback((label: string): PromptIntent => {
-    const normalized = normalizedLabel(label);
-    if (findingPromptLabels.has(normalized)) return "PRODUCT_FINDING";
-    if (productActionLabels.has(normalized)) return "PRODUCT_ACTION";
-    return "UNKNOWN";
-  }, [findingPromptLabels, productActionLabels]);
+  const requestAvailability = useCallback(
+    async (force = false) => {
+      if (availabilityBusyRef.current) return;
+      if (!force && availabilityLocaleRef.current === activeLocale) return;
 
-  const requestAvailability = useCallback(async (force = false) => {
-    if (availabilityBusyRef.current) return;
-    if (!force && availabilityLocaleRef.current === activeLocale) return;
+      availabilityBusyRef.current = true;
+      availabilityLocaleRef.current = activeLocale;
+      if (!restoredSessionRef.current) setAvailabilityState("loading");
+      try {
+        if (force)
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.chatAvailability(activeLocale),
+          });
+        const availability = await queryClient.fetchQuery({
+          queryKey: queryKeys.chatAvailability(activeLocale),
+          queryFn: () => fetchChatAvailability(activeLocale),
+          staleTime: 5 * 60 * 1000,
+          retry: false,
+        });
+        if (!mountedRef.current) return;
+        const nextContacts = mergeContacts(availability.contacts, fallbackContacts);
 
-    const preserveRestoredEndState =
-      restoredSessionRef.current && restoredServiceModeRef.current === "CONTACT";
-    availabilityBusyRef.current = true;
-    availabilityLocaleRef.current = activeLocale;
-    if (!restoredSessionRef.current) setAvailabilityState("loading");
-    try {
-      if (force)
-        await queryClient.invalidateQueries({ queryKey: queryKeys.chatAvailability(activeLocale) });
-      const availability = await queryClient.fetchQuery({
-        queryKey: queryKeys.chatAvailability(activeLocale),
-        queryFn: () => fetchChatAvailability(activeLocale),
-        staleTime: 5 * 60 * 1000,
-        retry: false,
-      });
-      if (!mountedRef.current) return;
-      const nextContacts = mergeContacts(availability.contacts, fallbackContacts);
-      const nextMaxTurns =
-        validTurnCount(availability.maxTurns, DEFAULT_MAX_TURNS) || DEFAULT_MAX_TURNS;
-      const backendPrompts = (availability.quickPrompts || []).slice(0, 4).map((label, index) => ({
-        id: `backend-${index}`,
-        label,
-        kind: "MESSAGE" as const,
-        intent: promptIntent(label),
-      }));
-
-      setContacts(nextContacts);
-      setImageSettings(availability.images || {
-        enabled: false,
-        maxBytes: 8 * 1024 * 1024,
-        maxPerTurn: 1,
-        maxPerConversation: 5,
-        dailyLimit: 0,
-        disclosure: "",
-      });
-      setGreeting(availability.greeting?.trim() || defaultGreeting);
-      setInitialPrompts(backendPrompts.length > 0 ? backendPrompts : fallbackPrompts);
-      if (!conversationId) setRemainingTurns(nextMaxTurns);
-      setAvailabilityState("ready");
-      setRetryAvailable(false);
-      setRetryMessage(null);
-      if (!preserveRestoredEndState) setServiceMode(availability.mode);
-      if (preserveRestoredEndState) {
-        setContactNotice(remainingTurns <= 0 ? t("turnLimit") : t("inputLockedExplanation"));
-      } else if (availability.mode === "AI") {
-        setContactNotice("");
-      } else {
-        setContactNotice(t("fallbackNotice", { reason: "service" }));
+        setContacts(nextContacts);
+        setImageSettings({
+          enabled: availability.images?.enabled === true,
+          maxBytes: 8 * 1024 * 1024,
+          maxPerTurn: 1,
+          maxPerConversation: 3,
+          dailyLimit: 20,
+          disclosure: availability.images?.disclosure || t("imageDisclosure"),
+        });
+        if (!conversationId) setRemainingTurns(DEFAULT_MAX_TURNS);
+        setAvailabilityState("ready");
+        setRetryAvailable(false);
+        setRetryMessage(null);
+        setServiceMode(availability.mode);
+        if (availability.mode === "AI") {
+          setContactNotice("");
+        } else {
+          setContactNotice(t("fallbackNotice", { reason: "service" }));
+        }
+      } catch {
+        if (!mountedRef.current) return;
+        setAvailabilityState("error");
+        setRetryAvailable(true);
+        setRetryMessage(null);
+        setServiceMode("CONTACT");
+        setContacts(fallbackContacts);
+        setImageSettings((current) => ({ ...current, enabled: false }));
+        const notice = t("fallbackNotice", { reason: "network" });
+        setContactNotice(notice);
+        setAnnouncement(`${notice} ${t("contactStatus")}`);
+      } finally {
+        availabilityBusyRef.current = false;
       }
-    } catch {
-      if (!mountedRef.current) return;
-      setAvailabilityState("error");
-      setRetryAvailable(true);
-      setRetryMessage(null);
-      if (!preserveRestoredEndState) setServiceMode("AI");
-      setContacts(fallbackContacts);
-      const notice = preserveRestoredEndState
-        ? remainingTurns <= 0
-          ? t("turnLimit")
-          : t("inputLockedExplanation")
-        : t("fallbackNotice", { reason: "network" });
-      setContactNotice(notice);
-      setAnnouncement(`${notice} ${t("contactStatus")}`);
-    } finally {
-      availabilityBusyRef.current = false;
-    }
-  }, [
-    activeLocale,
-    conversationId,
-    defaultGreeting,
-    fallbackContacts,
-    fallbackPrompts,
-    promptIntent,
-    queryClient,
-    remainingTurns,
-    t,
-  ]);
+    },
+    [activeLocale, conversationId, fallbackContacts, queryClient, t],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -1002,16 +858,6 @@ export function FloatingChat({
     );
   }
 
-  function appendAssistantMessage(content: string) {
-    const nextMessage: ChatMessage = {
-      id: nextMessageId("assistant"),
-      role: "ASSISTANT",
-      content,
-    };
-    setMessages((current) => [...current, nextMessage]);
-    announceAssistant(content);
-  }
-
   async function submitMessage(
     raw: string,
     intent: PromptIntent = "UNKNOWN",
@@ -1022,12 +868,7 @@ export function FloatingChat({
     uploadedImageLocalUrl?: string,
   ) {
     const message = raw.trim();
-    const staffConversation = channelState === "STAFF_ACTIVE";
-    if (
-      (!message && !attachedImage && !uploadedImage) ||
-      sending ||
-      (serviceMode !== "AI" && !staffConversation)
-    ) return;
+    if ((!message && !attachedImage && !uploadedImage) || sending || serviceMode !== "AI") return;
 
     const requestId = existingRequestId ?? createRequestId();
     const isRetry = Boolean(existingRequestId);
@@ -1098,10 +939,8 @@ export function FloatingChat({
         }, CHAT_MESSAGE_TIMEOUT_MS);
       });
       const onProgress = (code: ChatProgressCode) => {
-        if (
-          mountedRef.current &&
-          conversationGeneration === conversationGenerationRef.current
-        ) setProgressCode(code);
+        if (mountedRef.current && conversationGeneration === conversationGenerationRef.current)
+          setProgressCode(code);
       };
       const request = turnImage
         ? streamChatMessage(
@@ -1133,11 +972,13 @@ export function FloatingChat({
       if (!mountedRef.current || conversationGeneration !== conversationGenerationRef.current)
         return;
       const nextProducts = (response.products || []).slice(0, 8);
-      const nextRemainingTurns = validTurnCount(response.turnsRemaining, validTurnCount(response.remainingTurns, 0));
-      const nextChannelState = response.channelState || "AI_ACTIVE";
+      const nextRemainingTurns = validTurnCount(
+        response.turnsRemaining,
+        validTurnCount(response.remainingTurns, 0),
+      );
       const answer =
         response.answer?.trim() ||
-        (nextChannelState === "STAFF_ACTIVE" ? "" : response.mode === "CONTACT" ? t("inputLockedExplanation") : t("noInformation"));
+        (response.mode === "CONTACT" ? t("inputLockedExplanation") : t("noInformation"));
       if (answer) {
         const assistantMessageId = response.assistantMessageId || nextMessageId("assistant");
         const assistantMessage: ChatMessage = {
@@ -1148,7 +989,6 @@ export function FloatingChat({
           crossSellProducts: response.crossSellProducts,
           salesStage: response.salesStage,
           nextStep: response.nextStep ?? undefined,
-          handoff: response.handoff ?? undefined,
           clarification: response.clarification ?? undefined,
           actions: response.clarification ? [] : response.actions,
           noResults:
@@ -1165,55 +1005,40 @@ export function FloatingChat({
       }
       setContacts(mergeContacts(response.contacts, fallbackContacts));
       if (response.conversationId) setConversationId(response.conversationId);
-      setChannelState(nextChannelState);
-      if (response.handoff?.id) {
-        setActiveHandoffId(response.handoff.id);
-        setWaitingOutsideHours(response.handoff.withinBusinessHours === false);
-        setContactOpen(true);
-      }
       setRemainingTurns(nextRemainingTurns);
       setRetryAvailable(false);
       setPendingRequestId(undefined);
 
-      if (nextChannelState === "STAFF_ACTIVE") {
-        setServiceMode("CONTACT");
-        setContactNotice(t("staffIsReplying", {
-          name: response.handoff?.assignedDisplayName || t("staffFallback"),
-        }));
-      } else if (nextChannelState === "WAITING_FOR_STAFF") {
-        setServiceMode("AI");
-        setContactNotice(response.handoff?.withinBusinessHours === false
-          ? t("outsideBusinessHours", {
-              hours: response.handoff.businessHoursText || t("businessHoursUpdating"),
-            })
-          : t("waitingForStaff"));
-      } else if (response.mode === "CONTACT") {
+      if (response.mode === "CONTACT") {
         setServiceMode("CONTACT");
         setContactNotice(answer || t("uncertainty"));
         setAnnouncement(`${answer || t("uncertainty")} ${t("contactStatus")}`);
       } else {
         setServiceMode("AI");
-        setContactNotice(response.continuation?.available
-          ? response.continuation.message || t("conversationContinued")
-          : "");
+        setContactNotice(
+          response.continuation?.available
+            ? response.continuation.message || t("conversationContinued")
+            : "",
+        );
       }
     } catch (error) {
       if (!mountedRef.current || conversationGeneration !== conversationGenerationRef.current)
         return;
       if (!userMessageVisible) {
-        const notice = error instanceof ApiClientError
-          ? error.code === "CHAT_IMAGE_TOO_LARGE" || error.status === 413
-            ? t("imageTooLarge")
-            : error.code === "CHAT_IMAGE_UNSUPPORTED_TYPE" || error.status === 415
-              ? t("imageUnsupported")
-              : error.code === "CHAT_IMAGE_DAILY_LIMIT" || error.status === 429
-                ? t("imageDailyLimitReached")
-                : error.code === "CHAT_IMAGE_CONVERSATION_LIMIT"
-                  ? t("imageConversationLimit")
-                  : error.code === "CHAT_IMAGE_DISABLED"
-                    ? t("imageDisabled")
-                    : t("imageInvalid")
-          : t("imageUploadFailed");
+        const notice =
+          error instanceof ApiClientError
+            ? error.code === "CHAT_IMAGE_TOO_LARGE" || error.status === 413
+              ? t("imageTooLarge")
+              : error.code === "CHAT_IMAGE_UNSUPPORTED_TYPE" || error.status === 415
+                ? t("imageUnsupported")
+                : error.code === "CHAT_IMAGE_DAILY_LIMIT" || error.status === 429
+                  ? t("imageDailyLimitReached")
+                  : error.code === "CHAT_IMAGE_CONVERSATION_LIMIT"
+                    ? t("imageConversationLimit")
+                    : error.code === "CHAT_IMAGE_UNAVAILABLE"
+                      ? t("imageUnavailable")
+                      : t("imageInvalid")
+            : t("imageUploadFailed");
         setImageError(notice);
         setContactNotice(notice);
         setPendingRequestId(undefined);
@@ -1275,9 +1100,11 @@ export function FloatingChat({
       return;
     }
     if (file.size <= 0 || file.size > imageSettings.maxBytes) {
-      setImageError(t("imageTooLarge", {
-        maxMb: Math.max(1, Math.floor(imageSettings.maxBytes / (1024 * 1024))),
-      }));
+      setImageError(
+        t("imageTooLarge", {
+          maxMb: Math.max(1, Math.floor(imageSettings.maxBytes / (1024 * 1024))),
+        }),
+      );
       return;
     }
     clearPendingImage();
@@ -1288,45 +1115,7 @@ export function FloatingChat({
   }
 
   function toggleContact() {
-    if (contactOpen) {
-      setContactOpen(false);
-      return;
-    }
-    void notifyStaff();
-  }
-
-  async function notifyStaff() {
-    if (handoffPending) return;
-    setContactOpen(true);
-    if (activeHandoffId) {
-      setContactNotice(t("handoffNotified"));
-      return;
-    }
-    setHandoffPending(true);
-    setContactNotice(t("handoffSending"));
-    try {
-      const handoff = await requestChatHandoff({
-        requestId: createRequestId(),
-        conversationId,
-        locale,
-        visitorToken,
-      });
-      if (!mountedRef.current) return;
-      setConversationId(handoff.conversationId);
-      setActiveHandoffId(handoff.handoffId);
-      setChannelState(handoff.channelState || "WAITING_FOR_STAFF");
-      setWaitingOutsideHours(!handoff.withinBusinessHours);
-      setContactNotice(handoff.withinBusinessHours
-        ? t("handoffNotified")
-        : t("outsideBusinessHours", { hours: handoff.businessHoursText || t("businessHoursUpdating") }));
-      appendAssistantMessage(
-        handoff.withinBusinessHours ? t("handoffContinue") : t("handoffAfterHoursContinue"),
-      );
-    } catch {
-      if (mountedRef.current) setContactNotice(t("handoffError"));
-    } finally {
-      if (mountedRef.current) setHandoffPending(false);
-    }
+    setContactOpen((current) => !current);
   }
 
   async function handleMemoryToggle() {
@@ -1338,7 +1127,9 @@ export function FloatingChat({
     try {
       if (!enabled) clearConversation(false);
       await initializeVisitorSession(enabled);
-      setMemorySummary(enabled ? t("memoryEnabledSummary", { days: memoryDays }) : t("memoryDisabledSummary"));
+      setMemorySummary(
+        enabled ? t("memoryEnabledSummary", { days: memoryDays }) : t("memoryDisabledSummary"),
+      );
     } finally {
       if (mountedRef.current) setMemoryUpdating(false);
     }
@@ -1395,8 +1186,6 @@ export function FloatingChat({
         return t("actionRelatedArticle");
       case "CHANGE_NEEDS":
         return t("actionChangeNeeds");
-      case "CONTACT_STAFF":
-        return t("talkToStaff");
       case "LOGIN":
         return t("orderLogin");
       case "ORDER_HISTORY":
@@ -1444,8 +1233,6 @@ export function FloatingChat({
         window.open(effectiveContacts.zaloUrl, "_blank", "noopener,noreferrer");
       } else if (action.type === "OPEN_MESSENGER" && effectiveContacts.messengerUrl) {
         window.open(effectiveContacts.messengerUrl, "_blank", "noopener,noreferrer");
-      } else if (action.type === "CONTACT_STAFF") {
-        await notifyStaff();
       } else {
         await submitMessage(actionLabel(action.type), actionIntent(action.type));
       }
@@ -1454,27 +1241,8 @@ export function FloatingChat({
     }
   }
 
-  function runComposerAction(action: ComposerAction) {
-    if (action.kind === "CONTACT") {
-      toggleContact();
-      return;
-    }
-    void submitMessage(action.label, action.intent);
-  }
-
-  const statusLabel = channelState === "WAITING_FOR_STAFF"
-    ? waitingOutsideHours ? t("afterHoursStatus") : t("waitingStatus")
-    : channelState === "STAFF_ACTIVE"
-      ? t("staffStatus")
-      : channelState === "AI_RESUMED"
-        ? t("assistantResumedStatus")
-        : serviceMode === "CONTACT"
-          ? t("contactStatus")
-          : t("aiStatus");
-  const staffChatActive = channelState === "STAFF_ACTIVE";
-  const composerLocked = sending
-    || !visitorToken
-    || (serviceMode !== "AI" && !staffChatActive);
+  const statusLabel = serviceMode === "CONTACT" ? t("contactStatus") : t("aiStatus");
+  const composerLocked = sending || !visitorToken || serviceMode !== "AI";
 
   function renderFab(mobileOnly = false, includeTriggerId = true) {
     const tooltipId = mobileOnly ? "bigbike-fab-tooltip-mobile" : "bigbike-fab-tooltip";
@@ -1575,7 +1343,9 @@ export function FloatingChat({
                     {statusLabel}
                   </span>
                 </div>
-                <DialogDescription className="sr-only">{t("aiDisclosure")}</DialogDescription>
+                <DialogDescription className="mt-1 font-body text-a5-meta leading-relaxed text-primary-foreground/85">
+                  {t("aiDisclosure")}
+                </DialogDescription>
               </div>
               <div className="flex shrink-0 gap-1">
                 <Button
@@ -1586,9 +1356,9 @@ export function FloatingChat({
                   aria-label={t("deleteConversation")}
                   title={t("deleteConversation")}
                   onClick={() => {
-                     setConfirmDelete(true);
-                     setMemoryExpanded(true);
-                   }}
+                    setConfirmDelete(true);
+                    setMemoryExpanded(true);
+                  }}
                 >
                   <Trash2 className="size-5" aria-hidden="true" />
                 </Button>
@@ -1631,43 +1401,68 @@ export function FloatingChat({
                   ? memorySummary || t("memoryDisclosure", { days: memoryDays })
                   : t("memoryDisabledSummary")}
               </span>
-              <ChevronDown className={`size-4 shrink-0 transition-transform ${memoryExpanded ? "rotate-180" : ""}`} aria-hidden="true" />
+              <ChevronDown
+                className={`size-4 shrink-0 transition-transform ${memoryExpanded ? "rotate-180" : ""}`}
+                aria-hidden="true"
+              />
             </Button>
             <div
               id="bigbike-memory-details"
               className="border-t border-border px-4 py-3"
               hidden={!memoryExpanded}
             >
-                <p className="m-0 font-body text-a5-meta leading-relaxed text-muted-foreground">
-                  {memoryEnabled
-                    ? memorySummary || t("memoryDisclosure", { days: memoryDays })
-                    : t("memoryDisabledSummary")}
-                </p>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="mt-2 min-h-11 p-0 font-body text-a5-meta"
-                  disabled={memoryUpdating}
-                  onClick={() => void handleMemoryToggle()}
+              <p className="m-0 font-body text-a5-meta leading-relaxed text-muted-foreground">
+                {memoryEnabled
+                  ? memorySummary || t("memoryDisclosure", { days: memoryDays })
+                  : t("memoryDisabledSummary")}
+              </p>
+              <Button
+                type="button"
+                variant="link"
+                className="mt-2 min-h-11 p-0 font-body text-a5-meta"
+                disabled={memoryUpdating}
+                onClick={() => void handleMemoryToggle()}
+              >
+                {memoryUpdating
+                  ? t("memoryUpdating")
+                  : memoryEnabled
+                    ? t("disableMemory")
+                    : t("enableMemory")}
+              </Button>
+              {confirmDelete ? (
+                <div
+                  className="mt-3 border border-state-warning bg-state-warning-bg p-3"
+                  role="alert"
                 >
-                  {memoryUpdating
-                    ? t("memoryUpdating")
-                    : memoryEnabled ? t("disableMemory") : t("enableMemory")}
-                </Button>
-                {confirmDelete ? (
-                  <div className="mt-3 border border-state-warning bg-state-warning-bg p-3" role="alert">
-                    <p className="m-0 font-body text-a5-meta font-semibold text-foreground">{t("confirmDeleteHistory")}</p>
-                    <div className="mt-3 flex justify-end gap-2">
-                      <Button type="button" variant="outline" size="sm" disabled={deletingHistory} onClick={() => setConfirmDelete(false)}>
-                        {t("cancelDeleteHistory")}
-                      </Button>
-                      <Button type="button" size="sm" disabled={deletingHistory} onClick={() => void handleDeleteHistory()}>
-                        {deletingHistory ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
-                        {deletingHistory ? t("deletingHistory") : t("confirmDeleteAction")}
-                      </Button>
-                    </div>
+                  <p className="m-0 font-body text-a5-meta font-semibold text-foreground">
+                    {t("confirmDeleteHistory")}
+                  </p>
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={deletingHistory}
+                      onClick={() => setConfirmDelete(false)}
+                    >
+                      {t("cancelDeleteHistory")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={deletingHistory}
+                      onClick={() => void handleDeleteHistory()}
+                    >
+                      {deletingHistory ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Trash2 className="size-4" aria-hidden="true" />
+                      )}
+                      {deletingHistory ? t("deletingHistory") : t("confirmDeleteAction")}
+                    </Button>
                   </div>
-                ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -1675,417 +1470,355 @@ export function FloatingChat({
             {announcement}
           </p>
 
-          {availabilityState === "loading" ? (
+          <div className="relative min-h-0 flex-1">
+            {availabilityState === "loading" ? (
+              <div
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-secondary/95 p-6 text-center"
+                role="status"
+              >
+                <BigBikeAvatar size="header" />
+                <Loader2 className="size-5 animate-spin text-chat" aria-hidden="true" />
+                <p className="font-body text-a4-content text-muted-foreground">{t("checking")}</p>
+              </div>
+            ) : null}
             <div
-              className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-secondary p-6 text-center"
-              role="status"
+              ref={listRef}
+              data-bigbike-conversation
+              className="h-full overflow-x-hidden overflow-y-auto overscroll-contain bg-secondary p-4"
+              onScroll={onConversationScroll}
             >
-              <BigBikeAvatar size="header" />
-              <Loader2 className="size-5 animate-spin text-chat" aria-hidden="true" />
-              <p className="font-body text-a4-content text-muted-foreground">{t("checking")}</p>
-            </div>
-          ) : (
-            <>
-              <div className="relative min-h-0 flex-1">
-                <div
-                  ref={listRef}
-                  data-bigbike-conversation
-                  className="h-full overflow-x-hidden overflow-y-auto overscroll-contain bg-secondary p-4"
-                  onScroll={onConversationScroll}
-                >
-                  <div className="grid gap-4">
-                  {messages.length === 0 ? (
-                    <section
-                      data-bigbike-onboarding
-                      aria-labelledby="bigbike-onboarding-heading"
-                      className="border border-border bg-background p-4"
-                    >
-                      <div className="flex items-start gap-3">
-                        <BigBikeAvatar size="header" />
-                        <div className="min-w-0">
-                          <p className="font-cta text-b5-label font-semibold uppercase tracking-wide text-chat">
-                            {t("bigbikeTitle")}
-                          </p>
-                          <h2
-                            id="bigbike-onboarding-heading"
-                            className="mt-1 font-body text-a4-content font-semibold leading-title text-foreground"
-                          >
-                            {greeting || defaultGreeting}
-                          </h2>
-                          <p className="mt-2 font-body text-a5-meta leading-relaxed text-muted-foreground">
-                            {t("onboardingDescription")}
-                          </p>
-                        </div>
-                      </div>
-
-                    </section>
-                  ) : null}
-
-                  {displayMessages.map((message, index) => {
-                    if (message.role === "SYSTEM") {
-                      return (
-                        <div key={message.id} className="flex justify-center">
-                          <p className="m-0 max-w-4/5 border border-border bg-background px-3 py-2 text-center font-body text-a5-meta leading-relaxed text-muted-foreground">
-                            {message.content}
-                          </p>
-                        </div>
-                      );
-                    }
-                    const showAssistantAvatar =
-                      message.role === "ASSISTANT" &&
-                      (index === 0 || displayMessages[index - 1]?.role !== "ASSISTANT");
-                    const products = message.products?.slice(0, 8) || [];
-                    const crossSellProducts = message.crossSellProducts?.slice(0, 2) || [];
-                    const expanded = expandedProductMessages.includes(message.id);
-                    const visibleProducts = expanded ? products : products.slice(0, 3);
-                    const isStaff = message.role === "STAFF";
+              <div className="grid gap-4">
+                {displayMessages.map((message, index) => {
+                  if (message.role === "SYSTEM") {
                     return (
-                      <div
-                        key={message.id}
-                        className={`flex gap-3 ${message.role === "USER" ? "justify-end" : "justify-start"}`}
-                      >
-                        {message.role === "ASSISTANT" ? (
-                          showAssistantAvatar ? (
-                            <BigBikeAvatar size="message" />
-                          ) : (
-                            <span className="size-9 shrink-0" aria-hidden="true" />
-                          )
-                        ) : isStaff ? (
-                          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full! bg-surface-dark text-primary-foreground" aria-hidden="true">
-                            <UserRound className="size-4" />
-                          </span>
-                        ) : null}
-                        <div
-                          className={
-                            message.role === "USER"
-                              ? "grid max-w-4/5 min-w-0 gap-2"
-                              : "grid min-w-0 flex-1 gap-2"
-                          }
-                        >
-                          <div
-                            className={`border px-4 py-3 font-body text-a5-meta leading-relaxed text-foreground ${message.role === "USER" ? "border-chat bg-cyan/10" : isStaff ? "border-surface-dark bg-background" : "border-border bg-background"}`}
-                          >
-                            {message.images?.length ? (
-                              <div className="mb-3 grid gap-2" data-chat-customer-images>
-                                {message.images.map((image, imageIndex) => (
-                                  <PrivateChatImage
-                                    key={image.id}
-                                    image={image}
-                                    visitorToken={visitorToken}
-                                    localUrl={imageIndex === 0 ? message.localImageUrl : undefined}
-                                    alt={t("customerImageAlt")}
-                                  />
-                                ))}
-                              </div>
-                            ) : null}
-                            {isStaff ? (
-                              <p className="mb-2 font-cta text-b5-label font-semibold uppercase tracking-wide text-chat">
-                                {t("staffMessageLabel", { name: message.staffDisplayName || t("staffFallback") })}
-                              </p>
-                            ) : null}
-                            {message.role === "ASSISTANT" ? (
-                              <AssistantAnswer message={message} />
-                            ) : (
-                              message.content
-                            )}
-                          </div>
-                          {message.role === "ASSISTANT" && message.clarification ? (
-                            <ClarificationButtons
-                              clarification={message.clarification}
-                              disabled={sending || latestMessage?.id !== message.id}
-                              onSelect={(option) => handleClarification(message, option)}
-                            />
-                          ) : null}
-                          {products.length > 0 ? (
-                            <div data-bigbike-product-list className="grid min-w-0 gap-3">
-                              {visibleProducts.map((product) => (
-                                <BigBikeProductCard
-                                  key={product.slug}
-                                  product={product}
-                                  locale={locale}
-                                />
-                              ))}
-                              {products.length > 3 ? (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className="min-h-11 w-full"
-                                  onClick={() =>
-                                    setExpandedProductMessages((current) =>
-                                      expanded
-                                        ? current.filter((id) => id !== message.id)
-                                        : [...current, message.id],
-                                    )
-                                  }
-                                >
-                                  {expanded
-                                    ? t("showFewerProducts")
-                                    : t("viewMoreProducts", { count: products.length - 3 })}
-                                </Button>
-                              ) : null}
-                            </div>
-                          ) : null}
-                          {crossSellProducts.length > 0 ? (
-                            <section className="grid min-w-0 gap-3 border-l-4 border-chat bg-background p-3">
-                              <h3 className="font-cta text-b5-label font-semibold uppercase tracking-wide text-foreground">
-                                {t("relatedAccessories")}
-                              </h3>
-                              {crossSellProducts.map((product) => (
-                                <BigBikeProductCard
-                                  key={`cross-${product.slug}`}
-                                  product={product}
-                                  locale={locale}
-                                />
-                              ))}
-                            </section>
-                          ) : null}
-                          {!message.clarification && message.actions?.length ? (
-                            <ActionButtons
-                              actions={message.actions}
-                              disabled={sending}
-                              labelFor={actionLabel}
-                              onAction={(action) => void handleIssuedAction(action)}
-                            />
-                          ) : null}
-                          {message.noResults ? (
-                            <div className="border-l-4 border-chat bg-background p-4">
-                              <p className="font-body text-a4-content font-semibold text-foreground">
-                                {t("noResults")}
-                              </p>
-                            </div>
-                          ) : null}
-                        </div>
+                      <div key={message.id} className="flex justify-center">
+                        <p className="m-0 max-w-4/5 border border-border bg-background px-3 py-2 text-center font-body text-a5-meta leading-relaxed text-muted-foreground">
+                          {message.content}
+                        </p>
                       </div>
                     );
-                  })}
-
-                  {sending ? (
-                    <div className="flex items-start gap-3" role="status">
-                      <BigBikeAvatar size="message" />
-                      <div className="flex items-center gap-2 border border-border bg-background px-4 py-3 font-body text-a5-meta text-muted-foreground">
-                        <Loader2 className="size-4 animate-spin text-chat" aria-hidden="true" />
-                        {progressCode === "UNDERSTANDING"
-                          ? t("progressUnderstanding")
-                          : progressCode === "FINALIZING"
-                            ? t("progressFinalizing")
-                            : t("progressCheckingProducts")}
+                  }
+                  const showAssistantAvatar =
+                    message.role === "ASSISTANT" &&
+                    (index === 0 || displayMessages[index - 1]?.role !== "ASSISTANT");
+                  const products = message.products?.slice(0, 8) || [];
+                  const crossSellProducts = message.crossSellProducts?.slice(0, 2) || [];
+                  const expanded = expandedProductMessages.includes(message.id);
+                  const visibleProducts = expanded ? products : products.slice(0, 3);
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex gap-3 ${message.role === "USER" ? "justify-end" : "justify-start"}`}
+                    >
+                      {message.role === "ASSISTANT" ? (
+                        showAssistantAvatar ? (
+                          <BigBikeAvatar size="message" />
+                        ) : (
+                          <span className="size-9 shrink-0" aria-hidden="true" />
+                        )
+                      ) : null}
+                      <div
+                        className={
+                          message.role === "USER"
+                            ? "grid max-w-4/5 min-w-0 gap-2"
+                            : "grid min-w-0 flex-1 gap-2"
+                        }
+                      >
+                        <div
+                          className={`border px-4 py-3 font-body text-a5-meta leading-relaxed text-foreground ${message.role === "USER" ? "border-chat bg-cyan/10" : "border-border bg-background"}`}
+                        >
+                          {message.images?.length ? (
+                            <div className="mb-3 grid gap-2" data-chat-customer-images>
+                              {message.images.map((image, imageIndex) => (
+                                <PrivateChatImage
+                                  key={image.id}
+                                  image={image}
+                                  visitorToken={visitorToken}
+                                  localUrl={imageIndex === 0 ? message.localImageUrl : undefined}
+                                  alt={t("customerImageAlt")}
+                                />
+                              ))}
+                            </div>
+                          ) : null}
+                          {message.role === "ASSISTANT" ? (
+                            <AssistantAnswer message={message} />
+                          ) : (
+                            message.content
+                          )}
+                        </div>
+                        {message.role === "ASSISTANT" && message.clarification ? (
+                          <ClarificationButtons
+                            clarification={message.clarification}
+                            disabled={sending || latestMessage?.id !== message.id}
+                            onSelect={(option) => handleClarification(message, option)}
+                          />
+                        ) : null}
+                        {products.length > 0 ? (
+                          <div data-bigbike-product-list className="grid min-w-0 gap-3">
+                            {visibleProducts.map((product) => (
+                              <BigBikeProductCard
+                                key={product.slug}
+                                product={product}
+                                locale={locale}
+                              />
+                            ))}
+                            {products.length > 3 ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="min-h-11 w-full"
+                                onClick={() =>
+                                  setExpandedProductMessages((current) =>
+                                    expanded
+                                      ? current.filter((id) => id !== message.id)
+                                      : [...current, message.id],
+                                  )
+                                }
+                              >
+                                {expanded
+                                  ? t("showFewerProducts")
+                                  : t("viewMoreProducts", { count: products.length - 3 })}
+                              </Button>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {crossSellProducts.length > 0 ? (
+                          <section className="grid min-w-0 gap-3 border-l-4 border-chat bg-background p-3">
+                            <h3 className="font-cta text-b5-label font-semibold uppercase tracking-wide text-foreground">
+                              {t("relatedAccessories")}
+                            </h3>
+                            {crossSellProducts.map((product) => (
+                              <BigBikeProductCard
+                                key={`cross-${product.slug}`}
+                                product={product}
+                                locale={locale}
+                              />
+                            ))}
+                          </section>
+                        ) : null}
+                        {!message.clarification && message.actions?.length ? (
+                          <ActionButtons
+                            actions={message.actions}
+                            disabled={sending}
+                            labelFor={actionLabel}
+                            onAction={(action) => void handleIssuedAction(action)}
+                          />
+                        ) : null}
+                        {message.noResults ? (
+                          <div className="border-l-4 border-chat bg-background p-4">
+                            <p className="font-body text-a4-content font-semibold text-foreground">
+                              {t("noResults")}
+                            </p>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
-                  ) : null}
+                  );
+                })}
 
-                  {contactOpen ? (
-                    <div
-                      id="bigbike-contact-inline"
-                      data-bigbike-contact-inline
-                      className="grid gap-3"
-                    >
-                      {messages.length > 0 ? (
-                        <p className="border-l-4 border-chat bg-background p-3 font-body text-a5-meta leading-relaxed text-muted-foreground">
-                          {t("contactContextPreserved")}
-                        </p>
-                      ) : null}
-                      <BigBikeContactPanel contacts={effectiveContacts} />
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-                {messages.length === 0 && initialPrompts.length > 0 && serviceMode === "AI" && !staffChatActive && !contactOpen ? (
-                  <div data-bigbike-quick-prompts className="pointer-events-none absolute inset-x-4 bottom-2 z-10">
-                    <div className="pointer-events-auto grid gap-2 border border-border bg-background p-2 shadow-[var(--bb-shadow-md)] sm:grid-cols-2">
-                      {initialPrompts.slice(0, 4).map((action) => (
-                        <Button
-                          key={action.id}
-                          type="button"
-                          variant="outline"
-                          aria-label={action.label}
-                          title={action.label}
-                          className="min-h-11 min-w-0 w-full justify-start whitespace-normal border-border bg-background px-3 py-2 text-left font-body text-b4-action font-semibold normal-case leading-title text-foreground hover:border-chat hover:bg-cyan/10 hover:scale-100"
-                          disabled={sending || !visitorToken}
-                          onClick={() => runComposerAction(action)}
-                        >
-                          <span aria-hidden="true" className="min-w-0 line-clamp-2">
-                            {action.label}
-                          </span>
-                        </Button>
-                      ))}
+                {sending ? (
+                  <div className="flex items-start gap-3" role="status">
+                    <BigBikeAvatar size="message" />
+                    <div className="flex items-center gap-2 border border-border bg-background px-4 py-3 font-body text-a5-meta text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin text-chat" aria-hidden="true" />
+                      {progressCode === "UNDERSTANDING"
+                        ? t("progressUnderstanding")
+                        : progressCode === "FINALIZING"
+                          ? t("progressFinalizing")
+                          : t("progressCheckingProducts")}
                     </div>
                   </div>
                 ) : null}
+
+                {contactOpen ? (
+                  <div
+                    id="bigbike-contact-inline"
+                    data-bigbike-contact-inline
+                    className="grid gap-3"
+                  >
+                    {messages.length > 0 ? (
+                      <p className="border-l-4 border-chat bg-background p-3 font-body text-a5-meta leading-relaxed text-muted-foreground">
+                        {t("contactContextPreserved")}
+                      </p>
+                    ) : null}
+                    <BigBikeContactPanel contacts={effectiveContacts} />
+                  </div>
+                ) : null}
+              </div>
             </div>
 
-              <div
-                data-bigbike-composer
-                className="shrink-0 border-t border-border bg-background px-4 pt-4 pb-[max(var(--bb-space-4),env(safe-area-inset-bottom))] md:pb-4"
-              >
-                {contactNotice ? (
-                  <p className="mb-3 border border-state-warning bg-state-warning-bg p-3 font-body text-a5-meta leading-relaxed text-foreground">
-                    {contactNotice}
-                  </p>
-                ) : null}
+            <div
+              data-bigbike-composer
+              className="shrink-0 border-t border-border bg-background px-4 pt-4 pb-[max(var(--bb-space-4),env(safe-area-inset-bottom))] md:pb-4"
+            >
+              {contactNotice ? (
+                <p className="mb-3 border border-state-warning bg-state-warning-bg p-3 font-body text-a5-meta leading-relaxed text-foreground">
+                  {contactNotice}
+                </p>
+              ) : null}
 
-                {retryAvailable ? (
-                  <div className="mb-3 flex justify-end">
-                    <Button
-                      type="button"
-                      className="border-chat bg-chat text-primary-foreground hover:border-chat hover:bg-chat"
-                      onClick={() =>
-                        retryMessage
-                          ? void submitMessage(
-                              retryMessage.message,
-                              retryMessage.intent,
-                              retryMessage.requestId,
-                              retryMessage.clarificationSelection,
-                              undefined,
-                              retryMessage.image,
-                              retryMessage.localImageUrl,
-                            )
-                          : void requestAvailability(true)
-                      }
-                    >
-                      <RefreshCw className="size-4" aria-hidden="true" />
-                      {t("retry")}
-                    </Button>
-                  </div>
-                ) : null}
-
-                {!staffChatActive && remainingTurns > 0 && remainingTurns <= 3 ? (
-                  <p className="mb-3 border border-state-warning bg-state-warning-bg p-3 font-body text-a5-meta text-foreground">
-                    {t("remainingWarning", { count: remainingTurns })}
-                  </p>
-                ) : null}
-
-                {pendingImage ? (
-                  <div className="mb-3 flex items-start gap-3 border border-border bg-muted p-3" data-chat-pending-image>
-                    <Image
-                      src={pendingImage.previewUrl}
-                      alt={t("selectedImageAlt")}
-                      width={80}
-                      height={80}
-                      unoptimized
-                      className="size-20 shrink-0 border border-border object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-body text-a5-meta font-semibold text-foreground">
-                        {pendingImage.file.name}
-                      </p>
-                      <p className="mt-1 font-body text-a5-meta text-muted-foreground">
-                        {t("selectedImageReady")}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-11 min-h-11 shrink-0 p-0"
-                      onClick={clearPendingImage}
-                      disabled={sending}
-                      aria-label={t("removeSelectedImage")}
-                    >
-                      <X className="size-4" aria-hidden="true" />
-                    </Button>
-                  </div>
-                ) : null}
-
-                {imageError ? (
-                  <p className="mb-3 border border-destructive bg-destructive/5 p-3 font-body text-a5-meta text-destructive" role="alert">
-                    {imageError}
-                  </p>
-                ) : null}
-
-                {imageSettings.enabled ? (
-                  <p className="mb-3 font-body text-a5-meta leading-relaxed text-muted-foreground" data-chat-image-disclosure>
-                    {imageSettings.disclosure || t("imageDisclosure")}
-                  </p>
-                ) : null}
-
-                <form onSubmit={handleSubmit} className="flex min-w-0 items-end gap-2">
-                  {imageSettings.enabled ? (
-                    <>
-                      <input
-                        ref={imageInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="sr-only"
-                        onChange={handleImageSelection}
-                        disabled={composerLocked || Boolean(pendingImage)}
-                        aria-label={t("chooseImage")}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="size-12 min-h-12 shrink-0 p-0"
-                        onClick={() => imageInputRef.current?.click()}
-                        disabled={composerLocked || Boolean(pendingImage)}
-                        aria-label={t("chooseImage")}
-                        title={t("chooseImageHint", {
-                          maxMb: Math.max(1, Math.floor(imageSettings.maxBytes / (1024 * 1024))),
-                        })}
-                      >
-                        <ImagePlus className="size-5" aria-hidden="true" />
-                      </Button>
-                    </>
-                  ) : null}
-                  <Label htmlFor="bigbike-chat-message" className="sr-only">
-                    {t("messageLabel")}
-                  </Label>
-                  <Input
-                    ref={messageInputRef}
-                    id="bigbike-chat-message"
-                    className="min-w-0 flex-1"
-                    value={draft}
-                    maxLength={1000}
-                    disabled={composerLocked}
-                    placeholder={
-                      staffChatActive
-                        ? t("messagePlaceholderStaff")
-                        : serviceMode === "CONTACT"
-                        ? t("messagePlaceholderLocked")
-                        : t("messagePlaceholder")
-                    }
-                    onChange={(event) => setDraft(event.target.value)}
-                  />
-                  <Button
-                    type="submit"
-                    size="icon"
-                    className="size-12 min-h-12 shrink-0 p-0"
-                    disabled={
-                      (!draft.trim() && !pendingImage) || composerLocked
-                    }
-                    aria-label={t("send")}
-                  >
-                    {sending ? (
-                      <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Send className="size-5" aria-hidden="true" />
-                    )}
-                  </Button>
+              {retryAvailable ? (
+                <div className="mb-3 flex justify-end">
                   <Button
                     type="button"
-                    variant="outline"
-                    size="icon"
-                    className="size-12 min-h-12 shrink-0 p-0"
-                    aria-label={contactOpen ? t("contactToggleClose") : t("talkToStaff")}
-                    title={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
-                    aria-expanded={contactOpen}
-                    aria-controls="bigbike-contact-inline"
-                    onClick={toggleContact}
-                    disabled={handoffPending || !visitorToken}
+                    className="border-chat bg-chat text-primary-foreground hover:border-chat hover:bg-chat"
+                    onClick={() =>
+                      retryMessage
+                        ? void submitMessage(
+                            retryMessage.message,
+                            retryMessage.intent,
+                            retryMessage.requestId,
+                            retryMessage.clarificationSelection,
+                            undefined,
+                            retryMessage.image,
+                            retryMessage.localImageUrl,
+                          )
+                        : void requestAvailability(true)
+                    }
                   >
-                    {handoffPending ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Phone className="size-4" aria-hidden="true" />
-                    )}
-                    <span className="sr-only">
-                      {contactOpen ? t("contactToggleClose") : t("talkToStaff")}
-                    </span>
+                    <RefreshCw className="size-4" aria-hidden="true" />
+                    {t("retry")}
                   </Button>
-                </form>
-              </div>
-            </>
-          )}
+                </div>
+              ) : null}
+
+              {remainingTurns > 0 && remainingTurns <= 3 ? (
+                <p className="mb-3 border border-state-warning bg-state-warning-bg p-3 font-body text-a5-meta text-foreground">
+                  {t("remainingWarning", { count: remainingTurns })}
+                </p>
+              ) : null}
+
+              {pendingImage ? (
+                <div
+                  className="mb-3 flex items-start gap-3 border border-border bg-muted p-3"
+                  data-chat-pending-image
+                >
+                  <Image
+                    src={pendingImage.previewUrl}
+                    alt={t("selectedImageAlt")}
+                    width={80}
+                    height={80}
+                    unoptimized
+                    className="size-20 shrink-0 border border-border object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-body text-a5-meta font-semibold text-foreground">
+                      {pendingImage.file.name}
+                    </p>
+                    <p className="mt-1 font-body text-a5-meta text-muted-foreground">
+                      {t("selectedImageReady")}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-11 min-h-11 shrink-0 p-0"
+                    onClick={clearPendingImage}
+                    disabled={sending}
+                    aria-label={t("removeSelectedImage")}
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              ) : null}
+
+              {imageError ? (
+                <p
+                  className="mb-3 border border-destructive bg-destructive/5 p-3 font-body text-a5-meta text-destructive"
+                  role="alert"
+                >
+                  {imageError}
+                </p>
+              ) : null}
+
+              {imageSettings.enabled ? (
+                <p
+                  className="mb-3 font-body text-a5-meta leading-relaxed text-muted-foreground"
+                  data-chat-image-disclosure
+                >
+                  {imageSettings.disclosure || t("imageDisclosure")}
+                </p>
+              ) : null}
+
+              <form onSubmit={handleSubmit} className="flex min-w-0 items-end gap-2">
+                {imageSettings.enabled ? (
+                  <>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={handleImageSelection}
+                      disabled={composerLocked || Boolean(pendingImage)}
+                      aria-label={t("chooseImage")}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-12 min-h-12 shrink-0 p-0"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={composerLocked || Boolean(pendingImage)}
+                      aria-label={t("chooseImage")}
+                      title={t("chooseImageHint", {
+                        maxMb: Math.max(1, Math.floor(imageSettings.maxBytes / (1024 * 1024))),
+                      })}
+                    >
+                      <ImagePlus className="size-5" aria-hidden="true" />
+                    </Button>
+                  </>
+                ) : null}
+                <Label htmlFor="bigbike-chat-message" className="sr-only">
+                  {t("messageLabel")}
+                </Label>
+                <Input
+                  ref={messageInputRef}
+                  id="bigbike-chat-message"
+                  className="min-w-0 flex-1"
+                  value={draft}
+                  maxLength={1000}
+                  disabled={composerLocked}
+                  placeholder={
+                    serviceMode === "CONTACT"
+                      ? t("messagePlaceholderLocked")
+                      : t("messagePlaceholder")
+                  }
+                  onChange={(event) => setDraft(event.target.value)}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="size-12 min-h-12 shrink-0 p-0"
+                  disabled={(!draft.trim() && !pendingImage) || composerLocked}
+                  aria-label={t("send")}
+                >
+                  {sending ? (
+                    <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Send className="size-5" aria-hidden="true" />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-12 min-h-12 shrink-0 p-0"
+                  aria-label={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
+                  title={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
+                  aria-expanded={contactOpen}
+                  aria-controls="bigbike-contact-inline"
+                  onClick={toggleContact}
+                >
+                  <Phone className="size-4" aria-hidden="true" />
+                  <span className="sr-only">
+                    {contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
+                  </span>
+                </Button>
+              </form>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

@@ -218,6 +218,29 @@ credentials for the build operator only, never browser configuration. `CONFIRMED
 - The one-time WordPress live migration must follow [LIVE_MIGRATION_RUNBOOK.md](LIVE_MIGRATION_RUNBOOK.md). The normal Spring `mode=import` runner is legacy rehearsal tooling and is not an authorized production write path. `CONFIRMED_FROM_CODE_2026-08-03`
 - Receipt tables (`V52/V53/V55`) were dropped in `V120`; the serial movement table (`V57`) and all other serial tables were dropped in `V259` (serial tracking removed 2026-06-23). POS order snapshot columns were added in `V71` and still exist, but the POS feature itself was removed 2026-06-23 (online-only) — the columns are now only written with online values. `CONFIRMED_FROM_CONFIG`
 
+### Historical order classification / Đánh dấu đơn lịch sử một lần
+
+This owner-operated step runs only after the deployment containing the historical-order tables is healthy. It classifies orders whose existing `legacy_id` is present into the auditable batch `LEGACY_WEB_IMPORT_2026_06_11`; it never updates an order status, amount, customer field, or order content. The safety gate requires the production measurements supplied on 2026-08-31 to remain exactly `1,661 total / 388 PENDING / 508 PROCESSING`; any mismatch rolls the transaction back automatically. Running `--execute` again is intentionally idempotent.
+
+Bước này chỉ do owner chạy sau khi bản triển khai có kho đánh dấu đơn lịch sử đã hoạt động ổn định. Bước chạy dùng dấu `legacy_id` sẵn có để đưa đơn vào lô có thể kiểm tra `LEGACY_WEB_IMPORT_2026_06_11`; tuyệt đối không đổi trạng thái, số tiền, khách hàng hay nội dung đơn. Chốt an toàn bắt buộc số đo ngày 31/08/2026 vẫn đúng `1.661 tổng / 388 PENDING / 508 PROCESSING`; lệch bất kỳ số nào thì toàn bộ lần chạy tự hoàn tác. Chạy `--execute` lần thứ hai cho cùng kết quả và không tạo bản ghi trùng.
+
+From the repository root / Từ thư mục gốc dự án:
+
+```bash
+# Read-only preflight / Chỉ kiểm tra, không ghi dữ liệu
+bash scripts/ops/classify-legacy-orders.sh --dry-run
+
+# Owner-authorized one-time classification / Owner chạy đánh dấu một lần
+bash scripts/ops/classify-legacy-orders.sh --execute
+
+# Read-only verification / Kiểm tra lại, không ghi dữ liệu
+bash scripts/ops/classify-legacy-orders.sh --dry-run
+```
+
+The script prints its measured duration; with only 1,661 memberships this should normally finish in under one minute, but the production host determines the actual duration. To undo a mistaken classification without changing any order, run `bash scripts/ops/classify-legacy-orders.sh --rollback`. This deactivates the batch and immediately restores all orders to the operational scope while retaining the classification list and audit evidence. After checking the exact `1,661/1,661/0` candidate/membership/mismatch gate, restore it with `bash scripts/ops/classify-legacy-orders.sh --reactivate`.
+
+Script tự in thời gian thực tế; với 1.661 dấu thành viên, bình thường hoàn tất dưới một phút nhưng máy chủ thật quyết định thời gian cuối cùng. Nếu đánh dấu sai, chạy `bash scripts/ops/classify-legacy-orders.sh --rollback`; lệnh này chỉ tắt lô, đưa toàn bộ đơn trở lại phạm vi vận hành ngay, đồng thời giữ danh sách đánh dấu và dấu vết kiểm tra. Sau khi xác nhận chốt `1.661/1.661/0` cho số ứng viên/số đã đánh dấu/số lệch, bật lại bằng `bash scripts/ops/classify-legacy-orders.sh --reactivate`.
+
 ## Deployment Caveats
 
 - **Chat post-deploy check:** confirm the public chat header identifies BigBike AI in Vietnamese and English, the input is immediately visible, the image button appears only when the AI service is configured, and the Hotline/Zalo/Messenger card opens without any request to `/chat/handoffs`, email or notification. Confirm admin can still view transcript/history and images with `chat.read`, while no queue, claim, staff reply or chat notification appears. Watch backend/nginx logs only for status/connection ids, never transcript/token/PII.

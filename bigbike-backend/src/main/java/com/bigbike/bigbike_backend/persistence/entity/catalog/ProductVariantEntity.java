@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -62,6 +63,13 @@ public class ProductVariantEntity {
 
     @Column(nullable = false)
     private boolean isAvailable;
+
+    @Column(name = "out_of_stock_since")
+    private Instant outOfStockSince;
+
+    @Column(name = "out_of_stock_since_estimated", nullable = false,
+            columnDefinition = "boolean default false")
+    private boolean outOfStockSinceEstimated;
 
     @Column(nullable = false)
     private int sortOrder;

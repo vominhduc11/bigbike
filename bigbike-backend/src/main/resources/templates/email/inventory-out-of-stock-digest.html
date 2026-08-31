@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Hàng hết cần xử lý / Out-of-stock action needed</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f6f8">
+  <tr>
+    <td align="center" style="padding:32px 12px;">
+      <table width="680" cellpadding="0" cellspacing="0" border="0" style="max-width:680px;width:100%;">
+        <tr th:replace="~{email/layout :: header-row}"></tr>
+        <tr>
+          <td style="background-color:#ffffff;padding:28px 28px 12px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
+            <h1 style="margin:0 0 6px;font-size:22px;line-height:1.35;color:#151515;">
+              Hàng hết cần xử lý / Out-of-stock action needed
+            </h1>
+            <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#4b5563;">
+              Bản tin ngày <strong th:text="${digestDate}">31/08/2026</strong>. Hệ thống chỉ báo, không tự đổi hay ẩn sản phẩm.<br/>
+              Digest for <strong th:text="${digestDate}">31/08/2026</strong>. This bulletin does not change or hide products.
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;background-color:#f7f7f8;border:1px solid #e5e7eb;">
+              <tr>
+                <td style="padding:14px 16px;font-size:13px;color:#4b5563;">
+                  Hết sạch / Fully out
+                  <strong style="display:block;margin-top:3px;font-size:22px;color:#151515;" th:text="${counts.fullyOutOfStockProducts}">0</strong>
+                </td>
+                <td style="padding:14px 16px;font-size:13px;color:#4b5563;border-left:1px solid #e5e7eb;">
+                  Thiếu cỡ hoặc màu / Missing size or colour
+                  <strong style="display:block;margin-top:3px;font-size:22px;color:#151515;" th:text="${counts.partiallyOutOfStockProducts}">0</strong>
+                </td>
+                <td style="padding:14px 16px;font-size:13px;color:#4b5563;border-left:1px solid #e5e7eb;">
+                  Cỡ/màu hết / Unavailable variants
+                  <strong style="display:block;margin-top:3px;font-size:22px;color:#151515;" th:text="${counts.unavailableVariants}">0</strong>
+                </td>
+              </tr>
+            </table>
+
+            <h2 style="margin:0 0 6px;font-size:17px;color:#151515;">1. Hết sạch / Fully out of stock</h2>
+            <p style="margin:0 0 10px;font-size:12px;color:#6b7280;">Sản phẩm không còn cỡ/màu nào bán được / No available size or colour remains.</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:26px;border:1px solid #e5e7eb;">
+              <tr th:each="product : ${fullProducts}">
+                <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;">
+                  <a th:href="${product.editUrl}" href="#" style="font-size:14px;font-weight:700;color:#151515;text-decoration:none;" th:text="${product.nameVi}">Tên sản phẩm</a>
+                  <div style="margin-top:3px;font-size:12px;color:#6b7280;" th:text="${product.nameEn}">Product name</div>
+                  <div style="margin-top:5px;font-size:12px;color:#4b5563;">SKU: <span th:text="${product.sku}">—</span></div>
+                </td>
+                <td width="245" style="padding:12px 14px;border-bottom:1px solid #e5e7eb;font-size:12px;line-height:1.5;color:#4b5563;" th:text="${product.duration}">0 ngày / 0 days</td>
+                <td width="82" align="right" style="padding:12px 14px;border-bottom:1px solid #e5e7eb;">
+                  <a th:href="${product.editUrl}" href="#" style="font-size:12px;font-weight:700;color:#F90606;text-decoration:none;">Mở sửa / Edit →</a>
+                </td>
+              </tr>
+            </table>
+
+            <h2 style="margin:0 0 6px;font-size:17px;color:#151515;">2. Thiếu cỡ hoặc màu / Missing size or colour</h2>
+            <p style="margin:0 0 10px;font-size:12px;color:#6b7280;">Sản phẩm vẫn đang bán nhưng một số lựa chọn đã hết / Product is still on sale but some options are unavailable.</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px;border:1px solid #e5e7eb;">
+              <tbody th:each="product : ${partialProducts}">
+                <tr>
+                  <td colspan="2" style="padding:12px 14px;background-color:#f7f7f8;border-bottom:1px solid #e5e7eb;">
+                    <a th:href="${product.editUrl}" href="#" style="font-size:14px;font-weight:700;color:#151515;text-decoration:none;" th:text="${product.nameVi}">Tên sản phẩm</a>
+                    <div style="margin-top:3px;font-size:12px;color:#6b7280;"><span th:text="${product.nameEn}">Product name</span> · SKU: <span th:text="${product.sku}">—</span></div>
+                  </td>
+                  <td width="82" align="right" style="padding:12px 14px;background-color:#f7f7f8;border-bottom:1px solid #e5e7eb;">
+                    <a th:href="${product.editUrl}" href="#" style="font-size:12px;font-weight:700;color:#F90606;text-decoration:none;">Mở sửa / Edit →</a>
+                  </td>
+                </tr>
+                <tr th:each="variant : ${product.variants}">
+                  <td style="padding:10px 14px 10px 28px;border-bottom:1px solid #eef0f2;font-size:12px;line-height:1.5;color:#151515;">
+                    <a th:href="${product.editUrl}" href="#" style="color:#151515;text-decoration:none;" th:text="${variant.nameVi}">Cỡ / màu</a>
+                    <span style="color:#6b7280;"> · SKU: <span th:text="${variant.sku}">—</span></span>
+                  </td>
+                  <td colspan="2" width="300" style="padding:10px 14px;border-bottom:1px solid #eef0f2;font-size:12px;line-height:1.5;color:#4b5563;" th:text="${variant.duration}">0 ngày / 0 days</td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+        <tr th:replace="~{email/layout :: internal-footer-row}"></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

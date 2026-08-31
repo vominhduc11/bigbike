@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,12 @@ class AdminOrderCsvExportServiceTest {
     @Mock
     private EntityManager entityManager;
 
+    @Mock
+    private OrderHistoryClassificationService historyClassificationService;
+
+    @Mock
+    private OrderOperationsSettings orderOperationsSettings;
+
     @InjectMocks
     private AdminOrderCsvExportService service;
 
@@ -49,12 +56,15 @@ class AdminOrderCsvExportServiceTest {
                         new PageImpl<>(List.of(first), firstPage, 501),
                         new PageImpl<>(List.of(second), secondPage, 501)
                 );
+        when(historyClassificationService.activeClassifications(any())).thenReturn(Map.of());
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         service.writeTo(output, "PROCESSING", "BB-CSV", "2026-07-20", "2026-07-21");
 
         String csv = output.toString(StandardCharsets.UTF_8);
         assertThat(csv).startsWith("\uFEFForder_number,status");
+        assertThat(csv).contains("report_scope,order_scope,history_batch_key");
+        assertThat(csv).contains("ALL_INCLUDING_HISTORICAL,OPERATIONAL");
         assertThat(csv).contains("BB-CSV-FIRST");
         assertThat(csv).contains("BB-CSV-SECOND");
         verify(orderRepository, times(2)).findAll(any(Specification.class), any(Pageable.class));

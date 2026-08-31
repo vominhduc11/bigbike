@@ -20,6 +20,8 @@ import {
   updateHomeVideo,
   deleteHomeVideo,
   reorderHomeVideos,
+  fetchSettings,
+  batchUpdateSettings,
 } from '../lib/adminApi'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { VideoPickerModal } from '../components/VideoPickerModal'
@@ -54,7 +56,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useHasPermission } from '@/lib/auth'
-import { buildHomeVideoThumbnail } from './homeVideoPayload'
+import { buildHomeVideoThumbnail, isValidYouTubeChannelUrl } from './homeVideoPayload'
 import { cn } from '@/lib/utils'
 
 const EMPTY_FORM = {
@@ -132,7 +134,7 @@ function VideoPreviewModal({ video, onClose }) {
   )
 }
 
-function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPreview, selected, onSelect, selectionMode }) {
+function VideoCard({ video, isOnHomepage, canUpdate, onEdit, onDelete, onToggleActive, onPreview, selected, onSelect, selectionMode }) {
   const { t } = useTranslation()
   const contentLang = useContentLang()
   const displayTitle = contentLang === 'en' ? (video.titleEn || video.title) : video.title
@@ -158,7 +160,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
           <Checkbox
             checked={selected}
             onCheckedChange={(checked) => onSelect(video.id, checked)}
-            aria-label={`Chọn video ${video.title}`}
+            aria-label={t('homeVideos.selectVideo', { title: video.title })}
            />
           {!selectionMode && (
             <Button
@@ -177,7 +179,7 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
         variant="unstyled"
         onClick={onPreview}
         className="shrink-0 w-24 h-[58px] rounded-sm overflow-hidden bg-black border-none p-0 cursor-pointer relative"
-        aria-label={`Xem trước: ${video.title}`}
+        aria-label={t('homeVideos.previewVideo', { title: video.title })}
       >
         {thumbSrc
           ? <img src={thumbSrc} alt={video.title} className="w-full h-full object-cover block" />
@@ -195,8 +197,15 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
       <div className="bb-slider-copy">
         <div className="bb-slider-title-row">
           <span className="bb-slider-title">{displayTitle}</span>
-          <span className={`bb-badge ${video.isActive ? 'bb-badge-success' : 'bb-badge-neutral'}`}>
-            {video.isActive ? t('homeVideos.statusVisible') : t('homeVideos.statusHidden')}
+          <span className={cn(
+            'bb-badge',
+            isOnHomepage ? 'bb-badge-success' : video.isActive ? 'bb-badge-warning' : 'bb-badge-neutral',
+          )}>
+            {isOnHomepage
+              ? t('homeVideos.statusHomepage')
+              : video.isActive
+                ? t('homeVideos.statusEnabledOutside')
+                : t('homeVideos.statusHidden')}
           </span>
         </div>
         <div className="bb-slider-meta">{video.videoUrl}</div>
@@ -224,6 +233,8 @@ function VideoCard({ video, canUpdate, onEdit, onDelete, onToggleActive, onPrevi
 export function HomeVideoListScreen({ canUpdate }) {
   const hasPermission = useHasPermission()
   const canReadMedia = hasPermission('media.read')
+  const canReadSettings = hasPermission('settings.read')
+  const canWriteSettings = hasPermission('settings.write')
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
@@ -239,6 +250,8 @@ export function HomeVideoListScreen({ canUpdate }) {
   const [previewVideo, setPreviewVideo] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [isBulkBusy, setIsBulkBusy] = useState(false)
+  const [channelDraft, setChannelDraft] = useState(undefined)
+  const [channelError, setChannelError] = useState('')
   // T9: lưu bộ lọc vào URL để khôi phục khi quay lại màn hình.
   const [query, setQuery] = useUrlSyncedState({ q: '', status: 'ALL' })
   const searchText = query.q
@@ -253,8 +266,43 @@ export function HomeVideoListScreen({ canUpdate }) {
     queryFn: fetchHomeVideos,
   })
 
-  const items = localItems ?? (data?.items ?? [])
+  const channelQuery = useQuery({
+    queryKey: ['home-video-youtube-channel'],
+    queryFn: () => fetchSettings({ q: 'youtube_url' }),
+    enabled: canReadSettings,
+  })
+
+  const items = useMemo(() => localItems ?? (data?.items ?? []), [localItems, data?.items])
   const activeItem = activeId ? items.find((video) => video.id === activeId) : null
+  const homepageIds = useMemo(
+    () => new Set(items.filter((video) => video.isActive).slice(0, 10).map((video) => video.id)),
+    [items],
+  )
+  const youtubeSetting = channelQuery.data?.items?.find((setting) => setting.key === 'youtube_url')
+  const savedChannelUrl = youtubeSetting?.value ?? ''
+  const channelUrl = channelDraft ?? savedChannelUrl
+  const channelDirty = channelDraft !== undefined && channelDraft.trim() !== savedChannelUrl.trim()
+
+  const channelMutation = useMutation({
+    mutationFn: (value) => batchUpdateSettings([{ key: 'youtube_url', value: value.trim() }]),
+    onSuccess: (result) => {
+      const saved = result.items?.find((setting) => setting.key === 'youtube_url')
+      if (saved) {
+        queryClient.setQueryData(['home-video-youtube-channel'], (current) => ({
+          ...(current || {}),
+          items: [saved],
+        }))
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['home-video-youtube-channel'] })
+      }
+      setChannelDraft(undefined)
+      setChannelError('')
+      toast.success(t('homeVideos.channelSaveSuccess'))
+    },
+    onError: (err) => {
+      setChannelError(err.message || t('homeVideos.channelSaveError'))
+    },
+  })
 
   const createMutation = useMutation({
     mutationFn: createHomeVideo,
@@ -533,13 +581,27 @@ export function HomeVideoListScreen({ canUpdate }) {
     reorderMutation.mutate(reordered.map((video) => ({ id: video.id, sortOrder: video.sortOrder })))
   }
 
-  const isFiltering = searchText.trim() !== '' || statusFilter !== 'ALL'
+  function handleSaveChannel(event) {
+    event.preventDefault()
+    if (!isValidYouTubeChannelUrl(channelUrl)) {
+      setChannelError(t('homeVideos.channelValidation'))
+      return
+    }
+    setChannelError('')
+    channelMutation.mutate(channelUrl)
+  }
+
+  const normalizedStatusFilter = statusFilter === 'active' ? 'homepage' : statusFilter
+  const isFiltering = searchText.trim() !== '' || normalizedStatusFilter !== 'ALL'
   const filteredItems = items.filter((v) => {
     const q = searchText.trim().toLowerCase()
     const matchSearch = q === ''
       || v.title.toLowerCase().includes(q)
       || (v.titleEn || '').toLowerCase().includes(q)
-    const matchStatus = statusFilter === 'ALL' || (statusFilter === 'active' ? v.isActive : !v.isActive)
+    const matchStatus = normalizedStatusFilter === 'ALL'
+      || (normalizedStatusFilter === 'homepage' && homepageIds.has(v.id))
+      || (normalizedStatusFilter === 'enabledOutside' && v.isActive && !homepageIds.has(v.id))
+      || (normalizedStatusFilter === 'hidden' && !v.isActive)
     return matchSearch && matchStatus
   })
 
@@ -646,6 +708,10 @@ export function HomeVideoListScreen({ canUpdate }) {
   ) : (
     <div className="flex flex-col gap-3">
 
+      <p className="m-0 rounded-sm border border-border bg-surface-muted px-3 py-2 text-sm text-muted-foreground">
+        {t('homeVideos.homepageRuleHint', { count: homepageIds.size })}
+      </p>
+
       {/* Filter bar */}
       <div className="flex gap-2 items-center">
         <Input
@@ -655,11 +721,12 @@ export function HomeVideoListScreen({ canUpdate }) {
           placeholder={t('homeVideos.searchPlaceholder', { defaultValue: 'Tìm theo tên video...' })}
           className="flex-1"
         />
-        <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setSelectedIds(new Set()) }}>
+        <Select value={normalizedStatusFilter} onValueChange={(val) => { setStatusFilter(val); setSelectedIds(new Set()) }}>
           <SelectTrigger className="w-auto text-xs h-8"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t('homeVideos.filterAll', { defaultValue: 'Tất cả' })} ({items.length})</SelectItem>
-            <SelectItem value="active">{t('homeVideos.filterActive', { defaultValue: 'Đang hiện' })} ({items.filter((v) => v.isActive).length})</SelectItem>
+            <SelectItem value="homepage">{t('homeVideos.filterHomepage')} ({homepageIds.size})</SelectItem>
+            <SelectItem value="enabledOutside">{t('homeVideos.filterEnabledOutside')} ({items.filter((v) => v.isActive && !homepageIds.has(v.id)).length})</SelectItem>
             <SelectItem value="hidden">{t('homeVideos.filterHidden', { defaultValue: 'Đang ẩn' })} ({items.filter((v) => !v.isActive).length})</SelectItem>
           </SelectContent>
         </Select>
@@ -727,6 +794,7 @@ export function HomeVideoListScreen({ canUpdate }) {
         <VideoCard
           key={video.id}
           video={video}
+          isOnHomepage={homepageIds.has(video.id)}
           canUpdate={canUpdate && !isFiltering}
           onEdit={openEdit}
           onDelete={handleDelete}
@@ -743,7 +811,7 @@ export function HomeVideoListScreen({ canUpdate }) {
 
   return (
     <Screen>
-      {!canUpdate && <ReadOnlyBanner />}
+      {!canUpdate && !canWriteSettings && <ReadOnlyBanner />}
 
       <ScreenHeader
         group="content"
@@ -757,6 +825,68 @@ export function HomeVideoListScreen({ canUpdate }) {
             </Button>
         ) : null}
       />
+
+      <DetailSection
+        title={t('homeVideos.channelTitle')}
+        description={t('homeVideos.channelDescription')}
+        className="mb-4"
+      >
+        {!canReadSettings ? (
+          <p className="m-0 text-sm text-muted-foreground">
+            {t('homeVideos.channelPermissionDenied')}
+          </p>
+        ) : channelQuery.isLoading ? (
+          <p className="m-0 text-sm text-muted-foreground">{t('homeVideos.channelLoading')}</p>
+        ) : channelQuery.isError ? (
+          <StatePanel
+            tone="danger"
+            title={t('homeVideos.channelLoadError')}
+            description={channelQuery.error?.message}
+            actionLabel={t('common.retry')}
+            onAction={() => channelQuery.refetch()}
+          />
+        ) : (
+          <form onSubmit={handleSaveChannel} className="flex flex-col gap-3">
+            <FormField
+              label={t('homeVideos.channelLabel')}
+              error={channelError}
+              helper={t('homeVideos.channelHint')}
+            >
+              <Input
+                type="url"
+                value={channelUrl}
+                disabled={!canWriteSettings || channelMutation.isPending}
+                placeholder="https://www.youtube.com/@bigbike-shop"
+                onChange={(event) => {
+                  setChannelDraft(event.target.value)
+                  setChannelError('')
+                }}
+                onBlur={() => {
+                  if (!isValidYouTubeChannelUrl(channelUrl)) {
+                    setChannelError(t('homeVideos.channelValidation'))
+                  }
+                }}
+              />
+            </FormField>
+            {!channelUrl.trim() ? (
+              <p className="m-0 text-xs text-warning">{t('homeVideos.channelDisabledHint')}</p>
+            ) : null}
+            {canWriteSettings ? (
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  loading={channelMutation.isPending}
+                  disabled={!channelDirty || !isValidYouTubeChannelUrl(channelUrl)}
+                >
+                  {t('homeVideos.channelSave')}
+                </Button>
+              </div>
+            ) : (
+              <p className="m-0 text-xs text-muted-foreground">{t('homeVideos.channelReadOnly')}</p>
+            )}
+          </form>
+        )}
+      </DetailSection>
 
       {showForm && (
         <DetailSection title={editingVideo ? t('homeVideos.editTitle') : t('homeVideos.createTitle')} className="mb-4">
@@ -958,6 +1088,7 @@ export function HomeVideoListScreen({ canUpdate }) {
             {activeItem && (
               <VideoCard
                 video={activeItem}
+                isOnHomepage={homepageIds.has(activeItem.id)}
                 canUpdate={false}
                 onEdit={() => {}}
                 onDelete={() => {}}

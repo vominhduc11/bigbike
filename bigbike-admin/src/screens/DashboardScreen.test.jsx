@@ -172,7 +172,9 @@ describe('DashboardScreen', () => {
 
     await user.click(await screen.findByRole('button', { name: 'dashboard.kpi.pendingOrdersAria' }))
 
-    expect(mocks.navigate).toHaveBeenCalledWith('/admin/orders?orderStatus=PENDING')
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      '/admin/orders?orderScope=OPERATIONAL&orderStatus=PENDING',
+    )
   })
 
   it('opens the active-product KPI with the published filter', async () => {
@@ -339,5 +341,9 @@ describe('DashboardScreen', () => {
     expect(viLocale.dashboard.orderStatusChart.title).toBe('Cơ cấu đơn hàng theo trạng thái')
     expect(viLocale.dashboard.revenueChart.subtitle).toContain('{{period}} gần nhất')
     expect(enLocale.dashboard.orderStatusChart.subtitle).toContain('{{period}}')
+    expect(viLocale.dashboard.orderScopeDisclosure).toContain('đơn chờ')
+    expect(viLocale.dashboard.orderScopeDisclosure).toContain('chỉ tính đơn vận hành')
+    expect(enLocale.dashboard.orderScopeDisclosure).toContain('include historical orders')
+    expect(enLocale.dashboard.orderScopeDisclosure).toContain('operational orders only')
   })
 })

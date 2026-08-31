@@ -10,8 +10,19 @@ public record AdminDashboardSummaryResponse(
         List<RevenueDayResponse> revenueData,
         List<OrderStatusBreakdownItem> orderStatusBreakdown,
         List<RecentOrderItem> recentOrders,
-        List<TopProductItem> topProducts
+        List<TopProductItem> topProducts,
+        DashboardScopes scopes
 ) {
+
+    public record MetricScope(
+            String orderScope,
+            boolean includesHistoricalOrders
+    ) {}
+
+    public record DashboardScopes(
+            MetricScope operational,
+            MetricScope financial
+    ) {}
 
     public record KpiResponse(
             BigDecimal todayRevenue,       // valid GMV: SUM(totalAmount) for orders placed today, excludes CANCELLED

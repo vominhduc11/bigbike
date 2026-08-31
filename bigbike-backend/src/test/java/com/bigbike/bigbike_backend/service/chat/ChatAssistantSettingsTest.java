@@ -37,7 +37,7 @@ class ChatAssistantSettingsTest {
 
         assertThat(snapshot.dailyLimit()).isEqualTo(400);
         assertThat(new ChatAssistantSettings(repository).imageSettings())
-                .isEqualTo(new ChatAssistantSettings.ImageSettings(false, 20, 3));
+                .isEqualTo(new ChatAssistantSettings.ImageSettings(true, 20, 3));
     }
 
     private static SiteSettingEntity setting(String value) {

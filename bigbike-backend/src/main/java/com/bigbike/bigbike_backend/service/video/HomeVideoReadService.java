@@ -17,7 +17,7 @@ public class HomeVideoReadService {
 
     @Transactional(readOnly = true)
     public List<HomeVideo> listActive() {
-        return homeVideoJpaRepository.findByIsActiveTrueOrderBySortOrderAsc().stream()
+        return homeVideoJpaRepository.findTop10ByIsActiveTrueOrderBySortOrderAsc().stream()
                 .map(HomeVideoReadService::toDomain)
                 .toList();
     }

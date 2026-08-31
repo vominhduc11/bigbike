@@ -66,7 +66,7 @@ function OrderItemThumbnail({ item }) {
 }
 
 export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const { hasOtherAdmin } = useAdminPresence('order', orderId)
   const orderQuery = useQuery({
@@ -92,10 +92,12 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   }, [orderId, queryClient])
 
   const order = orderQuery.data?.item ?? null
+  const isHistorical = order?.orderScope === 'HISTORICAL'
+  const effectiveCanUpdate = canUpdate && !isHistorical
   const transitionsQuery = useQuery({
     queryKey: ['order-transitions', orderId, order?.orderStatus],
     queryFn: () => fetchOrderAllowedTransitions(orderId),
-    enabled: Boolean(canUpdate && orderQuery.isSuccess && order?.orderStatus),
+    enabled: Boolean(effectiveCanUpdate && orderQuery.isSuccess && order?.orderStatus),
   })
   const status = orderQuery.isLoading
     ? 'loading'
@@ -243,6 +245,14 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
   const canCancelOrder = !transitionsError && allowedTransitions.includes('CANCELLED')
   const hasAnyAction = hasOrderGroup || canCancelOrder
   const useMobileStickyActions = hasAnyAction && !transitionsLoading && !transitionsError
+  const historyClassification = order.historyClassification
+  const showEnglishHistory = String(i18n?.resolvedLanguage || i18n?.language || '').startsWith('en')
+  const historyLabel = showEnglishHistory
+    ? historyClassification?.labelEn
+    : historyClassification?.labelVi
+  const historyReason = showEnglishHistory
+    ? historyClassification?.reasonEn
+    : historyClassification?.reasonVi
   const paymentMethodLabel = order.paymentMethod
     ? t(`status.paymentMethod.${order.paymentMethod}`, { defaultValue: t('common.unknown') })
     : formatText()
@@ -389,7 +399,23 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         )}
       />
 
-      {!canUpdate ? <ReadOnlyBanner warning={t('orders.readOnlyWarning')} /> : null}
+      {isHistorical ? (
+        <ReadOnlyBanner warning={t('orders.detail.historicalReadOnly')} />
+      ) : !canUpdate ? <ReadOnlyBanner warning={t('orders.readOnlyWarning')} /> : null}
+
+      {isHistorical ? (
+        <Alert tone="info" size="sm" className="mb-4" role="status">
+          <div className="space-y-1">
+            <div className="font-semibold">{historyLabel || t('orders.historicalBadge')}</div>
+            <div>{historyReason || t('orders.detail.historicalReasonFallback')}</div>
+            {historyClassification?.batchKey ? (
+              <div className="font-mono text-xs text-muted-foreground">
+                {t('orders.detail.historyBatch')}: {historyClassification.batchKey}
+              </div>
+            ) : null}
+          </div>
+        </Alert>
+      ) : null}
 
       {unsavedActionWarning ? (
         <Alert tone="warning" size="sm" className="mb-4" role="alert">
@@ -430,7 +456,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </div>
         )
 
-        if (!canUpdate) return tiles
+        if (!effectiveCanUpdate) return tiles
 
         return (
           <div className="bb-status-summary">
@@ -682,7 +708,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
         </div>
       </div>
 
-      {canUpdate && useMobileStickyActions ? (
+      {effectiveCanUpdate && useMobileStickyActions ? (
         <div className="show-on-mobile fixed inset-x-0 bottom-4 z-40 bg-background pb-[env(safe-area-inset-bottom)] [&_.sticky-action-bar]:m-0">
           <StickyActionBar ariaLabel={t('orders.detail.mobileActionsLabel')}>
             {orderProgressTransitions.map((targetStatus) => renderProgressAction(targetStatus, 'mobile-'))}

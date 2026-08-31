@@ -15,6 +15,7 @@ import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJp
 import com.bigbike.bigbike_backend.service.admin.settings.SettingDefinition;
 import com.bigbike.bigbike_backend.service.admin.settings.SettingDefinitionRegistry;
 import com.bigbike.bigbike_backend.service.admin.settings.SettingValueValidator;
+import com.bigbike.bigbike_backend.service.review.invitation.ReviewInvitationLifecycleService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import com.bigbike.bigbike_backend.service.common.PaginationService;
@@ -47,6 +48,7 @@ public class AdminSettingsService {
     private final WebRevalidationService webRevalidationService;
     private final SettingDefinitionRegistry definitionRegistry;
     private final SettingValueValidator valueValidator;
+    private final ReviewInvitationLifecycleService reviewInvitationLifecycleService;
     private final ObjectMapper objectMapper;
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -135,6 +137,7 @@ public class AdminSettingsService {
         }
 
         String before = snapshot(entity, definitionRegistry.isSensitive(settingKey));
+        String oldValue = entity.getSettingValue();
 
         if (req.value() != null) {
             entity.setSettingValue(req.value());
@@ -152,8 +155,11 @@ public class AdminSettingsService {
         if (req.description() != null) {
             entity.setDescription(req.description().isBlank() ? null : req.description());
         }
-        entity.setUpdatedAt(Instant.now());
+        Instant now = Instant.now();
+        entity.setUpdatedAt(now);
         settingRepo.save(entity);
+        reviewInvitationLifecycleService.onSettingUpdated(
+                settingKey, oldValue, entity.getSettingValue(), now);
 
         webRevalidationService.revalidate("settings");
         auditLogWriter.save(auditLogFactory.build(
@@ -223,6 +229,7 @@ public class AdminSettingsService {
             SiteSettingEntity entity = p.entity();
             boolean sensitive = definitionRegistry.isSensitive(entity.getSettingKey());
             String before = snapshot(entity, sensitive);
+            String oldValue = entity.getSettingValue();
 
             if (p.newValue() != null) {
                 entity.setSettingValue(p.newValue());
@@ -230,8 +237,11 @@ public class AdminSettingsService {
             if (p.newValueEn() != null) {
                 entity.setSettingValueEn(p.newValueEn().isBlank() ? null : p.newValueEn());
             }
-            entity.setUpdatedAt(Instant.now());
+            Instant now = Instant.now();
+            entity.setUpdatedAt(now);
             settingRepo.save(entity);
+            reviewInvitationLifecycleService.onSettingUpdated(
+                    entity.getSettingKey(), oldValue, entity.getSettingValue(), now);
 
             auditLogWriter.save(auditLogFactory.build(
                     "ADMIN",

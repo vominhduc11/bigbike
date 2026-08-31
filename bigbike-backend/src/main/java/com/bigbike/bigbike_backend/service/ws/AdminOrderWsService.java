@@ -33,6 +33,23 @@ public class AdminOrderWsService {
         }
     }
 
+    /**
+     * Pushes a notification that the caller has already stored atomically.
+     * This keeps the live bell fresh without creating a second inbox row.
+     */
+    public void pushPersistedEvent(Object event) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    doSendPersisted(event);
+                }
+            });
+        } else {
+            doSendPersisted(event);
+        }
+    }
+
     private void persistAndSend(OrderWsEvent event) {
         try {
             notificationService.persistFromWsEvent(event);
@@ -48,6 +65,15 @@ public class AdminOrderWsService {
             log.debug("WS pushed {} for order {}", event.type(), event.orderNumber());
         } catch (Exception e) {
             log.warn("WS push failed for order {}: {}", event.orderNumber(), e.getMessage());
+        }
+    }
+
+    private void doSendPersisted(Object event) {
+        try {
+            messaging.convertAndSend(TOPIC_ORDERS, event);
+            log.debug("WS pushed an already-persisted admin order notification.");
+        } catch (Exception e) {
+            log.warn("WS push failed for an already-persisted admin order notification: {}", e.getMessage());
         }
     }
 }

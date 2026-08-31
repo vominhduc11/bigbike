@@ -2,6 +2,8 @@ package com.bigbike.bigbike_backend.service.admin;
 
 import com.bigbike.bigbike_backend.api.admin.dto.dashboard.AdminDashboardSummaryResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.dashboard.AdminDashboardSummaryResponse.KpiResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.dashboard.AdminDashboardSummaryResponse.DashboardScopes;
+import com.bigbike.bigbike_backend.api.admin.dto.dashboard.AdminDashboardSummaryResponse.MetricScope;
 import com.bigbike.bigbike_backend.api.admin.dto.dashboard.AdminDashboardSummaryResponse.OrderStatusBreakdownItem;
 import com.bigbike.bigbike_backend.api.admin.dto.dashboard.AdminDashboardSummaryResponse.RecentOrderItem;
 import com.bigbike.bigbike_backend.api.admin.dto.dashboard.AdminDashboardSummaryResponse.RevenueDayResponse;
@@ -71,7 +73,7 @@ public class AdminDashboardService {
                     .doubleValue();
         }
 
-        long pendingOrders  = orderRepo.countByStatus("PENDING");
+        long pendingOrders  = orderRepo.countOperationalByStatus("PENDING");
         long activeProducts = productRepo.countByPublishStatus(PublishStatus.PUBLISHED);
 
         KpiResponse kpi = new KpiResponse(
@@ -92,7 +94,7 @@ public class AdminDashboardService {
 
         // ── Recent orders (last 5) ────────────────────────────────────────────
         List<RecentOrderItem> recentOrders = orderRepo
-                .findRecentOrders(PageRequest.of(0, 5))
+                .findRecentOperationalOrders(PageRequest.of(0, 5))
                 .stream()
                 .map(o -> new RecentOrderItem(
                         o.getId(),
@@ -118,7 +120,12 @@ public class AdminDashboardService {
                 ))
                 .collect(Collectors.toList());
 
-        return new AdminDashboardSummaryResponse(kpi, revenueData, breakdown, recentOrders, topProducts);
+        DashboardScopes scopes = new DashboardScopes(
+                new MetricScope("OPERATIONAL", false),
+                new MetricScope("ALL", true)
+        );
+        return new AdminDashboardSummaryResponse(
+                kpi, revenueData, breakdown, recentOrders, topProducts, scopes);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -168,11 +175,11 @@ public class AdminDashboardService {
     }
 
     private List<OrderStatusBreakdownItem> buildStatusBreakdown(Instant from) {
-        List<Object[]> rows = orderRepo.countGroupedByStatusSince(from);
+        List<Object[]> rows = orderRepo.countOperationalGroupedByStatusSince(from);
         Map<String, Long> countMap = rows.stream()
                 .collect(Collectors.toMap(
                         r -> (String) r[0],
-                        r -> (Long) r[1]
+                        r -> ((Number) r[1]).longValue()
                 ));
 
         List<OrderStatusBreakdownItem> result = new ArrayList<>();

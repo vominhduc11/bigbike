@@ -418,7 +418,7 @@ public class ChatImageService {
         String answer = english
                 ? "The shop’s image-analysis allowance has been reached for today. You can still describe the item in text and continue chatting normally, or contact BigBike through Hotline, Zalo or Messenger."
                 : "Hôm nay shop đã dùng hết lượt đọc ảnh. Anh/chị vẫn có thể mô tả sản phẩm bằng chữ và tiếp tục trò chuyện bình thường, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger.";
-        return new ImageTurnResult(answer, "TOOL", "CLARIFICATION", List.of(), true);
+        return new ImageTurnResult(answer, "TOOL", "CLARIFICATION", List.of(), false);
     }
 
     private static ImageTurnResult unsafeResult(String lang) {

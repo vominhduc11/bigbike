@@ -45,6 +45,7 @@ export function AdminTable({
   loading = false, pageSize = 8,
   onSortChange, sortKey, sortDir,
   selectable = false, selectedIds = [], onSelectionChange,
+  isRowSelectable,
   onRowClick, rowClassName, mobileCard, rowHref, containerClassName,
   renderRow, mobileListClassName,
   densityKey, defaultDensity = 'regular',
@@ -53,12 +54,15 @@ export function AdminTable({
   const [density, setDensity] = useState(() => readTableDensity(densityKey, defaultDensity))
   const hrefOf = (row) => (typeof rowHref === 'function' ? rowHref(row) : undefined)
   const openTab = (href) => { if (href) window.open(href, '_blank', 'noopener') }
-  const allSelected = rows.length > 0 && rows.every((r) => selectedIds.includes(r.id))
-  const someSelected = !allSelected && rows.some((r) => selectedIds.includes(r.id))
+  const rowCanBeSelected = (row) => selectable
+    && (typeof isRowSelectable !== 'function' || isRowSelectable(row))
+  const selectableRows = rows.filter(rowCanBeSelected)
+  const allSelected = selectableRows.length > 0 && selectableRows.every((r) => selectedIds.includes(r.id))
+  const someSelected = !allSelected && selectableRows.some((r) => selectedIds.includes(r.id))
 
   function toggleAll() {
     if (allSelected) onSelectionChange?.([])
-    else onSelectionChange?.(rows.map((r) => r.id))
+    else onSelectionChange?.(selectableRows.map((r) => r.id))
   }
 
   function toggleOne(id) {
@@ -97,6 +101,7 @@ export function AdminTable({
               <Checkbox
                 checked={allSelected ? true : someSelected ? 'indeterminate' : false}
                 onCheckedChange={toggleAll}
+                disabled={selectableRows.length === 0}
                 aria-label={t('common.selectAll', { defaultValue: 'Chọn tất cả' })}
               />
             </TableHead>
@@ -183,6 +188,7 @@ export function AdminTable({
                       <Checkbox
                         checked={selectedIds.includes(row.id)}
                         onCheckedChange={() => toggleOne(row.id)}
+                        disabled={!rowCanBeSelected(row)}
                         aria-label={t('common.selectRow', { defaultValue: 'Chọn hàng' })}
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -253,7 +259,7 @@ export function AdminTable({
                   meta={card.meta}
                   actions={card.actions}
                   onClick={card.onClick}
-                  selectable={card.selectable ?? selectable}
+                  selectable={card.selectable ?? rowCanBeSelected(row)}
                   selected={card.selected ?? selectedIds.includes(row.id)}
                   onSelectChange={card.onSelectChange ?? (() => toggleOne(row.id))}
                   selectionLabel={card.selectionLabel || t('common.selectNamedRow', {

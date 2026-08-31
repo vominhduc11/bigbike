@@ -42,10 +42,8 @@ function messageResponse(overrides: Record<string, unknown> = {}) {
     products: [],
     crossSellProducts: [],
     salesStage: "BROWSING",
-    handoffRecommended: false,
     actions: [],
     contacts: CONTACTS,
-    channelState: "AI_ACTIVE",
     countedTurns: 1,
     turnLimit: 40,
     turnsRemaining: 39,
@@ -56,11 +54,9 @@ function messageResponse(overrides: Record<string, unknown> = {}) {
 async function stubAvailability(page: Page) {
   await page.route("**/api/v1/chat/availability?lang=vi", (route) => fulfillJson(route, {
     mode: "AI",
-    greeting: "Anh/chị đang tìm loại sản phẩm nào?",
-    quickPrompts: ["Tìm theo nhu cầu", "Lọc theo ngân sách", "So sánh sản phẩm", "Kiểm tra còn hàng"],
     maxTurns: 40,
     contacts: CONTACTS,
-    images: { enabled: false },
+    images: { enabled: true, maxBytes: 8 * 1024 * 1024, maxPerTurn: 1, maxPerConversation: 3, dailyLimit: 20 },
   }));
 }
 
@@ -110,31 +106,26 @@ test("consults products through the assistant", async ({ page }) => {
 
   await page.goto("/", { waitUntil: "load" });
   await openBigBike(page);
-  await composer(page).getByRole("button", { name: "Tìm theo nhu cầu" }).click();
+  await sendMessage(page, "Tìm theo nhu cầu");
   await expect(conversation(page).getByText("Em có một mẫu phù hợp.")).toBeVisible();
   await expect(conversation(page).getByText("Mũ E2E")).toBeVisible();
 });
 
-test("offers staff handoff when the single model is unavailable", async ({ page }) => {
+test("offers direct shop contacts when the assistant cannot answer", async ({ page }) => {
   await stubAvailability(page);
   await page.route("**/api/v1/chat/messages/stream", (route) => fulfillChatStream(route, messageResponse({
-    answer: "Xin lỗi, Trợ lý BigBike đang bận. Anh/chị có thể gặp nhân viên hỗ trợ.",
+    mode: "CONTACT",
+    answer: "Anh/chị vui lòng liên hệ shop qua các kênh bên dưới.",
     resultKind: "CONTACT",
-    actions: [{ type: "CONTACT_STAFF" }],
+    actions: [],
   })));
-  await page.route("**/api/v1/chat/handoffs", (route) => fulfillJson(route, {
-    conversationId: CONVERSATION_ID,
-    handoffId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-    status: "WAITING",
-    channelState: "WAITING_FOR_STAFF",
-    withinBusinessHours: true,
-  }));
 
   await page.goto("/", { waitUntil: "load" });
   await openBigBike(page);
   await sendMessage(page, "Kiểm tra size M");
-  await conversation(page).getByRole("button", { name: "Gặp nhân viên" }).click();
+  await conversation(page).getByRole("button", { name: "Mở thẻ liên hệ" }).click();
   await expect(page.locator("[data-bigbike-contact-inline]")).toBeVisible();
+  await expect(page.getByText(/không phải nhân viên/i)).toBeVisible();
 });
 
 test("keeps product-page context for consultation", async ({ page }) => {

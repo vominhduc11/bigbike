@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -82,6 +83,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     List<ProductEntity> findByPublishStatus(PublishStatus publishStatus);
 
     List<ProductEntity> findByPublishStatusAndDiscontinuedFalse(PublishStatus publishStatus);
+
+    @EntityGraph(attributePaths = "variants")
+    @Query("""
+            SELECT DISTINCT p FROM ProductEntity p
+            WHERE p.publishStatus = :publishStatus
+              AND p.discontinued = false
+            ORDER BY p.name ASC
+            """)
+    List<ProductEntity> findOutOfStockDigestCandidates(
+            @Param("publishStatus") PublishStatus publishStatus);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM ProductEntity p WHERE p.id = :id")

@@ -9,7 +9,7 @@ import {
 } from "./chat-persistence";
 
 const snapshot: ChatPersistenceSnapshot = {
-  version: 4,
+  version: 5,
   expiresAt: Date.now() + CHAT_STORAGE_TTL_MS,
   locale: "vi",
   conversationId: "conversation-persistence",
@@ -81,12 +81,12 @@ describe("chat persistence", () => {
     expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
 
-  it("removes a version-three snapshot from the retired flow", () => {
+  it("removes a pre-AI-only snapshot from the retired flow", () => {
     window.localStorage.setItem(
       CHAT_STORAGE_KEY,
       JSON.stringify({
         ...snapshot,
-        version: 2,
+        version: 4,
       }),
     );
 

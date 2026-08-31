@@ -11,7 +11,10 @@ import { hasCustomerSessionHint, useAuth } from "@/lib/auth/auth-store";
 import { useCart } from "@/lib/cart-context";
 import { useAddresses, useCartQuery, useProfile } from "@/lib/query/hooks";
 import type { PriceChange } from "@/lib/contracts/commerce";
-import { createCheckoutAddressSchema, type CheckoutAddressFormValues } from "@/lib/schemas/checkout";
+import {
+  createCheckoutAddressSchema,
+  type CheckoutAddressFormValues,
+} from "@/lib/schemas/checkout";
 import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
 import { toOrderConfirmPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
@@ -61,7 +64,10 @@ function readCheckoutDraft(): CheckoutDraft | null {
 function saveCheckoutDraft(draft: CheckoutDraft): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify({ ...draft, savedAt: Date.now() }));
+    window.localStorage.setItem(
+      CHECKOUT_DRAFT_KEY,
+      JSON.stringify({ ...draft, savedAt: Date.now() }),
+    );
   } catch {
     // Trình duyệt có thể chặn storage; form vẫn hoạt động bình thường.
   }
@@ -69,7 +75,11 @@ function saveCheckoutDraft(draft: CheckoutDraft): void {
 
 function clearCheckoutDraft(): void {
   if (typeof window === "undefined") return;
-  try { window.localStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch { /* storage may be blocked */ }
+  try {
+    window.localStorage.removeItem(CHECKOUT_DRAFT_KEY);
+  } catch {
+    /* storage may be blocked */
+  }
 }
 
 /**
@@ -89,7 +99,10 @@ export function useCheckout() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [priceChanges, setPriceChanges] = useState<PriceChange[]>([]);
-  const [pendingOrderNav, setPendingOrderNav] = useState<{ orderNumber: string; orderKey: string } | null>(null);
+  const [pendingOrderNav, setPendingOrderNav] = useState<{
+    orderNumber: string;
+    orderKey: string;
+  } | null>(null);
   const gtmCartId = useRef<string | null>(null);
   const [customerNote, setCustomerNote] = useState("");
   const [shipToDifferent, setShipToDifferent] = useState(false);
@@ -106,11 +119,15 @@ export function useCheckout() {
   const [vnShip, setVnShip] = useState<VnAddress>(EMPTY_VN_ADDRESS);
 
   function onVnChange(field: "province" | "ward", value: string) {
-    setVnAddress((prev) => (field === "province" ? { province: value, ward: "" } : { ...prev, ward: value }));
+    setVnAddress((prev) =>
+      field === "province" ? { province: value, ward: "" } : { ...prev, ward: value },
+    );
   }
 
   function onVnChangeShip(field: "province" | "ward", value: string) {
-    setVnShip((prev) => (field === "province" ? { province: value, ward: "" } : { ...prev, ward: value }));
+    setVnShip((prev) =>
+      field === "province" ? { province: value, ward: "" } : { ...prev, ward: value },
+    );
   }
 
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
@@ -264,14 +281,24 @@ export function useCheckout() {
     [formShippingAddress, vnShip],
   );
 
-  const checkoutDraft = useMemo<CheckoutDraft>(() => ({
-    cartId: cart?.id ?? null,
-    billingAddress: resolvedAddress,
-    shippingAddress: resolvedShippingAddress,
-    customerNote,
-    shipToDifferent,
-    paymentMethod,
-  }), [cart?.id, customerNote, paymentMethod, resolvedAddress, resolvedShippingAddress, shipToDifferent]);
+  const checkoutDraft = useMemo<CheckoutDraft>(
+    () => ({
+      cartId: cart?.id ?? null,
+      billingAddress: resolvedAddress,
+      shippingAddress: resolvedShippingAddress,
+      customerNote,
+      shipToDifferent,
+      paymentMethod,
+    }),
+    [
+      cart?.id,
+      customerNote,
+      paymentMethod,
+      resolvedAddress,
+      resolvedShippingAddress,
+      shipToDifferent,
+    ],
+  );
 
   useEffect(() => {
     if (!cart || !draftReady || !cart.items.length) return undefined;
@@ -345,6 +372,7 @@ export function useCheckout() {
           shippingAddress: shipToDifferent ? shipResolvedAddress : undefined,
           paymentMethod,
           customerNote: customerNote.trim() || undefined,
+          locale,
         },
         idempotencyKey.current,
       );
@@ -372,7 +400,9 @@ export function useCheckout() {
 
   function confirmPendingOrder() {
     if (pendingOrderNav) {
-      router.push(toOrderConfirmPath(pendingOrderNav.orderNumber, pendingOrderNav.orderKey, locale));
+      router.push(
+        toOrderConfirmPath(pendingOrderNav.orderNumber, pendingOrderNav.orderKey, locale),
+      );
     }
   }
 

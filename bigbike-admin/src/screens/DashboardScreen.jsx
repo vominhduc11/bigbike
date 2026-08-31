@@ -19,6 +19,7 @@ import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { DetailSection } from '../components/DetailSection'
 import { Screen, ScreenHeader } from '../components/layout'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import { KpiCard } from '../components/KpiCard'
 import { AdminTable } from '../components/AdminTable'
@@ -320,7 +321,7 @@ export function DashboardScreen({ navigate }) {
       count: pendingOrdersCount,
       hint: t('dashboard.attention.pendingOrders.hint'),
       cta: t('dashboard.attention.viewAction'),
-      onClick: () => navigate('/admin/orders?orderStatus=PENDING'),
+      onClick: () => navigate('/admin/orders?orderScope=OPERATIONAL&orderStatus=PENDING'),
     },
   ]
     .filter(Boolean)
@@ -354,6 +355,12 @@ export function DashboardScreen({ navigate }) {
           </div>
         )}
       />
+
+      {data ? (
+        <Alert tone="info" size="sm" className="mb-4" role="status">
+          {t('dashboard.orderScopeDisclosure')}
+        </Alert>
+      ) : null}
 
       {state.status === 'error' && (
         <StatePanel
@@ -404,7 +411,7 @@ export function DashboardScreen({ navigate }) {
               tone="info"
               clickable
               ariaLabel={t('dashboard.kpi.todayOrdersAria')}
-              onClick={() => navigate('/admin/orders')}
+              onClick={() => navigate('/admin/orders?orderScope=ALL')}
               headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.todayScope')}</span>}
               footer={<TrendPill {...ordersTrend(data.kpi)} />}
               detail={t('dashboard.kpi.todayOrdersHint')}
@@ -416,7 +423,7 @@ export function DashboardScreen({ navigate }) {
               tone={(data.kpi?.pendingOrders ?? 0) > PENDING_WARN_THRESHOLD ? 'danger' : 'warning'}
               clickable
               ariaLabel={t('dashboard.kpi.pendingOrdersAria')}
-              onClick={() => navigate('/admin/orders?orderStatus=PENDING')}
+              onClick={() => navigate('/admin/orders?orderScope=OPERATIONAL&orderStatus=PENDING')}
               headerExtra={<span className="bb-badge bb-badge-muted ml-2">{t('dashboard.kpi.currentScope')}</span>}
               detail={t('dashboard.kpi.pendingOrdersHint')}
             />
@@ -482,7 +489,7 @@ export function DashboardScreen({ navigate }) {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate('/admin/orders')}
+                    onClick={() => navigate('/admin/orders?orderScope=OPERATIONAL')}
                   >
                     {t('dashboard.orderStatusChart.viewAll')}<ArrowRight size={14} aria-hidden="true" />
                   </Button>

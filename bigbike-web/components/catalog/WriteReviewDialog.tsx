@@ -22,11 +22,29 @@ export function WriteReviewDialog({ productId }: { productId: string }) {
   const t = useTranslations("Product.reviews");
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | undefined>();
 
   useEffect(() => {
-    const onOpen = () => setOpen(true);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const token = hashParams.get("write-review")?.trim();
+    let openFromEmailTimer: number | undefined;
+    if (token) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+      openFromEmailTimer = window.setTimeout(() => {
+        setInviteToken(token);
+        setOpen(true);
+      }, 0);
+    }
+
+    const onOpen = () => {
+      setInviteToken(undefined);
+      setOpen(true);
+    };
     window.addEventListener(WRITE_REVIEW_EVENT, onOpen);
-    return () => window.removeEventListener(WRITE_REVIEW_EVENT, onOpen);
+    return () => {
+      if (openFromEmailTimer !== undefined) window.clearTimeout(openFromEmailTimer);
+      window.removeEventListener(WRITE_REVIEW_EVENT, onOpen);
+    };
   }, []);
 
   return (
@@ -46,6 +64,7 @@ export function WriteReviewDialog({ productId }: { productId: string }) {
           <WriteReviewForm
             productId={productId}
             variant="dialog"
+            inviteToken={inviteToken}
             onSuccess={() => {
               void queryClient.invalidateQueries({
                 queryKey: ["product-reviews", productId],
