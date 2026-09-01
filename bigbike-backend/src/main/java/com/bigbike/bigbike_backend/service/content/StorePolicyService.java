@@ -4,10 +4,8 @@ import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.public_.dto.PublicStorePolicyResponse;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
-import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -16,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StorePolicyService {
 
@@ -27,32 +24,27 @@ public class StorePolicyService {
             .addProtocols("a", "href", "http", "https", "mailto", "tel");
 
     private final SiteSettingJpaRepository settingRepo;
+    private final FrozenStorePolicyContent frozenContent;
+
+    public StorePolicyService(
+            SiteSettingJpaRepository settingRepo,
+            FrozenStorePolicyContent frozenContent) {
+        this.settingRepo = settingRepo;
+        this.frozenContent = frozenContent;
+    }
 
     public PublicStorePolicyResponse get(String rawTopic, String rawLang) {
         PolicyKeys keys = PolicyKeys.fromPath(rawTopic);
         String lang = "en".equalsIgnoreCase(rawLang) ? "en" : "vi";
-        SiteSettingEntity title = required(keys.titleKey());
-        SiteSettingEntity body = required(keys.bodyKey());
-        String selectedTitle = pick(title, lang);
-        String selectedBody = pick(body, lang);
-        if (selectedTitle.isBlank() || selectedBody.isBlank()) {
-            throw new NotFoundException("Chính sách hiện chưa sẵn sàng.");
-        }
-        selectedBody = hydrateSharedContact(keys, selectedBody, lang);
-        Instant updatedAt = title.getUpdatedAt().isAfter(body.getUpdatedAt())
-                ? title.getUpdatedAt() : body.getUpdatedAt();
+        FrozenStorePolicyContent.PolicyDocument source = frozenContent.get(keys.path(), lang);
+        String selectedBody = hydrateSharedContact(keys, source.bodyHtml(), lang);
         return new PublicStorePolicyResponse(
-                keys.path(), selectedTitle,
-                Jsoup.clean(selectedBody, POLICY_HTML), updatedAt);
+                keys.path(), source.title(),
+                Jsoup.clean(selectedBody, POLICY_HTML), FrozenStorePolicyContent.FROZEN_AT);
     }
 
     public String plainText(String rawTopic, String lang) {
         return Jsoup.parse(get(rawTopic, lang).bodyHtml()).text().replaceAll("\\s+", " ").trim();
-    }
-
-    private SiteSettingEntity required(String key) {
-        return settingRepo.findBySettingKey(key)
-                .orElseThrow(() -> new NotFoundException("Chính sách hiện chưa sẵn sàng."));
     }
 
     private static String pick(SiteSettingEntity setting, String lang) {
@@ -62,7 +54,8 @@ public class StorePolicyService {
     }
 
     /**
-     * Policy terms are owner-managed, while public contact details remain shared site settings.
+     * Policy terms are frozen in backend resources, while public contact details remain shared
+     * site settings.
      * Hydrating those contact fields keeps one policy source without freezing a phone number,
      * address or opening time inside policy HTML.
      */
@@ -140,17 +133,23 @@ public class StorePolicyService {
                 cell.appendText(contactChannels(zalo, hotline, messenger, english) + (english
                         ? ". Describe the reason and send product photos or video."
                         : " — mô tả lý do và gửi ảnh hoặc video sản phẩm."));
-            } else if (!address.isBlank() && (text.startsWith("gửi hàng về bigbike")
-                    || text.startsWith("send the product to bigbike"))) {
+            } else if (text.startsWith("gửi hàng về bigbike")
+                    || text.startsWith("send the product to bigbike")) {
                 cell.empty();
                 cell.appendElement("strong").text(english
                         ? "Send the product to BigBike"
                         : "Gửi hàng về BigBike");
                 cell.appendElement("br");
-                cell.appendText((english
-                        ? "Pack it securely and clearly write your name and phone number. Send it to "
-                        : "Đóng gói kỹ, ghi rõ tên và số điện thoại. Gửi về ")
-                        + address + ".");
+                if (address.isBlank()) {
+                    cell.appendText(english
+                            ? "Follow BigBike's shipping instructions."
+                            : "Gửi theo hướng dẫn của BigBike.");
+                } else {
+                    cell.appendText((english
+                            ? "Pack it securely and clearly write your name and phone number. Send it to "
+                            : "Đóng gói kỹ, ghi rõ tên và số điện thoại. Gửi về ")
+                            + address + ".");
+                }
             }
         }
 
@@ -222,15 +221,12 @@ public class StorePolicyService {
         row.appendElement("td").text(value);
     }
 
-    private record PolicyKeys(String path, String titleKey, String bodyKey) {
+    private record PolicyKeys(String path) {
         static PolicyKeys fromPath(String raw) {
             String topic = raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
             return switch (topic) {
-                case "warranty" -> new PolicyKeys(
-                        "warranty", "policy_warranty_title", "policy_warranty_body_html");
-                case "return-exchange" -> new PolicyKeys(
-                        "return-exchange", "policy_return_exchange_title",
-                        "policy_return_exchange_body_html");
+                case "warranty" -> new PolicyKeys("warranty");
+                case "return-exchange" -> new PolicyKeys("return-exchange");
                 default -> throw new NotFoundException("Không tìm thấy chính sách.");
             };
         }

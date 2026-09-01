@@ -15,6 +15,8 @@ export type AuthFieldProps = {
   autoComplete?: string;
   placeholder?: string;
   hint?: ReactNode;
+  status?: { message: ReactNode; tone: "success" | "error" };
+  labelAction?: ReactNode;
   passwordToggleLabels?: { show: string; hide: string };
   /** Class phụ cho wrapper của trường. */
   groupClassName?: string;
@@ -35,6 +37,8 @@ export function AuthField({
   autoComplete,
   placeholder,
   hint,
+  status,
+  labelAction,
   passwordToggleLabels,
   groupClassName,
   compact = false,
@@ -42,29 +46,31 @@ export function AuthField({
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const hintId = useId();
   const errorId = useId();
+  const statusId = useId();
   const isPassword = type === "password";
-  const describedBy = [hint ? hintId : undefined, error ? errorId : undefined]
+  const describedBy = [
+    hint ? hintId : undefined,
+    status ? statusId : undefined,
+    error ? errorId : undefined,
+  ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className={cn(compact ? "mb-1 md:mb-5 lg:mb-3" : "mb-5", groupClassName)}>
-      <Label
-        htmlFor={id}
-        className={cn(
-          "mb-2 block text-a5-meta text-foreground lg:mb-1",
-          compact && "sr-only md:not-sr-only",
-        )}
-      >
-        {label}
-        <span aria-hidden="true" className="text-brand">
-          *
-        </span>
-      </Label>
+    <div className={cn(compact ? "mb-4 md:mb-5" : "mb-5", groupClassName)}>
+      <div className="mb-2 flex min-h-11 items-center justify-between gap-3">
+        <Label htmlFor={id} className="text-a5-meta text-foreground">
+          {label}
+          <span aria-hidden="true" className="ml-1 text-brand">
+            *
+          </span>
+        </Label>
+        {labelAction}
+      </div>
       <div className="relative">
         <Input
           className={cn(
-            compact ? "h-11 px-4 md:h-13 md:px-5 lg:h-11" : "h-13 px-5",
+            compact ? "min-h-11 px-4 md:min-h-13 md:px-5" : "min-h-13 px-5",
             "w-full text-a4-content",
             isPassword && "pr-13",
           )}
@@ -97,6 +103,19 @@ export function AuthField({
       {hint ? (
         <p id={hintId} className="mt-2 text-a5-meta leading-body text-muted-foreground">
           {hint}
+        </p>
+      ) : null}
+      {status ? (
+        <p
+          id={statusId}
+          role="status"
+          aria-live="polite"
+          className={cn(
+            "mt-2 text-a5-meta leading-body",
+            status.tone === "success" ? "text-state-success-text" : "text-destructive",
+          )}
+        >
+          {status.message}
         </p>
       ) : null}
       {error ? (

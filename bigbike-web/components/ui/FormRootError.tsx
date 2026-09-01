@@ -1,3 +1,6 @@
+import { CircleAlert } from "lucide-react";
+import { FormNotice } from "@/components/ui/FormNotice";
+
 type FormRootErrorProps = {
   message?: string;
 };
@@ -9,8 +12,16 @@ type FormRootErrorProps = {
 export function FormRootError({ message }: FormRootErrorProps) {
   if (!message) return null;
   return (
-    <p role="alert" aria-live="assertive" className="mb-5 text-a5-meta font-medium text-destructive">
-      {message}
-    </p>
+    <FormNotice
+      data-form-root-error
+      tone="danger"
+      className="mb-5 flex items-start gap-3"
+      aria-live="assertive"
+    >
+      <CircleAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+      <p role="alert" className="font-medium leading-body">
+        {message}
+      </p>
+    </FormNotice>
   );
 }

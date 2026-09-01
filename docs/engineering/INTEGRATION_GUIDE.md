@@ -6,7 +6,7 @@
 |---|---|---|---|
 | PostgreSQL | Primary persistence store for backend and CI | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml`, `.github/workflows/ci.yml` |
 | MinIO | Media/object storage | `CONFIRMED_FROM_CODE` + `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml`, `AdminMediaService.java` |
-| SMTP mail | Transactional email path exists when env is configured. All mail goes through the shared `EmailDispatchService`, rendering Thymeleaf templates under `templates/email/`. Templates include customer mail, **admin `admin-invite`**, the bilingual daily out-of-stock digest, and the bilingual post-purchase review invitation. Review invitations use the same ordinary Gmail mailbox but are paced separately: one attempt per 10-minute tick during 09:00–20:50 Vietnam time and a configurable default ceiling of 20/day; they never retry. Transactional calls remain immediate and do not consume this marketing quota. A successful SMTP call means only that the provider accepted the message for processing, not that the recipient received it. | `OWNER_CONFIRMED_2026-08-31` | `EmailDispatchService.java`, invitation/digest email services and templates |
+| SMTP mail | Transactional email path exists when env is configured. All mail goes through the shared `EmailDispatchService`, rendering Thymeleaf templates under `templates/email/`. Templates include customer mail, **admin `admin-invite`**, the bilingual daily out-of-stock digest, and the bilingual post-purchase review invitation. Review invitations use the same ordinary Gmail mailbox but are paced separately: one attempt per 10-minute tick during 09:00–20:50 Vietnam time and a fixed ceiling of 20/day. They never retry. Transactional calls remain immediate and do not consume this review-invitation quota. A successful SMTP call means only that the provider accepted the message for processing, not that the recipient received it. | `OWNER_CONFIRMED_2026-09-01` | `EmailDispatchService.java`, invitation/digest email services and templates |
 | Web revalidation | Backend can call Next.js revalidation endpoint with shared secret | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml` |
 | WebSocket/STOMP | Admin order, inventory, review, customer and edit-presence channels are live. The inventory topic also carries a lightweight `INVENTORY_OUT_OF_STOCK_DIGEST_READY` refresh event after the persistent morning snapshot commits; it does not duplicate the long list in the frame. Each admin also subscribes to `/user/queue/admin/access`; all topic deliveries recheck current access server-side. | `OWNER_CONFIRMED_2026-08-31` | `WebSocketConfig.java`, `AdminInventoryWsService.java`, `AdminAccessChangeService.java`, `adminWebSocket.js` |
 | Customer order tracking | Customer order detail and guest confirmation pages poll their existing authenticated/secret-link order-read endpoint every 15 seconds while visible, refetch on focus, and stop at `COMPLETED`/`CANCELLED`; no customer WebSocket channel | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web/lib/query/hooks.ts`, `bigbike-web/app/don-hang/xac-nhan/OrderConfirmClient.tsx` |
@@ -23,6 +23,12 @@ silently queue internal alerts to nowhere. The sender address and customer-email
 separate and are unchanged by this setting.
 
 ### Post-purchase review invitation mail
+
+The workflow is automatic after the first scheduler callback following deployment. It waits a
+fixed seven days after order completion and reserves at most 20 attempts per Vietnam calendar
+day. `BIGBIKE_REVIEW_INVITATION_ENABLED` is the only emergency switch and defaults to `true`;
+turning it off closes the active campaign and permanently skips pending deliveries. Turning it
+back on starts a new campaign without backfill. There is no admin settings or reporting surface.
 
 No new SMTP account, broker or scheduling infrastructure is introduced. The 04:30 Vietnam-time queue job and the 10-minute daytime dispatcher reuse Spring scheduling and the shared mail renderer. The dispatcher atomically reserves one row in the Vietnam-date quota ledger before handing an email to SMTP. `FAILED` and stale `SENDING → UNCERTAIN` are final, not retryable; this favors avoiding duplicate/bulk mail over maximizing delivery. Transactional order/account/review-approved mail does not enter this queue and therefore keeps priority.
 

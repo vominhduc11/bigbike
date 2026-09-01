@@ -117,6 +117,18 @@ class ReviewInvitationStoreTest {
     }
 
     @Test
+    void disabledWorkflowDoesNotQueueOrClaimAndPermanentlySkipsPendingMail() {
+        when(settings.get()).thenReturn(new ReviewInvitationSettings.Snapshot(false, 7, 20));
+
+        assertThat(store.queueEligibleOrders(NOW)).isZero();
+        assertThat(store.claimNext(NOW, LocalDate.of(2026, 9, 8))).isEmpty();
+
+        verify(campaignRepository, never()).findActiveForUpdate();
+        verify(orderRepository, never()).findReviewInvitationCandidates(any(), any(Pageable.class));
+        verify(deliveryRepository).skipAllPending("FEATURE_DISABLED", NOW);
+    }
+
+    @Test
     void cancelledAndMissingEmailOrdersAreIgnoredQuietly() {
         OrderEntity cancelled = order("CANCELLED", "cancelled@example.com", ACTIVATED_AT.plusSeconds(1));
         OrderEntity missingEmail = order("COMPLETED", "  ", ACTIVATED_AT.plusSeconds(2));

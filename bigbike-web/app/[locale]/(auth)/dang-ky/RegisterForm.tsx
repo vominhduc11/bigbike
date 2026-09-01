@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "@/i18n/StorefrontLink";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerCustomer } from "@/lib/api/client-api";
 import { markCustomerAuthenticated, refreshAuth } from "@/lib/auth/auth-store";
@@ -19,8 +19,17 @@ import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormRootError } from "@/components/ui/FormRootError";
-import { Label } from "@/components/ui/label";
 import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
+
+type RegisterField = keyof RegisterFormValues;
+const REGISTER_FIELDS: RegisterField[] = [
+  "fullName",
+  "email",
+  "phone",
+  "password",
+  "confirm",
+  "privacyConsent",
+];
 
 export function RegisterForm({
   returnTo,
@@ -39,13 +48,15 @@ export function RegisterForm({
   const router = useRouter();
   const [registered, setRegistered] = useState(false);
   const [confirmedEmail, setConfirmedEmail] = useState("");
+  const [submittedInvalidField, setSubmittedInvalidField] = useState<RegisterField | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
     trigger,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, touchedFields },
+    clearErrors,
     setError,
     setFocus,
   } = useForm<RegisterFormValues>({
@@ -62,6 +73,7 @@ export function RegisterForm({
     reValidateMode: "onChange",
   });
   const password = useWatch({ control, name: "password" }) ?? "";
+  const confirm = useWatch({ control, name: "confirm" }) ?? "";
   const privacyConsent = useWatch({ control, name: "privacyConsent" }) ?? false;
 
   useEffect(() => {
@@ -70,7 +82,18 @@ export function RegisterForm({
     }
   }, [setFocus]);
 
+  function showFirstInvalidField(invalid: FieldErrors<RegisterFormValues>) {
+    const field = REGISTER_FIELDS.find((name) => invalid[name]);
+    if (!field) return;
+
+    setSubmittedInvalidField(field);
+    setError("root", { message: t("formIncomplete") });
+    window.requestAnimationFrame(() => setFocus(field));
+  }
+
   async function onSubmit(values: RegisterFormValues) {
+    clearErrors("root");
+    setSubmittedInvalidField(null);
     try {
       await registerCustomer(
         values.email,
@@ -91,8 +114,19 @@ export function RegisterForm({
   }
 
   function requirePrivacyAgreement() {
+    setSubmittedInvalidField("privacyConsent");
     void trigger("privacyConsent", { shouldFocus: true });
   }
+
+  const visibleError = (field: RegisterField) =>
+    touchedFields[field] || submittedInvalidField === field ? errors[field] : undefined;
+  const confirmStatus =
+    confirm.length > 0
+      ? {
+          message: confirm === password ? t("passwordMatch") : t("passwordNotMatch"),
+          tone: confirm === password ? ("success" as const) : ("error" as const),
+        }
+      : undefined;
 
   if (registered) {
     return (
@@ -120,16 +154,16 @@ export function RegisterForm({
         message={errors.root?.message ?? (socialErrorKey ? tSocial(socialErrorKey) : undefined)}
       />
 
-      <form id="register-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="grid grid-cols-2 gap-x-3 md:gap-x-6">
-          <div className="col-span-2">
+      <form id="register-form" onSubmit={handleSubmit(onSubmit, showFirstInvalidField)} noValidate>
+        <div className="grid gap-x-6 md:grid-cols-2">
+          <div className="md:col-span-2">
             <AuthField
               id="reg-fullName"
               label={t("fullNameLabel")}
               autoComplete="name"
               placeholder={t("fullNamePlaceholder")}
               registration={register("fullName")}
-              error={errors.fullName}
+              error={visibleError("fullName")}
               compact
             />
           </div>
@@ -140,7 +174,7 @@ export function RegisterForm({
             autoComplete="email"
             placeholder={t("emailPlaceholder")}
             registration={register("email")}
-            error={errors.email}
+            error={visibleError("email")}
             compact
           />
           <AuthField
@@ -150,36 +184,26 @@ export function RegisterForm({
             autoComplete="tel"
             placeholder={t("phonePlaceholder")}
             registration={register("phone")}
-            error={errors.phone}
+            error={visibleError("phone")}
             compact
           />
-          <AuthField
-            id="reg-password"
-            type="password"
-            label={t("passwordLabel")}
-            autoComplete="new-password"
-            placeholder={t("passwordPlaceholder")}
-            hint={tPassword("ruleMin8")}
-            passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
-            registration={register("password")}
-            error={errors.password}
-            compact
-          />
-          <AuthField
-            id="reg-confirm"
-            type="password"
-            label={t("confirmLabel")}
-            autoComplete="new-password"
-            placeholder={t("confirmPlaceholder")}
-            passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
-            registration={register("confirm")}
-            error={errors.confirm}
-            compact
-          />
-          <div className="col-span-2">
+          <div>
+            <AuthField
+              id="reg-password"
+              type="password"
+              label={t("passwordLabel")}
+              autoComplete="new-password"
+              placeholder={t("passwordPlaceholder")}
+              passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
+              registration={register("password")}
+              error={visibleError("password")}
+              groupClassName="mb-2"
+              compact
+            />
             <PasswordStrengthMeter
               password={password}
               label={tPassword("strengthLabel")}
+              requirementLabel={tPassword("ruleMin8")}
               labels={{
                 empty: tPassword("strengthEmpty"),
                 weak: tPassword("strengthWeak"),
@@ -190,93 +214,91 @@ export function RegisterForm({
               compact
             />
           </div>
-          <div className="col-span-2 mb-1 md:mb-5 lg:mb-3">
+          <AuthField
+            id="reg-confirm"
+            type="password"
+            label={t("confirmLabel")}
+            autoComplete="new-password"
+            placeholder={t("confirmPlaceholder")}
+            passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
+            registration={register("confirm")}
+            error={visibleError("confirm")}
+            status={confirmStatus}
+            compact
+          />
+          <div className="mb-5 md:col-span-2">
             <Controller
               name="privacyConsent"
               control={control}
-              render={({ field }) => (
-                <div>
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="reg-privacy-consent"
-                      touchTarget
-                      checked={field.value}
-                      onCheckedChange={(checked) => field.onChange(checked === true)}
-                      onBlur={field.onBlur}
-                      ref={field.ref}
-                      aria-invalid={Boolean(errors.privacyConsent)}
-                      aria-labelledby="reg-privacy-consent-label"
-                      aria-describedby={
-                        errors.privacyConsent ? "reg-privacy-consent-error" : undefined
-                      }
-                    />
-                    <div
-                      id="reg-privacy-consent-label"
-                      className="min-h-11 pt-2 text-a5-meta leading-body"
-                    >
-                      <Label htmlFor="reg-privacy-consent" className="cursor-pointer">
-                        {t("privacyConsentPrefix")}{" "}
-                      </Label>
-                      <Link
-                        href={privacyPolicyHref}
-                        className="font-semibold text-blue underline hover:no-underline"
-                        onPointerDown={(event) => {
-                          if (
-                            event.button === 0 &&
-                            !event.metaKey &&
-                            !event.ctrlKey &&
-                            !event.shiftKey &&
-                            !event.altKey
-                          ) {
-                            event.preventDefault();
-                            router.push(privacyPolicyHref);
-                          }
+              render={({ field }) => {
+                const fieldIssue = visibleError("privacyConsent");
+                return (
+                  <div>
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="reg-privacy-consent"
+                        touchTarget
+                        className="-mt-1"
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
+                        aria-invalid={Boolean(fieldIssue)}
+                        aria-labelledby="reg-privacy-consent-label"
+                        aria-describedby={fieldIssue ? "reg-privacy-consent-error" : undefined}
+                      />
+                      <div
+                        id="reg-privacy-consent-label"
+                        className="min-h-11 cursor-pointer select-none text-a5-meta leading-body"
+                        onClick={(event) => {
+                          if ((event.target as HTMLElement).closest("a, [role='checkbox']")) return;
+                          field.onChange(!field.value);
                         }}
                       >
-                        {t("privacyPolicyLink")}
-                      </Link>
-                      {t("privacyConsentSuffix")}
+                        {t("privacyConsentPrefix")}{" "}
+                        <Link
+                          href={privacyPolicyHref}
+                          className="font-semibold text-blue underline hover:no-underline"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {t("privacyPolicyLink")}
+                        </Link>
+                        {t("privacyConsentSuffix")}
+                      </div>
                     </div>
+                    {fieldIssue ? (
+                      <p
+                        id="reg-privacy-consent-error"
+                        role="alert"
+                        className="mt-2 text-a5-meta text-destructive"
+                      >
+                        {fieldIssue.message}
+                      </p>
+                    ) : null}
                   </div>
-                  {errors.privacyConsent ? (
-                    <p
-                      id="reg-privacy-consent-error"
-                      role="alert"
-                      className="mt-2 text-a5-meta text-destructive"
-                    >
-                      {errors.privacyConsent.message}
-                    </p>
-                  ) : null}
-                </div>
-              )}
+                );
+              }}
             />
           </div>
         </div>
 
-        <Button type="submit" size="auth" disabled={isSubmitting} className="hidden md:inline-flex">
-          {isSubmitting ? t("submitting") : t("submit")}
-        </Button>
-        <Button
-          type="submit"
-          size="auth"
-          disabled={isSubmitting}
-          className="mt-2 min-h-11 w-full md:hidden"
-        >
+        <Button type="submit" size="auth" disabled={isSubmitting} className="min-h-11 md:min-h-13">
           {isSubmitting ? t("submitting") : t("submit")}
         </Button>
       </form>
 
-      <Button
-        asChild
-        variant="secondary"
-        size="auth"
-        className="mt-2 min-h-11 w-full md:mt-3 md:min-h-13"
-      >
-        <Link href={toLoginPath(undefined, locale)}>{t("loginCta")}</Link>
-      </Button>
+      <p className="mt-4 text-center text-a5-meta text-muted-foreground">
+        {t("hasAccountPrompt")}{" "}
+        <Link
+          href={toLoginPath(undefined, locale)}
+          className="font-medium text-blue underline hover:no-underline"
+        >
+          {t("loginCta")}
+        </Link>
+      </p>
 
       <div
-        className="my-3 flex items-center gap-3 md:my-6 lg:my-3"
+        className="my-5 flex items-center gap-3 md:my-6"
         role="separator"
         aria-label={tSocial("divider")}
       >

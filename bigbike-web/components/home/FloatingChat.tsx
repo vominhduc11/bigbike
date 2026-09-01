@@ -20,7 +20,6 @@ import {
   ImagePlus,
   Loader2,
   MessageCircle,
-  Minus,
   Phone,
   RefreshCw,
   Send,
@@ -88,7 +87,7 @@ type FloatingChatProps = {
   messengerDisplay?: string;
 };
 
-type PanelState = "closed" | "minimized" | "expanded";
+type PanelState = "closed" | "expanded";
 type AvailabilityState = "idle" | "loading" | "ready" | "error";
 type PromptIntent = "PRODUCT_FINDING" | "PRODUCT_ACTION" | "UNKNOWN";
 
@@ -259,13 +258,12 @@ function AssistantAnswer({ message }: { message: ChatMessage }) {
   );
 }
 
-type BigBikeAvatarSize = "launcher" | "header" | "message" | "minimized";
+type BigBikeAvatarSize = "launcher" | "header" | "message";
 
 const BIGBIKE_AVATAR_SIZES: Record<BigBikeAvatarSize, { className: string }> = {
   launcher: { className: "size-14 md:size-16" },
   header: { className: "size-11" },
   message: { className: "size-9" },
-  minimized: { className: "size-8" },
 };
 
 function BigBikeAvatar({ size }: { size: BigBikeAvatarSize }) {
@@ -442,12 +440,10 @@ export function FloatingChat({
   const [imageError, setImageError] = useState("");
 
   const fabLauncherRef = useRef<HTMLButtonElement>(null);
-  const minimizedLauncherRef = useRef<HTMLButtonElement>(null);
   const launcherContainerRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const closeTargetRef = useRef<Exclude<PanelState, "expanded">>("closed");
   const availabilityBusyRef = useRef(false);
   const availabilityLocaleRef = useRef<string | undefined>(undefined);
   const mountedRef = useRef(true);
@@ -807,37 +803,23 @@ export function FloatingChat({
 
   function focusLauncherSoon() {
     requestAnimationFrame(() => {
-      const isDesktop =
-        typeof window.matchMedia === "function" && window.matchMedia("(min-width: 768px)").matches;
-      const target = isDesktop
-        ? minimizedLauncherRef.current || fabLauncherRef.current
-        : fabLauncherRef.current;
-      target?.focus();
+      fabLauncherRef.current?.focus();
     });
   }
 
   function openPanel() {
-    closeTargetRef.current = "closed";
     setPanelState("expanded");
     setHasInteracted(true);
     if (availabilityLocaleRef.current !== activeLocale) void requestAvailability();
   }
 
-  function closePanel(target: Exclude<PanelState, "expanded">) {
-    closeTargetRef.current = target;
-    setPanelState(target);
-  }
-
-  function closeMinimizedBar() {
+  function closePanel() {
     setPanelState("closed");
-    focusLauncherSoon();
   }
 
   function handleDialogOpenChange(nextOpen: boolean) {
     if (nextOpen) return;
-    const target = closeTargetRef.current;
-    closeTargetRef.current = "closed";
-    setPanelState(target);
+    setPanelState("closed");
   }
 
   function onConversationScroll(event: UIEvent<HTMLDivElement>) {
@@ -1244,14 +1226,14 @@ export function FloatingChat({
   const statusLabel = serviceMode === "CONTACT" ? t("contactStatus") : t("aiStatus");
   const composerLocked = sending || !visitorToken || serviceMode !== "AI";
 
-  function renderFab(mobileOnly = false, includeTriggerId = true) {
-    const tooltipId = mobileOnly ? "bigbike-fab-tooltip-mobile" : "bigbike-fab-tooltip";
+  function renderFab() {
+    const tooltipId = "bigbike-fab-tooltip";
     return (
       <div
-        ref={includeTriggerId ? registerLauncherContainer : undefined}
-        id={includeTriggerId ? "bb-floating-chat-trigger" : undefined}
+        ref={registerLauncherContainer}
+        id="bb-floating-chat-trigger"
         dir="ltr"
-        className={`group relative flex flex-col-reverse items-end ${mobileOnly ? "md:hidden" : ""}`}
+        className="group relative flex flex-col-reverse items-end"
       >
         <div
           id={tooltipId}
@@ -1265,7 +1247,7 @@ export function FloatingChat({
           type="button"
           size="icon"
           className="relative size-14 overflow-visible rounded-full! border-chat bg-chat p-0 text-primary-foreground shadow-none hover:border-chat hover:bg-chat focus-visible:outline-offset-4 md:size-16"
-          aria-label={panelState === "minimized" ? t("reopen") : t("open")}
+          aria-label={t("open")}
           aria-describedby={tooltipId}
           onClick={openPanel}
         >
@@ -1289,36 +1271,6 @@ export function FloatingChat({
   return (
     <>
       {panelState === "closed" ? renderFab() : null}
-      {panelState === "minimized" ? (
-        <div ref={registerLauncherContainer} id="bb-floating-chat-trigger" dir="ltr">
-          {renderFab(true, false)}
-          <div className="hidden h-13 w-72 items-stretch border border-chat bg-background md:flex">
-            <Button
-              ref={minimizedLauncherRef}
-              type="button"
-              variant="ghost"
-              className="min-h-13 min-w-0 flex-1 justify-start gap-3 px-3 py-0 hover:scale-100 hover:bg-cyan/10"
-              aria-label={t("reopen")}
-              onClick={openPanel}
-            >
-              <BigBikeAvatar size="minimized" />
-              <span className="truncate font-cta text-b4-action font-semibold uppercase tracking-wide text-foreground">
-                {t("minimizedLabel")}
-              </span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-13 min-h-13 shrink-0 border-l border-border px-0 hover:scale-100 hover:bg-secondary"
-              aria-label={t("close")}
-              onClick={closeMinimizedBar}
-            >
-              <X className="size-5" aria-hidden="true" />
-            </Button>
-          </div>
-        </div>
-      ) : null}
 
       <Dialog modal={false} open={panelState === "expanded"} onOpenChange={handleDialogOpenChange}>
         <DialogContent
@@ -1330,82 +1282,75 @@ export function FloatingChat({
           }}
           className="bb-floating-chat-panel left-0! right-0! top-0! bottom-0! flex h-dvh max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! flex-col overflow-hidden! rounded-none! border-0 bg-background p-0 max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100 [&>button]:hidden md:left-auto! md:right-[var(--bb-floating-action-right)]! md:top-auto! md:bottom-[var(--bb-floating-chat-bottom)]! md:h-[var(--bb-floating-chat-panel-height)]! md:max-h-[calc(100dvh-var(--bb-floating-chat-bottom))]! md:w-106! md:border md:shadow-[var(--bb-shadow-md)]"
         >
-          <DialogHeader className="shrink-0 border-x-0 border-t-0 border-b-4 border-chat bg-surface-dark px-3 pb-3 pt-[max(var(--bb-space-3),env(safe-area-inset-top))] text-primary-foreground md:pt-3">
+          <DialogHeader
+            data-bigbike-chat-header
+            className="shrink-0 gap-1 border-x-0 border-t-0 border-b-4 border-chat bg-surface-dark px-3 py-3 text-primary-foreground"
+          >
             <div className="flex min-w-0 items-center gap-2">
               <BigBikeAvatar size="header" />
-              <div className="min-w-0 flex-1">
-                <DialogTitle className="font-cta text-b4-action font-semibold uppercase tracking-wide text-primary-foreground">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                <DialogTitle className="font-cta text-b4-action font-semibold uppercase tracking-wide">
                   {t("bigbikeTitle")}
                 </DialogTitle>
-                <div className="mt-1 flex items-center gap-2">
+                <div className="flex items-center gap-2">
                   <span className="size-2 rounded-full! bg-chat" aria-hidden="true" />
-                  <span className="font-cta text-b5-label font-semibold uppercase tracking-wide text-primary-foreground">
+                  <span className="font-cta text-b5-label font-semibold uppercase tracking-wide">
                     {statusLabel}
                   </span>
                 </div>
-                <DialogDescription className="mt-1 font-body text-a5-meta leading-relaxed text-primary-foreground/85">
-                  {t("aiDisclosure")}
-                </DialogDescription>
               </div>
-              <div className="flex shrink-0 gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 min-h-11 border border-primary-foreground/60 p-0 text-primary-foreground hover:scale-100 hover:bg-primary-foreground/10"
-                  aria-label={t("deleteConversation")}
-                  title={t("deleteConversation")}
-                  onClick={() => {
-                    setConfirmDelete(true);
-                    setMemoryExpanded(true);
-                  }}
-                >
-                  <Trash2 className="size-5" aria-hidden="true" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 min-h-11 border border-primary-foreground/60 p-0 text-primary-foreground hover:scale-100 hover:bg-primary-foreground/10"
-                  aria-label={t("minimize")}
-                  onClick={() => closePanel("minimized")}
-                >
-                  <Minus className="size-5" aria-hidden="true" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 min-h-11 border border-primary-foreground/60 p-0 text-primary-foreground hover:scale-100 hover:bg-primary-foreground/10"
-                  aria-label={t("close")}
-                  onClick={() => closePanel("closed")}
-                >
-                  <X className="size-5" aria-hidden="true" />
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-11 min-h-11 shrink-0 border border-primary-foreground/60 p-0 text-primary-foreground hover:scale-100 hover:bg-primary-foreground/10"
+                aria-label={t("close")}
+                onClick={closePanel}
+              >
+                <X className="size-5" aria-hidden="true" />
+              </Button>
             </div>
+            <DialogDescription className="font-body text-a5-meta leading-relaxed opacity-80">
+              {t("aiDisclosure")}
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="shrink-0 border-b border-border bg-background">
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11 w-full justify-start gap-2 rounded-none px-4 py-2 text-left hover:scale-100"
-              aria-expanded={memoryExpanded}
-              aria-controls="bigbike-memory-details"
-              onClick={() => setMemoryExpanded((current) => !current)}
-            >
-              <History className="size-4 shrink-0 text-chat" aria-hidden="true" />
-              <span className="min-w-0 flex-1 truncate font-body text-a5-meta text-muted-foreground">
-                {memoryEnabled
-                  ? memorySummary || t("memoryDisclosure", { days: memoryDays })
-                  : t("memoryDisabledSummary")}
-              </span>
-              <ChevronDown
-                className={`size-4 shrink-0 transition-transform ${memoryExpanded ? "rotate-180" : ""}`}
-                aria-hidden="true"
-              />
-            </Button>
+          <div data-bigbike-memory-bar className="shrink-0 border-b border-border bg-background">
+            <div className="flex items-stretch">
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-11 min-w-0 flex-1 justify-start gap-2 rounded-none px-4 py-2 text-left hover:scale-100"
+                aria-expanded={memoryExpanded}
+                aria-controls="bigbike-memory-details"
+                onClick={() => setMemoryExpanded((current) => !current)}
+              >
+                <History className="size-4 shrink-0 text-chat" aria-hidden="true" />
+                <span className="min-w-0 flex-1 truncate font-body text-a5-meta text-muted-foreground">
+                  {memoryEnabled
+                    ? memorySummary || t("memoryDisclosure", { days: memoryDays })
+                    : t("memoryDisabledSummary")}
+                </span>
+                <ChevronDown
+                  className={`size-4 shrink-0 transition-transform ${memoryExpanded ? "rotate-180" : ""}`}
+                  aria-hidden="true"
+                />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-11 min-h-11 shrink-0 rounded-none border-l border-border p-0 hover:scale-100 hover:bg-secondary"
+                aria-label={t("deleteConversation")}
+                title={t("deleteConversation")}
+                onClick={() => {
+                  setConfirmDelete(true);
+                  setMemoryExpanded(true);
+                }}
+              >
+                <Trash2 className="size-4" aria-hidden="true" />
+              </Button>
+            </div>
             <div
               id="bigbike-memory-details"
               className="border-t border-border px-4 py-3"
@@ -1647,177 +1592,177 @@ export function FloatingChat({
                 ) : null}
               </div>
             </div>
+          </div>
 
-            <div
-              data-bigbike-composer
-              className="shrink-0 border-t border-border bg-background px-4 pt-4 pb-[max(var(--bb-space-4),env(safe-area-inset-bottom))] md:pb-4"
-            >
-              {contactNotice ? (
-                <p className="mb-3 border border-state-warning bg-state-warning-bg p-3 font-body text-a5-meta leading-relaxed text-foreground">
-                  {contactNotice}
-                </p>
-              ) : null}
+          <div
+            data-bigbike-composer
+            className="shrink-0 border-t border-border bg-background px-4 pt-4 pb-[max(var(--bb-space-4),env(safe-area-inset-bottom))] md:pb-4"
+          >
+            {contactNotice ? (
+              <p className="mb-3 border border-state-warning bg-state-warning-bg p-3 font-body text-a5-meta leading-relaxed text-foreground">
+                {contactNotice}
+              </p>
+            ) : null}
 
-              {retryAvailable ? (
-                <div className="mb-3 flex justify-end">
-                  <Button
-                    type="button"
-                    className="border-chat bg-chat text-primary-foreground hover:border-chat hover:bg-chat"
-                    onClick={() =>
-                      retryMessage
-                        ? void submitMessage(
-                            retryMessage.message,
-                            retryMessage.intent,
-                            retryMessage.requestId,
-                            retryMessage.clarificationSelection,
-                            undefined,
-                            retryMessage.image,
-                            retryMessage.localImageUrl,
-                          )
-                        : void requestAvailability(true)
-                    }
-                  >
-                    <RefreshCw className="size-4" aria-hidden="true" />
-                    {t("retry")}
-                  </Button>
-                </div>
-              ) : null}
-
-              {remainingTurns > 0 && remainingTurns <= 3 ? (
-                <p className="mb-3 border border-state-warning bg-state-warning-bg p-3 font-body text-a5-meta text-foreground">
-                  {t("remainingWarning", { count: remainingTurns })}
-                </p>
-              ) : null}
-
-              {pendingImage ? (
-                <div
-                  className="mb-3 flex items-start gap-3 border border-border bg-muted p-3"
-                  data-chat-pending-image
-                >
-                  <Image
-                    src={pendingImage.previewUrl}
-                    alt={t("selectedImageAlt")}
-                    width={80}
-                    height={80}
-                    unoptimized
-                    className="size-20 shrink-0 border border-border object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-body text-a5-meta font-semibold text-foreground">
-                      {pendingImage.file.name}
-                    </p>
-                    <p className="mt-1 font-body text-a5-meta text-muted-foreground">
-                      {t("selectedImageReady")}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-11 min-h-11 shrink-0 p-0"
-                    onClick={clearPendingImage}
-                    disabled={sending}
-                    aria-label={t("removeSelectedImage")}
-                  >
-                    <X className="size-4" aria-hidden="true" />
-                  </Button>
-                </div>
-              ) : null}
-
-              {imageError ? (
-                <p
-                  className="mb-3 border border-destructive bg-destructive/5 p-3 font-body text-a5-meta text-destructive"
-                  role="alert"
-                >
-                  {imageError}
-                </p>
-              ) : null}
-
-              {imageSettings.enabled ? (
-                <p
-                  className="mb-3 font-body text-a5-meta leading-relaxed text-muted-foreground"
-                  data-chat-image-disclosure
-                >
-                  {imageSettings.disclosure || t("imageDisclosure")}
-                </p>
-              ) : null}
-
-              <form onSubmit={handleSubmit} className="flex min-w-0 items-end gap-2">
-                {imageSettings.enabled ? (
-                  <>
-                    <input
-                      ref={imageInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="sr-only"
-                      onChange={handleImageSelection}
-                      disabled={composerLocked || Boolean(pendingImage)}
-                      aria-label={t("chooseImage")}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="size-12 min-h-12 shrink-0 p-0"
-                      onClick={() => imageInputRef.current?.click()}
-                      disabled={composerLocked || Boolean(pendingImage)}
-                      aria-label={t("chooseImage")}
-                      title={t("chooseImageHint", {
-                        maxMb: Math.max(1, Math.floor(imageSettings.maxBytes / (1024 * 1024))),
-                      })}
-                    >
-                      <ImagePlus className="size-5" aria-hidden="true" />
-                    </Button>
-                  </>
-                ) : null}
-                <Label htmlFor="bigbike-chat-message" className="sr-only">
-                  {t("messageLabel")}
-                </Label>
-                <Input
-                  ref={messageInputRef}
-                  id="bigbike-chat-message"
-                  className="min-w-0 flex-1"
-                  value={draft}
-                  maxLength={1000}
-                  disabled={composerLocked}
-                  placeholder={
-                    serviceMode === "CONTACT"
-                      ? t("messagePlaceholderLocked")
-                      : t("messagePlaceholder")
-                  }
-                  onChange={(event) => setDraft(event.target.value)}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="size-12 min-h-12 shrink-0 p-0"
-                  disabled={(!draft.trim() && !pendingImage) || composerLocked}
-                  aria-label={t("send")}
-                >
-                  {sending ? (
-                    <Loader2 className="size-5 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <Send className="size-5" aria-hidden="true" />
-                  )}
-                </Button>
+            {retryAvailable ? (
+              <div className="mb-3 flex justify-end">
                 <Button
                   type="button"
-                  variant="outline"
-                  size="icon"
-                  className="size-12 min-h-12 shrink-0 p-0"
-                  aria-label={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
-                  title={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
-                  aria-expanded={contactOpen}
-                  aria-controls="bigbike-contact-inline"
-                  onClick={toggleContact}
+                  className="border-chat bg-chat text-primary-foreground hover:border-chat hover:bg-chat"
+                  onClick={() =>
+                    retryMessage
+                      ? void submitMessage(
+                          retryMessage.message,
+                          retryMessage.intent,
+                          retryMessage.requestId,
+                          retryMessage.clarificationSelection,
+                          undefined,
+                          retryMessage.image,
+                          retryMessage.localImageUrl,
+                        )
+                      : void requestAvailability(true)
+                  }
                 >
-                  <Phone className="size-4" aria-hidden="true" />
-                  <span className="sr-only">
-                    {contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
-                  </span>
+                  <RefreshCw className="size-4" aria-hidden="true" />
+                  {t("retry")}
                 </Button>
-              </form>
-            </div>
+              </div>
+            ) : null}
+
+            {remainingTurns > 0 && remainingTurns <= 3 ? (
+              <p className="mb-3 border border-state-warning bg-state-warning-bg p-3 font-body text-a5-meta text-foreground">
+                {t("remainingWarning", { count: remainingTurns })}
+              </p>
+            ) : null}
+
+            {pendingImage ? (
+              <div
+                className="mb-3 flex items-start gap-3 border border-border bg-muted p-3"
+                data-chat-pending-image
+              >
+                <Image
+                  src={pendingImage.previewUrl}
+                  alt={t("selectedImageAlt")}
+                  width={80}
+                  height={80}
+                  unoptimized
+                  className="size-20 shrink-0 border border-border object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-body text-a5-meta font-semibold text-foreground">
+                    {pendingImage.file.name}
+                  </p>
+                  <p className="mt-1 font-body text-a5-meta text-muted-foreground">
+                    {t("selectedImageReady")}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 min-h-11 shrink-0 p-0"
+                  onClick={clearPendingImage}
+                  disabled={sending}
+                  aria-label={t("removeSelectedImage")}
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+            ) : null}
+
+            {imageError ? (
+              <p
+                className="mb-3 border border-destructive bg-destructive/5 p-3 font-body text-a5-meta text-destructive"
+                role="alert"
+              >
+                {imageError}
+              </p>
+            ) : null}
+
+            {imageSettings.enabled ? (
+              <p
+                className="mb-3 font-body text-a5-meta leading-relaxed text-muted-foreground"
+                data-chat-image-disclosure
+              >
+                {imageSettings.disclosure || t("imageDisclosure")}
+              </p>
+            ) : null}
+
+            <form onSubmit={handleSubmit} className="flex min-w-0 items-end gap-2">
+              {imageSettings.enabled ? (
+                <>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={handleImageSelection}
+                    disabled={composerLocked || Boolean(pendingImage)}
+                    aria-label={t("chooseImage")}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-12 min-h-12 shrink-0 p-0"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={composerLocked || Boolean(pendingImage)}
+                    aria-label={t("chooseImage")}
+                    title={t("chooseImageHint", {
+                      maxMb: Math.max(1, Math.floor(imageSettings.maxBytes / (1024 * 1024))),
+                    })}
+                  >
+                    <ImagePlus className="size-5" aria-hidden="true" />
+                  </Button>
+                </>
+              ) : null}
+              <Label htmlFor="bigbike-chat-message" className="sr-only">
+                {t("messageLabel")}
+              </Label>
+              <Input
+                ref={messageInputRef}
+                id="bigbike-chat-message"
+                className="min-w-0 flex-1"
+                value={draft}
+                maxLength={1000}
+                disabled={composerLocked}
+                placeholder={
+                  serviceMode === "CONTACT"
+                    ? t("messagePlaceholderLocked")
+                    : t("messagePlaceholder")
+                }
+                onChange={(event) => setDraft(event.target.value)}
+              />
+              <Button
+                type="submit"
+                size="icon"
+                className="size-12 min-h-12 shrink-0 p-0"
+                disabled={(!draft.trim() && !pendingImage) || composerLocked}
+                aria-label={t("send")}
+              >
+                {sending ? (
+                  <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Send className="size-5" aria-hidden="true" />
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-12 min-h-12 shrink-0 p-0"
+                aria-label={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
+                title={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
+                aria-expanded={contactOpen}
+                aria-controls="bigbike-contact-inline"
+                onClick={toggleContact}
+              >
+                <Phone className="size-4" aria-hidden="true" />
+                <span className="sr-only">
+                  {contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
+                </span>
+              </Button>
+            </form>
           </div>
         </DialogContent>
       </Dialog>

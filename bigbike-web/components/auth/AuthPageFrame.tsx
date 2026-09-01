@@ -15,7 +15,7 @@ function AuthBenefitsPanel({ panel }: { panel: AuthBrandPanel }) {
   return (
     <aside
       data-auth-brand-panel
-      className="relative hidden min-h-0 overflow-hidden bg-surface-dark p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-end"
+      className="relative hidden min-h-0 overflow-hidden bg-surface-dark p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-center"
     >
       <Image
         src="/brand/page-title-bg.png"
@@ -25,7 +25,7 @@ function AuthBenefitsPanel({ panel }: { panel: AuthBrandPanel }) {
         sizes="(min-width: 1024px) 600px, 0px"
         className="object-cover"
       />
-      <div aria-hidden="true" className="absolute inset-0 bg-surface-dark/85" />
+      <div aria-hidden="true" className="absolute inset-0 bg-surface-dark/70" />
       <div className="relative max-w-md">
         <p className="mb-4 font-cta text-b5-label font-semibold uppercase tracking-wide text-brand-inverse">
           {panel.eyebrow}
@@ -74,12 +74,12 @@ export function AuthPageFrame({
     return (
       <section
         data-auth-page={authPage}
-        className="flex min-h-full w-full flex-1 px-4 py-2 sm:p-6 lg:p-0"
+        className="flex min-h-full w-full flex-1 items-start px-4 py-6 sm:px-6 md:items-center lg:p-0"
       >
-        <div className="mx-auto grid min-h-full w-full max-w-[1200px] bg-background lg:grid-cols-2">
+        <div className="mx-auto grid w-full max-w-[1200px] bg-background lg:min-h-svh lg:grid-cols-2">
           <AuthBenefitsPanel panel={brandPanel} />
-          <div data-auth-form-panel className="flex min-w-0 justify-center lg:items-center lg:py-3">
-            <div className={cn("w-full", wide ? "max-w-xl" : "max-w-md")}>{children}</div>
+          <div data-auth-form-panel className="flex min-w-0 justify-center lg:items-start lg:py-16">
+            <div className={cn("w-full max-w-md", wide && "max-w-md")}>{children}</div>
           </div>
         </div>
       </section>
@@ -89,11 +89,9 @@ export function AuthPageFrame({
   return (
     <section
       data-auth-page={authPage}
-      className="flex min-h-full w-full flex-1 items-start p-4 sm:p-6 md:items-center"
+      className="flex min-h-full w-full flex-1 items-start p-6 sm:px-6 md:items-center"
     >
-      <div className={cn("mx-auto w-full", wide ? "max-w-screen-sm" : "max-w-92.5")}>
-        {children}
-      </div>
+      <div className={cn("mx-auto w-full max-w-md", wide && "max-w-md")}>{children}</div>
     </section>
   );
 }
@@ -102,7 +100,6 @@ export function AuthTitleBlock({
   title,
   children,
   centered = false,
-  compact = false,
 }: {
   title: ReactNode;
   children?: ReactNode;
@@ -110,7 +107,7 @@ export function AuthTitleBlock({
   compact?: boolean;
 }) {
   return (
-    <header className={cn(compact ? "mb-3" : "mb-6", centered && "text-center")}>
+    <header className={cn("mb-6", centered && "text-center")}>
       <h1 className="mb-2 font-body text-a2-page font-bold leading-title text-foreground">
         {title}
       </h1>

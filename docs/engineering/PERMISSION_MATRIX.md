@@ -87,11 +87,10 @@ Media access is deliberately **not** an automatic dependency of Product/Content/
 
 ### Review invitation permissions
 
-| Permission | Endpoint / action | Evidence |
-|---|---|---|
-| `settings.read` | Xem tổng quan, danh sách kết quả gửi và danh sách email đã từ chối: `GET /api/v1/admin/review-invitations/summary`, `GET /api/v1/admin/review-invitations`, `GET /api/v1/admin/review-invitation-opt-outs` | `REVIEW_RULE_014`–`016`, `AdminReviewInvitationController.java` |
-| `settings.write` | Bật/tắt, đổi ngày chờ/trần ngày qua Settings hiện có; đánh dấu thư đang chờ **Không gửi — đã hoàn tiền** qua `POST /api/v1/admin/review-invitations/{id}/skip` | `REVIEW_RULE_014`–`016`, settings/admin invitation controllers |
-| Public, no auth | Gửi review bằng link bí mật hiện có và `POST /api/v1/review-invitations/unsubscribe`; không cấp thêm quyền, không thay đổi quyền kiểm duyệt | `REVIEW_RULE_015`–`016`, `SecurityConfig.java` |
+There is no admin permission, screen, or API for review-invitation operations. The workflow runs
+from backend server configuration only. Public guests may use the existing review link and
+`POST /api/v1/review-invitations/unsubscribe`; this does not grant review moderation or settings
+permissions. Evidence: `REVIEW_RULE_014`–`016`, `SecurityConfig.java`.
 
 Danh sách từ chối không có thao tác xoá, kể cả `SUPER_ADMIN`; việc từ chối là vĩnh viễn theo quyết định owner. Mã bí mật không xuất hiện ở bất kỳ API admin nào.
 
@@ -228,7 +227,7 @@ HMAC identity limiter rather than a new account-lock state. Admin mutations use 
 | `/api/v1/admin/orders/{orderId}/audit` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
 | `/api/v1/customer/orders/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 
-Historical classification adds no permission. `orders.read` covers the operational/historical filters and classification metadata; `orders.write` remains necessary but is insufficient to mutate an active historical order. `settings.read/settings.write` cover `order_overdue_days`; the 04:20 scheduler runs as the system and borrows no user role.
+Historical classification adds no permission. `orders.read` covers the operational/historical filters, classification metadata and the overdue reminder notification. `orders.write` remains necessary but is insufficient to mutate an active historical order. The stored `order_overdue_days=2` value is no longer exposed as an editable control in the admin Settings screen; the 04:20 scheduler runs as the system and borrows no user role. This owner decision on 2026-09-01 supersedes the 2026-08-31 description of an editable Settings threshold.
 | `/api/v1/customer/addresses/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
 | `POST`/`DELETE /api/v1/customer/me/avatar` | `ROLE_CUSTOMER` (own account only — no admin-upload path exists) | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
 | `GET /api/v1/admin/customers`, `/summary`, `/{customerId}` | `customers.read` | `CONFIRMED_FROM_CODE` | `AdminCustomerController.java` |

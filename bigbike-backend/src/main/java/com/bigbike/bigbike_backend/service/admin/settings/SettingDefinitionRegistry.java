@@ -78,17 +78,6 @@ public class SettingDefinitionRegistry {
                         .min(1)
                         .description("Số ngày đơn thật còn chờ xác nhận trước khi nhắc / Days before an operational pending order is reminded.").build(),
 
-                // ── REVIEW INVITATIONS ── (REVIEW_RULE_014..016).
-                // Private operational controls; invite/opt-out tokens are never settings.
-                SettingDefinition.builder("review_invitation_enabled", "review_invitation", SettingValueType.BOOLEAN)
-                        .description("Bật/tắt thư mời đánh giá; mỗi lần bật tạo một mốc bắt đầu mới.").build(),
-                SettingDefinition.builder("review_invitation_delay_days", "review_invitation", SettingValueType.INTEGER)
-                        .min(1).max(90)
-                        .description("Số ngày chờ sau khi đơn hoàn tất trước khi gửi thư mời đánh giá.").build(),
-                SettingDefinition.builder("review_invitation_daily_limit", "review_invitation", SettingValueType.INTEGER)
-                        .min(1).max(50)
-                        .description("Số lần thử gửi thư mời đánh giá tối đa mỗi ngày theo giờ Việt Nam.").build(),
-
                 // ── CONTACT ──
                 SettingDefinition.builder("contact_email", "contact", SettingValueType.EMAIL)
                         .publicAllowed()
@@ -241,22 +230,6 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("home_content_bottom_html", "seo", SettingValueType.HTML)
                         .publicAllowed()
                         .description("Block HTML SEO ở cuối trang chủ.").build(),
-
-                // ── STORE_POLICY ── (owner decision 2026-08-23).
-                // Dedicated public policy endpoint allowlists these four keys; they intentionally
-                // stay out of GET /settings/public so the common payload does not carry large HTML.
-                SettingDefinition.builder("policy_warranty_title", "store_policy", SettingValueType.STRING)
-                        .required()
-                        .description("Tiêu đề song ngữ trang Chính sách bảo hành.").build(),
-                SettingDefinition.builder("policy_warranty_body_html", "store_policy", SettingValueType.HTML)
-                        .required()
-                        .description("Nội dung song ngữ Chính sách bảo hành dùng chung cho website và Trợ lý BigBike.").build(),
-                SettingDefinition.builder("policy_return_exchange_title", "store_policy", SettingValueType.STRING)
-                        .required()
-                        .description("Tiêu đề song ngữ trang Chính sách đổi trả.").build(),
-                SettingDefinition.builder("policy_return_exchange_body_html", "store_policy", SettingValueType.HTML)
-                        .required()
-                        .description("Nội dung song ngữ Chính sách đổi trả dùng chung cho website và Trợ lý BigBike.").build(),
 
                 // ── STORE: gỡ hẳn V310 — store_currency/store_timezone không có code nào đọc lại
                 // (VND + giờ Việt Nam đã hardcode thẳng nơi khác); tab admin cũng đã ẩn từ trước.

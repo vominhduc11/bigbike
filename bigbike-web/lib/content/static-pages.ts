@@ -1,9 +1,10 @@
 import rawPages from "./static-pages.json";
 
-// Nội dung 10 trang thông tin (chính sách, hướng dẫn, điều khoản…) ĐÃ ĐÓNG CỨNG trong code.
+// Metadata của 10 trang thông tin (chính sách, hướng dẫn, điều khoản…) ĐÃ ĐÓNG CỨNG trong code.
 // Trước đây các trang này do admin quản lý qua bảng `pages` (module Nội dung → Trang). Owner
 // chốt (2026-06-24) gỡ hẳn phần quản lý Trang; nội dung freeze tại đây, không còn gọi backend.
-// Nguồn freeze: bảng `pages` tại thời điểm gỡ. Sửa nội dung = sửa file này + static-pages.json.
+// Bảo hành/Đổi trả là ngoại lệ đã được thay thế ngày 2026-09-01: thân bài đọc từ resource backend
+// dùng chung với Trợ lý BigBike; static-pages.json chỉ còn metadata route/title/SEO cho hai trang.
 
 export type StaticPageRaw = {
   slug: string;

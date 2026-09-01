@@ -35,6 +35,7 @@ export class ApiClientError extends Error {
     public readonly status: number,
     public readonly code?: string,
     public readonly fieldErrors?: Record<string, string>,
+    public readonly retryAfterSeconds?: number,
   ) {
     super(`API request failed with status ${status}`);
     this.name = "ApiClientError";
@@ -47,7 +48,13 @@ type ApiErrorPayload = {
   details?: Array<{ field?: string | null; code?: string; message?: string }>;
 };
 
-function toApiClientError(status: number, payload: unknown): ApiClientError {
+function retryAfterSeconds(value: string | null | undefined): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds) : undefined;
+}
+
+function toApiClientError(status: number, payload: unknown, retryAfter?: number): ApiClientError {
   const apiError = (payload as { error?: ApiErrorPayload } | null)?.error;
   const detailCode = apiError?.details?.find((detail) => detail.code)?.code;
   const detailFields = apiError?.details?.reduce<Record<string, string>>((result, detail) => {
@@ -59,6 +66,7 @@ function toApiClientError(status: number, payload: unknown): ApiClientError {
     apiError?.code === "VALIDATION_ERROR" && detailCode ? detailCode : apiError?.code,
     apiError?.fieldErrors ??
       (detailFields && Object.keys(detailFields).length > 0 ? detailFields : undefined),
+    retryAfter,
   );
 }
 
@@ -93,7 +101,11 @@ async function clientRequest<T>(
   if (res.status === 204) return undefined as T;
   const payload = await res.json().catch(() => null);
   if (!res.ok) {
-    throw toApiClientError(res.status, payload);
+    throw toApiClientError(
+      res.status,
+      payload,
+      retryAfterSeconds(res.headers?.get?.("Retry-After")),
+    );
   }
   if (payload === null) throw new Error(invalidPayloadMessage());
   return (payload as { data: T }).data ?? (payload as T);
@@ -781,7 +793,11 @@ export async function uploadChatImage(input: {
   });
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    throw toApiClientError(response.status, payload);
+    throw toApiClientError(
+      response.status,
+      payload,
+      retryAfterSeconds(response.headers?.get?.("Retry-After")),
+    );
   }
   const data = payloadData(payload) as { conversationId?: unknown; image?: unknown } | null;
   if (

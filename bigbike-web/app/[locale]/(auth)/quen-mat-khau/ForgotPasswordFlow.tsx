@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { requestPasswordReset, resetCustomerPassword } from "@/lib/api/client-api";
 import {
@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { AuthField } from "@/components/auth/AuthField";
 import { AuthTitleBlock } from "@/components/auth/AuthPageFrame";
 import { GuestStorefrontExit } from "@/components/auth/GuestStorefrontExit";
+import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import { FormNotice } from "@/components/ui/FormNotice";
 
 type ForgotPasswordFlowProps = {
   token?: string | null;
@@ -63,9 +65,9 @@ function RequestResetForm() {
     return (
       <>
         <AuthTitleBlock title={t("title")} />
-        <div>
-          <p className="m-0">{t("sentDescription")}</p>
-        </div>
+        <FormNotice tone="success" role="status" aria-live="polite">
+          {t("sentDescription")}
+        </FormNotice>
       </>
     );
   }
@@ -82,11 +84,18 @@ function RequestResetForm() {
             id="forgot-login"
             label={t("emailLabel")}
             autoComplete="username"
+            placeholder={t("emailPlaceholder")}
             registration={register("login")}
             error={errors.login}
+            compact
           />
           <div>
-            <Button type="submit" size="auth" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              size="auth"
+              disabled={isSubmitting}
+              className="min-h-11 md:min-h-13"
+            >
               {isSubmitting ? t("submitting") : t("submit")}
             </Button>
           </div>
@@ -108,6 +117,7 @@ function ResetPasswordForm({ token }: { token: string }) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
     setError,
     setFocus,
@@ -116,6 +126,15 @@ function ResetPasswordForm({ token }: { token: string }) {
     mode: "onBlur",
     reValidateMode: "onChange",
   });
+  const password = useWatch({ control, name: "password" }) ?? "";
+  const confirm = useWatch({ control, name: "confirm" }) ?? "";
+  const confirmStatus =
+    confirm.length > 0
+      ? {
+          message: confirm === password ? t("passwordMatch") : t("passwordNotMatch"),
+          tone: confirm === password ? ("success" as const) : ("error" as const),
+        }
+      : undefined;
 
   useEffect(() => {
     if (window.matchMedia("(min-width: 1024px)").matches) {
@@ -167,10 +186,24 @@ function ResetPasswordForm({ token }: { token: string }) {
             autoComplete="new-password"
             label={t("newPasswordLabel")}
             placeholder={t("newPasswordPlaceholder")}
-            hint={tPassword("ruleMin8")}
             passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
             registration={register("password")}
             error={errors.password}
+            groupClassName="mb-2"
+            compact
+          />
+          <PasswordStrengthMeter
+            password={password}
+            label={tPassword("strengthLabel")}
+            requirementLabel={tPassword("ruleMin8")}
+            labels={{
+              empty: tPassword("strengthEmpty"),
+              weak: tPassword("strengthWeak"),
+              fair: tPassword("strengthFair"),
+              good: tPassword("strengthGood"),
+              strong: tPassword("strengthStrong"),
+            }}
+            compact
           />
           <AuthField
             id="reset-confirm"
@@ -181,9 +214,16 @@ function ResetPasswordForm({ token }: { token: string }) {
             passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
             registration={register("confirm")}
             error={errors.confirm}
+            status={confirmStatus}
+            compact
           />
           <div>
-            <Button type="submit" size="auth" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              size="auth"
+              disabled={isSubmitting}
+              className="min-h-11 md:min-h-13"
+            >
               {isSubmitting ? t("submitting") : t("submit")}
             </Button>
           </div>

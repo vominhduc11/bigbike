@@ -5874,112 +5874,6 @@
         }
       }
     },
-    "/api/v1/admin/review-invitations/summary": {
-      "get": {
-        "tags": ["Admin Review Invitations"],
-        "summary": "Get review invitation operational summary",
-        "operationId": "adminReviewInvitationSummary",
-        "security": [{ "AdminBearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Counts, current settings and Vietnam-day quota usage",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminReviewInvitationSummaryDataResponse" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" }
-        }
-      }
-    },
-    "/api/v1/admin/review-invitations": {
-      "get": {
-        "tags": ["Admin Review Invitations"],
-        "summary": "List one-time review invitation deliveries",
-        "operationId": "adminListReviewInvitations",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1, "minimum": 1 } },
-          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
-          {
-            "name": "status",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["PENDING", "SENDING", "SENT", "FAILED", "UNCERTAIN", "SKIPPED"]
-            }
-          },
-          { "name": "q", "in": "query", "description": "Order number or recipient email", "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "Paginated invitation history without secret tokens",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminReviewInvitationListResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/ValidationError" },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" }
-        }
-      }
-    },
-    "/api/v1/admin/review-invitations/{id}/skip": {
-      "post": {
-        "tags": ["Admin Review Invitations"],
-        "summary": "Permanently skip a pending invitation for a refunded order",
-        "operationId": "adminSkipRefundedReviewInvitation",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/SkipReviewInvitationRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": { "description": "Invitation marked as skipped" },
-          "400": { "$ref": "#/components/responses/ValidationError" },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" }
-        }
-      }
-    },
-    "/api/v1/admin/review-invitation-opt-outs": {
-      "get": {
-        "tags": ["Admin Review Invitations"],
-        "summary": "List permanent review-invitation opt-outs",
-        "operationId": "adminListReviewInvitationOptOuts",
-        "security": [{ "AdminBearerAuth": [] }],
-        "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1, "minimum": 1 } },
-          { "name": "size", "in": "query", "schema": { "type": "integer", "default": 20, "minimum": 1, "maximum": 100 } },
-          { "name": "q", "in": "query", "description": "Recipient email", "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "Paginated permanent opt-out list",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminReviewInvitationOptOutListResponse" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" }
-        }
-      }
-    },
     "/api/v1/admin/reviews": {
       "get": {
         "tags": [
@@ -8480,7 +8374,8 @@
           {"name":"topic","in":"path","required":true,"schema":{"type":"string","enum":["warranty","return-exchange"]}},
           {"name":"lang","in":"query","schema":{"type":"string","enum":["vi","en"],"default":"vi"}}
         ],
-        "responses": {"200":{"description":"Sanitized localized policy title, bodyHtml and updatedAt"},"404":{"$ref":"#/components/responses/NotFound"}}
+        "description": "Reads the frozen bilingual Warranty or Returns resource shared by the storefront and BigBike Assistant. Contact details are hydrated from the live contact settings; the 2026-09-01 freeze supersedes the former admin-editable store_policy settings.",
+        "responses": {"200":{"description":"Sanitized localized policy title, bodyHtml and frozen updatedAt"},"404":{"$ref":"#/components/responses/NotFound"}}
       }
     },
     "/api/v1/admin/chat/conversations/{id}": {
@@ -9114,84 +9009,6 @@
             }
           }
         ]
-      },
-      "AdminReviewInvitationSummary": {
-        "type": "object",
-        "required": ["pending", "sent", "failed", "uncertain", "skipped", "optedOut", "attemptedToday", "dailyLimit", "enabled", "delayDays"],
-        "properties": {
-          "pending": { "type": "integer", "format": "int64", "minimum": 0 },
-          "sent": { "type": "integer", "format": "int64", "minimum": 0 },
-          "failed": { "type": "integer", "format": "int64", "minimum": 0 },
-          "uncertain": { "type": "integer", "format": "int64", "minimum": 0 },
-          "skipped": { "type": "integer", "format": "int64", "minimum": 0 },
-          "optedOut": { "type": "integer", "format": "int64", "minimum": 0 },
-          "attemptedToday": { "type": "integer", "minimum": 0 },
-          "dailyLimit": { "type": "integer", "minimum": 1, "maximum": 50 },
-          "enabled": { "type": "boolean" },
-          "delayDays": { "type": "integer", "minimum": 1, "maximum": 90 }
-        }
-      },
-      "AdminReviewInvitationSummaryDataResponse": {
-        "type": "object",
-        "properties": {
-          "data": { "$ref": "#/components/schemas/AdminReviewInvitationSummary" },
-          "meta": { "$ref": "#/components/schemas/ApiMeta" }
-        }
-      },
-      "AdminReviewInvitationItem": {
-        "type": "object",
-        "required": ["id", "orderId", "orderNumber", "recipientEmail", "locale", "status", "completedAt", "dueAt", "productCount", "reviewedProductCount", "createdAt"],
-        "properties": {
-          "id": { "type": "string", "format": "uuid" },
-          "orderId": { "type": "string", "format": "uuid" },
-          "orderNumber": { "type": "string" },
-          "recipientEmail": { "type": "string", "format": "email" },
-          "locale": { "type": "string", "enum": ["vi", "en"] },
-          "status": { "type": "string", "enum": ["PENDING", "SENDING", "SENT", "FAILED", "UNCERTAIN", "SKIPPED"] },
-          "completedAt": { "type": "string", "format": "date-time" },
-          "dueAt": { "type": "string", "format": "date-time" },
-          "attemptedAt": { "type": "string", "format": "date-time", "nullable": true },
-          "providerAcceptedAt": { "type": "string", "format": "date-time", "nullable": true },
-          "skipReason": { "type": "string", "nullable": true },
-          "failureCode": { "type": "string", "nullable": true },
-          "failureMessage": { "type": "string", "nullable": true },
-          "productCount": { "type": "integer", "format": "int64", "minimum": 0 },
-          "reviewedProductCount": { "type": "integer", "format": "int64", "minimum": 0 },
-          "createdAt": { "type": "string", "format": "date-time" }
-        },
-        "description": "Operational delivery row. Raw review and unsubscribe tokens are intentionally absent."
-      },
-      "AdminReviewInvitationListResponse": {
-        "type": "object",
-        "properties": {
-          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AdminReviewInvitationItem" } },
-          "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
-          "meta": { "$ref": "#/components/schemas/ApiMeta" }
-        }
-      },
-      "AdminReviewInvitationOptOut": {
-        "type": "object",
-        "required": ["email", "optedOutAt", "source"],
-        "properties": {
-          "email": { "type": "string", "format": "email" },
-          "optedOutAt": { "type": "string", "format": "date-time" },
-          "source": { "type": "string", "enum": ["EMAIL_LINK"] }
-        }
-      },
-      "AdminReviewInvitationOptOutListResponse": {
-        "type": "object",
-        "properties": {
-          "data": { "type": "array", "items": { "$ref": "#/components/schemas/AdminReviewInvitationOptOut" } },
-          "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
-          "meta": { "$ref": "#/components/schemas/ApiMeta" }
-        }
-      },
-      "SkipReviewInvitationRequest": {
-        "type": "object",
-        "required": ["reason"],
-        "properties": {
-          "reason": { "type": "string", "enum": ["REFUNDED"] }
-        }
       },
       "AdminReviewListResponse": {
         "type": "object",
@@ -10193,8 +10010,9 @@
       "CustomerRegisterRequest": {
         "type": "object",
         "required": [
-          "email",
-          "password"
+          "password",
+          "privacyConsent",
+          "privacyPolicyLocale"
         ],
         "properties": {
           "email": {
@@ -10222,7 +10040,8 @@
           },
           "phone": {
             "type": "string",
-            "pattern": "^\\+?[0-9]{8,15}$"
+            "description": "Optional for API compatibility. When supplied, accepts spaces, dots, hyphens, parentheses and +84/84, then must normalize to a Vietnamese mobile number: 0(3|5|7|8|9) followed by eight digits.",
+            "pattern": "^[+0-9().\\s-]+$"
           },
           "displayName": {
             "type": "string"

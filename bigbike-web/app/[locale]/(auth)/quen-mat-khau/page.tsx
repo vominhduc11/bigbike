@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { toForgotPasswordPath } from "@/lib/utils/routes";
 import { AuthPageFrame } from "@/components/auth/AuthPageFrame";
+import { Tr } from "@/components/i18n/Tr";
 import ForgotPasswordFlow from "./ForgotPasswordFlow";
 import { ForgotPasswordFlowIsland } from "./ForgotPasswordFlowIsland";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -26,8 +27,23 @@ export async function generateMetadata({ params }: ForgotPasswordPageProps): Pro
 export default async function ForgotPasswordPage({ params }: ForgotPasswordPageProps) {
   const { locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
+  const t = await getTranslations({ locale, namespace: "Auth.brand" });
   return (
-    <AuthPageFrame authPage="forgot">
+    <AuthPageFrame
+      primary
+      authPage="forgot"
+      brandPanel={{
+        eyebrow: <Tr ns="Auth.brand" k="eyebrow" />,
+        title: <Tr ns="Auth.brand" k="title" />,
+        description: <Tr ns="Auth.brand" k="description" />,
+        benefits: [
+          <Tr key="orders" ns="Auth.brand" k="benefitOrders" />,
+          <Tr key="address" ns="Auth.brand" k="benefitAddress" />,
+          <Tr key="offers" ns="Auth.brand" k="benefitOffers" />,
+        ],
+        imageAlt: t("imageAlt"),
+      }}
+    >
       <Suspense fallback={<ForgotPasswordFlow />}>
         <ForgotPasswordFlowIsland />
       </Suspense>

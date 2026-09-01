@@ -3,47 +3,27 @@ import {
   KEY_GUIDE,
   TAB_META,
   TAB_ORDER,
-  groupBySection,
   inputTypeFor,
-  isTranslatableSetting,
+  HIDDEN_GROUPS,
   settingWhere,
   validateValue,
 } from './constants'
 import viLocale from '../../locales/vi.json'
 import enLocale from '../../locales/en.json'
 
-describe('shared store policy settings', () => {
-  it('exposes warranty and returns as one bilingual admin group', () => {
-    expect(TAB_ORDER).toContain('STORE_POLICY')
-    expect(TAB_META.STORE_POLICY).toBeDefined()
-    expect(
-      isTranslatableSetting({
-        key: 'policy_warranty_body_html',
-        settingGroup: 'STORE_POLICY',
-        valueType: 'HTML',
-      }),
-    ).toBe(true)
-    expect(
-      isTranslatableSetting({
-        key: 'policy_return_exchange_title',
-        settingGroup: 'STORE_POLICY',
-        valueType: 'STRING',
-      }),
-    ).toBe(true)
-  })
-
-  it('keeps all four policy fields in the same guided section', () => {
-    const keys = [
-      'policy_warranty_title',
-      'policy_warranty_body_html',
-      'policy_return_exchange_title',
-      'policy_return_exchange_body_html',
-    ]
-    const sections = groupBySection(keys.map((key) => ({ key })))
-
-    expect(sections).toHaveLength(1)
-    expect(sections[0].sec).toBe('store_policy_content')
-    expect(keys.every((key) => KEY_GUIDE[key]?.[0] === 'store_policy_content')).toBe(true)
+describe('frozen store policies', () => {
+  it('removes the policy tab and hides stale policy rows from Settings', () => {
+    expect(TAB_ORDER).not.toContain('STORE_POLICY')
+    expect(TAB_META.STORE_POLICY).toBeUndefined()
+    expect(HIDDEN_GROUPS).toContain('STORE_POLICY')
+    expect(KEY_GUIDE.policy_warranty_title).toBeUndefined()
+    expect(KEY_GUIDE.policy_warranty_body_html).toBeUndefined()
+    expect(KEY_GUIDE.policy_return_exchange_title).toBeUndefined()
+    expect(KEY_GUIDE.policy_return_exchange_body_html).toBeUndefined()
+    expect(viLocale.settings.group_store_policy).toBeUndefined()
+    expect(enLocale.settings.group_store_policy).toBeUndefined()
+    expect(viLocale.settings.keyLabel.policy_warranty_title).toBeUndefined()
+    expect(enLocale.settings.keyLabel.policy_warranty_title).toBeUndefined()
   })
 
   it('does not repeat a setting label as a second support line', () => {
@@ -67,47 +47,57 @@ describe('daily out-of-stock digest settings', () => {
   })
 })
 
-describe('overdue operational order reminder settings', () => {
-  it('exposes a dedicated bilingual order-operations tab and requires a positive whole day', () => {
-    expect(TAB_ORDER).toContain('ORDER_OPERATIONS')
-    expect(TAB_META.ORDER_OPERATIONS).toBeDefined()
-    expect(KEY_GUIDE.order_overdue_days?.[0]).toBe('order_operations_reminders')
-    expect(validateValue('order_overdue_days', '2')).toBeNull()
-    expect(validateValue('order_overdue_days', '0')).toBe('settings.valPositiveInteger')
-    expect(validateValue('order_overdue_days', '1.5')).toBe('settings.valPositiveInteger')
-    expect(viLocale.settings.group_order_operations).toBe('Vận hành đơn hàng')
-    expect(enLocale.settings.group_order_operations).toBe('Order operations')
-    expect(viLocale.settings.keyHint.order_overdue_days).toContain(
-      'đơn lịch sử không bao giờ bị nhắc',
-    )
-    expect(enLocale.settings.keyHint.order_overdue_days).toContain(
-      'historical orders are never reminded',
-    )
+describe('retired overdue operational order settings UI', () => {
+  it('removes the tab metadata and all dedicated bilingual copy while retaining the backend key contract', () => {
+    expect(TAB_ORDER).not.toContain('ORDER_OPERATIONS')
+    expect(TAB_META.ORDER_OPERATIONS).toBeUndefined()
+    expect(HIDDEN_GROUPS).toContain('ORDER_OPERATIONS')
+    expect(KEY_GUIDE.order_overdue_days).toBeUndefined()
+    expect(viLocale.settings.group_order_operations).toBeUndefined()
+    expect(enLocale.settings.group_order_operations).toBeUndefined()
+    expect(viLocale.settings.groupDescription.orderOperations).toBeUndefined()
+    expect(enLocale.settings.groupDescription.orderOperations).toBeUndefined()
+    expect(viLocale.settings.keyLabel.order_overdue_days).toBeUndefined()
+    expect(enLocale.settings.keyLabel.order_overdue_days).toBeUndefined()
+    expect(viLocale.settings.keyHint.order_overdue_days).toBeUndefined()
+    expect(enLocale.settings.keyHint.order_overdue_days).toBeUndefined()
+    expect(viLocale.settings.keyWhere.order_overdue_days).toBeUndefined()
+    expect(enLocale.settings.keyWhere.order_overdue_days).toBeUndefined()
+    expect(viLocale.settings.section.order_operations_reminders).toBeUndefined()
+    expect(enLocale.settings.section.order_operations_reminders).toBeUndefined()
+  })
+
+  it('keeps the remaining tab order unchanged', () => {
+    expect(TAB_ORDER).toEqual([
+      'GENERAL',
+      'INVENTORY',
+      'CONTACT',
+      'PAYMENT',
+      'PUBLIC_HERO',
+      'SEO',
+      'PRODUCT_ASSIGN',
+      'REVIEW_MODERATION',
+      'AI_ASSISTANT',
+    ])
   })
 })
 
-describe('review invitation settings', () => {
-  it('exposes one operations tab with the owner-approved ranges in both languages', () => {
-    expect(TAB_ORDER).toContain('REVIEW_INVITATION')
-    expect(TAB_META.REVIEW_INVITATION).toBeDefined()
-    expect(KEY_GUIDE.review_invitation_enabled?.[0]).toBe('review_invitation_delivery')
-    expect(KEY_GUIDE.review_invitation_delay_days?.[0]).toBe('review_invitation_delivery')
-    expect(KEY_GUIDE.review_invitation_daily_limit?.[0]).toBe('review_invitation_delivery')
-    expect(validateValue('review_invitation_delay_days', '7')).toBeNull()
-    expect(validateValue('review_invitation_delay_days', '0')).toBe(
-      'settings.valReviewInvitationDelay',
-    )
-    expect(validateValue('review_invitation_delay_days', '91')).toBe(
-      'settings.valReviewInvitationDelay',
-    )
-    expect(validateValue('review_invitation_daily_limit', '20')).toBeNull()
-    expect(validateValue('review_invitation_daily_limit', '0')).toBe(
-      'settings.valReviewInvitationLimit',
-    )
-    expect(validateValue('review_invitation_daily_limit', '51')).toBe(
-      'settings.valReviewInvitationLimit',
-    )
-    expect(viLocale.settings.group_review_invitation).toBe('Mời khách đánh giá')
-    expect(enLocale.settings.group_review_invitation).toBe('Review invitations')
+describe('automatic review invitations', () => {
+  it('has no Settings tab, field guide, validation or admin copy', () => {
+    const legacyReviewInvitationKeys = {
+      enabled: ['review', 'invitation', 'enabled'].join('_'),
+      delayDays: ['review', 'invitation', 'delay', 'days'].join('_'),
+      dailyLimit: ['review', 'invitation', 'daily', 'limit'].join('_'),
+    }
+
+    expect(TAB_ORDER).not.toContain('REVIEW_INVITATION')
+    expect(TAB_META.REVIEW_INVITATION).toBeUndefined()
+    expect(KEY_GUIDE[legacyReviewInvitationKeys.enabled]).toBeUndefined()
+    expect(KEY_GUIDE[legacyReviewInvitationKeys.delayDays]).toBeUndefined()
+    expect(KEY_GUIDE[legacyReviewInvitationKeys.dailyLimit]).toBeUndefined()
+    expect(viLocale.settings.group_review_invitation).toBeUndefined()
+    expect(enLocale.settings.group_review_invitation).toBeUndefined()
+    expect(viLocale.settings.reviewInvitation).toBeUndefined()
+    expect(enLocale.settings.reviewInvitation).toBeUndefined()
   })
 })

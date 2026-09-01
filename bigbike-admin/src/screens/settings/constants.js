@@ -9,10 +9,7 @@ import {
   Image as ImageIcon,
   Users,
   Bot,
-  Clock3,
-  FileText,
   Landmark,
-  Mail,
   PackageX,
   ShieldCheck,
 } from 'lucide-react'
@@ -158,30 +155,12 @@ export function validateValue(key, value) {
       return 'settings.valNumber'
     }
   }
-  if (k === 'order_overdue_days') {
-    const n = Number(value)
-    if (!Number.isInteger(n) || n < 1) return 'settings.valPositiveInteger'
-  }
-  if (k === 'review_invitation_delay_days') {
-    const n = Number(value)
-    if (!Number.isInteger(n) || n < 1 || n > 90) return 'settings.valReviewInvitationDelay'
-  }
-  if (k === 'review_invitation_daily_limit') {
-    const n = Number(value)
-    if (!Number.isInteger(n) || n < 1 || n > 50) return 'settings.valReviewInvitationLimit'
-  }
   return null
 }
 
 // Groups whose display text is shown on the storefront and can carry an English
 // translation. Config / contact / store / tax keys stay Vietnamese-only.
-const TRANSLATABLE_GROUPS = new Set([
-  'GENERAL',
-  'PUBLIC_HERO',
-  'SEO',
-  'STORE_POLICY',
-  'AI_ASSISTANT',
-])
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HERO', 'SEO', 'AI_ASSISTANT'])
 
 // A setting is English-translatable when it lives in a translatable group AND renders
 // as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
@@ -229,12 +208,9 @@ export const TAB_ORDER = [
   'INVENTORY',
   'CONTACT',
   'PAYMENT',
-  'ORDER_OPERATIONS',
   'PUBLIC_HERO',
   'SEO',
   'PRODUCT_ASSIGN',
-  'STORE_POLICY',
-  'REVIEW_INVITATION',
   'REVIEW_MODERATION',
   'AI_ASSISTANT',
 ]
@@ -256,12 +232,21 @@ export const SENSITIVE_SETTING_TABS = new Set(['PAYMENT'])
 //   'CONTACT' khỏi HIDDEN_GROUPS để hiện lại tab Cài đặt › Liên hệ.
 // - PAYMENT: hiển thị lại theo PAY_RULE_001 (2026-07-21): khách có thể chọn chuyển khoản
 //   thủ công, nên chủ shop phải cập nhật được tài khoản nhận tiền mà không sửa trực tiếp DB.
+// - ORDER_OPERATIONS: `order_overdue_days` vẫn được giữ trong site_settings để scheduler,
+//   bộ lọc đơn quá hạn và CSV đọc; theo quyết định owner 2026-09-01, ngưỡng hiệu lực là 2 ngày
+//   và không còn ô chỉnh trong Settings.
 // - PRODUCT_ASSIGN: banner Phân công (product_assign_title + product_assign_roles, JSON động
 //   1-6 vai trò từ V318) render bằng trình riêng AssignmentRolesScreen (nhúng làm tab "Phân công"
 //   NGAY TRONG màn Cài đặt, xem ASSIGN_TAB_ID) — ẩn khỏi luồng SettingTabPanel/SettingField chung
 //   vì cần UI thêm/xoá vai trò động mà form field tĩnh không đáp ứng được.
 // (PUBLIC_ABOUT đã gỡ hẳn V274 — trang Giới thiệu là trang tĩnh, không còn nhóm settings.)
-export const HIDDEN_GROUPS = new Set(['PUBLIC_HERO', 'CONTACT', 'PRODUCT_ASSIGN'])
+export const HIDDEN_GROUPS = new Set([
+  'PUBLIC_HERO',
+  'CONTACT',
+  'ORDER_OPERATIONS',
+  'PRODUCT_ASSIGN',
+  'STORE_POLICY',
+])
 
 // Dữ liệu cũ của seo_home_h1 vẫn được giữ trong site_settings nhưng không còn là ô chỉnh sửa.
 export const HIDDEN_KEYS = new Set(['seo_home_h1'])
@@ -287,11 +272,6 @@ export const TAB_META = {
     labelKey: 'settings.group_payment',
     descriptionKey: 'settings.groupDescription.payment',
   },
-  ORDER_OPERATIONS: {
-    icon: Clock3,
-    labelKey: 'settings.group_order_operations',
-    descriptionKey: 'settings.groupDescription.orderOperations',
-  },
   PUBLIC_HERO: {
     icon: ImageIcon,
     labelKey: 'settings.group_public_hero',
@@ -312,16 +292,6 @@ export const TAB_META = {
     labelKey: 'settings.group_review_moderation',
     descriptionKey: 'settings.groupDescription.reviewModeration',
   },
-  REVIEW_INVITATION: {
-    icon: Mail,
-    labelKey: 'settings.group_review_invitation',
-    descriptionKey: 'settings.groupDescription.reviewInvitation',
-  },
-  STORE_POLICY: {
-    icon: FileText,
-    labelKey: 'settings.group_store_policy',
-    descriptionKey: 'settings.groupDescription.storePolicy',
-  },
   AI_ASSISTANT: {
     icon: Bot,
     labelKey: 'settings.group_ai_assistant',
@@ -338,10 +308,6 @@ export const KEY_LABELS_VI = {
   site_name: 'Tên shop (SEO trang chủ/bài viết, khối liên hệ trang sản phẩm)',
   // footer_tagline/bct_url/business_registration: gỡ V308 — footer đã hardcode, không còn tác dụng.
   footer_description: 'Mô tả ngắn (panel thông tin shop trên header mobile)',
-  order_overdue_days: 'Nhắc khi đơn chờ quá số ngày',
-  review_invitation_enabled: 'Bật email mời đánh giá',
-  review_invitation_delay_days: 'Gửi sau khi hoàn tất (số ngày)',
-  review_invitation_daily_limit: 'Số thư mời tối đa mỗi ngày',
   // contact
   hotline_2: 'Hotline phụ',
   hotline_3: 'Hotline thứ ba',
@@ -366,11 +332,6 @@ export const KEY_LABELS_VI = {
   ai_assistant_recent_turn_pairs: 'Số cặp hỏi–đáp gần nhất Trợ lý BigBike được đọc',
   ai_assistant_search_ai_interpretation_enabled:
     'Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng',
-  // store_policy — nguồn nội dung chung cho trang chính sách và Trợ lý BigBike
-  policy_warranty_title: 'Tiêu đề chính sách bảo hành',
-  policy_warranty_body_html: 'Nội dung chính sách bảo hành',
-  policy_return_exchange_title: 'Tiêu đề chính sách đổi trả và hoàn tiền',
-  policy_return_exchange_body_html: 'Nội dung chính sách đổi trả và hoàn tiền',
   // payment (tài khoản nhận chuyển khoản — admin tự nhập, hiển thị cho khách khi đặt đơn chuyển khoản)
   bank_account_holder: 'Chủ tài khoản nhận chuyển khoản',
   bank_account_number: 'Số tài khoản nhận chuyển khoản',
@@ -415,13 +376,6 @@ export const KEY_HINTS_VI = {
     'Tắt để hệ thống im lặng hoàn toàn. Khi bật, mỗi ngày chỉ có một bản tin gộp nếu thực sự có hàng hết.',
   inventory_out_of_stock_digest_time:
     'Dùng giờ Việt Nam theo định dạng 24 giờ. Nếu máy chủ khởi động muộn sau giờ này, hệ thống chạy bù một lần trong ngày.',
-  order_overdue_days:
-    'Mặc định 2 ngày. Chỉ tính đơn vận hành còn Chờ xác nhận; đơn lịch sử không bao giờ bị nhắc.',
-  review_invitation_enabled:
-    'Mỗi lần bật chỉ áp dụng cho đơn hoàn tất từ thời điểm đó trở đi. Tắt sẽ không gửi các thư đang chờ và không gửi bù khi bật lại.',
-  review_invitation_delay_days: 'Chọn từ 1 đến 90 ngày; mặc định 7 ngày sau khi đơn hoàn tất.',
-  review_invitation_daily_limit:
-    'Chọn từ 1 đến 50 thư mỗi ngày. Thư xác nhận đơn và các thư giao dịch luôn được gửi trước.',
   review_moderation_enabled:
     'Phải khai khoá dịch vụ AI ở máy chủ trước. Chưa khai thì mọi đánh giá vẫn nằm ở Chờ duyệt như hiện nay.',
   review_moderation_daily_limit:
@@ -436,14 +390,6 @@ export const KEY_HINTS_VI = {
     'Từ 0 đến 12, mặc định 12. Đặt 0 để Trợ lý BigBike không đọc lịch sử; nội dung gửi AI được che thông tin riêng tư và cắt gọn.',
   ai_assistant_search_ai_interpretation_enabled:
     'Bật để Trợ lý BigBike hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay, không cần triển khai lại.',
-  policy_warranty_title:
-    'Dùng chung cho trang Chính sách bảo hành và câu trả lời của Trợ lý BigBike.',
-  policy_warranty_body_html:
-    'Nội dung khách đọc trên website và nội dung Trợ lý BigBike dùng để trả lời phải được cập nhật tại đây.',
-  policy_return_exchange_title:
-    'Dùng chung cho trang Chính sách đổi trả và câu trả lời của Trợ lý BigBike.',
-  policy_return_exchange_body_html:
-    'Nội dung khách đọc trên website và nội dung Trợ lý BigBike dùng để trả lời phải được cập nhật tại đây.',
   hero_products_image_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_brands_image_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_news_image_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -504,16 +450,6 @@ export const SECTION_GUIDE = {
     title: 'Tài khoản nhận chuyển khoản',
     description: 'Thông tin hiển thị cho khách khi chọn thanh toán chuyển khoản.',
   },
-  order_operations_reminders: {
-    title: 'Nhắc đơn cần xử lý',
-    description:
-      'Mỗi ngày hệ thống gộp các đơn thật đã chờ quá lâu thành một thông báo trong chuông quản trị.',
-  },
-  review_invitation_delivery: {
-    title: 'Lịch gửi lời mời đánh giá',
-    description:
-      'Chỉ áp dụng cho đơn thật hoàn tất sau lần bật gần nhất; mỗi đơn tối đa một thư và không nhắc lại.',
-  },
   hero_products: {
     title: 'Banner đầu trang Tất cả sản phẩm',
     description: 'Hình ảnh và nội dung mở đầu trang danh sách sản phẩm.',
@@ -552,11 +488,6 @@ export const SECTION_GUIDE = {
     title: 'Vận hành và ngân sách của Trợ lý BigBike',
     description: 'Bật/tắt trợ lý, giới hạn lượt AI mỗi ngày và cách hiểu yêu cầu tìm hàng.',
   },
-  store_policy_content: {
-    title: 'Nội dung chính sách dùng chung',
-    description:
-      'Trang chính sách và Trợ lý BigBike cùng đọc các nội dung này, tránh một nơi đã sửa nhưng nơi còn lại vẫn trả bản cũ.',
-  },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
@@ -590,14 +521,6 @@ export const KEY_GUIDE = {
   bank_account_number: ['payment_bank', 'số tài khoản'],
   bank_name: ['payment_bank', 'tên ngân hàng'],
   bank_branch: ['payment_bank', 'chi nhánh'],
-  order_overdue_days: ['order_operations_reminders', 'ngưỡng nhắc trong chuông quản trị'],
-  review_invitation_enabled: ['review_invitation_delivery', 'bật/tắt toàn bộ thư mời đánh giá'],
-  review_invitation_delay_days: ['review_invitation_delivery', 'số ngày chờ sau khi đơn hoàn tất'],
-  review_invitation_daily_limit: [
-    'review_invitation_delivery',
-    'trần riêng cho thư mời theo ngày giờ Việt Nam',
-  ],
-
   hero_products_image_url: ['hero_products', 'ảnh nền banner (desktop)'],
   hero_products_image_alt: ['hero_products', 'mô tả ảnh (SEO)'],
   hero_products_title: ['hero_products', 'tiêu đề trên banner'],
@@ -640,16 +563,6 @@ export const KEY_GUIDE = {
   ai_assistant_search_ai_interpretation_enabled: [
     'ai_assistant_switch',
     'chuyển giữa cách hiểu tìm hàng mới và cũ',
-  ],
-  policy_warranty_title: ['store_policy_content', 'tiêu đề trang và câu trả lời về bảo hành'],
-  policy_warranty_body_html: ['store_policy_content', 'nội dung trang và câu trả lời về bảo hành'],
-  policy_return_exchange_title: [
-    'store_policy_content',
-    'tiêu đề trang và câu trả lời về đổi trả/hoàn tiền',
-  ],
-  policy_return_exchange_body_html: [
-    'store_policy_content',
-    'nội dung trang và câu trả lời về đổi trả/hoàn tiền',
   ],
 }
 

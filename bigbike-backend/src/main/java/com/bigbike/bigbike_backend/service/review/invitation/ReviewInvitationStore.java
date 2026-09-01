@@ -306,20 +306,6 @@ public class ReviewInvitationStore {
                 delivery.getRecipientEmailNormalized(), productId, reviewId, now);
     }
 
-    @Transactional
-    public void skipRefunded(UUID deliveryId, Instant now) {
-        ReviewInvitationDeliveryEntity delivery = deliveryRepository.findByIdForUpdate(deliveryId)
-                .orElseThrow(() -> new NotFoundException("Không tìm thấy thư mời đánh giá."));
-        if (delivery.getStatus() == ReviewInvitationStatus.SKIPPED
-                && "REFUNDED".equals(delivery.getSkipReason())) {
-            return;
-        }
-        if (delivery.getStatus() != ReviewInvitationStatus.PENDING) {
-            throw new ConflictException("Chỉ thư đang chờ mới có thể đánh dấu đã hoàn tiền.");
-        }
-        saveSkipped(delivery, "REFUNDED", now);
-    }
-
     private boolean wasAlreadyReviewed(OrderEntity order, String normalizedEmail, String productId) {
         if (order.getCustomerId() != null
                 && reviewRepository.existsByProductIdAndCustomerId(productId, order.getCustomerId())) {

@@ -48,7 +48,47 @@ test.describe("VI/EN URL locale contract", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
 
-  test("serves the complete English return policy on desktop and mobile", async ({ page }) => {
+  test("serves the complete bilingual Warranty and Returns policies with live contact blocks", async ({ page }) => {
+    const policies = [
+      {
+        path: "/chinh-sach/chinh-sach-bao-hanh/",
+        heading: "Chính sách bảo hành",
+        anchors: ["24 tháng"],
+      },
+      {
+        path: "/chinh-sach/chinh-sach-doi-tra-hang/",
+        heading: "Chính sách đổi trả hàng",
+        anchors: ["7 ngày", "1 ngày"],
+      },
+      {
+        path: "/en/policy/warranty-policy/",
+        heading: "Warranty Policy",
+        anchors: ["24 months"],
+      },
+      {
+        path: "/en/policy/return-policy/",
+        heading: "Returns and Exchanges Policy",
+        anchors: ["7 days", "1 day"],
+      },
+    ] as const;
+
+    for (const policy of policies) {
+      await page.goto(policy.path);
+      await expect(page.getByRole("heading", { name: policy.heading, exact: true })).toBeVisible();
+      for (const anchor of policy.anchors) {
+        await expect(page.getByText(anchor, { exact: true })).toBeVisible();
+      }
+      const main = page.locator("main");
+      await expect(main).toContainText(/Hotline/);
+      await expect(main).toContainText(/Zalo/);
+      await expect(main).not.toContainText("0906902404");
+      await expect(main).not.toContainText("0764640679");
+      await expect(main).not.toContainText("79/30/52 Âu Cơ");
+      await expect(main).not.toContainText(/nội dung.*tạm thời chưa hiển thị được/i);
+    }
+  });
+
+  test("keeps the existing English return-policy mobile canonical smoke", async ({ page }) => {
     await page.goto("/en/policy/return-policy/");
     await expect(page.getByRole("heading", { name: "Returns and Exchanges Policy" })).toBeVisible();
     await expect(page.getByText("7 days", { exact: true })).toBeVisible();

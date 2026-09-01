@@ -46,7 +46,4 @@ public class ReviewInvitationService {
         store.consumeInviteToken(token, productId, reviewId, reviewedAt);
     }
 
-    public void skipRefunded(java.util.UUID deliveryId) {
-        store.skipRefunded(deliveryId, clock.now());
-    }
 }

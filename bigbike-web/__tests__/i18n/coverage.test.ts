@@ -65,7 +65,6 @@ describe("i18n production guards", () => {
       "components/guide/ClothingSizeTool.tsx",
       "components/guide/HelmetSizeTool.tsx",
       "components/policy/PrivacyPolicyContent.tsx",
-      "components/policy/WarrantyPolicyContent.tsx",
     ].map(path.normalize);
     const allowedProperOrTechnical = /^(?:BigBike|BIGBIKE|BigBike\.vn ·|Bigbike\.vn|Facebook|Twitter|YouTube|TikTok|Shopee|Video|Zalo|Z|GTM|cm|\(Mrs\. Thư\))$/;
     const roots = ["app/[locale]", "components"].map((folder) => path.resolve(process.cwd(), folder));

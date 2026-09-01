@@ -185,7 +185,7 @@ class ChatResponseGuardTest {
     @DisplayName("CHAT_RULE_007: every prepared bilingual reply family passes the response guard")
     void everyPreparedBilingualReplyFamilyPasses() {
         List<PreparedReply> replies = List.of(
-                new PreparedReply("vi", "Dạ, em là Trợ lý BigBike, trợ lý ảo AI của BigBike. "
+                new PreparedReply("vi", "Dạ, em là Trợ lý BigBike, trợ lý AI của BigBike. "
                         + "Em có thể tìm sản phẩm đang bán, tra chính sách đã công bố hoặc xem đơn của tài khoản đang đăng nhập. "
                         + "Anh/chị cho em biết tên hàng, thương hiệu, danh mục hoặc tầm giá đang quan tâm nhé."),
                 new PreparedReply("en", "I am BigBike Assistant, BigBike's AI shopping assistant. "

@@ -3,6 +3,7 @@ import {
   createLoginSchema,
   createRegisterSchema,
   createResetPasswordSchema,
+  normalizeVietnameseMobile,
 } from "@/lib/schemas/auth";
 
 // Identity translator — assert on validation logic, not on localized messages.
@@ -49,6 +50,25 @@ describe("registerSchema", () => {
   it("validates a correct payload", () => {
     expect(registerSchema.safeParse(valid).success).toBe(true);
   });
+
+  it.each([
+    ["0912 345 678", "0912345678"],
+    ["+84 912-345-678", "0912345678"],
+    ["84.912.345.678", "0912345678"],
+    ["(035) 123 4567", "0351234567"],
+    ["079-123-4567", "0791234567"],
+  ])("accepts and normalizes formatted Vietnamese mobile %s", (phone, normalized) => {
+    expect(normalizeVietnameseMobile(phone)).toBe(normalized);
+    expect(registerSchema.safeParse({ ...valid, phone }).success).toBe(true);
+  });
+
+  it.each(["0212345678", "091234567", "09123456789", "0912abc678", "+840912345678"])(
+    "rejects invalid Vietnamese mobile %s",
+    (phone) => {
+      expect(normalizeVietnameseMobile(phone)).toBeNull();
+      expect(registerSchema.safeParse({ ...valid, phone }).success).toBe(false);
+    },
+  );
 
   it("rejects password shorter than 8 characters", () => {
     const result = registerSchema.safeParse({ ...valid, password: "1234", confirm: "1234" });

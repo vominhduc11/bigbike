@@ -505,7 +505,12 @@
       "submitting": "Đang đăng nhập...",
       "registerCta": "Tạo tài khoản mới",
       "invalidCredentials": "Tên đăng nhập hoặc mật khẩu chưa đúng!",
-      "errorGeneric": "Hiện chưa thể đăng nhập. Vui lòng thử lại."
+      "errorGeneric": "Hiện chưa thể đăng nhập. Vui lòng thử lại.",
+      "errorRateLimited": "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng đợi khoảng {seconds} giây rồi thử lại.",
+      "errorNetwork": "Không thể kết nối với BigBike. Hãy kiểm tra mạng rồi thử lại.",
+      "errorSystem": "Hệ thống BigBike đang gặp sự cố. Vui lòng thử lại sau.",
+      "formIncomplete": "Hãy kiểm tra ô được đánh dấu rồi thử lại.",
+      "noAccountPrompt": "Chưa có tài khoản?"
     },
     "social": {
       "facebook": "Đăng nhập bằng Facebook",
@@ -527,7 +532,7 @@
       "firstNameLabel": "Tên",
       "firstNamePlaceholder": "Văn A",
       "fullNameLabel": "Họ và tên",
-      "fullNamePlaceholder": "Vui lòng nhập họ và tên...",
+      "fullNamePlaceholder": "Nguyễn Văn A",
       "lastNameLabel": "Họ",
       "lastNamePlaceholder": "Nguyễn",
       "emailLabel": "Email",
@@ -535,9 +540,9 @@
       "phoneLabel": "Số điện thoại",
       "phonePlaceholder": "Số điện thoại",
       "passwordLabel": "Nhập mật khẩu",
-      "passwordPlaceholder": "Vui lòng nhập mật khẩu...",
+      "passwordPlaceholder": "Ít nhất 8 ký tự",
       "confirmLabel": "Xác nhận mật khẩu",
-      "confirmPlaceholder": "Vui lòng nhập mật khẩu...",
+      "confirmPlaceholder": "Nhập lại mật khẩu",
       "submit": "Đăng ký",
       "submitting": "Đang tạo tài khoản...",
       "loginCta": "Đăng nhập tài khoản hiện có",
@@ -547,7 +552,11 @@
       "successHeading": "Tài khoản đã được tạo!",
       "successDescription": "Chúng tôi đã gửi email xác nhận đến <strong>{email}</strong>. Vui lòng kiểm tra hộp thư (kể cả thư mục spam) để xác nhận tài khoản.",
       "successCta": "Vào tài khoản",
-      "errorGeneric": "Hiện chưa thể tạo tài khoản. Vui lòng thử lại."
+      "errorGeneric": "Hiện chưa thể tạo tài khoản. Vui lòng thử lại.",
+      "formIncomplete": "Hãy kiểm tra ô được đánh dấu rồi thử lại.",
+      "hasAccountPrompt": "Đã có tài khoản?",
+      "passwordMatch": "Mật khẩu khớp.",
+      "passwordNotMatch": "Mật khẩu chưa khớp."
     },
     "forgot": {
       "title": "QUÊN MẬT KHẨU",
@@ -572,12 +581,15 @@
       "successHeading": "Đặt lại mật khẩu thành công",
       "successDescription": "Đăng nhập tài khoản Bigbike với mật khẩu mới.",
       "loginNow": "Đăng nhập ngay",
-      "errorGeneric": "Hiện chưa thể đặt lại mật khẩu. Vui lòng thử lại."
+      "errorGeneric": "Hiện chưa thể đặt lại mật khẩu. Vui lòng thử lại.",
+      "passwordMatch": "Mật khẩu khớp.",
+      "passwordNotMatch": "Mật khẩu chưa khớp."
     },
     "validation": {
       "loginRequired": "Vui lòng nhập email hoặc số điện thoại",
       "passwordRequired": "Vui lòng nhập mật khẩu",
       "firstNameRequired": "Vui lòng nhập tên",
+      "fullNameRequired": "Vui lòng nhập họ và tên",
       "phoneRequired": "Vui lòng nhập số điện thoại",
       "phoneInvalid": "Số điện thoại không hợp lệ",
       "emailRequired": "Vui lòng nhập email",
@@ -1407,9 +1419,9 @@
     "minimize": "Thu nhỏ trợ lý BigBike",
     "deleteConversation": "Xoá cuộc trò chuyện",
     "minimizedLabel": "Trợ lý BigBike · Tiếp tục tư vấn",
-    "bigbikeTitle": "Trợ lý ảo AI BigBike",
-    "aiDisclosure": "Bạn đang trò chuyện với trợ lý ảo AI BigBike, không phải nhân viên.",
-    "aiStatus": "Trợ lý ảo AI sẵn sàng",
+    "bigbikeTitle": "Trợ lý BigBike",
+    "aiDisclosure": "Bạn đang trò chuyện với trợ lý AI của BigBike, không phải nhân viên.",
+    "aiStatus": "Trợ lý sẵn sàng",
     "contactStatus": "Kênh liên hệ shop",
     "checking": "Trợ lý BigBike đang chuẩn bị phiên tư vấn…",
     "typing": "Trợ lý BigBike đang kiểm tra sản phẩm…",

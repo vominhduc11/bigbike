@@ -21,8 +21,10 @@ const AUTH_ACCEPTANCE_VIEWPORTS = [
   { name: "mobile-390x844", width: 390, height: 844 },
   { name: "mobile-414x896", width: 414, height: 896 },
   { name: "tablet-768x1024", width: 768, height: 1024 },
+  { name: "desktop-1024x768", width: 1024, height: 768 },
   { name: "desktop-1280x800", width: 1280, height: 800 },
   { name: "desktop-1440x900", width: 1440, height: 900 },
+  { name: "desktop-1920x1080", width: 1920, height: 1080 },
 ] as const;
 
 type AuthKind = keyof typeof AUTH_ROUTES;
@@ -140,7 +142,7 @@ function normalStateControls(root: Locator, kind: AuthKind): Locator[] {
   return [guestExit];
 }
 
-test("four authentication pages are chrome-free and fit every accepted viewport", async ({
+test("four authentication pages stay chrome-free, labelled and reachable at every accepted viewport", async ({
   page,
 }) => {
   for (const viewport of AUTH_ACCEPTANCE_VIEWPORTS) {
@@ -154,6 +156,7 @@ test("four authentication pages are chrome-free and fit every accepted viewport"
 
         const root = authRoot(page, kind);
         for (const [index, control] of normalStateControls(root, kind).entries()) {
+          await control.first().scrollIntoViewIfNeeded();
           await expectVisibleInsideViewport(
             page,
             control.first(),
@@ -161,40 +164,82 @@ test("four authentication pages are chrome-free and fit every accepted viewport"
           );
         }
 
+        for (const fieldId of kind === "login"
+          ? ["login-username", "login-password"]
+          : kind === "register"
+            ? ["reg-fullName", "reg-email", "reg-phone", "reg-password", "reg-confirm"]
+            : kind === "forgot"
+              ? ["forgot-login"]
+              : []) {
+          const input = root.locator(`#${fieldId}`);
+          await expect(root.locator(`label[for="${fieldId}"]`), `${fieldId} label`).toBeVisible();
+          await expect(input, `${fieldId} placeholder`).toHaveAttribute("placeholder", /\S/);
+          const placeholder = (await input.getAttribute("placeholder")) ?? "";
+          expect(placeholder, `${fieldId} placeholder must not be visibly truncated`).not.toMatch(
+            /…|\.\.\./,
+          );
+        }
+
+        if (kind === "login" || kind === "register") {
+          const socialLinks = root.locator('a[href*="/oauth/"]');
+          await expect(socialLinks, `${kind} has two social entries`).toHaveCount(2);
+          for (let index = 0; index < 2; index += 1) {
+            await expect(
+              socialLinks.nth(index),
+              `${kind} social entry should include text`,
+            ).toHaveText(/\S/);
+          }
+        }
+
         const metrics = await readPageMetrics(page);
-        expect(
-          metrics.scrollRequired,
-          `${kind} ${path} should not require normal-state scrolling @ ${viewport.name}`,
-        ).toBeLessThanOrEqual(1);
+        if (kind === "register" && viewport.width < 768) {
+          expect(
+            metrics.scrollRequired,
+            `registration may scroll rather than compressing fields @ ${viewport.name}`,
+          ).toBeGreaterThan(0);
+          const emailBox = await root.locator("#reg-email").boundingBox();
+          const phoneBox = await root.locator("#reg-phone").boundingBox();
+          expect(phoneBox?.y, `phone must stack below email @ ${viewport.name}`).toBeGreaterThan(
+            emailBox?.y ?? 0,
+          );
+          expect(Math.abs((phoneBox?.x ?? 0) - (emailBox?.x ?? 0))).toBeLessThanOrEqual(1);
+        }
       }
     }
   }
 });
 
-test("login and registration errors remain reachable when validation expands the form", async ({
+test("login and registration highlight only the first invalid field and focus it", async ({
   page,
 }) => {
   for (const viewport of AUTH_ACCEPTANCE_VIEWPORTS) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
-    for (const [kind, path] of Object.entries({
-      login: AUTH_ROUTES.login,
-      register: AUTH_ROUTES.register,
-    }) as Array<["login" | "register", string]>) {
-      await goToAuth(page, path);
-      const root = authRoot(page, kind);
-      await root.locator('form button[type="submit"]:visible').click();
-      const errors = root.locator('[role="alert"]');
-      await expect(errors, `${kind} validation errors should render`).not.toHaveCount(0);
-      const lastError = errors.last();
-      await lastError.scrollIntoViewIfNeeded();
-      await expectVisibleInsideViewport(page, lastError, `${kind} error @ ${viewport.name}`);
+    for (const routeSet of [AUTH_ROUTES, EN_AUTH_ROUTES]) {
+      for (const [kind, path] of Object.entries({
+        login: routeSet.login,
+        register: routeSet.register,
+      }) as Array<["login" | "register", string]>) {
+        await goToAuth(page, path);
+        const root = authRoot(page, kind);
+        await root.locator('form button[type="submit"]:visible').click();
+        const errors = root.locator('[role="alert"]');
+        await expect(errors, `${kind} validation errors should render`).not.toHaveCount(0);
+        const firstInput = root.loc(kind === "login" ? "#login-username" : "#reg-fullName");
+        await expect(firstInput).toBeFocused();
+        await expect(firstInput).toHaveAttribute("aria-invalid", "true");
+        const secondInput = root.loc(kind === "login" ? "#login-password" : "#reg-email");
+        await expect(secondInput).not.toHaveAttribute("aria-invalid", "true");
+        await errors.first().scrollIntoViewIfNeeded();
+        await expectVisibleInsideViewport(page, errors.first(), `${kind} error @ ${viewport.name}`);
+      }
     }
   }
 });
 
 test("captures requested login and registration evidence", async ({ page }, testInfo) => {
   for (const viewport of [
-    { name: "mobile-390x844", width: 390, height: 844 },
+    { name: "mobile-360x640", width: 360, height: 640 },
+    { name: "tablet-768x1024", width: 768, height: 1024 },
     { name: "desktop-1440x900", width: 1440, height: 900 },
   ]) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -206,8 +251,26 @@ test("captures requested login and registration evidence", async ({ page }, test
       await hideDevelopmentTools(page);
       await page.screenshot({
         path: testInfo.outputPath(`${kind}-${viewport.name}.png`),
-        fullPage: false,
+        fullPage: true,
       });
     }
   }
+
+  await page.setViewportSize({ width: 360, height: 640 });
+  await goToAuth(page, AUTH_ROUTES.login);
+  await page.locator("#login-username").fill("customer@example.com");
+  await page.locator("#login-password").fill("incorrect-password");
+  await page.route("**/api/v1/customer/auth/login", (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { code: "UNAUTHENTICATED" } }),
+    }),
+  );
+  await page.locator('[data-auth-page="login"] form button[type="submit"]').click();
+  await expect(page.locator("[data-form-root-error]")).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("login-invalid-password-mobile-360x640.png"),
+    fullPage: true,
+  });
 });

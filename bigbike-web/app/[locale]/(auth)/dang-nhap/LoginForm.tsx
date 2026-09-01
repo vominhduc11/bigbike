@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "@/i18n/StorefrontLink";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiClientError, loginCustomer } from "@/lib/api/client-api";
 import { markCustomerAuthenticated, refreshAuth, useAuth } from "@/lib/auth/auth-store";
@@ -27,6 +27,9 @@ import { Label } from "@/components/ui/label";
 import { AuthSkeleton } from "@/components/ui/Skeletons";
 import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 
+type LoginField = "login" | "password";
+const LOGIN_FIELDS: LoginField[] = ["login", "password"];
+
 export function LoginForm({
   returnTo,
   socialErrorKey,
@@ -42,12 +45,15 @@ export function LoginForm({
   const resolvedReturnTo = returnTo ?? toAccountPath(locale);
   const router = useRouter();
   const auth = useAuth();
+  const [submittedInvalidField, setSubmittedInvalidField] = useState<LoginField | null>(null);
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, touchedFields },
+    clearErrors,
+    resetField,
     setError,
     setFocus,
   } = useForm<LoginFormValues>({
@@ -69,20 +75,47 @@ export function LoginForm({
     }
   }, [setFocus]);
 
+  function showFirstInvalidField(invalid: FieldErrors<LoginFormValues>) {
+    const field = LOGIN_FIELDS.find((name) => invalid[name]);
+    if (!field) return;
+
+    setSubmittedInvalidField(field);
+    setError("root", { message: t("formIncomplete") });
+    window.requestAnimationFrame(() => setFocus(field));
+  }
+
   async function onSubmit(values: LoginFormValues) {
+    clearErrors("root");
+    setSubmittedInvalidField(null);
     try {
       await loginCustomer(values.login, values.password, values.remember);
       markCustomerAuthenticated();
       await refreshAuth();
     } catch (err: unknown) {
       reportStorefrontFailure("login", err);
-      const message =
-        err instanceof ApiClientError && [401, 403].includes(err.status)
-          ? t("invalidCredentials")
-          : t("errorGeneric");
-      setError("root", { message });
+
+      if (err instanceof ApiClientError && [401, 403].includes(err.status)) {
+        resetField("password");
+        setError("root", { message: t("invalidCredentials") });
+        window.requestAnimationFrame(() => setFocus("password"));
+        return;
+      }
+
+      if (err instanceof ApiClientError && err.status === 429) {
+        setError("root", {
+          message: t("errorRateLimited", { seconds: err.retryAfterSeconds ?? 60 }),
+        });
+        return;
+      }
+
+      setError("root", {
+        message: err instanceof ApiClientError ? t("errorSystem") : t("errorNetwork"),
+      });
     }
   }
+
+  const visibleError = (field: LoginField) =>
+    touchedFields[field] || submittedInvalidField === field ? errors[field] : undefined;
 
   if (auth.status === "authenticated") return <AuthSkeleton credential />;
 
@@ -92,69 +125,57 @@ export function LoginForm({
         message={errors.root?.message ?? (socialErrorKey ? tSocial(socialErrorKey) : undefined)}
       />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form onSubmit={handleSubmit(onSubmit, showFirstInvalidField)} noValidate>
         <AuthField
           id="login-username"
           label={t("emailLabel")}
           autoComplete="username"
           placeholder={t("emailPlaceholder")}
           registration={register("login")}
-          error={errors.login}
+          error={visibleError("login")}
           compact
-          groupClassName="lg:mb-4"
         />
 
         <AuthField
           id="login-password"
           type="password"
           label={t("passwordLabel")}
-          autoComplete="current-password"
-          placeholder={t("passwordPlaceholder")}
-          passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
-          registration={register("password")}
-          error={errors.password}
-          compact
-          groupClassName="lg:mb-4"
-        />
-
-        <div className="mb-3 grid gap-3 md:mb-5 md:grid-cols-2 lg:mb-4">
-          <div className="flex min-h-11 items-center gap-2">
-            <Controller
-              name="remember"
-              control={control}
-              render={({ field }) => (
-                <>
-                  <Checkbox
-                    id="remember-me"
-                    touchTarget
-                    checked={field.value}
-                    onCheckedChange={(checked) => field.onChange(checked === true)}
-                    onBlur={field.onBlur}
-                    ref={field.ref}
-                  />
-                  <Label
-                    htmlFor="remember-me"
-                    className="cursor-pointer select-none text-a5-meta"
-                    onClick={(event) => {
-                      if ((event.target as HTMLElement).closest('[role="checkbox"]')) return;
-                      event.preventDefault();
-                      field.onChange(!field.value);
-                    }}
-                  >
-                    {t("remember")}
-                  </Label>
-                </>
-              )}
-            />
-          </div>
-          <div className="flex min-h-11 items-center md:justify-end">
+          labelAction={
             <Link
               href={toForgotPasswordPath(undefined, locale)}
               className="inline-flex min-h-11 items-center text-a5-meta font-medium text-blue underline hover:no-underline"
             >
               {t("forgotPassword")}
             </Link>
-          </div>
+          }
+          autoComplete="current-password"
+          placeholder={t("passwordPlaceholder")}
+          passwordToggleLabels={{ show: tPassword("show"), hide: tPassword("hide") }}
+          registration={register("password")}
+          error={visibleError("password")}
+          compact
+        />
+
+        <div className="mb-4 flex min-h-11 items-center gap-2 md:mb-5">
+          <Controller
+            name="remember"
+            control={control}
+            render={({ field }) => (
+              <>
+                <Checkbox
+                  id="remember-me"
+                  touchTarget
+                  checked={field.value}
+                  onCheckedChange={(checked) => field.onChange(checked === true)}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                />
+                <Label htmlFor="remember-me" className="cursor-pointer select-none text-a5-meta">
+                  {t("remember")}
+                </Label>
+              </>
+            )}
+          />
         </div>
 
         <Button
@@ -167,27 +188,29 @@ export function LoginForm({
         </Button>
       </form>
 
-      <p className="mt-2 text-center text-a5-meta text-muted-foreground lg:mt-2">
-        <Link
-          href={toOrderLookupPath(locale)}
-          data-auth-order-lookup
-          className="font-medium text-blue underline hover:no-underline"
-        >
-          {t("orderLookup")}
-        </Link>
-      </p>
-
-      <Button
-        asChild
-        variant="secondary"
-        size="auth"
-        className="mt-2 min-h-11 w-full md:mt-3 md:min-h-13 lg:mt-2"
-      >
-        <Link href={toRegisterPath(locale)}>{t("registerCta")}</Link>
-      </Button>
+      <div className="mt-4 space-y-2 text-center text-a5-meta text-muted-foreground">
+        <p>
+          {t("noAccountPrompt")}{" "}
+          <Link
+            href={toRegisterPath(locale)}
+            className="font-medium text-blue underline hover:no-underline"
+          >
+            {t("registerCta")}
+          </Link>
+        </p>
+        <p>
+          <Link
+            href={toOrderLookupPath(locale)}
+            data-auth-order-lookup
+            className="font-medium text-blue underline hover:no-underline"
+          >
+            {t("orderLookup")}
+          </Link>
+        </p>
+      </div>
 
       <div
-        className="my-3 flex items-center gap-3 md:my-6 lg:my-3"
+        className="my-5 flex items-center gap-3 md:my-6"
         role="separator"
         aria-label={tSocial("divider")}
       >

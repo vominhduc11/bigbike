@@ -76,7 +76,9 @@ class ChatToolServiceTest {
         ChatToolService tools = new ChatToolService(catalog, orders);
 
         assertThat(tools.resolve("Xin chào", "vi", null, settings()).localAnswer())
-                .contains("trợ lý ảo");
+                .contains("Trợ lý BigBike")
+                .contains("trợ lý AI")
+                .doesNotContain("trợ lý ảo");
         verifyNoInteractions(catalog, orders);
 
         when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),

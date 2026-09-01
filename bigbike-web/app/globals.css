@@ -88,6 +88,10 @@
 
   /* State & semantic text colors — expose token để tránh dùng arbitrary CSS-var utilities */
   --color-state-success-text: var(--bb-state-success-text);
+  --color-state-success-bg: var(--bb-state-success-bg);
+  --color-state-success-border: var(--bb-state-success-border);
+  --color-state-danger-bg: var(--bb-state-danger-bg);
+  --color-state-danger-border: var(--bb-state-danger-border);
   --color-state-warning-text: var(--bb-state-warning-text);
   --color-state-warning: var(--bb-state-warning);
   --color-state-warning-bg: var(--bb-state-warning-bg);

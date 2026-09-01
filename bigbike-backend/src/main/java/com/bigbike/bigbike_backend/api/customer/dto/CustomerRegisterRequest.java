@@ -11,7 +11,6 @@ public record CustomerRegisterRequest(
         @Email(message = "Địa chỉ email không hợp lệ.")
         String email,
 
-        @Pattern(regexp = "^\\+?[0-9]{8,15}$", message = "Số điện thoại không hợp lệ.")
         String phone,
 
         @Size(min = 8, max = 256, message = "Mật khẩu phải có 8–256 ký tự.")

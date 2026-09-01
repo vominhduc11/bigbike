@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type FormNoticeTone = "success" | "danger" | "warning";
 
-type FormNoticeProps = {
+type FormNoticeProps = HTMLAttributes<HTMLDivElement> & {
   tone: FormNoticeTone;
   /** Extra utilities (margin, padding override, …) appended via cn(). */
   className?: string;
@@ -11,25 +11,19 @@ type FormNoticeProps = {
 };
 
 const TONE_CLASS: Record<FormNoticeTone, string> = {
-  success: "bg-[var(--bb-state-success-bg)] border-[var(--bb-state-success-border)] text-state-success-text",
-  danger: "bg-[var(--bb-state-danger-bg)] border-[var(--bb-state-danger-border)] text-destructive",
-  warning: "bg-[var(--bb-state-warning-bg)] border-[var(--bb-state-warning-border)] text-state-warning-text",
+  success: "bg-state-success-bg border-state-success-border text-state-success-text",
+  danger: "bg-state-danger-bg border-state-danger-border text-destructive",
+  warning: "bg-state-warning-bg border-state-warning-border text-state-warning-text",
 };
 
 /**
  * Status banner for account / return forms. The tone supplies the
- * background/border/text colour; the default padding matches the account &
- * address forms (`p-[12px_16px]`) and is overridable via `className` (callers
- * that need different padding/margin pass it, and tailwind-merge resolves the
- * conflict). Children render as-is — callers that wrap content in a `<p>` keep
- * doing so.
- *
- * Note: like the originals, this renders a plain `<div>` with no role/aria-live;
- * adding one would change the existing markup, so it is intentionally omitted.
+ * background/border/text colour; the default padding follows the account form
+ * spacing and callers can pass compatible HTML accessibility attributes.
  */
-export function FormNotice({ tone, className, children }: FormNoticeProps) {
+export function FormNotice({ tone, className, children, ...props }: FormNoticeProps) {
   return (
-    <div className={cn("border p-[12px_16px] text-a5-meta", TONE_CLASS[tone], className)}>
+    <div className={cn("border p-3 text-a5-meta", TONE_CLASS[tone], className)} {...props}>
       {children}
     </div>
   );

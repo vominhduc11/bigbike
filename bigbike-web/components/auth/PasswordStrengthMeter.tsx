@@ -35,16 +35,19 @@ export function PasswordStrengthMeter({
   password,
   label,
   labels,
+  requirementLabel,
   compact = false,
 }: {
   password: string;
   label: string;
   labels: Record<PasswordStrength, string>;
+  requirementLabel?: string;
   compact?: boolean;
 }) {
   const strength = getPasswordStrength(password);
   const filled = filledSegments[strength];
   const color = strength === "empty" ? "bg-border" : segmentColor[strength];
+  const meetsMinimum = password.length >= 8;
 
   return (
     <output
@@ -52,7 +55,7 @@ export function PasswordStrengthMeter({
       aria-live="polite"
       className={
         compact
-          ? "mb-1 block text-a5-meta text-muted-foreground md:mb-5 lg:mb-3"
+          ? "mb-5 block text-a5-meta text-muted-foreground"
           : "mb-5 block text-a5-meta text-muted-foreground"
       }
     >
@@ -65,6 +68,25 @@ export function PasswordStrengthMeter({
           <span key={index} className={index < filled ? `h-1 ${color}` : "h-1 bg-border"} />
         ))}
       </span>
+      {requirementLabel ? (
+        <span
+          data-password-requirement={meetsMinimum ? "met" : "unmet"}
+          className="mt-2 flex items-center gap-2"
+        >
+          <Check
+            className={
+              meetsMinimum
+                ? "size-4 shrink-0 text-state-success-text"
+                : "size-4 shrink-0 text-muted-foreground"
+            }
+            aria-hidden="true"
+          />
+          <span className={meetsMinimum ? "text-state-success-text" : undefined}>
+            {requirementLabel}
+          </span>
+        </span>
+      ) : null}
     </output>
   );
 }
+import { Check } from "lucide-react";

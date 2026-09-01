@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.chat;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
+import com.bigbike.bigbike_backend.service.content.StorePolicyService;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class ChatAssistantSettings {
     public static final int IMAGE_CONVERSATION_LIMIT = 3;
 
     private final SiteSettingJpaRepository settingRepo;
+    private final StorePolicyService storePolicyService;
 
     /** Image quotas are software policy, not settings. Availability is checked by the AI client. */
     public ImageSettings imageSettings() {
@@ -60,9 +62,8 @@ public class ChatAssistantSettings {
                         value(settings, "bank_account_number"),
                         value(settings, "bank_account_holder"),
                         value(settings, "bank_branch")),
-                policy(settings, "policy_warranty_title", "policy_warranty_body_html", english),
-                policy(settings, "policy_return_exchange_title",
-                        "policy_return_exchange_body_html", english));
+                policy("warranty", lang),
+                policy("return-exchange", lang));
     }
 
     private Map<String, SiteSettingEntity> settingsByKey() {
@@ -104,16 +105,11 @@ public class ChatAssistantSettings {
                 ? "" : setting.getSettingValue().trim();
     }
 
-    private static PolicyText policy(
-            Map<String, SiteSettingEntity> settings,
-            String titleKey,
-            String bodyKey,
-            boolean english
-    ) {
-        String title = localized(settings, titleKey, english, "");
-        String html = localized(settings, bodyKey, english, "");
-        String text = html.isBlank() ? "" : Jsoup.parseBodyFragment(html).text().trim();
-        return new PolicyText(title, text);
+    private PolicyText policy(String topic, String lang) {
+        var document = storePolicyService.get(topic, lang);
+        String text = Jsoup.parseBodyFragment(document.bodyHtml()).text()
+                .replaceAll("\\s+", " ").trim();
+        return new PolicyText(document.title(), text);
     }
 
     public record ImageSettings(boolean enabled, int dailyLimit, int conversationLimit) {}

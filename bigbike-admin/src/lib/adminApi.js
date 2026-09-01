@@ -1499,42 +1499,6 @@ export async function batchUpdateSettings(updates) {
   return { items }
 }
 
-export async function fetchReviewInvitationSummary() {
-  const payload = await requestJson('/admin/review-invitations/summary')
-  return payload?.data || {}
-}
-
-export async function fetchReviewInvitations(query = {}) {
-  const payload = await requestJson('/admin/review-invitations', {
-    query: {
-      page: query.page || 1,
-      size: query.pageSize || 20,
-      status: query.status && query.status !== 'ALL' ? query.status : undefined,
-      q: query.search || undefined,
-    },
-  })
-  return parseListPayload(payload, (item) => item, query.pageSize || 20)
-}
-
-export async function skipReviewInvitationAsRefunded(invitationId) {
-  const payload = await requestJson(`/admin/review-invitations/${invitationId}/skip`, {
-    method: 'POST',
-    body: { reason: 'REFUNDED' },
-  })
-  return payload?.data || { skipped: true }
-}
-
-export async function fetchReviewInvitationOptOuts(query = {}) {
-  const payload = await requestJson('/admin/review-invitation-opt-outs', {
-    query: {
-      page: query.page || 1,
-      size: query.pageSize || 20,
-      q: query.search || undefined,
-    },
-  })
-  return parseListPayload(payload, (item) => item, query.pageSize || 20)
-}
-
 // Editable "Phân công" guide text for the product create/edit banner.
 // Read is gated by products.read (not settings.read) so SHOP_MANAGER/EDITOR see it too.
 export async function fetchProductAssignment() {

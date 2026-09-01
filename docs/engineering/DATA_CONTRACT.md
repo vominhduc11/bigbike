@@ -64,7 +64,7 @@ No column on `orders` is changed. Classification is additive and auditable:
 
 An order is `HISTORICAL` only while its batch is active; otherwise it is `OPERATIONAL`. The one-time classification command inserts batch/membership rows only, verifies expected 1,661/388/508 counts before write, is idempotent, and rolls back by setting `active=false`. It never updates/deletes `orders` or any monetary/content/status column.
 
-`admin_notifications` type `ORDER_OVERDUE_DIGEST` has null order reference and payload `{schemaVersion:1,count,thresholdDays,cutoffAt}`. It is `orders.read` scoped and contains no PII/order list. `order_overdue_days` is a private `INTEGER >= 1` setting, group `order_operations`, default `2`.
+`admin_notifications` type `ORDER_OVERDUE_DIGEST` has null order reference and payload `{schemaVersion:1,count,thresholdDays,cutoffAt}`. It is `orders.read` scoped and contains no PII/order list. `order_overdue_days` remains a private `INTEGER >= 1` setting in group `order_operations`, with effective value fixed at `2` days by the owner decision on 2026-09-01. The row remains in storage for the reminder, overdue filter and CSV readers; it is no longer an editable Settings field, replacing the 2026-08-31 description.
 
 Status: `OWNER_CONFIRMED_2026-08-31` — `ORDER_RULE_013`–`015`, `NOTIFICATION_RULE_002`.
 
@@ -318,7 +318,7 @@ Evidence: `OrderEntity.cancelReason`, `AdminOrderService.updateOrderStatus`, `V3
 
 These are admin-only projections; customer/guest order shapes do not change. Historical classification is not an order status, payment status, source replacement or monetary field.
 
-**Phone normalization:** `customers.phone` is stored in normalized form (`PhoneNumbers.normalize`: retain digits, `+84`/`84` → `0`) consistently across **online registration, login, profile update, admin customer edit, and new WordPress customer imports**. This makes phone a reliable identity key (the same person typing `+84…` or `0…` resolves to one profile). Identity and uniqueness lookups normalize the stored value inside the database query, so pre-existing `+84…` and formatted rows still match. There is no bulk backfill of existing database rows; the importer normalizes only rows processed from this change onward.
+**Phone normalization:** `customers.phone` is stored in normalized form (`PhoneNumbers.normalize`: retain digits, `+84`/`84` → `0`) consistently across **online registration, login, profile update, admin customer edit, and new WordPress customer imports**. This makes phone a reliable identity key (the same person typing `+84…` or `0…` resolves to one profile). For a supplied storefront-registration value, `PhoneNumbers.normalizeVietnameseMobile` first accepts only spaces, dots, hyphens, parentheses and one optional leading `+`, then accepts exactly ten normalized digits beginning `03`, `05`, `07`, `08` or `09`; it returns the canonical `0…` string or a field-level validation failure. Identity and uniqueness lookups normalize the stored value inside the database query, so pre-existing `+84…` and formatted rows still match. There is no bulk backfill of existing database rows; the importer normalizes only rows processed from this change onward.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -1255,12 +1255,15 @@ Status: `CONFIRMED_FROM_CODE` — `AdminReviewService.java`, `PublicReviewServic
 
 `orders.locale` is a passive `varchar(2) NOT NULL DEFAULT 'vi'` snapshot with a check constraint limited to `vi|en`. Checkout writes the storefront locale; all historical/imported rows become `vi`. It changes no order state, price, payment or fulfillment behavior and is used only for post-purchase invitation language (`REVIEW_RULE_015`).
 
-`review_invitation_campaigns` creates a durable boundary for each enable cycle:
+`review_invitation_campaigns` creates a durable boundary for each automatic enable cycle. The
+first scheduler callback after deployment opens the initial campaign when
+`BIGBIKE_REVIEW_INVITATION_ENABLED=true`; a later re-enable opens a new campaign with no backlog
+replay. The cutoff is the exact committed campaign activation time.
 
 | Column | Type / constraint | Meaning |
 |---|---|---|
 | `id` | `uuid PRIMARY KEY` | Campaign identifier. |
-| `activated_at` | `timestamptz NOT NULL` | Exact committed `false → true` cutoff; only orders completed at/after it qualify. |
+| `activated_at` | `timestamptz NOT NULL` | Exact committed scheduler cutoff; only orders completed at/after it qualify. |
 | `deactivated_at` | `timestamptz NULL` | Set once on disable; null only for the active campaign. |
 | `created_at`, `updated_at` | `timestamptz NOT NULL` | Audit timestamps. |
 
@@ -1275,10 +1278,10 @@ At most one campaign may have `deactivated_at IS NULL` (partial unique index). `
 | `recipient_email`, `recipient_email_normalized` | `varchar(255) NOT NULL` | Delivery address and lowercase/trimmed global opt-out key. |
 | `locale` | `varchar(2) NOT NULL`, check `vi|en` | Email/product-link language snapshot. |
 | `status` | `varchar(16) NOT NULL` | `PENDING`, `SENDING`, `SENT`, `FAILED`, `UNCERTAIN`, `SKIPPED`. |
-| `completed_at`, `due_at` | `timestamptz NOT NULL` | Eligibility time and scheduled time (`completed_at + delay days`). |
+| `completed_at`, `due_at` | `timestamptz NOT NULL` | Eligibility time and scheduled time (`completed_at + 7 days`). |
 | `attempted_at`, `provider_accepted_at` | `timestamptz NULL` | Attempt audit; accepted means the SMTP provider accepted processing, not inbox delivery. |
 | `unsubscribe_token_hash` | `char(64) NULL UNIQUE` | SHA-256 hex only; raw token exists only while building the email URL. |
-| `skip_reason` | `varchar(40) NULL` | Closed vocabulary from the Admin API contract. |
+| `skip_reason` | `varchar(40) NULL` | Internal closed vocabulary for campaign, eligibility and opt-out diagnostics; not an admin API field. |
 | `failure_code` | `varchar(64) NULL` | Stable operator filter/debug code. |
 | `failure_message` | `varchar(500) NULL` | Sanitized description; no token/credential. |
 | `created_at`, `updated_at` | `timestamptz NOT NULL` | Audit timestamps. |
@@ -1569,7 +1572,7 @@ còn 1 cột tên (`name`) và 1 cột slug (`slug`), không tách VI/EN.
 
 **Redirect:** catalog danh mục/sản phẩm/bài viết đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`/`autoCreateSlugEnRedirect`) — đổi → old-EN-URL→new-EN-URL; xoá → old-EN-URL→slug VI trong cùng locale; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. Từ 2026-08-03, chi tiết sản phẩm EN dùng `/en/product/`, bài viết EN dùng `/en/tin-tuc/`; các alias cũ `/en/products/{slug}` và `/en/news...` redirect 301 tương thích, trong khi danh sách sản phẩm vẫn là `/en/products/` và danh mục vẫn dùng `/en/categories/`. Mọi redirect danh mục VI mới dùng `/danh-muc/{slug}/`; nguồn `/danh-muc-san-pham/{slug}/` cũ được giữ làm tương thích 301. Brand không có khái niệm slug EN nên không sinh redirect riêng. **Bài viết trước 2026-07-24 KHÔNG có cơ chế redirect** (module nội dung chưa wiring `SlugRedirectHelper`) — từ 2026-07-24 đã bổ sung, hành vi giờ đồng nhất với Sản phẩm/Danh mục.
 
-**Ngoài phạm vi:** module pages/CMS vẫn đã gỡ. Web định tuyến tám route bằng slug cố định. Từ 2026-08-23, tiêu đề/thân bài Bảo hành và Đổi trả là bốn row allowlist trong `site_settings` nhóm `store_policy`, dùng chung cho endpoint policy và Trợ lý BigBike; các trang còn lại vẫn tĩnh.
+**Ngoài phạm vi:** module pages/CMS vẫn đã gỡ. Web định tuyến tám route bằng slug cố định. Từ 2026-09-01, tiêu đề/thân bài Bảo hành và Đổi trả là bốn resource UTF-8 dưới `bigbike-backend/src/main/resources/policy-content/`, dùng chung cho endpoint policy và Trợ lý BigBike. Quyết định này thay thế hợp đồng cũ ngày 2026-08-23 về bốn row `site_settings` nhóm `store_policy`; các row đó được xóa bởi `V1075__freeze_store_policy_content.sql`. Khối liên hệ vẫn lấy động từ nhóm `contact`; các trang còn lại vẫn tĩnh.
 
 Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`/`ProductEntity`/`ArticleEntity` (`slugEn`), `*JpaRepository.findBySlugEn` (category/product/article only — `BrandJpaRepository` has no such method), `JpaCatalogReadRepository`/`JpaContentReadRepository` (map active `slugEn` + OR-resolve), `AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V216`; brand `name_en`/`slug_en` dropped by `V352`.
 
@@ -2307,8 +2310,7 @@ admin concurrency metadata.
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage SEO title and description (`seo_home_title`/`seo_home_description`), plus the homepage bottom SEO HTML block (`home_content_bottom_html`). The visible homepage H1 is the localized title of the introduction block, not a site-setting field. The former `seo_home_h1` row is retained in storage for compatibility but is no longer editable or part of the public homepage contract. | SEO website |
 | `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần mặc định 400 lượt AI/ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..12`, mặc định `12`) và công tắc diễn giải cách nói tự nhiên. Trần 40 lượt/hội thoại và hạn mức ảnh là hằng số phần mềm, không phải setting. Lịch sử lấy từ đúng conversation, che PII rồi cắt 450 ký tự/tin. Không chứa khoá AI. | Trợ lý BigBike |
-| `order_operations` | Private order-operations settings. Currently `order_overdue_days` (`INTEGER`, default `2`, minimum `1`); never exposed by public settings. | Vận hành đơn hàng |
-| `review_invitation` | Ba khóa private: bật/tắt thư mời đánh giá, số ngày chờ 1–90 (mặc định 7), trần thử gửi 1–50/ngày (mặc định 20). Bảng vận hành và danh sách từ chối hiển thị trong cùng tab. | Mời đánh giá |
+| `order_operations` | Private runtime data. `order_overdue_days` (`INTEGER`, effective value `2`, minimum `1`) remains stored for the daily overdue reminder, Orders filter and CSV export; it is not editable or exposed as an admin Settings tab and is never exposed by public settings. | (ẩn — dữ liệu nội bộ, không UI) |
 | `store` | **No active rows.** The former low-stock threshold was removed in V279 with the quantity-based inventory model; this group must not be used to recreate a “sắp hết hàng” tier. | (không có tab — nhóm trống) |
 | `inventory` | Hai khóa private cho bản tin hết hàng hằng ngày: `inventory_out_of_stock_digest_enabled` (`BOOLEAN`, mặc định `true`) và `inventory_out_of_stock_digest_time` (`STRING`, mặc định `08:00`, `HH:mm` giờ Việt Nam). Các khóa tồn kho/bảo hành cũ vẫn đã gỡ như mô tả ở trên; không có ngưỡng số lượng. | Cảnh báo hết hàng |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product AND content/article create/edit screens (shared data) — `product_assign_title` (STRING) + `product_assign_roles` (JSON array, 1–6 dynamic role entries, V318). **Super-admin-only writable** (see below). | Phân công sản phẩm |

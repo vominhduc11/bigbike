@@ -12,31 +12,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ReviewInvitationLifecycleService {
 
+    private final ReviewInvitationSettings settings;
     private final ReviewInvitationCampaignJpaRepository campaignRepository;
     private final ReviewInvitationDeliveryJpaRepository deliveryRepository;
 
     @Transactional
-    public void onSettingUpdated(String key, String oldValue, String newValue, Instant now) {
-        if (ReviewInvitationSettings.ENABLED_KEY.equals(key)) {
-            boolean wasEnabled = Boolean.parseBoolean(oldValue);
-            boolean enabled = Boolean.parseBoolean(newValue);
-            if (wasEnabled == enabled) {
-                return;
-            }
-            if (enabled) {
-                openFreshCampaign(now);
-            } else {
-                closeActiveCampaign(now);
-            }
+    public void synchronize(Instant now) {
+        if (!settings.get().enabled()) {
+            closeActiveCampaign(now);
             return;
         }
-
-        if (ReviewInvitationSettings.DELAY_DAYS_KEY.equals(key)
-                && newValue != null && !newValue.equals(oldValue)) {
-            int delayDays = Integer.parseInt(newValue.trim());
-            campaignRepository.findActiveForUpdate().ifPresent(campaign ->
-                    deliveryRepository.recalculatePendingDueDates(
-                            campaign.getId(), delayDays, now));
+        if (campaignRepository.findActiveForUpdate().isEmpty()) {
+            openFreshCampaign(now);
         }
     }
 

@@ -82,6 +82,60 @@ class Phase1DCustomerAuthTest {
     }
 
     @Test
+    void register_formattedVietnameseMobilePhones_areAcceptedAndStoredCanonically() throws Exception {
+        String suffix = String.format("%08d", Math.floorMod(UUID.randomUUID().hashCode(), 100_000_000));
+        String[][] cases = {
+                {"03 " + suffix.substring(0, 4) + " " + suffix.substring(4), "03" + suffix},
+                {"+84 5" + suffix.substring(0, 4) + "-" + suffix.substring(4), "05" + suffix},
+                {"84.7" + suffix.substring(0, 4) + "." + suffix.substring(4), "07" + suffix},
+                {"(08) " + suffix.substring(0, 4) + "-" + suffix.substring(4), "08" + suffix},
+                {"09-" + suffix.substring(0, 4) + "-" + suffix.substring(4), "09" + suffix}
+        };
+
+        for (String[] phoneCase : cases) {
+            mockMvc.perform(post("/api/v1/customer/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"phone\":\"" + phoneCase[0]
+                                    + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.customer.phone").value(phoneCase[1]));
+            assertThat(customerRepo.findByPhone(phoneCase[1])).isPresent();
+        }
+    }
+
+    @Test
+    void register_invalidVietnameseMobilePhone_returnsFieldValidationError() throws Exception {
+        for (String phone : new String[]{
+                "0212345678", "091234567", "09123456789", "09A1234567", "+840912345678"
+        }) {
+            mockMvc.perform(post("/api/v1/customer/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"phone\":\"" + phone
+                                    + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.error.details[0].field").value("phone"));
+        }
+    }
+
+    @Test
+    void login_acceptsAFormattedPhoneForAnExistingCanonicalPhone() throws Exception {
+        String phone = "09" + String.format("%08d", Math.floorMod(UUID.randomUUID().hashCode(), 100_000_000));
+        mockMvc.perform(post("/api/v1/customer/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"phone\":\"" + phone
+                                + "\",\"password\":\"secret123\",\"privacyConsent\":true,\"privacyPolicyLocale\":\"vi\"}"))
+                .andExpect(status().isOk());
+
+        String displayPhone = "+84 " + phone.substring(1, 4) + " " + phone.substring(4, 7) + " " + phone.substring(7);
+        mockMvc.perform(post("/api/v1/customer/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"login\":\"" + displayPhone + "\",\"password\":\"secret123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.customer.phone").value(phone));
+    }
+
+    @Test
     void register_withoutEmailOrPhone_returns_400() throws Exception {
         mockMvc.perform(post("/api/v1/customer/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

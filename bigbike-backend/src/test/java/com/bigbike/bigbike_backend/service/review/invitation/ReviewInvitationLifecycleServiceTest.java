@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.review.invitation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
 import com.bigbike.bigbike_backend.persistence.entity.review.ReviewInvitationCampaignEntity;
 import com.bigbike.bigbike_backend.persistence.repository.review.ReviewInvitationCampaignJpaRepository;
@@ -24,14 +25,16 @@ class ReviewInvitationLifecycleServiceTest {
 
     @Mock private ReviewInvitationCampaignJpaRepository campaignRepository;
     @Mock private ReviewInvitationDeliveryJpaRepository deliveryRepository;
+    @Mock private ReviewInvitationSettings settings;
 
     @InjectMocks private ReviewInvitationLifecycleService service;
 
     @Test
-    void enablingCreatesAFreshCutoffAtThatExactMoment() {
+    void firstEnabledSchedulerCallbackCreatesAFreshCutoffAtThatExactMoment() {
         when(campaignRepository.findActiveForUpdate()).thenReturn(Optional.empty());
+        when(settings.get()).thenReturn(new ReviewInvitationSettings.Snapshot(true, 7, 20));
 
-        service.onSettingUpdated(ReviewInvitationSettings.ENABLED_KEY, "false", "true", NOW);
+        service.synchronize(NOW);
 
         ArgumentCaptor<ReviewInvitationCampaignEntity> captor =
                 ArgumentCaptor.forClass(ReviewInvitationCampaignEntity.class);
@@ -44,8 +47,9 @@ class ReviewInvitationLifecycleServiceTest {
     void disablingClosesTheCampaignAndSkipsEveryPendingInvitation() {
         ReviewInvitationCampaignEntity active = activeCampaign();
         when(campaignRepository.findActiveForUpdate()).thenReturn(Optional.of(active));
+        when(settings.get()).thenReturn(new ReviewInvitationSettings.Snapshot(false, 7, 20));
 
-        service.onSettingUpdated(ReviewInvitationSettings.ENABLED_KEY, "true", "false", NOW);
+        service.synchronize(NOW);
 
         assertThat(active.getDeactivatedAt()).isEqualTo(NOW);
         verify(campaignRepository).save(active);
@@ -54,13 +58,22 @@ class ReviewInvitationLifecycleServiceTest {
     }
 
     @Test
-    void changingDelayRecalculatesOnlyPendingInvitationsInTheActiveCampaign() {
+    void enabledCallbackAfterClosureCreatesANewCampaignWithoutTouchingOldRows() {
+        when(settings.get()).thenReturn(
+                new ReviewInvitationSettings.Snapshot(false, 7, 20),
+                new ReviewInvitationSettings.Snapshot(true, 7, 20));
         ReviewInvitationCampaignEntity active = activeCampaign();
-        when(campaignRepository.findActiveForUpdate()).thenReturn(Optional.of(active));
+        when(campaignRepository.findActiveForUpdate())
+                .thenReturn(Optional.of(active), Optional.empty());
 
-        service.onSettingUpdated(ReviewInvitationSettings.DELAY_DAYS_KEY, "7", "10", NOW);
+        service.synchronize(NOW);
+        service.synchronize(NOW.plusSeconds(60));
 
-        verify(deliveryRepository).recalculatePendingDueDates(active.getId(), 10, NOW);
+        ArgumentCaptor<ReviewInvitationCampaignEntity> captor =
+                ArgumentCaptor.forClass(ReviewInvitationCampaignEntity.class);
+        verify(campaignRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().get(1).getActivatedAt()).isEqualTo(NOW.plusSeconds(60));
+        verify(deliveryRepository).skipPendingByCampaign(active.getId(), "CAMPAIGN_CLOSED", NOW);
     }
 
     private static ReviewInvitationCampaignEntity activeCampaign() {

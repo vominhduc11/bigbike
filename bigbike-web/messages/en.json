@@ -505,7 +505,12 @@
       "submitting": "Signing in…",
       "registerCta": "Create a new account",
       "invalidCredentials": "Email or password is incorrect.",
-      "errorGeneric": "Unable to sign in right now. Please try again."
+      "errorGeneric": "Unable to sign in right now. Please try again.",
+      "errorRateLimited": "You have tried to sign in too many times. Please wait about {seconds} seconds and try again.",
+      "errorNetwork": "We could not connect to BigBike. Check your connection and try again.",
+      "errorSystem": "BigBike is having a problem right now. Please try again later.",
+      "formIncomplete": "Check the highlighted field, then try again.",
+      "noAccountPrompt": "New to BigBike?"
     },
     "social": {
       "facebook": "Sign in with Facebook",
@@ -527,7 +532,7 @@
       "firstNameLabel": "First name",
       "firstNamePlaceholder": "John",
       "fullNameLabel": "Name",
-      "fullNamePlaceholder": "Please enter your name...",
+      "fullNamePlaceholder": "Jane Doe",
       "lastNameLabel": "Last name",
       "lastNamePlaceholder": "Doe",
       "emailLabel": "Email",
@@ -535,9 +540,9 @@
       "phoneLabel": "Phone number",
       "phonePlaceholder": "Phone number",
       "passwordLabel": "Enter password",
-      "passwordPlaceholder": "Please enter your password...",
+      "passwordPlaceholder": "At least 8 characters",
       "confirmLabel": "Confirm password",
-      "confirmPlaceholder": "Please enter your password...",
+      "confirmPlaceholder": "Enter password again",
       "submit": "Sign up",
       "submitting": "Creating account…",
       "loginCta": "Sign in to an existing account",
@@ -547,7 +552,11 @@
       "successHeading": "Account created!",
       "successDescription": "We've sent a confirmation email to <strong>{email}</strong>. Please check your inbox (and the spam folder) to confirm your account.",
       "successCta": "Go to my account",
-      "errorGeneric": "Unable to create your account right now. Please try again."
+      "errorGeneric": "Unable to create your account right now. Please try again.",
+      "formIncomplete": "Check the highlighted field, then try again.",
+      "hasAccountPrompt": "Already have an account?",
+      "passwordMatch": "Passwords match.",
+      "passwordNotMatch": "Passwords do not match."
     },
     "forgot": {
       "title": "FORGOT PASSWORD",
@@ -572,12 +581,15 @@
       "successHeading": "Password reset successful",
       "successDescription": "Sign in to your BigBike account with your new password.",
       "loginNow": "Sign in now",
-      "errorGeneric": "Unable to reset your password right now. Please try again."
+      "errorGeneric": "Unable to reset your password right now. Please try again.",
+      "passwordMatch": "Passwords match.",
+      "passwordNotMatch": "Passwords do not match."
     },
     "validation": {
       "loginRequired": "Please enter your email or phone number",
       "passwordRequired": "Please enter your password",
       "firstNameRequired": "Please enter your first name",
+      "fullNameRequired": "Please enter your name",
       "phoneRequired": "Please enter your phone number",
       "phoneInvalid": "Invalid phone number",
       "emailRequired": "Please enter your email address",
@@ -1407,9 +1419,9 @@
     "minimize": "Minimize BigBike Assistant",
     "deleteConversation": "Delete conversation",
     "minimizedLabel": "BigBike Assistant · Continue shopping advice",
-    "bigbikeTitle": "BigBike AI Virtual Assistant",
-    "aiDisclosure": "You are chatting with BigBike's AI virtual assistant, not a human staff member.",
-    "aiStatus": "AI assistant ready",
+    "bigbikeTitle": "BigBike Assistant",
+    "aiDisclosure": "You are chatting with BigBike Assistant, BigBike’s AI assistant, not a human staff member.",
+    "aiStatus": "Assistant ready",
     "contactStatus": "Shop contact channels",
     "checking": "BigBike Assistant is preparing your shopping session…",
     "typing": "BigBike Assistant is checking products…",

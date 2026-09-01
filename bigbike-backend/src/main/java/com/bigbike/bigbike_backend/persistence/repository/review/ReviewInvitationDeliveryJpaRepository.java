@@ -65,18 +65,6 @@ public interface ReviewInvitationDeliveryJpaRepository extends
     int skipAllPending(@Param("reason") String reason, @Param("now") Instant now);
 
     @Modifying
-    @Query(value = """
-            update review_invitation_deliveries
-            set due_at = completed_at + (:delayDays * interval '1 day'),
-                updated_at = :now
-            where campaign_id = :campaignId and status = 'PENDING'
-            """, nativeQuery = true)
-    int recalculatePendingDueDates(
-            @Param("campaignId") UUID campaignId,
-            @Param("delayDays") int delayDays,
-            @Param("now") Instant now);
-
-    @Modifying
     @Query("""
             update ReviewInvitationDeliveryEntity d
             set d.status = com.bigbike.bigbike_backend.domain.review.ReviewInvitationStatus.SKIPPED,

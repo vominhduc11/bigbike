@@ -253,6 +253,8 @@ services:
       # application.properties default (http://localhost:4000/accept-invite) — invite emails
       # sent from a deployed stack pointed staff to localhost.
       BIGBIKE_MAIL_ADMIN_INVITE_BASE_URL: "${BIGBIKE_MAIL_ADMIN_INVITE_BASE_URL:-https://admin.bigbike.vn/accept-invite}"
+      # Automatic review invitations: true by default; false is the emergency server switch.
+      BIGBIKE_REVIEW_INVITATION_ENABLED: "${BIGBIKE_REVIEW_INVITATION_ENABLED:-true}"
       # Social login (AUD-062): forward the six OAuth vars — without them the backend saw
       # blank client ids inside Docker and social login was silently disabled.
       OAUTH_GOOGLE_CLIENT_ID: "${OAUTH_GOOGLE_CLIENT_ID:-}"

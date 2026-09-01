@@ -70,18 +70,27 @@ Status: `REQUIRED_FOR_NOTIFICATION_DELIVERY_CONFIGURATION`
 
 ## Post-purchase review invitation regression
 
+The regression suite must cover automatic campaign opening on the first scheduler callback after
+deployment, fixed seven-day due dates and the fixed 20-attempt daily quota. It must prove that
+legacy/pre-cutoff orders are not backfilled, the server switch closes pending work and a later
+enable starts a new cutoff, and a refunded order is not specially excluded. Keep coverage for
+one-delivery-per-order, product-level reviewed filtering, two-stage eligibility checks, token
+consumption, permanent public opt-out, pacing, failure/uncertain terminal states and all durable
+delivery statuses. Admin invitation list/summary/opt-out/skip tests are removed because those
+endpoints and the Settings surface no longer exist.
+
 Automated tests must use a fake mail dispatcher and a fixed clock in Vietnam time; no test may connect to SMTP or use a real customer/order record. Required coverage:
 
-- a native order completed after the active campaign cutoff is queued and attempted once after the configured delay; repeated queue/sender runs never create a second delivery or attempt;
-- imported/legacy orders, orders completed before enable, cancelled orders, missing-email orders, manually refunded skips and emails already opted out do not send;
+- a native order completed after the active campaign cutoff is queued and attempted once after the fixed seven-day delay; repeated queue/sender runs never create a second delivery or attempt;
+- imported/legacy orders, orders completed before enable, cancelled orders, missing-email orders and emails already opted out do not send; a refunded order is not specially excluded;
 - disabling closes the campaign and skips pending deliveries; re-enabling creates a new cutoff and does not catch up an older order;
 - duplicate line items produce one product link; products already reviewed by linked customer/order email or consumed invite item are omitted; no eligible product means no send;
 - review submission with a valid product token stays `PENDING`, consumes that item exactly once and works for a guest with blank review email; wrong-product/invalid/reused tokens are rejected;
 - unsubscribe is public, idempotent for its valid token, reveals no email and permanently suppresses every pending delivery for the normalized address;
-- one atomic Vietnam-date attempt counter never exceeds the configured 1–50 daily limit under repeated/concurrent dispatcher calls; failures and uncertain outcomes consume a slot and are not retried;
-- VI/EN subject/body/product links/unsubscribe copy render with valid Unicode; admin read/write permissions, list states and operator error visibility are covered;
+- one atomic Vietnam-date attempt counter never exceeds the fixed 20-attempt daily limit under repeated/concurrent dispatcher calls; failures and uncertain outcomes consume a slot and are not retried;
+- VI/EN subject/body/product links/unsubscribe copy render with valid Unicode; durable delivery states and provider-error diagnostics are covered without an admin reporting surface;
 - web tests prove the fragment opens the existing PDP dialog and passes the hidden token, checkout snapshots `vi|en`, and both localized unsubscribe routes cover loading/success/error states;
-- focused Playwright may verify the local direct-link/unsubscribe screens only against isolated fixtures/fake mail. It must never trigger a real SMTP message or mutate live shop data.
+- focused Playwright may verify the local public direct-link/unsubscribe screens only against isolated fixtures. It must never trigger a real SMTP message or mutate live shop data.
 
 Status: `REQUIRED_FOR_REVIEW_RULE_014_016`
 
@@ -93,7 +102,7 @@ Use PostgreSQL integration data only; never clone or mutate shop orders. The can
 - operational dashboard/nav/list/recent/status/reminder queries exclude active historical rows while financial dashboard/reports/customer purchase aggregates remain unchanged and disclose inclusion;
 - ALL/OPERATIONAL/HISTORICAL plus OVERDUE filters, admin detail provenance, uncapped CSV scope columns/header, and `409 HISTORICAL_ORDER_READ_ONLY` with zero side effects;
 - strictly older PENDING native order produces one `ORDER_OVERDUE_DIGEST`; repeated/same-day/concurrent/next-day runs do not duplicate it; in-threshold/exact-boundary/non-PENDING/history rows are excluded; zero candidates, no active history batch or invalid setting create no notification;
-- admin Vitest covers VI/EN filters, read-only states, settings, dashboard threshold `>=5`, report/customer scope wording and digest navigation; Playwright uses only isolated test fixtures and 1440/768/375 viewports.
+- admin Vitest covers VI/EN filters, read-only states, Settings regression that keeps the stored `order_overdue_days=2` row out of the UI, dashboard threshold `>=5`, report/customer scope wording and digest navigation; Playwright uses only isolated test fixtures and 1440/768/375 viewports. The owner decision on 2026-09-01 supersedes the former Settings editor for this threshold; reminder and overdue-filter coverage remains unchanged.
 
 Status: `REQUIRED_FOR_ORDER_RULE_013_015_NOTIFICATION_RULE_002_REPORT_RULE_012`
 
@@ -133,7 +142,7 @@ GitHub Actions currently runs:
 | ~~POS~~ | Removed 2026-06-23 (online-only) — `Phase1MPosApiTest.java` deleted | `REMOVED` |
 | Media hardening | `AdminMediaP0Test.java` | `CONFIRMED_FROM_TEST` |
 | Redirect target integrity | `AdminRedirectApiTest.java` + web proxy redirect tests | `REQUIRED_FOR_REDIRECT_RULE_011_012` |
-| Review invitation | Eligibility/cutoff/idempotency/opt-out/quota/token/API/template suites plus admin/web direct-link tests | `REQUIRED_FOR_REVIEW_RULE_014_016` |
+| Review invitation | Eligibility/cutoff/idempotency/opt-out/quota/token/API/template suites plus web direct-link/unsubscribe tests; no admin invitation surface | `REQUIRED_FOR_REVIEW_RULE_014_016` |
 | Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, memory 30 ngày, cart và ảnh riêng tư VI/EN. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059` |
 
 ## Trợ lý BigBike — ma trận kiểm thử (owner decision 2026-08-29)

@@ -12,6 +12,10 @@ const LOCALES = [
     consentRequired: "Vui lòng đồng ý với Chính sách bảo mật",
     showPassword: "Hiện mật khẩu",
     privacyText: "Chính sách bảo mật",
+    invalidCredentials: "Tên đăng nhập hoặc mật khẩu chưa đúng!",
+    rateLimited: "Bạn đã thử đăng nhập quá nhiều lần.",
+    network: "Không thể kết nối với BigBike.",
+    system: "Hệ thống BigBike đang gặp sự cố.",
   },
   {
     name: "English",
@@ -23,6 +27,10 @@ const LOCALES = [
     consentRequired: "Please agree to the Privacy Policy",
     showPassword: "Show password",
     privacyText: "Privacy Policy",
+    invalidCredentials: "Email or password is incorrect.",
+    rateLimited: "You have tried to sign in too many times.",
+    network: "We could not connect to BigBike.",
+    system: "BigBike is having a problem right now.",
   },
 ] as const;
 
@@ -97,5 +105,52 @@ for (const locale of LOCALES) {
     expect(await submit.evaluate((element) => getComputedStyle(element).position)).toBe("static");
     await expect(page.locator("[data-auth-guest-exit]")).toBeVisible();
     await expectNoRenderedHorizontalOverflow(page, `${locale.name} register mobile`);
+  });
+
+  test(`${locale.name}: login distinguishes password, rate-limit, network and system alerts`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    let response: "invalid" | "rate-limited" | "network" | "system" = "invalid";
+    await page.route("**/api/v1/customer/auth/login", (route) => {
+      if (response === "network") return route.abort("failed");
+      if (response === "rate-limited") {
+        return route.fulfill({
+          status: 429,
+          contentType: "application/json",
+          headers: { "Retry-After": "60" },
+          body: JSON.stringify({ error: { code: "RATE_LIMIT_EXCEEDED" } }),
+        });
+      }
+      return route.fulfill({
+        status: response === "invalid" ? 401 : 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { code: "AUTHENTICATION_FAILED" } }),
+      });
+    });
+
+    const submit = async () => {
+      await page.locator("#login-username").fill("customer@example.com");
+      await page.locator("#login-password").fill("incorrect-password");
+      await page.locator('[data-auth-page="login"] form button[type="submit"]').click();
+    };
+
+    await gotoAndSettle(page, locale.login);
+    await submit();
+    await expect(page.locator("[data-form-root-error]")).toContainText(locale.invalidCredentials);
+    await expect(page.locator("#login-password")).toHaveValue("");
+    await expect(page.locator("#login-password")).toBeFocused();
+
+    response = "rate-limited";
+    await submit();
+    await expect(page.locator("[data-form-root-error]")).toContainText(locale.rateLimited);
+
+    response = "network";
+    await submit();
+    await expect(page.locator("[data-form-root-error]")).toContainText(locale.network);
+
+    response = "system";
+    await submit();
+    await expect(page.locator("[data-form-root-error]")).toContainText(locale.system);
   });
 }

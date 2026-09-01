@@ -37,7 +37,6 @@ import {
   clearFormFromStorage,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
-import { ReviewInvitationOperations } from './settings/ReviewInvitationOperations'
 import { DetailSection } from '../components/DetailSection'
 
 // Lazy — Cài đặt mở mặc định ở tab chung, không phải tab Banner (496 dòng); tải sẵn tĩnh
@@ -116,12 +115,15 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       if (HIDDEN_KEYS.has(s.key)) continue
       const g = (s.settingGroup || 'GENERAL').toUpperCase()
       if (HIDDEN_GROUPS.has(g)) continue
+      // Chỉ dựng các nhóm đã được khai báo trong contract của màn hình. Dữ liệu
+      // legacy/nhóm backend đã nghỉ không được tự sinh thành tab mới.
+      if (!TAB_ORDER.includes(g)) continue
       // Product-assignment settings remain hidden and have their own synthetic tab below.
       if (s.superAdminOnly && !isSuperAdmin) continue
       if (!map.has(g)) map.set(g, [])
       map.get(g).push(s)
     }
-    // Sort tabs by defined order, unknown groups go last
+    // Sort tabs theo thứ tự đã định nghĩa trong contract.
     const sorted = new Map()
     for (const key of TAB_ORDER) {
       if (map.has(key)) sorted.set(key, map.get(key))
@@ -703,11 +705,6 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
                   saving={saving}
                   saveSuccess={saveSuccess}
                   saveError={saveError}
-                  beforeContent={
-                    activeTab === 'REVIEW_INVITATION' ? (
-                      <ReviewInvitationOperations canUpdate={canUpdate} />
-                    ) : null
-                  }
                 />
               )}
             </div>

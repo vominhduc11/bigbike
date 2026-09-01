@@ -48,6 +48,24 @@ describe("public copy audit", () => {
       expect(page.seoDescription).toBeTruthy();
       expect(page.seoDescriptionEn).toBeTruthy();
     }
+    const returnPage = staticPages["chinh-sach-doi-tra-hang"];
+    expect(returnPage.titleEn).toBeTruthy();
+    expect(returnPage.seoTitleEn).toBeTruthy();
+    expect(returnPage.seoDescriptionEn).toBeTruthy();
+  });
+
+  it("keeps Warranty and Returns bodies out of the web copy source", () => {
+    const policyPages = [
+      staticPages["chinh-sach-bao-hanh"],
+      staticPages["chinh-sach-doi-tra-hang"],
+    ];
+    for (const page of policyPages) {
+      expect(page.body).toBe("");
+      expect(page.bodyEn ?? "").toBe("");
+    }
+
+    const policyCopy = policyPages.map((page) => `${page.body}\n${page.bodyEn ?? ""}`).join("\n");
+    expect(policyCopy).not.toMatch(/0906902404|0764640679|79\/30\/52 Âu Cơ/);
   });
 
   it("rejects the audited mixed-language and Vietnamese copy regressions", () => {

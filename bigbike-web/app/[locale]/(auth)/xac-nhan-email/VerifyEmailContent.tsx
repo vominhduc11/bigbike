@@ -4,15 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
+import { CircleAlert, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth/auth-store";
 import { useResendEmailVerification, useVerifyEmail } from "@/lib/query/hooks";
 import { Button } from "@/components/ui/button";
+import { FormNotice } from "@/components/ui/FormNotice";
 import { AuthTitleBlock } from "@/components/auth/AuthPageFrame";
 import { GuestStorefrontExit } from "@/components/auth/GuestStorefrontExit";
 import type { Locale } from "@/i18n/locale";
 import { isSafeReturnTo } from "@/lib/utils/auth";
-import { toAccountPath, toHomePath, toLoginPath, translatePath } from "@/lib/utils/routes";
+import { toAccountPath, toLoginPath, translatePath } from "@/lib/utils/routes";
 
 type Status = "idle" | "loading" | "success" | "error" | "missing";
 type ResendStatus = "idle" | "sending" | "sent" | "error";
@@ -92,16 +93,18 @@ export function VerifyEmailContent() {
 
       {status === "error" && (
         <>
-          <AuthTitleBlock title={t("errorTitle")} centered>
-            <p className="m-0">{errorMsg}</p>
-          </AuthTitleBlock>
+          <AuthTitleBlock title={t("errorTitle")} centered />
+          <FormNotice tone="danger" role="alert" className="mb-5 flex items-start gap-3 text-left">
+            <CircleAlert className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+            <p className="font-medium leading-body">{errorMsg}</p>
+          </FormNotice>
 
           {isLoggedIn ? (
             <>
               {resendStatus === "sent" ? (
-                <p className="m-0 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-a4-content text-state-success-text">
+                <FormNotice tone="success" role="status" aria-live="polite">
                   {resendMsg}
-                </p>
+                </FormNotice>
               ) : (
                 <div>
                   <Button
@@ -113,7 +116,9 @@ export function VerifyEmailContent() {
                     {resendStatus === "sending" ? t("resending") : t("resend")}
                   </Button>
                   {resendStatus === "error" && (
-                    <p className="mt-2 text-a4-content text-destructive">{resendMsg}</p>
+                    <FormNotice tone="danger" role="alert" className="mt-3">
+                      {resendMsg}
+                    </FormNotice>
                   )}
                 </div>
               )}
@@ -157,20 +162,16 @@ export function VerifyEmailContent() {
                 {resendStatus === "sending" ? t("resending") : t("resend")}
               </Button>
             </div>
-          ) : (
-            <p className="m-0">
-              <Link href={toHomePath(locale)} className="font-semibold underline">
-                {t("backToHome")}
-              </Link>
-            </p>
-          )}
+          ) : null}
           {resendStatus === "sent" && (
-            <p className="mt-4 border border-[var(--bb-state-success-border)] bg-[var(--bb-state-success-bg)] p-3 text-a4-content text-state-success-text">
+            <FormNotice tone="success" role="status" aria-live="polite" className="mt-4">
               {resendMsg}
-            </p>
+            </FormNotice>
           )}
           {resendStatus === "error" && (
-            <p className="mt-4 text-a4-content text-destructive">{resendMsg}</p>
+            <FormNotice tone="danger" role="alert" className="mt-4">
+              {resendMsg}
+            </FormNotice>
           )}
         </>
       )}

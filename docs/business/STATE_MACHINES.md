@@ -863,12 +863,12 @@ State field: `review_invitation_deliveries.status`; initial state `PENDING`.
 | From | To | Trigger / rule |
 |---|---|---|
 | `PENDING` | `SENDING` | Daytime dispatcher revalidates active campaign/order/email/opt-out/product eligibility, atomically reserves the Vietnam-day quota, stores token hashes and claims the row. |
-| `PENDING` | `SKIPPED` | Feature/campaign closes, order is cancelled, operator marks refunded, recipient opts out, or no product remains eligible. |
+| `PENDING` | `SKIPPED` | Feature/campaign closes through the server env switch, order is cancelled, recipient opts out, or no product remains eligible. |
 | `SENDING` | `SENT` | Shared SMTP dispatcher accepts the message; `provider_accepted_at` is set. |
 | `SENDING` | `FAILED` | Dispatcher returns a known failure; sanitized code/message are retained. |
 | `SENDING` | `UNCERTAIN` | Still `SENDING` after 30 minutes, meaning the outcome cannot be proven. |
 
-`SENT`, `FAILED`, `UNCERTAIN` and `SKIPPED` are terminal. There is no retry transition and no way back to `PENDING`. A delivery can be marked refunded only while `PENDING`; final/attempted deliveries return conflict. Disabling a campaign transitions all its `PENDING` rows to `SKIPPED(CAMPAIGN_CLOSED)` and re-enable creates a new campaign cutoff. `orders.status` remains authoritative: a later `CANCELLED` observation skips a pending delivery but this feature never changes the order state. See `REVIEW_RULE_014`–`016`.
+`SENT`, `FAILED`, `UNCERTAIN` and `SKIPPED` are terminal. There is no retry transition and no way back to `PENDING`. The first scheduler callback after deployment opens a campaign when the server env switch is enabled; disabling it transitions all current campaign `PENDING` rows to `SKIPPED(CAMPAIGN_CLOSED)`, and re-enabling creates a new campaign cutoff without backfill. `orders.status` remains authoritative: a later `CANCELLED` observation skips a pending delivery but this feature never changes the order state. There is no manual refunded transition; a refunded order remains eligible when the other rules pass. See `REVIEW_RULE_014`–`016`.
 
 ## 16. Cross-Entity State Dependencies
 
@@ -926,7 +926,7 @@ State field: `review_invitation_deliveries.status`; initial state `PENDING`.
 | Media | Upload active, update inactive/deleted, restore active, hard delete | Needed | Needed for invalid status/MIME/size | `MISSING_TEST_COVERAGE` |
 | Notification | Per-admin read/unread high-water mark + six-month retention | `markAllRead_isPerAdmin_doesNotClearUnreadForOtherAdmins`, `inbox_keepsBacklogVisibleAfterMarkAllRead`, `retentionDeletesExpiredRowsWithoutChangingPerAdminReadMarker`, `retiresSharedReadStateAndKeepsPerAdminReadTable` | Cross-admin marker preservation, batch cleanup and legacy-column/index removal | `CONFIRMED_TEST_COVERAGE` (`AdminNotificationServiceTest`, `AdminNotificationPostgresQueryTest`, `AdminNotificationRetentionMigrationPostgresTest`) |
 | Customer | Real-customer changes among all four stored statuses; non-active session revocation | `Phase1IAdminManagementApiTest`, `Phase1I1CustomerStatusLoginTest` | Unknown status and synthetic status-change conflict covered by Customer Admin audit tests | `CONFIRMED_TEST_COVERAGE` |
-| Review invitation delivery | `PENDING → SENDING|SKIPPED`; `SENDING → SENT|FAILED|UNCERTAIN`; final states terminal | Required focused scheduler/service/API tests | Required concurrency/quota/no-retry/invalid-manual-skip tests | `REQUIRED_FOR_REVIEW_RULE_014_016` |
+| Review invitation delivery | `PENDING → SENDING|SKIPPED`; `SENDING → SENT|FAILED|UNCERTAIN`; final states terminal | Required focused scheduler/service/API tests | Required concurrency/quota/no-retry/env-switch tests | `REQUIRED_FOR_REVIEW_RULE_014_016` |
 
 Notes:
 

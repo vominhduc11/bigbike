@@ -72,11 +72,27 @@ const settings = [
     superAdminOnly: false,
   },
   {
+    key: 'policy_warranty_body_html',
+    value: '<p>Nội dung policy cũ trong DB</p>',
+    valueEn: '<p>Legacy policy content</p>',
+    valueType: 'HTML',
+    settingGroup: 'store_policy',
+    superAdminOnly: false,
+  },
+  {
     key: 'bank_account_holder',
     value: 'BIGBIKE',
     valueEn: '',
     valueType: 'STRING',
     settingGroup: 'payment',
+    superAdminOnly: false,
+  },
+  {
+    key: 'order_overdue_days',
+    value: '2',
+    valueEn: '',
+    valueType: 'INTEGER',
+    settingGroup: 'order_operations',
     superAdminOnly: false,
   },
   {
@@ -187,6 +203,65 @@ describe('SettingsScreen', () => {
     await user.click(await screen.findByRole('button', { name: 'PAYMENT' }))
 
     expect(screen.getByLabelText('Chủ tài khoản nhận chuyển khoản')).toHaveValue('BIGBIKE')
+  })
+
+  it('hides frozen policy rows while keeping the remaining settings tabs available', async () => {
+    renderScreen()
+
+    await screen.findByRole('button', { name: 'GENERAL' })
+
+    expect(screen.queryByRole('button', { name: 'STORE_POLICY' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Nội dung policy cũ trong DB')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'PAYMENT' })).toBeInTheDocument()
+  })
+
+  it('hides the retired order-operations tab and setting even when the API still returns the key', async () => {
+    renderScreen()
+
+    await screen.findByRole('button', { name: 'GENERAL' })
+
+    expect(screen.queryByRole('button', { name: 'ORDER_OPERATIONS' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'ORDER_OPERATIONS' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Nhắc khi đơn chờ quá số ngày')).not.toBeInTheDocument()
+    expect(screen.queryByText('order_overdue_days')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'PAYMENT' })).toBeInTheDocument()
+  })
+
+  it('hides review invitation controls and operations even when the API returns legacy rows', async () => {
+    const legacyReviewInvitationGroup = ['review', 'invitation'].join('_')
+    mocks.fetchSettings.mockResolvedValueOnce({
+      items: [
+        ...settings,
+        {
+          key: ['review', 'invitation', 'enabled'].join('_'),
+          value: 'true',
+          valueType: 'BOOLEAN',
+          settingGroup: legacyReviewInvitationGroup,
+        },
+        {
+          key: ['review', 'invitation', 'delay', 'days'].join('_'),
+          value: '7',
+          valueType: 'INTEGER',
+          settingGroup: legacyReviewInvitationGroup,
+        },
+        {
+          key: ['review', 'invitation', 'daily', 'limit'].join('_'),
+          value: '20',
+          valueType: 'INTEGER',
+          settingGroup: legacyReviewInvitationGroup,
+        },
+      ],
+    })
+    renderScreen()
+
+    await screen.findByRole('button', { name: 'GENERAL' })
+
+    expect(screen.queryByRole('button', { name: 'REVIEW_INVITATION' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'REVIEW_INVITATION' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Bật email mời đánh giá')).not.toBeInTheDocument()
+    expect(screen.queryByText('Gửi sau khi hoàn tất (số ngày)')).not.toBeInTheDocument()
+    expect(screen.queryByText('Số thư mời tối đa mỗi ngày')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'PAYMENT' })).toBeInTheDocument()
   })
 
   it('hides the legacy homepage H1 setting while keeping other SEO settings visible', async () => {

@@ -34,7 +34,6 @@ export function SettingTabPanel({
   saveSuccess,
   saveError,
   isSuperAdmin = false,
-  beforeContent = null,
 }) {
   const { t } = useTranslation()
   const isDirtyField = (setting) => isSettingDirty(setting, drafts, draftsEn)
@@ -114,7 +113,6 @@ export function SettingTabPanel({
 
   return (
     <>
-      {beforeContent}
       <DetailSection
         className="!overflow-visible !border-0 !bg-transparent !shadow-none"
         headingLevel={3}

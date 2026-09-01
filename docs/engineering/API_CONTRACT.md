@@ -115,8 +115,8 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
 | `GET` | `/api/v1/search-suggest` | Lightweight typeahead product/article suggestions. `q` is required after trim and has at most 100 characters; accepts optional `limit`, and `lang=vi|en` (default `vi`). Matching and displayed text follow `lang`, with field-level fallback to Vietnamese. Product/article items retain canonical `slug` plus optional `slugEn` so the storefront can build the correct localized URL. Product suggestions use the same customer search scope, word-boundary matching, coverage and relevance order as `GET /api/v1/products?q=...`; article matching is accent-insensitive and treats `%`, `_`, `\\` literally. | `ApiDataResponse<SearchPayload>` | `OWNER_CONFIRMED_2026-08-30` | `SEARCH_RULE_001`–`SEARCH_RULE_004`, `PublicSearchController.java`, `GlobalSearchService.java` |
 | `GET` | ~~`/api/v1/address/provinces`~~ + ~~`/api/v1/address/provinces/{provinceCode}/wards`~~ | **REMOVED (2026-07-15, AUD-056, owner decision #8 — không có mobile/client ngoài).** Web dùng dữ liệu tích hợp sẵn `VN_PROVINCES` (`vn-address-data.ts`), backend không còn API địa chỉ. | — | `REMOVED` | commit gỡ `VnAddressController.java` |
 | `GET` | `/api/v1/sliders?location=home` | Trả các homepage slider đang active theo `sortOrder`. Mỗi item có `desktopImage` và `mobileImage`; `mobileImage` là tùy chọn (`ImageAsset` hoặc `null`). Storefront dùng `mobileImage.url` dưới 768px khi có, nếu không dùng `desktopImage.url`. | `ApiDataResponse<List<PublicSliderResponse>>` | `OWNER_CONFIRMED_2026-07-30` | `PublicSliderController.java`, `PublicSliderResponse.java`, `HeroSlider.tsx` |
-| `POST` | `/api/v1/customer/auth/register` | Email/phone + password registration. Body accepts `email`, optional `phone`, `password`, `firstName`, `lastName`, required `privacyConsent=true`, and required `privacyPolicyLocale` (`vi` or `en`); at least email or phone must be present. The server records policy version `2026-08-27` and acceptance time. | `ApiDataResponse<CustomerAuthResponse>` | `OWNER_CONFIRMED_2026-08-27` | `CustomerAuthController.java`, `CustomerRegisterRequest.java`, `CustomerAuthService.register`, `CUSTOMER_RULE_011` |
-| `POST` | `/api/v1/customer/auth/login` | Email/phone + password login. Body accepts optional `remember` (boolean, default `false`) controlling session lifetime | `ApiDataResponse<CustomerAuthResponse>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java`, `CustomerLoginRequest.java` |
+| `POST` | `/api/v1/customer/auth/register` | Email/phone + password registration. Body accepts `email`, optional `phone`, `password`, `firstName`, `lastName`, required `privacyConsent=true`, and required `privacyPolicyLocale` (`vi` or `en`); at least email or phone must be present. A supplied phone accepts spaces, dots, hyphens, parentheses and `+84`/`84`, then must normalize to a ten-digit Vietnamese mobile number beginning `03`, `05`, `07`, `08` or `09`; storage and response use local `0…`. The storefront form requires this phone, while the endpoint remains compatible with existing phone-omitting callers. The server records policy version `2026-08-27` and acceptance time. | `ApiDataResponse<CustomerAuthResponse>` | `OWNER_CONFIRMED_2026-09-01` | `CustomerAuthController.java`, `CustomerRegisterRequest.java`, `CustomerAuthService.register`, `CUSTOMER_RULE_011`, `CUSTOMER_RULE_012` |
+| `POST` | `/api/v1/customer/auth/login` | Email/phone + password login. Phone login accepts the same legacy display formats and canonicalizes identity lookup. Body accepts optional `remember` (boolean, default `false`) controlling session lifetime. A rate-limit rejection returns `429 RATE_LIMIT_EXCEEDED` and `Retry-After`; clients must show the retry period rather than treating it as an incorrect password. | `ApiDataResponse<CustomerAuthResponse>` | `OWNER_CONFIRMED_2026-09-01` | `CustomerAuthController.java`, `CustomerAuthService.login`, `RateLimitExceededException.java` |
 | `POST` | `/api/v1/customer/auth/verify-email` | Verify email token from request param | `ApiDataResponse<{verified:true}>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
 | `POST` | `/api/v1/customer/auth/resend-verification` | Resend the email-verification message for the authenticated customer | `ApiDataResponse<Map<String,Object>>` | `CONFIRMED_FROM_CODE` | `CustomerAuthController.java` |
 | `GET` | `/api/v1/customer/auth/oauth/{provider}/authorize` | Start social login. `provider` ∈ `google` `facebook`. Sets a short-lived `bb_oauth_state` cookie and `302`-redirects to the provider consent screen. Optional `tiep` is the post-login returnTo path. Registration starts additionally send `privacyConsent=true` and `privacyPolicyLocale=vi|en`; login starts omit them. | `302` redirect | `OWNER_CONFIRMED_2026-08-27` | `CustomerOAuthController.java`, `CUSTOMER_RULE_011` |
@@ -367,7 +367,7 @@ The content-category feature is removed across database, backend, storefront and
 
 ## Static CMS Pages + Guide Page — REMOVED (2026-06-24)
 
-> **REMOVED (2026-06-24), ngoại lệ hẹp 2026-08-23.** Module "Trang tĩnh CMS" (pages) và Guide Page Builder vẫn đã gỡ. Tám route thông tin hiện hành, danh sách và sidebar vẫn cố định trong `bigbike-web`. Riêng tiêu đề/thân bài song ngữ của Bảo hành và Đổi trả được đọc từ nguồn `store_policy` dùng chung qua API allowlist bên dưới; đây không phải khôi phục pages CRUD.
+> **REMOVED (2026-06-24).** Module "Trang tĩnh CMS" (pages) và Guide Page Builder vẫn đã gỡ. Tám route thông tin hiện hành, danh sách và sidebar vẫn cố định trong `bigbike-web`. Theo quyết định owner ngày 2026-09-01, tiêu đề/thân bài song ngữ của Bảo hành và Đổi trả được đóng cứng trong bốn resource backend dùng chung; quyết định này thay thế ngoại lệ ngày 2026-08-23 về việc admin sửa policy trong Settings. Đây không phải khôi phục pages CRUD.
 >
 > **Endpoint đã gỡ:**
 > - Public `GET /api/v1/pages`, `GET /api/v1/pages/{slug}` — không còn.
@@ -375,11 +375,11 @@ The content-category feature is removed across database, backend, storefront and
 > - Toàn bộ admin CRUD pages (`POST`/`PATCH`/`DELETE /api/v1/admin/content/pages`, type `PAGE` trong `GET /api/v1/admin/content`) + reference `GET /api/v1/admin/content/reference/pages` — không còn.
 > - Admin guide-page `GET`/`PUT /api/v1/admin/guide-page` — không còn.
 >
-> Bảng `pages` + `guide_page_layout` đã drop ở `V271__drop_pages_and_guide_page.sql`. Module Nội dung admin vẫn **chỉ quản lý bài viết**; sidebar chính sách là danh sách cố định 3 trang và menu location `policy` không trở lại. Hai policy động được chỉnh qua Settings với `settings.read/settings.write`.
+> Bảng `pages` + `guide_page_layout` đã drop ở `V271__drop_pages_and_guide_page.sql`. Module Nội dung admin vẫn **chỉ quản lý bài viết**; sidebar chính sách là danh sách cố định 3 trang và menu location `policy` không trở lại. Hai policy không còn được chỉnh qua Settings; dữ liệu cố định do `StorePolicyService` đọc từ `policy-content/` và Trợ lý dùng lại cùng service. Thông tin liên hệ trong policy vẫn được hydrate động từ nhóm `contact`.
 
 ### `GET /api/v1/policies/{topic}`
 
-`topic` allowlist: `warranty|return-exchange`; query `lang=vi|en` mặc định `vi`. Response `data`: `{topic,title,bodyHtml,updatedAt}`. Endpoint chỉ nhận bốn setting `store_policy` allowlist làm nguồn điều khoản; các dòng liên hệ trong cả Bảo hành và Đổi trả được điền từ các setting `contact` hiện hành (hotline, Zalo, địa chỉ, giờ mở cửa), không đóng cứng trong policy. Endpoint không nhận setting key động và không đưa policy vào payload `GET /api/v1/settings/public` chung. HTML được validate khi lưu và sanitize khi render; thiếu tiêu đề/thân bài trả trạng thái unavailable có kiểm soát, không rơi về bản policy đóng cứng khác. Trang Bảo mật vẫn tĩnh và không đi endpoint này.
+`topic` allowlist: `warranty|return-exchange`; query `lang=vi|en` mặc định `vi`. Response `data`: `{topic,title,bodyHtml,updatedAt}`. Endpoint đọc bốn resource cố định trong `policy-content/` qua `StorePolicyService`; `updatedAt` là mốc đóng băng `2026-09-01T00:00:00Z`, không còn lấy từ row policy trong DB. Các dòng liên hệ trong cả Bảo hành và Đổi trả được điền động từ setting nhóm `contact` hiện hành (hotline, Zalo, Messenger, địa chỉ, giờ mở cửa), không đóng cứng trong policy. Endpoint không nhận setting key động và không đưa policy vào payload `GET /api/v1/settings/public` chung. HTML được sanitize khi render; resource bắt buộc phải tồn tại nên không có fallback sang bản DB hay bản policy khác. Trợ lý BigBike dùng lại cùng nguồn đã hydrate. Trang Bảo mật vẫn tĩnh và không đi endpoint này. Quyết định 01/09/2026 thay thế quyết định 23/08/2026 về admin-editable policy.
 
 ## Article Content Contract
 
@@ -1760,17 +1760,14 @@ Status: `REMOVED`
 | `GET /api/v1/admin/product-assignment` | `products.read` **or** `content.read` | Returns the editable "Phân công" guide for the product AND content/article create-edit banners (same endpoint, same data): `{title, roles: [{id, name, items}]}` — `roles` is a dynamic list, 1–6 entries, Super-Admin managed; `items` is a single free-text field (not a nested array). A caller who can open either editor may read it. Write is via the `product_assign_title` + `product_assign_roles` `superAdminOnly` settings keys above. | `CONFIRMED_FROM_OWNER_DECISION` | `AdminProductAssignmentController.java`, `DevAdminAuthService.java` |
 | `GET /api/v1/settings/public` | public | List settings marked `isPublic=true` that are on the registry public allowlist. Sensitive keys are never exposed regardless of DB flag. | `CONFIRMED_FROM_CODE` | `PublicSettingsController.java` |
 
-`order_overdue_days` is a private `INTEGER` setting in group `order_operations`, default `2`, minimum `1`. It is edited through the existing admin settings list/batch PATCH under “Vận hành đơn hàng / Order operations”, never returned by the public settings endpoint, and does not create a new permission.
+`order_overdue_days` remains a private `INTEGER` setting in group `order_operations`, with the effective owner-approved value fixed at `2` days and minimum `1`. The row is retained in private storage for runtime compatibility, but the admin Settings screen no longer renders an “Order operations / Vận hành đơn hàng” tab or an editable field for it, per the owner decision on 2026-09-01 superseding the 2026-08-31 editing description. It is never returned by the public settings endpoint and does not create a new permission. The daily reminder, Orders overdue filter and CSV export continue to read the stored key unchanged.
 
 The private `inventory` group contains `inventory_out_of_stock_digest_enabled` (`BOOLEAN`, default `true`) and `inventory_out_of_stock_digest_time` (`STRING`, default `08:00`, strict `HH:mm`). They are read/written through the existing admin endpoints with `settings.read`/`settings.write`, never returned publicly, and require no new endpoint.
 
-The private `review_invitation` group (`REVIEW_RULE_014`–`016`) contains exactly three keys and is never returned by `GET /api/v1/settings/public`:
-
-| Key | Type | Default | Validation / effect |
-|---|---|---|---|
-| `review_invitation_enabled` | `BOOLEAN` | `false` | `false → true` opens a new campaign at the committed update time. `true → false` closes it and permanently skips its pending deliveries. Writing the same value is a no-op. |
-| `review_invitation_delay_days` | `INTEGER` | `7` | Inclusive range 1–90. Updating it recalculates `dueAt` for still-pending deliveries of the active campaign from each order's `completedAt`; sent/attempted/skipped rows never change. |
-| `review_invitation_daily_limit` | `INTEGER` | `20` | Inclusive range 1–50. Caps attempts per Vietnam calendar day; failures and uncertain outcomes count. |
+The former private `review_invitation` settings group was removed by the owner decision on
+2026-09-01. It is not returned by any settings API. The workflow is automatic with a fixed
+7-day delay and fixed 20-attempt Vietnam-day cap; the only switch is the server environment
+property `BIGBIKE_REVIEW_INVITATION_ENABLED` (default `true`).
 
 `youtube_url` vẫn thuộc nhóm `contact` và xuất hiện trong public settings như trước,
 nhưng còn là nguồn duy nhất cho đồng bộ video trang chủ. Màn Video trang chủ đọc đúng
@@ -1893,7 +1890,7 @@ Evidence: `AdminQuickSearchController`, `AdminQuickSearchService`, `AdminOrderSu
 
 | Method | Path | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/admin/orders` | `orders.read` | Existing page/status/search/date/sort query plus `orderScope=ALL|OPERATIONAL|HISTORICAL` (API default `ALL`) and optional `attention=OVERDUE`. Overdue is valid only for operational PENDING and uses `order_overdue_days`. Text/date semantics remain unchanged. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_011`–`015`, `AdminOrderSupport` |
+| `GET` | `/api/v1/admin/orders` | `orders.read` | Existing page/status/search/date/sort query plus `orderScope=ALL|OPERATIONAL|HISTORICAL` (API default `ALL`) and optional `attention=OVERDUE`. Overdue is valid only for operational PENDING and uses the owner-fixed 2-day threshold retained under `order_overdue_days`; the Settings screen has no editor for this value. Text/date semantics remain unchanged. | `OWNER_CONFIRMED_2026-09-01` | `ORDER_RULE_011`–`015`, `AdminOrderSupport` |
 | `GET` | `/api/v1/admin/orders/{orderId}` | `orders.read` | Existing snapshots plus `orderScope` and nullable `historyClassification { batchKey, labelVi, labelEn, reasonVi, reasonEn, classifiedAt }`. Customer/guest APIs do not expose this internal metadata. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, `AdminOrderDetailResponse` |
 | `GET` | `/api/v1/admin/orders/{orderId}/allowed-transitions` | `orders.read` | Returns legal lifecycle values for operational orders; returns an empty list for an active historical order. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `STATE_MACHINES.md` §6 |
 | `PATCH` | `/api/v1/admin/orders/{orderId}/status` | `orders.write` | Existing transition contract remains; active historical orders always return `409 HISTORICAL_ORDER_READ_ONLY` before same-status handling or side effects. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `AdminOrderService.updateOrderStatus` |
@@ -2135,18 +2132,10 @@ Review audit snapshots intentionally contain no `authorEmail`, review body/comme
 or photo URLs. They retain only operational metadata such as review/product ID,
 status, rating, photo count, timestamps and optimistic version.
 
-## Admin Review Invitations Contract
-
-All endpoints require an Admin JWT. Read endpoints require `settings.read`; the sole mutation requires `settings.write`. They live under Settings rather than the Review moderation permissions because they control outbound communication and global opt-out records (`REVIEW_RULE_014`–`016`).
-
-| Method | Path | Permission | Purpose |
-|---|---|---|---|
-| `GET` | `/api/v1/admin/review-invitations/summary` | `settings.read` | Returns `{ pending, sent, failed, uncertain, skipped, optedOut, attemptedToday, dailyLimit, enabled, delayDays }`. Counts are global; `attemptedToday` uses the Vietnam calendar date. |
-| `GET` | `/api/v1/admin/review-invitations` | `settings.read` | Paginated list, stable order `createdAt DESC, id DESC`. Optional `page` (1-based), `size` (1–100), `status` (`PENDING|SENDING|SENT|FAILED|UNCERTAIN|SKIPPED`) and literal `q` over order number/email. Item shape: `{ id, orderId, orderNumber, recipientEmail, locale, status, completedAt, dueAt, attemptedAt, providerAcceptedAt, skipReason, failureCode, failureMessage, productCount, reviewedProductCount, createdAt }`. Secret tokens are never returned. |
-| `POST` | `/api/v1/admin/review-invitations/{id}/skip` | `settings.write` | Body `{ "reason": "REFUNDED" }`. Allowed only while `PENDING`; changes it to `SKIPPED` with reason `REFUNDED`. Same-state refunded skip is idempotent; attempted/final rows return `409`. |
-| `GET` | `/api/v1/admin/review-invitation-opt-outs` | `settings.read` | Paginated permanent opt-out list, optional `page`, `size`, `q`; shape `{ items: [{ email, optedOutAt, source }], pagination }`. There is deliberately no delete/re-subscribe endpoint. |
-
-The invitation list records failures rather than swallowing them. `failureMessage` is a sanitized operator-facing summary and must not contain a token or SMTP credential. `SENDING` older than 30 minutes becomes `UNCERTAIN` and is never retried. `SKIPPED` reason vocabulary is `FEATURE_DISABLED`, `CAMPAIGN_CLOSED`, `ORDER_CANCELLED`, `REFUNDED`, `OPTED_OUT`, `NO_ELIGIBLE_PRODUCTS`, `ALREADY_REVIEWED`; a missing-email order is omitted before a delivery row is created.
+The former admin review-invitation endpoints and operator skip action were removed on 2026-09-01.
+Delivery failures, `SENDING` timeout handling, terminal statuses, and skip reasons remain internal
+workflow data only; no admin response exposes them. The public unsubscribe contract above remains
+the sole opt-out API and has no delete/re-subscribe operation.
 
 ## Admin Roles Contract
 
@@ -2272,7 +2261,9 @@ The manual admin-lock contract has been removed completely. There is no replacem
 
 Automatic outage responses for a genuinely unreachable upstream remain an infrastructure concern documented in `DEPLOYMENT_GUIDE.md`; they are not emitted by this removed business feature.
 
-## Trợ lý ảo AI “Trợ lý BigBike” (owner decision 2026-08-30)
+## Trợ lý BigBike (owner decision 2026-08-30; display-name decision 2026-09-01)
+
+Theo quyết định của chủ shop ngày 2026-09-01, tên hiển thị là **Trợ lý BigBike** / **BigBike Assistant**. Dòng công bố tương ứng là “Bạn đang trò chuyện với trợ lý AI của BigBike, không phải nhân viên.” / “You are chatting with BigBike Assistant, BigBike’s AI assistant, not a human staff member.”; trạng thái sẵn sàng là “Trợ lý sẵn sàng” / “Assistant ready”. Đây là thay đổi chữ hiển thị, không thay đổi endpoint hoặc response shape.
 
 Mọi response dùng envelope chuẩn `ApiDataResponse`. Chat không nhận `customerId`, email, số điện thoại, model id, telemetry model hay nguồn attribution từ trình duyệt. Model trả lời khách được khóa ở cấu hình máy chủ là **Gemini 3.7 Flash**; kiểm duyệt đánh giá sản phẩm là integration riêng, không thuộc hợp đồng này.
 

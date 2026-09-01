@@ -50,9 +50,12 @@ public class CustomerAuthService {
     @Transactional
     public CustomerAuthResult register(CustomerRegisterRequest req, String ipAddress, String userAgent) {
         String normalizedEmail = req.email() != null ? req.email().toLowerCase(Locale.ROOT).trim() : null;
-        // Chuẩn hóa SĐT về dạng 0… (PhoneNumbers.normalize) để mọi luồng nhận diện cùng một số
-        // dù nhập +84 hay 0 đều lưu/đối chiếu như nhau.
-        String normalizedPhone = PhoneNumbers.normalize(req.phone());
+        // Storefront registration accepts familiar display separators but enforces the
+        // owner-approved Vietnamese mobile format before persisting a new number.
+        String normalizedPhone = PhoneNumbers.normalizeVietnameseMobile(req.phone());
+        if (req.phone() != null && !req.phone().isBlank() && normalizedPhone == null) {
+            throw ValidationException.fromField("phone", "INVALID", "Số điện thoại không hợp lệ.");
+        }
 
         if (normalizedEmail == null && normalizedPhone == null) {
             throw ValidationException.fromField("email", "REQUIRED", "Email or phone is required.");
