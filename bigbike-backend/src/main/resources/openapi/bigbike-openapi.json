@@ -5804,7 +5804,8 @@
       },
       "post": {
         "tags": ["Admin Media"],
-        "summary": "Create a media folder (admin)",
+        "summary": "Create a root or child media folder (admin)",
+        "description": "A child parentId must identify a root folder. New folders are placed last in their parent group; systemKey is server-owned metadata and is never accepted in this request.",
         "operationId": "adminCreateMediaFolder",
         "security": [{ "AdminBearerAuth": [] }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 120 }, "slug": { "type": "string", "maxLength": 160 }, "description": { "type": "string", "maxLength": 2000 }, "parentId": { "type": "string", "format": "uuid" } } } } } },
@@ -5820,7 +5821,8 @@
     "/api/v1/admin/media-folders/{id}": {
       "patch": {
         "tags": ["Admin Media"],
-        "summary": "Rename a media folder (admin)",
+        "summary": "Update or move a media folder (admin)",
+        "description": "All folders, including system folders, can be renamed or moved. Reparenting preserves systemKey, accepts only a root folder or null, and rejects cycles, a third level, or moving a folder that still has children. A successful move places the folder last in its destination group.",
         "operationId": "adminRenameMediaFolder",
         "security": [{ "AdminBearerAuth": [] }],
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
@@ -5836,7 +5838,8 @@
       },
       "delete": {
         "tags": ["Admin Media"],
-        "summary": "Delete a media folder and uncategorize its assets (admin)",
+        "summary": "Delete a leaf media folder and uncategorize its assets (admin)",
+        "description": "Deletes the folder only and sets its media folderId to null. Folders with children are rejected. Deleting a system folder also removes its systemKey, so future automatic placement for that group leaves media uncategorized.",
         "operationId": "adminDeleteMediaFolder",
         "security": [{ "AdminBearerAuth": [] }],
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],

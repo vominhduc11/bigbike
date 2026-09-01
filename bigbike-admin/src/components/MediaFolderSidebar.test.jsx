@@ -4,8 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MediaFolderSidebar } from './MediaFolderSidebar'
 
 const mocks = vi.hoisted(() => ({
+  createMediaFolder: vi.fn(),
+  deleteMediaFolder: vi.fn(),
   fetchMediaTags: vi.fn(),
   onSelectFolder: vi.fn(),
+  updateMediaFolder: vi.fn(),
 }))
 
 vi.mock('react-i18next', () => ({
@@ -13,10 +16,10 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('../lib/adminApi', () => ({
+  createMediaFolder: mocks.createMediaFolder,
+  deleteMediaFolder: mocks.deleteMediaFolder,
   fetchMediaTags: mocks.fetchMediaTags,
-  createMediaFolder: vi.fn(),
-  updateMediaFolder: vi.fn(),
-  deleteMediaFolder: vi.fn(),
+  updateMediaFolder: mocks.updateMediaFolder,
 }))
 
 vi.mock('@/lib/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
@@ -55,6 +58,9 @@ const folders = [
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.fetchMediaTags.mockResolvedValue([])
+  mocks.createMediaFolder.mockResolvedValue({})
+  mocks.updateMediaFolder.mockResolvedValue({})
+  mocks.deleteMediaFolder.mockResolvedValue()
 })
 
 function renderSidebar() {
@@ -93,12 +99,56 @@ describe('MediaFolderSidebar — cây thư mục', () => {
     expect(mocks.onSelectFolder).toHaveBeenCalledWith('products')
   })
 
-  it('không cho đổi tên hoặc xoá thư mục hệ thống', async () => {
+  it('hiển thị thao tác đổi tên, thêm con, di chuyển và xoá cho thư mục hệ thống', async () => {
     const user = userEvent.setup()
     renderSidebar()
-    await user.click(screen.getByRole('button', { name: 'media.folderManage' }))
 
-    expect(screen.getAllByRole('button', { name: 'common.edit' })).toHaveLength(1)
-    expect(screen.getAllByRole('button', { name: 'common.delete' })).toHaveLength(1)
+    await user.click(screen.getAllByRole('button', { name: 'media.folderActions' })[0])
+
+    expect(screen.getByText('common.edit')).toBeInTheDocument()
+    expect(screen.getByText('media.folderAddChild')).toBeInTheDocument()
+    expect(screen.getByText('media.folderMove')).toBeInTheDocument()
+    expect(screen.getByText('common.delete')).toBeInTheDocument()
+  })
+
+  it('đổi tên thư mục hệ thống mà không gửi mã nội bộ', async () => {
+    const user = userEvent.setup()
+    renderSidebar()
+
+    await user.click(screen.getAllByRole('button', { name: 'media.folderActions' })[0])
+    await user.click(screen.getByText('common.edit'))
+    await user.clear(screen.getByLabelText('media.folderName'))
+    await user.type(screen.getByLabelText('media.folderName'), 'Kho sản phẩm')
+    await user.click(screen.getByRole('button', { name: 'common.save' }))
+
+    await waitFor(() =>
+      expect(mocks.updateMediaFolder).toHaveBeenCalledWith(
+        'products',
+        expect.objectContaining({ name: 'Kho sản phẩm', parentId: null }),
+      ),
+    )
+    expect(mocks.updateMediaFolder.mock.calls[0][1]).not.toHaveProperty('systemKey')
+  })
+
+  it('chặn di chuyển thư mục còn con ngay trong giao diện', async () => {
+    const user = userEvent.setup()
+    renderSidebar()
+
+    await user.click(screen.getAllByRole('button', { name: 'media.folderActions' })[0])
+    await user.click(screen.getByText('media.folderMove'))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('media.folderMoveHasChildren')
+    expect(screen.getByRole('button', { name: 'media.folderMoveConfirm' })).toBeDisabled()
+  })
+
+  it('dùng cảnh báo riêng trước khi xoá thư mục hệ thống', async () => {
+    const user = userEvent.setup()
+    renderSidebar()
+
+    await user.click(screen.getAllByRole('button', { name: 'media.folderActions' })[1])
+    await user.click(screen.getByText('common.delete'))
+
+    expect(screen.getByText('media.systemFolderDeleteTitle')).toBeInTheDocument()
+    expect(screen.getByText('media.systemFolderDeleteImpact.productBrand')).toBeInTheDocument()
   })
 })

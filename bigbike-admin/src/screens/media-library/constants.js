@@ -2,6 +2,7 @@
 // Kept in a plain .js file so fast-refresh stays component-only in the .jsx parts.
 
 import { MAX_MEDIA_UPLOAD_BYTES, MEDIA_UPLOAD_MIME_TYPES } from '../../lib/mediaConstants'
+import { getMediaFolderLabel } from '../../lib/mediaFolderUtils'
 
 export const ALLOWED_MIME = MEDIA_UPLOAD_MIME_TYPES
 export const MAX_FILE_SIZE = MAX_MEDIA_UPLOAD_BYTES
@@ -66,7 +67,10 @@ export function buildActiveChips(query, t, folders, onRemove) {
     const label =
       query.folderFilter === 'NONE'
         ? t('media.uncategorized')
-        : ((folders || []).find((f) => f.id === query.folderFilter)?.name ?? query.folderFilter)
+        : getMediaFolderLabel(
+            (folders || []).find((f) => f.id === query.folderFilter),
+            t,
+          ) || query.folderFilter
     chips.push({
       key: 'folderFilter',
       label: `${t('media.folder')}: ${label}`,

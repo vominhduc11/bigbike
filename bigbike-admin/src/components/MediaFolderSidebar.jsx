@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  AlertTriangle,
   ChevronDown,
   ChevronRight,
   Folder,
   FolderOpen,
-  Plus,
-  Pencil,
-  Trash2,
-  Inbox,
   Hash,
+  Inbox,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+  Waypoints,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { showConfirm } from '../lib/confirm'
@@ -19,10 +22,27 @@ import {
   fetchMediaTags,
   updateMediaFolder,
 } from '../lib/adminApi'
-import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/layout'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { getMediaFolderLabel } from '@/lib/mediaFolderUtils'
+import { getMediaFolderLabel, getSystemFolderDeleteWarning } from '@/lib/mediaFolderUtils'
+
+const ROOT_FOLDER_VALUE = '__ROOT__'
 
 function buildFolderTree(folders) {
   const byParent = new Map()
@@ -37,20 +57,30 @@ function buildFolderTree(folders) {
   return byParent
 }
 
-/**
- * Left-rail sidebar with three sections:
- *  - All / Uncategorized shortcut
- *  - Folder list (CRUD inline if canUpdate)
- *  - Popular tags (top 20)
- *
- * Selecting a folder/tag updates parent via callbacks. The currently selected
- * pill is highlighted. The whole component fetches its own data on mount.
- */
-/**
- * Folders are owned by the parent screen (single source of truth for the count
- * badges and bulk-move popover). We accept them as a prop and signal mutations
- * back via {@code onFoldersChanged} so the parent can refetch.
- */
+function folderActionError(t, error, childCount = 0) {
+  if (error?.code === 'MEDIA_FOLDER_NAME_DUPLICATE') return t('media.folderNameDuplicate')
+  if (error?.code === 'MEDIA_FOLDER_HAS_CHILDREN')
+    return t('media.folderHasChildren', { count: childCount })
+  if (error?.code === 'MEDIA_FOLDER_INVALID_PARENT') return t('media.folderInvalidParent')
+  if (error?.code === 'MEDIA_FOLDER_DEPTH_LIMIT') return t('media.folderDepthLimit')
+  if (error?.status === 403) return t('media.actionForbidden')
+  if (error?.status === 404) return t('media.folderNotFound')
+  if (error?.status === 0 || error?.code === 'NETWORK_ERROR') return t('media.actionNetworkError')
+  if (error?.code === 'VALIDATION_ERROR') return t('media.folderNameRequired')
+  return t('common.error')
+}
+
+function folderPayload(folder, overrides = {}) {
+  return {
+    name: folder.name,
+    slug: folder.slug,
+    description: folder.description ?? null,
+    parentId: folder.parentId ?? null,
+    ...overrides,
+  }
+}
+
+/** Folder navigation and management for the Media Library. */
 export function MediaFolderSidebar({
   folderFilter,
   tag,
@@ -62,14 +92,12 @@ export function MediaFolderSidebar({
 }) {
   const { t } = useTranslation()
   const [tags, setTags] = useState([])
-  const [tagsStatus, setTagsStatus] = useState('loading') // 'loading' | 'error' | 'ready'
-  const [editingId, setEditingId] = useState(null)
-  const [creating, setCreating] = useState(false)
+  const [tagsStatus, setTagsStatus] = useState('loading')
   const [mobileOpen, setMobileOpen] = useState(false)
-  // Tạo/đổi tên/xoá thư mục là việc thỉnh thoảng mới làm — ẩn sau công tắc "Quản lý"
-  // để trạng thái nghỉ của sidebar chỉ còn danh sách để lọc, không có nút nào.
-  const [manageMode, setManageMode] = useState(false)
   const [expandedIds, setExpandedIds] = useState(() => new Set())
+  const [nameDialog, setNameDialog] = useState(null)
+  const [moveFolder, setMoveFolder] = useState(null)
+  const [systemDeleteFolder, setSystemDeleteFolder] = useState(null)
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -87,16 +115,12 @@ export function MediaFolderSidebar({
   }, [folders])
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Tags are local — they don't drive bulk actions, so the sidebar can own them.
-  // Trạng thái tải/lỗi hiển thị rõ ngay trong khu vực tag thay vì chỉ toast rồi im.
   useEffect(() => {
     let active = true
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTagsStatus('loading')
     fetchMediaTags()
-      .then((ts) => {
+      .then((result) => {
         if (active) {
-          setTags(ts)
+          setTags(result)
           setTagsStatus('ready')
         }
       })
@@ -108,30 +132,6 @@ export function MediaFolderSidebar({
     }
   }, [])
 
-  async function handleCreate(name) {
-    if (!name?.trim()) return
-    try {
-      await createMediaFolder({ name: name.trim() })
-      toast.success(t('media.folderCreated'))
-      setCreating(false)
-      onFoldersChanged?.()
-    } catch (e) {
-      toast.error(e.message || t('common.error'))
-    }
-  }
-
-  async function handleRename(id, name, folder) {
-    if (!name?.trim()) return
-    try {
-      await updateMediaFolder(id, { name: name.trim(), parentId: folder?.parentId ?? null })
-      toast.success(t('media.folderUpdated'))
-      setEditingId(null)
-      onFoldersChanged?.()
-    } catch (e) {
-      toast.error(e.message || t('common.error'))
-    }
-  }
-
   function toggleExpanded(folderId) {
     setExpandedIds((current) => {
       const next = new Set(current)
@@ -141,21 +141,73 @@ export function MediaFolderSidebar({
     })
   }
 
-  async function handleDelete(folder) {
-    const confirmed = await showConfirm(
-      t('media.folderDeleteConfirm', { name: folder.name }),
-      t('common.permanentDeleteTitle'),
-      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
-    )
-    if (!confirmed) return
+  async function saveFolderName(name) {
+    const trimmedName = name.trim()
+    if (!trimmedName) return t('media.folderNameRequired')
+    const dialog = nameDialog
+    try {
+      if (dialog?.mode === 'create') {
+        await createMediaFolder({ name: trimmedName, parentId: dialog.parentId ?? null })
+        toast.success(t('media.folderCreated'))
+      } else if (dialog?.folder) {
+        await updateMediaFolder(
+          dialog.folder.id,
+          folderPayload(dialog.folder, { name: trimmedName }),
+        )
+        toast.success(t('media.folderUpdated'))
+      }
+      setNameDialog(null)
+      onFoldersChanged?.()
+      return ''
+    } catch (error) {
+      return folderActionError(t, error, childCountFor(dialog?.folder, folders))
+    }
+  }
+
+  async function moveFolderTo(parentId) {
+    if (!moveFolder) return ''
+    const childCount = childCountFor(moveFolder, folders)
+    if (childCount > 0) return t('media.folderMoveHasChildren', { count: childCount })
+    try {
+      await updateMediaFolder(moveFolder.id, folderPayload(moveFolder, { parentId }))
+      toast.success(t('media.folderMoved'))
+      setMoveFolder(null)
+      onFoldersChanged?.()
+      return ''
+    } catch (error) {
+      return folderActionError(t, error, childCount)
+    }
+  }
+
+  async function deleteFolder(folder) {
     try {
       await deleteMediaFolder(folder.id)
       toast.success(t('media.folderDeleted'))
       if (folderFilter === folder.id) onSelectFolder('')
+      setSystemDeleteFolder(null)
       onFoldersChanged?.()
-    } catch (e) {
-      toast.error(e.message || t('common.error'))
+    } catch (error) {
+      toast.error(folderActionError(t, error, childCountFor(folder, folders)))
     }
+  }
+
+  async function requestDelete(folder) {
+    const childCount = childCountFor(folder, folders)
+    if (childCount > 0) {
+      toast.error(t('media.folderHasChildren', { count: childCount }))
+      return
+    }
+    if (folder.systemKey) {
+      setSystemDeleteFolder(folder)
+      return
+    }
+    const name = getMediaFolderLabel(folder, t)
+    const confirmed = await showConfirm(
+      t('media.folderDeleteConfirm', { name }),
+      t('media.folderDeleteConfirmTitle'),
+      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
+    )
+    if (confirmed) await deleteFolder(folder)
   }
 
   return (
@@ -229,106 +281,101 @@ export function MediaFolderSidebar({
             <p className="m-0 text-xs font-bold uppercase tracking-wide text-muted-foreground">
               {t('media.myFolders')}
             </p>
-            {canUpdate && (
-              <div className="flex items-center gap-1">
-                {manageMode && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCreating(true)}
-                    className="w-7 px-0"
-                    aria-label={t('media.folderAdd')}
-                    title={t('media.folderAdd')}
-                  >
-                    <Plus size={14} />
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-pressed={manageMode}
-                  onClick={() => {
-                    setManageMode((s) => !s)
-                    setCreating(false)
-                    setEditingId(null)
-                  }}
-                  className="w-auto px-2 text-xs"
-                >
-                  {manageMode ? t('media.folderManageDone') : t('media.folderManage')}
-                </Button>
-              </div>
-            )}
+            {canUpdate ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-9 shrink-0"
+                onClick={() => setNameDialog({ mode: 'create', parentId: null })}
+              >
+                <Plus size={14} aria-hidden="true" />
+                {t('media.folderAdd')}
+              </Button>
+            ) : null}
           </div>
-          {folders.length === 0 && !creating && (
+          {folders.length === 0 ? (
             <p className="my-1 text-xs text-muted-foreground">{t('media.foldersEmpty')}</p>
-          )}
+          ) : null}
           <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {creating && (
-              <li>
-                <FolderInput
-                  onSubmit={handleCreate}
-                  onCancel={() => setCreating(false)}
-                  placeholder={t('media.folderNamePlaceholder')}
-                />
-              </li>
-            )}
             <FolderTree
               foldersByParent={buildFolderTree(folders)}
               parentId={null}
               expandedIds={expandedIds}
               folderFilter={folderFilter}
               canUpdate={canUpdate}
-              manageMode={manageMode}
-              editingId={editingId}
               onToggleExpanded={toggleExpanded}
               onSelectFolder={(id) => {
                 onSelectFolder(id)
                 setMobileOpen(false)
               }}
-              onStartEditing={setEditingId}
-              onDelete={handleDelete}
-              onRename={handleRename}
+              onRename={(folder) => setNameDialog({ mode: 'rename', folder })}
+              onCreateChild={(folder) =>
+                setNameDialog({ mode: 'create', parentId: folder.id, parent: folder })
+              }
+              onMove={setMoveFolder}
+              onDelete={requestDelete}
             />
           </ul>
         </section>
 
-        {(tagsStatus !== 'ready' || tags.length > 0) && (
+        {tagsStatus !== 'ready' || tags.length > 0 ? (
           <section className="flex flex-col gap-2">
             <p className="m-0 text-xs font-bold uppercase tracking-wide text-muted-foreground">
               {t('media.popularTags')}
             </p>
-            {tagsStatus === 'loading' && (
+            {tagsStatus === 'loading' ? (
               <p className="my-1 text-xs text-muted-foreground" role="status">
                 {t('common.loading')}
               </p>
-            )}
-            {tagsStatus === 'error' && (
-              <p className="my-1 text-xs text-muted-foreground">
-                {t('media.tagsError', { defaultValue: 'Không tải được thẻ' })}
-              </p>
-            )}
-            {tagsStatus === 'ready' && tags.length > 0 && (
+            ) : null}
+            {tagsStatus === 'error' ? (
+              <p className="my-1 text-xs text-muted-foreground">{t('media.tagsError')}</p>
+            ) : null}
+            {tagsStatus === 'ready' && tags.length > 0 ? (
               <div className="flex flex-wrap gap-1">
-                {tags.map((tg) => (
+                {tags.map((tagValue) => (
                   <Button
-                    variant={tag === tg ? 'default' : 'outline'}
+                    variant={tag === tagValue ? 'default' : 'outline'}
                     size="sm"
-                    key={tg}
+                    key={tagValue}
                     onClick={() => {
-                      onSelectTag(tag === tg ? '' : tg)
+                      onSelectTag(tag === tagValue ? '' : tagValue)
                       setMobileOpen(false)
                     }}
-                    aria-pressed={tag === tg}
+                    aria-pressed={tag === tagValue}
                     className="h-7 px-2 text-xs"
                   >
-                    <Hash size={11} /> {tg}
+                    <Hash size={11} aria-hidden="true" /> {tagValue}
                   </Button>
                 ))}
               </div>
-            )}
+            ) : null}
           </section>
-        )}
+        ) : null}
       </div>
+
+      <FolderNameDialog
+        key={
+          nameDialog
+            ? `${nameDialog.mode}-${nameDialog.folder?.id ?? nameDialog.parentId ?? 'root'}`
+            : 'closed'
+        }
+        dialog={nameDialog}
+        onClose={() => setNameDialog(null)}
+        onSave={saveFolderName}
+      />
+      <FolderMoveDialog
+        key={moveFolder?.id ?? 'closed'}
+        folder={moveFolder}
+        folders={folders}
+        onClose={() => setMoveFolder(null)}
+        onMove={moveFolderTo}
+      />
+      <SystemFolderDeleteDialog
+        folder={systemDeleteFolder}
+        onClose={() => setSystemDeleteFolder(null)}
+        onDelete={deleteFolder}
+      />
     </aside>
   )
 }
@@ -339,13 +386,12 @@ function FolderTree({
   expandedIds,
   folderFilter,
   canUpdate,
-  manageMode,
-  editingId,
   onToggleExpanded,
   onSelectFolder,
-  onStartEditing,
-  onDelete,
   onRename,
+  onCreateChild,
+  onMove,
+  onDelete,
 }) {
   const { t } = useTranslation()
   const folders = foldersByParent.get(parentId) || []
@@ -353,7 +399,6 @@ function FolderTree({
     const children = foldersByParent.get(folder.id) || []
     const hasChildren = children.length > 0
     const expanded = expandedIds.has(folder.id)
-    const protectedFolder = Boolean(folder.systemKey)
     return (
       <li
         key={folder.id}
@@ -361,93 +406,71 @@ function FolderTree({
         aria-level={folder.depth + 1}
         aria-expanded={hasChildren ? expanded : undefined}
       >
-        {editingId === folder.id ? (
-          <FolderInput
-            defaultValue={folder.name}
-            onSubmit={(name) => onRename(folder.id, name, folder)}
-            onCancel={() => onStartEditing(null)}
-          />
-        ) : (
-          <div
-            className={cn(
-              'relative flex items-center rounded-[var(--admin-radius-control)]',
-              folderFilter === folder.id && 'bg-surface-selected text-primary',
-            )}
+        <div
+          className={cn(
+            'flex items-center rounded-[var(--admin-radius-control)]',
+            folderFilter === folder.id && 'bg-surface-selected text-primary',
+          )}
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="ml-1 h-8 w-7 shrink-0"
+            onClick={() => hasChildren && onToggleExpanded(folder.id)}
+            disabled={!hasChildren}
+            aria-label={
+              hasChildren
+                ? expanded
+                  ? t('media.collapseFolder')
+                  : t('media.expandFolder')
+                : t('media.folderNoChildren')
+            }
+            aria-expanded={hasChildren ? expanded : undefined}
           >
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="ml-1 h-8 w-7 shrink-0"
-              onClick={() => hasChildren && onToggleExpanded(folder.id)}
-              disabled={!hasChildren}
-              aria-label={
-                hasChildren
-                  ? expanded
-                    ? t('media.collapseFolder')
-                    : t('media.expandFolder')
-                  : t('media.folderNoChildren')
-              }
-              aria-expanded={hasChildren ? expanded : undefined}
-            >
-              {hasChildren ? (
-                expanded ? (
-                  <ChevronDown size={14} />
-                ) : (
-                  <ChevronRight size={14} />
-                )
+            {hasChildren ? (
+              expanded ? (
+                <ChevronDown size={14} />
               ) : (
-                <span className="size-3" aria-hidden="true" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => onSelectFolder(folder.id)}
-              aria-current={folderFilter === folder.id ? 'true' : undefined}
+                <ChevronRight size={14} />
+              )
+            ) : (
+              <span className="size-3" aria-hidden="true" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => onSelectFolder(folder.id)}
+            aria-current={folderFilter === folder.id ? 'true' : undefined}
+            className={cn('min-w-0 flex-1 justify-start px-2 text-sm', folder.depth > 0 && 'pl-1')}
+          >
+            {expanded ? (
+              <FolderOpen size={14} aria-hidden="true" />
+            ) : (
+              <Folder size={14} aria-hidden="true" />
+            )}
+            <span className="min-w-0 flex-1 truncate text-left">
+              {getMediaFolderLabel(folder, t)}
+            </span>
+            <span
               className={cn(
-                'min-w-0 flex-1 justify-start px-2 text-sm',
-                folder.depth > 0 && 'pl-1',
+                'rounded-full bg-surface-muted px-2 text-xs text-muted-foreground',
+                folderFilter === folder.id && 'bg-primary text-primary-foreground',
               )}
             >
-              {expanded ? <FolderOpen size={14} /> : <Folder size={14} />}
-              <span className="min-w-0 flex-1 truncate text-left">
-                {getMediaFolderLabel(folder, t)}
-              </span>
-              <span
-                className={cn(
-                  'rounded-full bg-surface-muted px-2 text-xs text-muted-foreground',
-                  folderFilter === folder.id && 'bg-primary text-primary-foreground',
-                )}
-              >
-                {folder.mediaCount}
-              </span>
-            </Button>
-            {canUpdate && manageMode && !protectedFolder && (
-              <div className="absolute right-1 top-1/2 flex -translate-y-1/2 gap-1 bg-surface p-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onStartEditing(folder.id)}
-                  className="w-7 px-0"
-                  aria-label={t('common.edit')}
-                  title={t('common.edit')}
-                >
-                  <Pencil size={11} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDelete(folder)}
-                  className="w-7 px-0 text-danger"
-                  aria-label={t('common.delete')}
-                  title={t('common.delete')}
-                >
-                  <Trash2 size={11} />
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+              {folder.mediaCount}
+            </span>
+          </Button>
+          {canUpdate ? (
+            <FolderActions
+              folder={folder}
+              onRename={onRename}
+              onCreateChild={onCreateChild}
+              onMove={onMove}
+              onDelete={onDelete}
+            />
+          ) : null}
+        </div>
         {hasChildren && expanded ? (
           <ul className="m-0 flex list-none flex-col gap-1 p-0 pl-4" role="group">
             <FolderTree
@@ -456,13 +479,12 @@ function FolderTree({
               expandedIds={expandedIds}
               folderFilter={folderFilter}
               canUpdate={canUpdate}
-              manageMode={manageMode}
-              editingId={editingId}
               onToggleExpanded={onToggleExpanded}
               onSelectFolder={onSelectFolder}
-              onStartEditing={onStartEditing}
-              onDelete={onDelete}
               onRename={onRename}
+              onCreateChild={onCreateChild}
+              onMove={onMove}
+              onDelete={onDelete}
             />
           </ul>
         ) : null}
@@ -471,41 +493,247 @@ function FolderTree({
   })
 }
 
-function FolderInput({ defaultValue = '', placeholder, onSubmit, onCancel }) {
+function FolderActions({ folder, onRename, onCreateChild, onMove, onDelete }) {
   const { t } = useTranslation()
-  const [value, setValue] = useState(defaultValue)
-  // Rename không có placeholder → vẫn cần accessible name cho ô nhập.
-  const accessibleLabel = placeholder || t('media.folderNamePlaceholder')
-  // Explicit Lưu/Huỷ so a rename isn't lost by clicking away, and doesn't require
-  // discovering that Enter saves. Escape still cancels for keyboard users.
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        onSubmit(value)
-      }}
-      className="py-1"
-    >
-      <Input
-        autoFocus
-        type="text"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onCancel()
-        }}
-        placeholder={placeholder}
-        aria-label={accessibleLabel}
-        className="text-xs py-1 px-2"
-      />
-      <div className="flex items-center gap-2 mt-2">
-        <Button type="submit" size="sm" disabled={!value.trim()}>
-          {t('common.save')}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="mr-1 shrink-0"
+          aria-label={t('media.folderActions', { name: getMediaFolderLabel(folder, t) })}
+        >
+          <MoreHorizontal size={16} aria-hidden="true" />
         </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>
-      </div>
-    </form>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => onRename(folder)}>
+          <Pencil aria-hidden="true" />
+          {t('common.edit')}
+        </DropdownMenuItem>
+        {!folder.parentId ? (
+          <DropdownMenuItem onSelect={() => onCreateChild(folder)}>
+            <Plus aria-hidden="true" />
+            {t('media.folderAddChild')}
+          </DropdownMenuItem>
+        ) : null}
+        <DropdownMenuItem onSelect={() => onMove(folder)}>
+          <Waypoints aria-hidden="true" />
+          {t('media.folderMove')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-danger focus:text-danger"
+          onSelect={() => onDelete(folder)}
+        >
+          <Trash2 aria-hidden="true" />
+          {t('common.delete')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
+}
+
+function FolderNameDialog({ dialog, onClose, onSave }) {
+  const { t } = useTranslation()
+  const [name, setName] = useState(() => dialog?.folder?.name ?? '')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const isCreate = dialog?.mode === 'create'
+  const parent = dialog?.parent
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    if (!name.trim()) {
+      setError(t('media.folderNameRequired'))
+      return
+    }
+    setSaving(true)
+    const saveError = await onSave(name)
+    setSaving(false)
+    if (saveError) setError(saveError)
+  }
+
+  const formId = isCreate ? 'media-folder-create-form' : 'media-folder-rename-form'
+  return (
+    <Modal
+      open={Boolean(dialog)}
+      onClose={saving ? () => {} : onClose}
+      title={
+        isCreate
+          ? parent
+            ? t('media.folderAddChildTitle')
+            : t('media.folderAddTitle')
+          : t('media.folderRenameTitle')
+      }
+      description={
+        parent
+          ? t('media.folderAddChildDescription', { name: getMediaFolderLabel(parent, t) })
+          : undefined
+      }
+      actions={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" form={formId} loading={saving} disabled={!name.trim()}>
+            {isCreate ? t('common.add') : t('common.save')}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={handleSubmit} className="flex flex-col gap-2">
+        <label htmlFor={`${formId}-name`} className="text-sm font-medium text-foreground">
+          {t('media.folderName')}
+        </label>
+        <Input
+          id={`${formId}-name`}
+          autoFocus
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder={t('media.folderNamePlaceholder')}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${formId}-error` : undefined}
+        />
+        {error ? (
+          <p id={`${formId}-error`} className="m-0 text-sm text-danger" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </form>
+    </Modal>
+  )
+}
+
+function FolderMoveDialog({ folder, folders, onClose, onMove }) {
+  const { t } = useTranslation()
+  const [parentId, setParentId] = useState(() => folder?.parentId ?? ROOT_FOLDER_VALUE)
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const childCount = childCountFor(folder, folders)
+  const rootFolders = folders.filter(
+    (candidate) => !candidate.parentId && candidate.id !== folder?.id,
+  )
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    if (childCount > 0) {
+      setError(t('media.folderMoveHasChildren', { count: childCount }))
+      return
+    }
+    setSaving(true)
+    const moveError = await onMove(parentId === ROOT_FOLDER_VALUE ? null : parentId)
+    setSaving(false)
+    if (moveError) setError(moveError)
+  }
+
+  return (
+    <Modal
+      open={Boolean(folder)}
+      onClose={saving ? () => {} : onClose}
+      title={t('media.folderMoveTitle', { name: getMediaFolderLabel(folder, t) })}
+      actions={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            form="media-folder-move-form"
+            loading={saving}
+            disabled={childCount > 0}
+          >
+            {t('media.folderMoveConfirm')}
+          </Button>
+        </>
+      }
+    >
+      <form id="media-folder-move-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
+        {childCount > 0 ? (
+          <div
+            className="flex gap-2 rounded-[var(--admin-radius-control)] border border-danger/40 bg-danger/10 p-3 text-sm text-foreground"
+            role="alert"
+          >
+            <AlertTriangle className="mt-1 size-4 shrink-0 text-danger" aria-hidden="true" />
+            <span>{t('media.folderMoveHasChildren', { count: childCount })}</span>
+          </div>
+        ) : (
+          <>
+            <label htmlFor="media-folder-parent" className="text-sm font-medium text-foreground">
+              {t('media.folderParent')}
+            </label>
+            <Select value={parentId} onValueChange={setParentId}>
+              <SelectTrigger id="media-folder-parent">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ROOT_FOLDER_VALUE}>{t('media.folderMoveToRoot')}</SelectItem>
+                {rootFolders.map((candidate) => (
+                  <SelectItem key={candidate.id} value={candidate.id}>
+                    {getMediaFolderLabel(candidate, t)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        )}
+        {error ? (
+          <p className="m-0 text-sm text-danger" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </form>
+    </Modal>
+  )
+}
+
+function SystemFolderDeleteDialog({ folder, onClose, onDelete }) {
+  const { t } = useTranslation()
+  const [deleting, setDeleting] = useState(false)
+
+  async function confirmDelete() {
+    if (!folder) return
+    setDeleting(true)
+    await onDelete(folder)
+    setDeleting(false)
+  }
+
+  return (
+    <Modal
+      open={Boolean(folder)}
+      onClose={deleting ? () => {} : onClose}
+      title={t('media.systemFolderDeleteTitle', { name: getMediaFolderLabel(folder, t) })}
+      actions={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={deleting}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="button" variant="danger" onClick={confirmDelete} loading={deleting}>
+            <Trash2 size={16} aria-hidden="true" />
+            {t('media.systemFolderDeleteConfirm')}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <div
+          className="flex gap-2 rounded-[var(--admin-radius-control)] border border-danger/40 bg-danger/10 p-3 text-sm text-foreground"
+          role="alert"
+        >
+          <AlertTriangle className="mt-1 size-5 shrink-0 text-danger" aria-hidden="true" />
+          <span>{getSystemFolderDeleteWarning(folder, t)}</span>
+        </div>
+        <p className="m-0 text-sm text-muted-foreground">
+          {t('media.systemFolderDeleteMediaNote')}
+        </p>
+      </div>
+    </Modal>
+  )
+}
+
+function childCountFor(folder, folders) {
+  if (!folder) return 0
+  return folders.filter((candidate) => candidate.parentId === folder.id).length
 }

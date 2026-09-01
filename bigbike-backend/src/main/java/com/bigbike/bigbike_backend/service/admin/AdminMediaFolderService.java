@@ -55,22 +55,23 @@ public class AdminMediaFolderService {
             slug = "folder-" + UUID.randomUUID().toString().substring(0, 8);
         }
         if (folderRepo.existsBySlug(slug)) {
-            throw new ConflictException("Folder with slug '" + slug + "' already exists.");
+            throw duplicateName();
         }
         Instant now = Instant.now();
         MediaFolderEntity f = new MediaFolderEntity();
         f.setName(req.name().trim());
         f.setSlug(slug);
         setParentForCreate(f, req.parentId());
+        f.setSortOrder(nextSortOrder(f.getParentId(), null));
         f.setDescription(req.description());
         f.setCreatedAt(now);
         f.setUpdatedAt(now);
         MediaFolderEntity saved;
         try {
-            saved = folderRepo.save(f);
+            saved = folderRepo.saveAndFlush(f);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             // Concurrent insert with same slug raced past our existsBySlug check.
-            throw new ConflictException("Folder with slug '" + f.getSlug() + "' already exists.");
+            throw duplicateName();
         }
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "MEDIA_FOLDER_CREATED", "MEDIA_FOLDER", saved.getId(), null, folderSnapshot(saved)));
@@ -81,20 +82,28 @@ public class AdminMediaFolderService {
     public MediaFolderResponse update(UUID id, UpsertMediaFolderRequest req, UUID adminId) {
         MediaFolderEntity f = folderRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Folder not found."));
-        ensureCustomFolder(f);
         String before = folderSnapshot(f);
+        UUID previousParentId = f.getParentId();
         f.setName(req.name().trim());
         if (req.slug() != null && !req.slug().isBlank()) {
             String newSlug = slugify(req.slug());
             if (!newSlug.equals(f.getSlug()) && folderRepo.existsBySlug(newSlug)) {
-                throw new ConflictException("Folder with slug '" + newSlug + "' already exists.");
+                throw duplicateName();
             }
             f.setSlug(newSlug);
         }
         setParentForUpdate(f, req.parentId());
+        if (!java.util.Objects.equals(previousParentId, f.getParentId())) {
+            f.setSortOrder(nextSortOrder(f.getParentId(), f.getId()));
+        }
         f.setDescription(req.description());
         f.setUpdatedAt(Instant.now());
-        MediaFolderEntity saved = folderRepo.save(f);
+        MediaFolderEntity saved;
+        try {
+            saved = folderRepo.saveAndFlush(f);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw duplicateName();
+        }
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "MEDIA_FOLDER_UPDATED", "MEDIA_FOLDER", id, before, folderSnapshot(saved)));
         List<MediaFolderEntity> folders = folderRepo.findAll();
@@ -106,9 +115,13 @@ public class AdminMediaFolderService {
     public void delete(UUID id, UUID adminId) {
         MediaFolderEntity f = folderRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Folder not found."));
-        ensureCustomFolder(f);
-        if (folderRepo.findAll().stream().anyMatch(child -> id.equals(child.getParentId()))) {
-            throw new ConflictException("A folder with children cannot be deleted.");
+        long childCount = folderRepo.findAll().stream()
+                .filter(child -> id.equals(child.getParentId()))
+                .count();
+        if (childCount > 0) {
+            throw new ConflictException(
+                    "MEDIA_FOLDER_HAS_CHILDREN",
+                    "This folder still contains " + childCount + " child folder(s).");
         }
         String before = folderSnapshot(f);
         // ON DELETE SET NULL — media keep existing, folder_id becomes NULL
@@ -148,7 +161,7 @@ public class AdminMediaFolderService {
     private long aggregateCount(
             UUID id, Map<UUID, List<UUID>> children, Map<UUID, Long> counts, Set<UUID> visiting) {
         if (!visiting.add(id)) {
-            throw new ConflictException("Media folder tree contains a cycle.");
+            throw new ConflictException("MEDIA_FOLDER_INVALID_PARENT", "Media folder tree contains a cycle.");
         }
         long total = counts.getOrDefault(id, 0L);
         for (UUID childId : children.getOrDefault(id, List.of())) {
@@ -165,7 +178,7 @@ public class AdminMediaFolderService {
         Set<UUID> seen = new HashSet<>();
         while (parentId != null) {
             if (!seen.add(parentId)) {
-                throw new ConflictException("Media folder tree contains a cycle.");
+                throw new ConflictException("MEDIA_FOLDER_INVALID_PARENT", "Media folder tree contains a cycle.");
             }
             depth++;
             UUID current = parentId;
@@ -175,7 +188,9 @@ public class AdminMediaFolderService {
             parentId = parent == null ? null : parent.getParentId();
         }
         if (depth > 1) {
-            throw new ConflictException("Media folders may be nested only one level below a root.");
+            throw new ConflictException(
+                    "MEDIA_FOLDER_DEPTH_LIMIT",
+                    "Media folders may be nested only one level below a root.");
         }
         return depth;
     }
@@ -185,26 +200,78 @@ public class AdminMediaFolderService {
         MediaFolderEntity parent = folderRepo.findById(parentId)
                 .orElseThrow(() -> new NotFoundException("Parent media folder not found."));
         if (parent.getParentId() != null) {
-            throw new ConflictException("Media folders may be nested only one level below a root.");
+            throw new ConflictException(
+                    "MEDIA_FOLDER_DEPTH_LIMIT",
+                    "Media folders may be nested only one level below a root.");
         }
         folder.setParentId(parentId);
     }
 
     private void setParentForUpdate(MediaFolderEntity folder, UUID parentId) {
-        if (parentId != null && parentId.equals(folder.getId())) {
-            throw new ConflictException("A media folder cannot be its own parent.");
-        }
         if (parentId == null) {
             folder.setParentId(null);
             return;
         }
-        setParentForCreate(folder, parentId);
+
+        List<MediaFolderEntity> folders = folderRepo.findAll();
+        Map<UUID, MediaFolderEntity> byId = new HashMap<>();
+        for (MediaFolderEntity candidate : folders) {
+            byId.put(candidate.getId(), candidate);
+        }
+        MediaFolderEntity parent = byId.get(parentId);
+        if (parent == null) {
+            throw new NotFoundException("Parent media folder not found.");
+        }
+        if (parentId.equals(folder.getId()) || isDescendant(parentId, folder.getId(), byId)) {
+            throw new ConflictException(
+                    "MEDIA_FOLDER_INVALID_PARENT",
+                    "A media folder cannot be its own parent or a parent within its own tree.");
+        }
+        if (parent.getParentId() != null) {
+            throw new ConflictException(
+                    "MEDIA_FOLDER_DEPTH_LIMIT",
+                    "Media folders may be nested only one level below a root.");
+        }
+        if (folders.stream().anyMatch(child -> folder.getId().equals(child.getParentId()))) {
+            throw new ConflictException(
+                    "MEDIA_FOLDER_HAS_CHILDREN",
+                    "A folder with child folders cannot be moved below another folder.");
+        }
+        folder.setParentId(parentId);
     }
 
-    private static void ensureCustomFolder(MediaFolderEntity folder) {
-        if (folder.getSystemKey() != null && !folder.getSystemKey().isBlank()) {
-            throw new ConflictException("System media folders cannot be changed.");
+    private static boolean isDescendant(
+            UUID candidateParentId, UUID folderId, Map<UUID, MediaFolderEntity> foldersById) {
+        UUID currentId = candidateParentId;
+        Set<UUID> seen = new HashSet<>();
+        while (currentId != null) {
+            if (!seen.add(currentId)) {
+                throw new ConflictException("MEDIA_FOLDER_INVALID_PARENT", "Media folder tree contains a cycle.");
+            }
+            if (folderId.equals(currentId)) {
+                return true;
+            }
+            MediaFolderEntity current = foldersById.get(currentId);
+            currentId = current == null ? null : current.getParentId();
         }
+        return false;
+    }
+
+    private int nextSortOrder(UUID parentId, UUID excludedFolderId) {
+        return folderRepo.findAll().stream()
+                .filter(folder -> java.util.Objects.equals(parentId, folder.getParentId()))
+                .filter(folder -> excludedFolderId == null || !excludedFolderId.equals(folder.getId()))
+                .map(MediaFolderEntity::getSortOrder)
+                .filter(java.util.Objects::nonNull)
+                .max(Integer::compareTo)
+                .map(order -> order + 1)
+                .orElse(0);
+    }
+
+    private static ConflictException duplicateName() {
+        return new ConflictException(
+                "MEDIA_FOLDER_NAME_DUPLICATE",
+                "A media folder with this name already exists.");
     }
 
     /** ASCII-safe slug. Strips Vietnamese diacritics and non-alphanumeric chars. */

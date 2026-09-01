@@ -1,18 +1,38 @@
 const SYSTEM_FOLDER_LABELS = {
-  'root:products': 'media.folderTree.products',
-  'root:articles': 'media.folderTree.articles',
-  'root:brands': 'media.folderTree.brands',
-  'root:categories': 'media.folderTree.categories',
-  'root:banners': 'media.folderTree.banners',
-  'root:illustrations': 'media.folderTree.illustrations',
-  'root:videos': 'media.folderTree.videos',
-  'products:unknown': 'media.folderTree.unknownBrand',
+  'root:products': { key: 'media.folderTree.products', originalName: 'Sản phẩm' },
+  'root:articles': { key: 'media.folderTree.articles', originalName: 'Bài viết' },
+  'root:brands': { key: 'media.folderTree.brands', originalName: 'Thương hiệu' },
+  'root:categories': { key: 'media.folderTree.categories', originalName: 'Danh mục' },
+  'root:banners': { key: 'media.folderTree.banners', originalName: 'Banner' },
+  'root:illustrations': { key: 'media.folderTree.illustrations', originalName: 'Ảnh minh hoạ' },
+  'root:videos': { key: 'media.folderTree.videos', originalName: 'Video gốc' },
+  'products:unknown': { key: 'media.folderTree.unknownBrand', originalName: 'Chưa rõ hãng' },
 }
 
 export function getMediaFolderLabel(folder, t) {
   if (!folder) return ''
-  const key = SYSTEM_FOLDER_LABELS[folder.systemKey]
-  return key && typeof t === 'function' ? t(key, { defaultValue: folder.name }) : folder.name
+  const systemLabel = SYSTEM_FOLDER_LABELS[folder.systemKey]
+  // A saved name always wins. The built-in translated labels only support an
+  // unchanged seeded name, so a rename stays visible after refresh and in EN.
+  if (systemLabel && folder.name === systemLabel.originalName && typeof t === 'function') {
+    return t(systemLabel.key, { defaultValue: folder.name })
+  }
+  return folder.name
+}
+
+export function getSystemFolderDeleteWarning(folder, t) {
+  const name = getMediaFolderLabel(folder, t)
+  const key = folder?.systemKey || ''
+  if (key.startsWith('products:')) {
+    return t('media.systemFolderDeleteImpact.productBrand', { name })
+  }
+  if (key.startsWith('articles:')) {
+    return t('media.systemFolderDeleteImpact.articleYear', { name })
+  }
+  if (key === 'root:brands') return t('media.systemFolderDeleteImpact.brand')
+  if (key === 'root:categories') return t('media.systemFolderDeleteImpact.category')
+  if (key === 'root:banners') return t('media.systemFolderDeleteImpact.banner')
+  return t('media.systemFolderDeleteImpact.general', { name })
 }
 
 export function getMediaFolderPath(folderId, folders, t) {

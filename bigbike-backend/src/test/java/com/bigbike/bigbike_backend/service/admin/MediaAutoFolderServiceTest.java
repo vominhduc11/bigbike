@@ -48,10 +48,9 @@ class MediaAutoFolderServiceTest {
 
         MediaFolderEntity targetFolder = new MediaFolderEntity();
         targetFolder.setId(targetFolderId);
+        targetFolder.setName("Mũ LS2 đã đổi tên");
         targetFolder.setSystemKey("products:ls2");
         when(folderRepo.findBySystemKey("products:ls2")).thenReturn(Optional.of(targetFolder));
-        when(mediaRepo.findAll()).thenReturn(List.of(unassignedMedia, manuallyPlacedMedia));
-        when(mediaRepo.save(any(MediaEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jdbc.queryForList(anyString(), any(Object[].class))).thenAnswer(invocation -> {
             String sql = invocation.getArgument(0, String.class);
             if (sql.startsWith("SELECT * FROM products WHERE id")) {
@@ -66,12 +65,25 @@ class MediaAutoFolderServiceTest {
 
     @Test
     void placesOnlyUnassignedProductMediaAndPreservesManualFolderChoice() {
+        when(mediaRepo.findAll()).thenReturn(List.of(unassignedMedia, manuallyPlacedMedia));
+        when(mediaRepo.save(any(MediaEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
         service.placeProduct("product-1");
 
         assertThat(unassignedMedia.getFolderId()).isEqualTo(targetFolderId);
         assertThat(manuallyPlacedMedia.getFolderId()).isNotEqualTo(targetFolderId);
         verify(mediaRepo).save(unassignedMedia);
         verify(mediaRepo, never()).save(manuallyPlacedMedia);
+    }
+
+    @Test
+    void leavesNewProductMediaUncategorizedWhenItsSystemFolderWasDeleted() {
+        when(folderRepo.findBySystemKey("products:ls2")).thenReturn(Optional.empty());
+
+        service.placeProduct("product-1");
+
+        assertThat(unassignedMedia.getFolderId()).isNull();
+        verify(mediaRepo, never()).save(unassignedMedia);
     }
 
     private static MediaEntity media(UUID id, UUID folderId) {

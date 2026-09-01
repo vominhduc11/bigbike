@@ -84,15 +84,17 @@ Evidence:
 
 ### Admin media folders (`MEDIA_RULE_014`–`MEDIA_RULE_015`, V1077–V1079)
 
-`media_folders` now supports a nullable `parent_id`, `system_key` and `sort_order`.
-Only a root folder or one direct child is valid; the backend rejects a deeper tree and
-cycles. System folders are seeded by stable `system_key` values and cannot be renamed,
-deleted or reparented. The existing `Giá đỡ điện thoại` folder is reused as the `KEWIG`
-product child and the existing `SCS` folder is reused as the `SCS` product child. A media
-with `folder_id = NULL` is the virtual `Chưa phân loại` bucket. Folder list responses return
-`parentId`, `depth`, `systemKey` and `sortOrder`; `mediaCount` includes active and inactive
-media in all descendants, but excludes `DELETED` rows, and filtering a parent includes its
-descendants.
+`media_folders` supports a nullable `parent_id`, `system_key` and `sort_order`; no schema
+or data migration is required for folder management. Only a root folder or one direct child
+is valid; the backend rejects a deeper tree and cycles before persisting. System folders are
+seeded by stable `system_key` values. The key is immutable metadata: rename and reparent
+preserve it, deleting the folder removes it, and custom folders always retain `NULL`.
+The existing `Giá đỡ điện thoại` folder is reused as the `KEWIG` product child and the
+existing `SCS` folder is reused as the `SCS` product child. A media with `folder_id = NULL`
+is the virtual `Chưa phân loại` bucket. A new folder or a moved folder receives the next
+`sort_order` within its destination parent group. Folder list responses return `parentId`,
+`depth`, `systemKey` and `sortOrder`; `mediaCount` includes active and inactive media in all
+descendants, but excludes `DELETED` rows, and filtering a parent includes its descendants.
 
 V1078 bổ sung đúng một thư mục hệ thống cấp gốc `Ảnh minh hoạ` với
 `system_key = root:illustrations`. Thư mục này chỉ thay đổi giá trị tham chiếu
