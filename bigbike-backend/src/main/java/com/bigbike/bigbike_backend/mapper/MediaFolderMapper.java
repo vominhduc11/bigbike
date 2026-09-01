@@ -10,5 +10,9 @@ import org.mapstruct.ReportingPolicy;
 public interface MediaFolderMapper {
 
     @Mapping(target = "mediaCount", source = "count")
-    MediaFolderResponse toResponse(MediaFolderEntity entity, long count);
+    @Mapping(target = "parentId", source = "entity.parentId")
+    @Mapping(target = "depth", source = "depth")
+    @Mapping(target = "systemKey", source = "entity.systemKey")
+    @Mapping(target = "sortOrder", source = "entity.sortOrder")
+    MediaFolderResponse toResponse(MediaFolderEntity entity, long count, int depth);
 }

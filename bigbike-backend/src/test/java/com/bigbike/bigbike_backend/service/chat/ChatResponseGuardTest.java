@@ -229,10 +229,6 @@ class ChatResponseGuardTest {
                         + "Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp."),
                 new PreparedReply("en", "BigBike Assistant has reached today's automated-chat limit. "
                         + "Please contact BigBike through Hotline, Zalo or Messenger for direct help."),
-                new PreparedReply("vi", "Dạ, em đã nhận đủ 40 lượt hỏi trong hội thoại này. "
-                        + "Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ tiếp nhé."),
-                new PreparedReply("en", "This conversation has reached its 40-question limit. "
-                        + "Please contact BigBike through Hotline, Zalo or Messenger for help."),
                 new PreparedReply("vi", "Dạ, em tóm tắt chính sách công bố của BigBike: yêu cầu đổi size hoặc đổi sản phẩm trong 7 ngày và hoàn tiền hoặc trả hàng trong 1 ngày, tùy điều kiện nguyên trạng đã nêu. "
                         + "Hàng sale và phí vận chuyển có điều kiện riêng. Anh/chị vui lòng mở trang Chính sách đổi trả hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger trước khi gửi hàng về."),
                 new PreparedReply("en", "BigBike's published policy allows a size or product exchange request within 7 days, and a refund or return request within 1 day, subject to the listed product-condition rules. "

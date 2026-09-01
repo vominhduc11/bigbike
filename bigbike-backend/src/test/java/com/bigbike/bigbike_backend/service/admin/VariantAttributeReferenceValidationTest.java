@@ -89,7 +89,8 @@ class VariantAttributeReferenceValidationTest {
                 mock(InventoryPolicyService.class),
                 mock(SlugRedirectHelper.class),
                 mock(AdminInventoryWsService.class),
-                mock(CatalogReferenceCacheEvictor.class));
+                mock(CatalogReferenceCacheEvictor.class),
+                mock(MediaAutoFolderService.class));
     }
 
     private static <T> ObjectProvider<T> provider(T value) {

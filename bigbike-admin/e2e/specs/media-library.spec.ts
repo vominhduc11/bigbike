@@ -22,6 +22,9 @@ function mediaMarker(retry: number) {
 function videoMarker(retry: number) {
   return `E2E_VIDEO_${RUN_ID}${retry ? `_R${retry}` : ''}`
 }
+// PNG 1x1, dùng để kiểm tra upload ảnh mà không phụ thuộc tệp nhị phân ngoài repo.
+const IMAGE_FIXTURE_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
 // MP4 H.264 16x16, 0,12 giây. Fixture nhúng giúp CI kiểm tra đúng luồng video
 // mà không phụ thuộc ffmpeg hay một tệp nhị phân bên ngoài repository.
 const VIDEO_FIXTURE_BASE64 = [
@@ -90,7 +93,7 @@ test.describe('media-library', () => {
 
     const marker = mediaMarker(testInfo.retry)
     const videoMarkerValue = videoMarker(testInfo.retry)
-    const filename = `${marker}.svg`
+    const filename = `${marker}.png`
     const updatedTitle = `${marker}_ĐÃ_SỬA`
     let mediaId: string | null = null
     let videoId: string | null = null
@@ -173,20 +176,16 @@ test.describe('media-library', () => {
       await adminPage.getByRole('button', { name: 'Thùng rác', exact: true }).click()
     })
 
-    await test.step('tải SVG hợp lệ lên thư viện', async () => {
+    await test.step('tải PNG hợp lệ lên thư viện', async () => {
       const fileInput = adminPage.locator('input[type="file"][multiple]')
-      const uniqueSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><title>${marker}</title><rect width="20" height="20" fill="#ff0c09"/></svg>`
+      const imageBytes = Buffer.from(IMAGE_FIXTURE_BASE64, 'base64')
       const [response] = await Promise.all([
         adminPage.waitForResponse(
           (item) =>
             item.request().method() === 'POST' &&
             new URL(item.url()).pathname.endsWith('/api/v1/admin/media'),
         ),
-        fileInput.setInputFiles({
-          name: filename,
-          mimeType: 'image/svg+xml',
-          buffer: Buffer.from(uniqueSvg),
-        }),
+        fileInput.setInputFiles({ name: filename, mimeType: 'image/png', buffer: imageBytes }),
       ])
       expect(response.status(), 'API tải media phải trả 201').toBe(201)
       const payload = await response.json()

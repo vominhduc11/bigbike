@@ -45,6 +45,7 @@ public class CategoryMutationService {
     private final CatalogRequestValidator catalogRequestValidator;
     private final SlugRedirectHelper slugRedirectHelper;
     private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
+    private final MediaAutoFolderService mediaAutoFolderService;
 
     public CategoryMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -55,7 +56,8 @@ public class CategoryMutationService {
             AuditLogFactory auditLogFactory,
             CatalogRequestValidator catalogRequestValidator,
             SlugRedirectHelper slugRedirectHelper,
-            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor
+            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor,
+            MediaAutoFolderService mediaAutoFolderService
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.categoryJpaRepository = categoryJpaRepositoryProvider.getIfAvailable();
@@ -66,6 +68,7 @@ public class CategoryMutationService {
         this.catalogRequestValidator = catalogRequestValidator;
         this.slugRedirectHelper = slugRedirectHelper;
         this.catalogReferenceCacheEvictor = catalogReferenceCacheEvictor;
+        this.mediaAutoFolderService = mediaAutoFolderService;
     }
 
     @Transactional
@@ -84,6 +87,7 @@ public class CategoryMutationService {
         entity.setUpdatedAt(now);
         applyCategoryPatch(entity, request, slug, parent, true);
         categoryJpaRepository.save(entity);
+        mediaAutoFolderService.placeCategory(entity.getId());
         auditLog("CATEGORY_CREATED", "CATEGORY", adminId, null, categoryJson(entity));
         webRevalidationService.revalidateCategory(entity.getSlug(), null);
 
@@ -119,6 +123,7 @@ public class CategoryMutationService {
         entity.setUpdatedAt(Instant.now());
         applyCategoryPatch(entity, request, slug, parent, false);
         categoryJpaRepository.save(entity);
+        mediaAutoFolderService.placeCategory(entity.getId());
         auditLog("CATEGORY_UPDATED", "CATEGORY", adminId, before, categoryJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {
             slugRedirectHelper.autoCreateSlugRedirect("/danh-muc/" + previousSlug, "/danh-muc/" + entity.getSlug());

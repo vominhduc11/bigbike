@@ -2551,7 +2551,20 @@
     "tagsError": "Không tải được thẻ",
     "dismissWhileUploading": "Đang tải lên, chưa thể đóng",
     "uploadProgress": "Tiến độ tải lên {{name}}",
-    "hardDeleteError": "Không xoá được. Tệp có thể đang được dùng ở nơi khác — hãy gỡ tệp khỏi các nơi đang dùng rồi thử lại."
+    "hardDeleteError": "Không xoá được. Tệp có thể đang được dùng ở nơi khác — hãy gỡ tệp khỏi các nơi đang dùng rồi thử lại.",
+    "expandFolder": "Mở thư mục con",
+    "collapseFolder": "Thu thư mục con",
+    "folderNoChildren": "Thư mục không có thư mục con",
+    "folderTree": {
+      "products": "Sản phẩm",
+      "articles": "Bài viết",
+      "brands": "Thương hiệu",
+      "categories": "Danh mục",
+      "banners": "Banner",
+      "illustrations": "Ảnh minh hoạ",
+      "videos": "Video gốc",
+      "unknownBrand": "Chưa rõ hãng"
+    }
   },
   "menus": {
     "title": "Menu đầu trang",
@@ -2939,6 +2952,7 @@
       "bigbike": "Trợ lý BigBike",
       "source": "Nguồn trả lời",
       "usedAi": "Có dùng AI",
+      "readOnly": "Hội thoại chỉ để theo dõi; nhân viên không tiếp nhận hoặc trả lời khách tại đây.",
       "sources": {
         "ai": "Trợ lý tự động",
         "rule": "Quy tắc hỗ trợ",
@@ -2954,6 +2968,7 @@
       "active": "Đang mở",
       "endStates": {
         "turnLimit": "Đã đủ lượt hỏi",
+        "continued": "Đã tiếp tục ở hội thoại mới",
         "offTopic": "Ngoài phạm vi hỗ trợ",
         "continued": "Đã nối tiếp hội thoại",
         "unavailable": "Không thể tiếp tục hỗ trợ tự động",

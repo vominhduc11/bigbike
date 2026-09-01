@@ -679,9 +679,14 @@ Các endpoint dưới đây được sử dụng để quản lý trạng thái 
 | `POST /api/v1/admin/media/bulk-restore` | Body `{ ids[1..500] }`; khôi phục best-effort, bỏ qua id không tồn tại; trả `{ affected }`. |
 | `POST /api/v1/admin/media/bulk-hard-delete` | Wildcard `*`; body `{ ids[1..500] }`; trả `{ deleted, missing, blocked }`. Endpoint còn tồn tại cho contract/backend nhưng giao diện Thư viện không cung cấp xóa vĩnh viễn hàng loạt. |
 
-**Thư mục media:** `GET /api/v1/admin/media-folders` (`media.read`); `POST /api/v1/admin/media-folders`, `PATCH /api/v1/admin/media-folders/{id}`, `DELETE /api/v1/admin/media-folders/{id}` (`media.write`). Create/update nhận `{ name, slug?, description? }`; tên tối đa 120 ký tự, slug tối đa 160, mô tả tối đa 2000. Xóa folder đặt `folder_id` của media về `null` bằng FK `ON DELETE SET NULL`.
+**Thư mục media:** `GET /api/v1/admin/media-folders` (`media.read`); `POST /api/v1/admin/media-folders`, `PATCH /api/v1/admin/media-folders/{id}`, `DELETE /api/v1/admin/media-folders/{id}` (`media.write`). Create/update nhận `{ name, slug?, description?, parentId? }`; tên tối đa 120 ký tự, slug tối đa 160, mô tả tối đa 2000. Cây sâu tối đa hai cấp; thư mục hệ thống có `systemKey` ổn định và không được đổi tên/xóa/đổi cha. Xóa folder tùy chỉnh lá đặt `folder_id` của media về `null`; xóa folder có con bị từ chối. Response trả `parentId`, `depth`, `systemKey`, `sortOrder` và số file gộp của cây con. `folderFilter=<uuid>` bao gồm cả thư mục con; `NONE` vẫn là `folder_id IS NULL`.
 
-Status: `CONFIRMED_FROM_CODE` — `AdminMediaController.java`, `AdminMediaFolderController.java`, `AdminMediaService.java`, `AdminMediaFolderService.java`.
+Sau khi lưu Product, Content, Brand, Category, Slider hoặc Website Settings, cơ chế tự đặt
+media chỉ tác động tới file đang chưa có thư mục; lựa chọn thủ công không bị ghi đè. Công cụ
+lập kế hoạch/lịch sử cho đợt sắp xếp một lần đã được gỡ ngày 2026-08-30; không còn API chạy
+hoặc hoàn tác hàng loạt ngoài các thao tác thư viện chung nêu trên.
+
+Status: `CONFIRMED_FROM_CODE` — `AdminMediaController.java`, `AdminMediaFolderController.java`, `AdminMediaService.java`, `AdminMediaFolderService.java`, `MediaAutoFolderService.java`.
 
 ## Homepage Slider Contract
 

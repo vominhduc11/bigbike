@@ -59,6 +59,7 @@ public class AdminContentMutationService {
     private final ImageVariantService imageVariantService;
     private final MediaReferenceService mediaReferenceService;
     private final SlugRedirectHelper slugRedirectHelper;
+    private final MediaAutoFolderService mediaAutoFolderService;
 
     public AdminContentMutationService(
             ObjectProvider<ArticleJpaRepository> articleJpaRepositoryProvider,
@@ -74,7 +75,8 @@ public class AdminContentMutationService {
             MinioProperties minioProperties,
             ImageVariantService imageVariantService,
             MediaReferenceService mediaReferenceService,
-            SlugRedirectHelper slugRedirectHelper
+            SlugRedirectHelper slugRedirectHelper,
+            MediaAutoFolderService mediaAutoFolderService
     ) {
         this.articleJpaRepository = articleJpaRepositoryProvider.getIfAvailable();
         this.contentReadRepository = contentReadRepository;
@@ -90,6 +92,7 @@ public class AdminContentMutationService {
         this.imageVariantService = imageVariantService;
         this.mediaReferenceService = mediaReferenceService;
         this.slugRedirectHelper = slugRedirectHelper;
+        this.mediaAutoFolderService = mediaAutoFolderService;
     }
 
     @Transactional
@@ -110,6 +113,7 @@ public class AdminContentMutationService {
 
         applyArticlePatch(entity, request, slug, true);
         articleJpaRepository.save(entity);
+        mediaAutoFolderService.placeArticle(entity.getId());
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "CONTENT_ARTICLE_CREATED", "CONTENT", null, null, articleJson(entity)));
         revalidateArticle(entity, null);
@@ -169,6 +173,7 @@ public class AdminContentMutationService {
         entity.setUpdatedAt(Instant.now());
         applyArticlePatch(entity, request, slug, false);
         articleJpaRepository.save(entity);
+        mediaAutoFolderService.placeArticle(entity.getId());
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "CONTENT_ARTICLE_UPDATED", "CONTENT", null, before, articleJson(entity)));
         if (!previousSlug.equals(entity.getSlug())) {

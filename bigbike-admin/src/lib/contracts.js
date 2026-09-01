@@ -929,6 +929,23 @@ export function normalizeMediaItem(input) {
   }
 }
 
+export function normalizeMediaFolder(input) {
+  const s = input && typeof input === 'object' ? input : {}
+  return {
+    id: toTrimmedStringLocal(s.id) || 'unknown-media-folder',
+    name: toTrimmedStringLocal(s.name) || 'Untitled folder',
+    slug: toTrimmedStringLocal(s.slug) || undefined,
+    parentId: toTrimmedStringLocal(s.parentId) || null,
+    depth: Math.max(0, toIntegerLocal(s.depth, 0)),
+    systemKey: toTrimmedStringLocal(s.systemKey) || undefined,
+    sortOrder: toIntegerLocal(s.sortOrder, 0),
+    description: toTrimmedStringLocal(s.description) || undefined,
+    mediaCount: Math.max(0, toIntegerLocal(s.mediaCount, 0)),
+    createdAt: toTrimmedStringLocal(s.createdAt) || undefined,
+    updatedAt: toTrimmedStringLocal(s.updatedAt) || undefined,
+  }
+}
+
 export function isDownloadableMedia(media) {
   return media?.storageProvider === 'MINIO' && Boolean(media?.filePath)
 }

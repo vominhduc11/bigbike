@@ -7,5 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MediaFolderJpaRepository extends JpaRepository<MediaFolderEntity, UUID> {
     Optional<MediaFolderEntity> findBySlug(String slug);
+    Optional<MediaFolderEntity> findBySystemKey(String systemKey);
     boolean existsBySlug(String slug);
 }

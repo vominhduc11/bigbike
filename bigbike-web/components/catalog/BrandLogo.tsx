@@ -5,7 +5,10 @@ import { cn } from "@/lib/utils";
 export type BrandLogoVariant = "home" | "list" | "detail" | "about";
 
 const FRAME_CLASSES: Record<BrandLogoVariant, string> = {
-  home: "size-22",
+  // Trang chủ: dải logo 2 cột trên mobile (88px vừa khít), 5 cột từ 767px.
+  // Từ 992px trở lên mỗi ô rộng ~154-208px nên khung 88px trông lọt thỏm —
+  // nâng lên 128px, vẫn dư lề trong ô hẹp nhất (~154px) nên không tràn.
+  home: "size-22 min-[992px]:size-32",
   list: "size-24",
   detail: "size-48 md:size-80",
   about: "size-32",
@@ -51,7 +54,7 @@ export function BrandLogo({
             variant === "detail"
               ? "320px"
               : variant === "home"
-                ? "88px"
+                ? "(min-width: 992px) 128px, 88px"
                 : variant === "list"
                   ? "96px"
                   : "128px"

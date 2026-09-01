@@ -423,7 +423,7 @@ public class AdminMediaService {
                 spec = spec.and(MediaSpecifications.noFolder());
             } else {
                 try {
-                    spec = spec.and(MediaSpecifications.inFolder(UUID.fromString(f)));
+                    spec = spec.and(MediaSpecifications.inFolders(folderTreeIds(UUID.fromString(f))));
                 } catch (IllegalArgumentException ignored) { /* invalid UUID → no filter */ }
             }
         }
@@ -718,6 +718,25 @@ public class AdminMediaService {
         if (!mediaFolderRepo.existsById(folderId)) {
             throw new NotFoundException("Media folder not found.");
         }
+    }
+
+    private Set<UUID> folderTreeIds(UUID rootId) {
+        List<com.bigbike.bigbike_backend.persistence.entity.media.MediaFolderEntity> folders =
+                mediaFolderRepo.findAll();
+        Set<UUID> result = new java.util.LinkedHashSet<>();
+        result.add(rootId);
+        boolean changed;
+        do {
+            changed = false;
+            for (var folder : folders) {
+                if (folder.getParentId() != null
+                        && result.contains(folder.getParentId())
+                        && result.add(folder.getId())) {
+                    changed = true;
+                }
+            }
+        } while (changed);
+        return result;
     }
 
     private String toJson(Object value) {

@@ -252,7 +252,7 @@ Script tự in thời gian thực tế; với 1.661 dấu thành viên, bình th
 
 ## Automatic outage fallback (manual maintenance removed 2026-08-30)
 
-From 30/08/2026, BigBike has no manual maintenance switch, admin lock, maintenance state machine, technical role or emergency lock environment variable. Migration `V1071` moves `vominhduc760@gmail.com` to `ADMIN` before deleting the retired role and data. Existing migrations are never edited.
+From 30/08/2026, BigBike has no manual maintenance switch, admin lock, maintenance state machine, technical role or emergency lock environment variable. Migration `V1071` moves `vominhduc760@gmail.com` to `ADMIN` before deleting the retired role and data. Fresh databases may legitimately have no such production account; when the account exists, migration must leave it as `ADMIN`. Existing migrations are never edited after they have run in an environment.
 
 ### Static outage pages (unrelated to the lock)
 

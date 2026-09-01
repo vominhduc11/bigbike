@@ -19,6 +19,7 @@ import {
   VIDEO_MEDIA_MIME_TYPES,
   normalizeMediaMimeType,
 } from '../lib/mediaConstants'
+import { getMediaFolderOptions } from '@/lib/mediaFolderUtils'
 
 const ALLOWED_MIME = VIDEO_MEDIA_MIME_TYPES
 const MAX_FILE_SIZE = MAX_MEDIA_UPLOAD_BYTES
@@ -385,7 +386,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
               options={[
                 { value: '', label: t('media.allFolders') },
                 { value: 'NONE', label: t('media.uncategorized') },
-                ...folders.map((f) => ({ value: f.id, label: f.name })),
+                ...getMediaFolderOptions(folders, t),
               ]}
             />
             {tags.length > 0 && (

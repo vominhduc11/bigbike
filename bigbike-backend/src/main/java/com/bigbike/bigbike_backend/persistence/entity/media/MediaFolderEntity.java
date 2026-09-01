@@ -27,6 +27,15 @@ public class MediaFolderEntity {
     @Column(nullable = false, length = 160, unique = true)
     private String slug;
 
+    @Column(name = "parent_id")
+    private UUID parentId;
+
+    @Column(name = "system_key", length = 120, unique = true)
+    private String systemKey;
+
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder = 0;
+
     @Column(columnDefinition = "text")
     private String description;
 

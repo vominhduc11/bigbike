@@ -29,6 +29,7 @@ import {
 import { evaluateImageDimensions } from '../lib/imageRecommendations'
 import { BrandLogoCropDialog } from './BrandLogoCropDialog'
 import { HelpTooltip } from './HelpTooltip'
+import { getMediaFolderOptions } from '@/lib/mediaFolderUtils'
 import {
   BRAND_LOGO_MIME_TYPES,
   brandLogoIssueTranslationKey,
@@ -773,7 +774,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
                   options={[
                     { value: '', label: t('media.allFolders') },
                     { value: 'NONE', label: t('media.uncategorized') },
-                    ...folders.map((f) => ({ value: f.id, label: f.name })),
+                    ...getMediaFolderOptions(folders, t),
                   ]}
                 />
                 {tags.length > 0 && (

@@ -64,4 +64,20 @@ describe('ChatConversationDetailScreen', () => {
       screen.queryByRole('button', { name: /send|gửi|reply|trả lời/i }),
     ).not.toBeInTheDocument()
   })
+
+  it('shows direct-contact and closed states without staff reply controls', async () => {
+    mocks.fetchChatConversation.mockResolvedValue({
+      item: {
+        ...conversation,
+        endedReason: 'CLOSED',
+        messages: [{ ...conversation.messages[0], source: 'CONTACT_FALLBACK' }],
+      },
+    })
+    renderScreen()
+
+    expect(await screen.findByText('chatAdmin.detail.sources.contact')).toBeInTheDocument()
+    expect(screen.getByText('chatAdmin.detail.endStates.closed')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByText('chatAdmin.detail.live.send')).not.toBeInTheDocument()
+  })
 })

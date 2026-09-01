@@ -81,7 +81,7 @@ export function BrandCarousel({ brands }: Props) {
               <SwiperSlide className="swiper-slide" key={b.id}>
                 <Link
                   href={toBrandPath(b.slug, locale)}
-                  className="flex h-22 items-center justify-center"
+                  className="flex h-22 min-[992px]:h-32 items-center justify-center"
                 >
                   <BrandLogo name={b.name} image={image} variant="home" />
                 </Link>

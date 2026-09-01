@@ -53,7 +53,7 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 | Reports | `reports.read` | — | export: `reports.export` | export is sensitive and depends on `reports.read` |
 | Trợ lý BigBike | `chat.read` | — | — | Chỉ xem danh sách, transcript, ảnh và thống kê; không có quyền gửi, nhận hoặc điều khiển chat người thật |
 
-Media access is deliberately **not** an automatic dependency of Product/Content/Catalog/Settings write permissions. Missing `media.read` disables the picker and prevents media API calls; `media.write` is required only to upload.
+Media access is deliberately **not** an automatic dependency of Product/Content/Catalog/Settings write permissions. Missing `media.read` disables the picker and prevents media API calls; `media.write` is required for upload and folder management.
 
 ### Inventory permissions
 

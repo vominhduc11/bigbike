@@ -82,12 +82,42 @@ class ManualMaintenanceRemovalMigrationPostgresTest {
         }
     }
 
+    @Test
+    void allowsFreshDatabaseWithoutProductionTechnicalAccount() throws Exception {
+        try (Connection connection = connection(); Statement statement = connection.createStatement()) {
+            createSchema(statement);
+            statement.execute("""
+                    insert into admin_roles (id, name, is_system)
+                    values
+                        ('ADMIN', 'Admin', true),
+                        ('DEVELOPER', 'Developer', true);
+                    insert into role_permissions (role_id, permission)
+                    values ('DEVELOPER', 'maintenance.manage');
+                    insert into maintenance_state (id, state) values (1, 'NORMAL');
+                    """);
+
+            executeMigration(statement);
+
+            assertThat(longValue(statement,
+                    "select count(*) from admin_users where email = '" + TECHNICAL_ACCOUNT + "'"))
+                    .isZero();
+            assertThat(longValue(statement,
+                    "select count(*) from admin_roles where id = 'DEVELOPER'"))
+                    .isZero();
+            assertThat(longValue(statement,
+                    "select count(*) from information_schema.tables "
+                            + "where table_schema = 'public' and table_name = 'maintenance_state'"))
+                    .isZero();
+        }
+    }
+
     private Connection connection() throws SQLException {
         return DriverManager.getConnection(
                 postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     }
 
     private void createSchema(Statement statement) throws SQLException {
+        statement.execute("drop schema public cascade; create schema public");
         statement.execute("""
                 create table admin_users (
                     id uuid primary key,

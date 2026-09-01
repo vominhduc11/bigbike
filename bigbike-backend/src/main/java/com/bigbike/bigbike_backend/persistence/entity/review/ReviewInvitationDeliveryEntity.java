@@ -15,6 +15,8 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -64,6 +66,7 @@ public class ReviewInvitationDeliveryEntity {
     @Column(name = "provider_accepted_at")
     private Instant providerAcceptedAt;
 
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "unsubscribe_token_hash", unique = true, length = 64)
     private String unsubscribeTokenHash;
 

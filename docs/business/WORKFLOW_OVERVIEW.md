@@ -76,6 +76,7 @@ The point-of-sale / walk-in ("bán tại quầy") workflow was removed entirely.
 | 2 | System | Detect MIME from content with Apache Tika | `CONFIRMED_FROM_CODE` | `AdminMediaService.java` |
 | 3 | System | Reject empty files, unsupported types and declared/content MIME mismatches. Admin image uploads accept only JPEG/JPG, PNG and WebP; MP4 video remains accepted. | `OWNER_CONFIRMED_2026-08-28` | `AdminMediaP0Test.java`, `AdminMediaService.java` |
 | 4 | System | Persist media metadata and storage reference | `CONFIRMED_FROM_CODE` | `AdminMediaService.java` |
+| 5 | System | Media mới gắn vào Product/Content/Brand/Category/Slider/Settings tự vào thư mục nếu chưa được chủ động xếp trước; không đoán từ tên tệp và không ghi đè lựa chọn thủ công | `OWNER_CONFIRMED_2026-08-30` | `MEDIA_RULE_014`, `MediaAutoFolderService` |
 
 ## Homepage YouTube Video Workflow
 

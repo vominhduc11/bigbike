@@ -5807,7 +5807,7 @@
         "summary": "Create a media folder (admin)",
         "operationId": "adminCreateMediaFolder",
         "security": [{ "AdminBearerAuth": [] }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 120 }, "slug": { "type": "string", "maxLength": 160 }, "description": { "type": "string", "maxLength": 2000 } } } } } },
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 120 }, "slug": { "type": "string", "maxLength": 160 }, "description": { "type": "string", "maxLength": 2000 }, "parentId": { "type": "string", "format": "uuid" } } } } } },
         "responses": {
           "201": { "description": "Created folder" },
           "400": { "$ref": "#/components/responses/ValidationError" },
@@ -5824,7 +5824,7 @@
         "operationId": "adminRenameMediaFolder",
         "security": [{ "AdminBearerAuth": [] }],
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 120 }, "slug": { "type": "string", "maxLength": 160 }, "description": { "type": "string", "maxLength": 2000 } } } } } },
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 120 }, "slug": { "type": "string", "maxLength": 160 }, "description": { "type": "string", "maxLength": 2000 }, "parentId": { "type": "string", "format": "uuid" } } } } } },
         "responses": {
           "200": { "description": "Updated folder" },
           "400": { "$ref": "#/components/responses/ValidationError" },
@@ -8294,7 +8294,7 @@
           "required": true,
           "content": {"application/json":{"schema":{"type":"object","required":["lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true,"description":"Logical turn idempotency key; reuse when retrying."},"message":{"type":"string","maxLength":1000,"description":"Optional only when exactly one owned imageId is supplied."},"imageIds":{"type":"array","maxItems":1,"items":{"type":"string","format":"uuid"},"description":"At most one previously uploaded, owned image for this turn."},"lang":{"type":"string","enum":["vi","en"]},"pageContext":{"type":"object","nullable":true,"required":["type","productSlug"],"properties":{"type":{"type":"string","enum":["PRODUCT"]},"productSlug":{"type":"string","maxLength":160}}},"clarificationSelection":{"type":"object","nullable":true,"required":["clarificationId","optionId"],"properties":{"clarificationId":{"type":"string","format":"uuid"},"optionId":{"type":"string","maxLength":80,"pattern":"^[a-z0-9]+(?:[-_][a-z0-9]+)*$"}},"description":"Optional quick-choice metadata; accepted only when it matches the pending clarification. The visible option label remains message."}}}}}
         },
-        "responses": {"200":{"description":"Guarded answer with assistantMessageId, a 40-turn conversation limit, optional clarification {id, criterion, options[{id,label,count,kind}]}, fixed actions and at most 8 products. Clarification kind is FILTER or BYPASS and costs no provider call."},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded (10 writes/minute/IP)"}}
+        "responses": {"200":{"description":"Guarded answer with assistantMessageId, automatic continuation after 40 turns, optional clarification {id, criterion, options[{id,label,count,kind}]}, fixed actions and at most 8 products. Clarification kind is FILTER or BYPASS and costs no provider call."},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded (10 writes/minute/IP)"}}
       }
     },
     "/api/v1/chat/messages/stream": {
@@ -8328,7 +8328,7 @@
           {"name":"afterSequence","in":"query","schema":{"type":"integer","format":"int64","minimum":0,"default":0}},
           {"name":"X-Chat-Visitor-Token","in":"header","schema":{"type":"string","maxLength":128}}
         ],
-        "responses": {"200":{"description":"REST-authoritative ordered transcript with customer, assistant and system messages"},"404":{"$ref":"#/components/responses/NotFound"}}
+        "responses": {"200":{"description":"REST-authoritative ordered transcript with customer, assistant and system messages, plus continuation state"},"404":{"$ref":"#/components/responses/NotFound"}}
       }
     },
     "/api/v1/chat/history": {
@@ -8381,7 +8381,7 @@
     "/api/v1/admin/chat/conversations/{id}": {
       "get": {
         "tags": ["Admin AI Assistant"],
-        "summary": "Get one BigBike Assistant conversation with messages and private images",
+        "summary": "Get one read-only BigBike Assistant conversation with messages and private images",
         "operationId": "getChatConversation",
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],

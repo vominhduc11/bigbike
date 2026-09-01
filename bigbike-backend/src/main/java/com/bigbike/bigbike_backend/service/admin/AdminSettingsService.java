@@ -48,6 +48,7 @@ public class AdminSettingsService {
     private final SettingDefinitionRegistry definitionRegistry;
     private final SettingValueValidator valueValidator;
     private final ObjectMapper objectMapper;
+    private final MediaAutoFolderService mediaAutoFolderService;
 
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -154,6 +155,8 @@ public class AdminSettingsService {
         Instant now = Instant.now();
         entity.setUpdatedAt(now);
         settingRepo.save(entity);
+        mediaAutoFolderService.placeSetting(entity.getSettingKey());
+
         webRevalidationService.revalidate("settings");
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN",
@@ -231,6 +234,8 @@ public class AdminSettingsService {
             Instant now = Instant.now();
             entity.setUpdatedAt(now);
             settingRepo.save(entity);
+            mediaAutoFolderService.placeSetting(entity.getSettingKey());
+
             auditLogWriter.save(auditLogFactory.build(
                     "ADMIN",
                     adminId,

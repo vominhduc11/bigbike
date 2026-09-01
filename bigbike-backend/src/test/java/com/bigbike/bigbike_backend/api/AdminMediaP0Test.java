@@ -7,6 +7,7 @@ import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -15,6 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bigbike.bigbike_backend.persistence.entity.auth.AdminUserEntity;
@@ -179,8 +181,11 @@ class AdminMediaP0Test {
                         Headers.of(), "bucket", media.getFilePath(), null,
                         new ByteArrayInputStream(originalBytes)));
 
-        mockMvc.perform(get("/api/v1/admin/media/" + mediaId + "/download")
+        MvcResult started = mockMvc.perform(get("/api/v1/admin/media/" + mediaId + "/download")
                         .header("Authorization", "Bearer " + adminToken))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        mockMvc.perform(asyncDispatch(started))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "video/mp4"))
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString(
@@ -201,8 +206,11 @@ class AdminMediaP0Test {
                         Headers.of(), "bucket", media.getFilePath(), null,
                         new ByteArrayInputStream(originalBytes)));
 
-        mockMvc.perform(get("/api/v1/admin/media/" + mediaId + "/download")
+        MvcResult started = mockMvc.perform(get("/api/v1/admin/media/" + mediaId + "/download")
                         .header("Authorization", "Bearer " + adminToken))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        mockMvc.perform(asyncDispatch(started))
                 .andExpect(status().isOk())
                 .andExpect(content().bytes(originalBytes));
     }

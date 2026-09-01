@@ -55,9 +55,9 @@ describe("BrandCarousel brand links", () => {
     render(<BrandCarousel brands={[brand()]} />);
 
     const frame = document.querySelector('[data-brand-logo="true"]');
-    expect(frame).toHaveClass("size-22", "aspect-square");
+    expect(frame).toHaveClass("size-22", "min-[992px]:size-32", "aspect-square");
     expect(frame?.querySelector("img")).toHaveClass("object-contain");
-    expect(frame?.querySelector("img")).toHaveAttribute("sizes", "88px");
+    expect(frame?.querySelector("img")).toHaveAttribute("sizes", "(min-width: 992px) 128px, 88px");
   });
 
   it("shows initials instead of the shop logo when a brand has no logo", () => {

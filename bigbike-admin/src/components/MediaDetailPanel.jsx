@@ -37,6 +37,7 @@ import {
   formatBytes,
   toClipboardUrl,
 } from './media-picker/pickerUtils'
+import { getMediaFolderOptions } from '@/lib/mediaFolderUtils'
 
 function formatDate(iso) {
   if (!iso) return '—'
@@ -326,9 +327,9 @@ export function MediaDetailPanel({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__NONE__">{t('media.uncategorized')}</SelectItem>
-                  {folders.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.name}
+                  {getMediaFolderOptions(folders, t).map((f) => (
+                    <SelectItem key={f.value} value={f.value}>
+                      {f.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

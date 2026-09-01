@@ -11,6 +11,8 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -29,6 +31,7 @@ public class ReviewInvitationItemEntity {
     @Column(name = "product_id", nullable = false, length = 64)
     private String productId;
 
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "invite_token_hash", unique = true, length = 64)
     private String inviteTokenHash;
 

@@ -43,6 +43,7 @@ public class BrandMutationService {
     private final BrandLogoValidationService brandLogoValidationService;
     private final SlugRedirectHelper slugRedirectHelper;
     private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
+    private final MediaAutoFolderService mediaAutoFolderService;
 
     public BrandMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -54,7 +55,8 @@ public class BrandMutationService {
             CatalogRequestValidator catalogRequestValidator,
             BrandLogoValidationService brandLogoValidationService,
             SlugRedirectHelper slugRedirectHelper,
-            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor
+            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor,
+            MediaAutoFolderService mediaAutoFolderService
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.brandJpaRepository = brandJpaRepositoryProvider.getIfAvailable();
@@ -66,6 +68,7 @@ public class BrandMutationService {
         this.brandLogoValidationService = brandLogoValidationService;
         this.slugRedirectHelper = slugRedirectHelper;
         this.catalogReferenceCacheEvictor = catalogReferenceCacheEvictor;
+        this.mediaAutoFolderService = mediaAutoFolderService;
     }
 
     @Transactional
@@ -86,6 +89,7 @@ public class BrandMutationService {
         entity.setUpdatedAt(now);
         applyBrandPatch(entity, request, slug, true, logoMutation);
         brandJpaRepository.save(entity);
+        mediaAutoFolderService.placeBrand(entity.getId());
         auditLog("BRAND_CREATED", "BRAND", adminId, null, brandJson(entity));
         webRevalidationService.revalidateBrand(entity.getSlug(), null);
 
@@ -117,6 +121,7 @@ public class BrandMutationService {
         entity.setUpdatedAt(Instant.now());
         applyBrandPatch(entity, request, slug, false, logoMutation);
         brandJpaRepository.save(entity);
+        mediaAutoFolderService.placeBrand(entity.getId());
         auditLog("BRAND_UPDATED", "BRAND", adminId, before, brandJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {
             slugRedirectHelper.autoCreateSlugRedirect("/brands/" + previousSlug, "/brands/" + entity.getSlug());
