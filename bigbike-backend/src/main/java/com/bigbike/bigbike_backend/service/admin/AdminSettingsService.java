@@ -50,6 +50,7 @@ public class AdminSettingsService {
     private final SettingValueValidator valueValidator;
     private final ReviewInvitationLifecycleService reviewInvitationLifecycleService;
     private final ObjectMapper objectMapper;
+    private final MediaAutoFolderService mediaAutoFolderService;
 
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -160,6 +161,7 @@ public class AdminSettingsService {
         settingRepo.save(entity);
         reviewInvitationLifecycleService.onSettingUpdated(
                 settingKey, oldValue, entity.getSettingValue(), now);
+        mediaAutoFolderService.placeSetting(entity.getSettingKey());
 
         webRevalidationService.revalidate("settings");
         auditLogWriter.save(auditLogFactory.build(
@@ -242,6 +244,7 @@ public class AdminSettingsService {
             settingRepo.save(entity);
             reviewInvitationLifecycleService.onSettingUpdated(
                     entity.getSettingKey(), oldValue, entity.getSettingValue(), now);
+            mediaAutoFolderService.placeSetting(entity.getSettingKey());
 
             auditLogWriter.save(auditLogFactory.build(
                     "ADMIN",

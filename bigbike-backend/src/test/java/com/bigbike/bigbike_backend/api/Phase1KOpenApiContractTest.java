@@ -413,7 +413,7 @@ class Phase1KOpenApiContractTest {
         JsonNode folderProperties = paths.path("/api/v1/admin/media-folders").path("post")
                 .path("requestBody").path("content").path("application/json")
                 .path("schema").path("properties");
-        assertThat(fieldNames(folderProperties)).containsExactly("name", "slug", "description");
+        assertThat(fieldNames(folderProperties)).containsExactly("name", "slug", "description", "parentId");
         assertThat(folderProperties.path("name").path("maxLength").asInt()).isEqualTo(120);
         assertThat(folderProperties.path("slug").path("maxLength").asInt()).isEqualTo(160);
         assertThat(folderProperties.path("description").path("maxLength").asInt()).isEqualTo(2000);

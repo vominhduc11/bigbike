@@ -21,14 +21,16 @@ WHERE role = 'DEVELOPER';
 
 DO $$
 BEGIN
-    IF NOT EXISTS (
+    -- Fresh databases do not contain the production technical account. When
+    -- the account does exist, keep the safety gate and require ADMIN.
+    IF EXISTS (
         SELECT 1
         FROM admin_users
         WHERE LOWER(email) = LOWER('vominhduc760@gmail.com')
-          AND role = 'ADMIN'
+          AND role <> 'ADMIN'
     ) THEN
         RAISE EXCEPTION
-            'V1071 stopped safely: the verified technical account was not moved to ADMIN';
+            'V1071 stopped safely: the existing technical account was not moved to ADMIN';
     END IF;
 END $$;
 

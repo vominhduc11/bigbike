@@ -82,6 +82,32 @@ Evidence:
 - `AdminMediaService.java`
 - product/content DTO mappings in repo
 
+### Admin media folders (`MEDIA_RULE_014`–`MEDIA_RULE_015`, V1075–V1077)
+
+`media_folders` now supports a nullable `parent_id`, `system_key` and `sort_order`.
+Only a root folder or one direct child is valid; the backend rejects a deeper tree and
+cycles. System folders are seeded by stable `system_key` values and cannot be renamed,
+deleted or reparented. The existing `Giá đỡ điện thoại` folder is reused as the `KEWIG`
+product child and the existing `SCS` folder is reused as the `SCS` product child. A media
+with `folder_id = NULL` is the virtual `Chưa phân loại` bucket. Folder list responses return
+`parentId`, `depth`, `systemKey` and `sortOrder`; `mediaCount` includes active and inactive
+media in all descendants, but excludes `DELETED` rows, and filtering a parent includes its
+descendants.
+
+V1076 bổ sung đúng một thư mục hệ thống cấp gốc `Ảnh minh hoạ` với
+`system_key = root:illustrations`. Thư mục này chỉ thay đổi giá trị tham chiếu
+`media.folder_id`; không thay đổi tên, mô tả, URL, đường dẫn hoặc object lưu trữ của media.
+
+V1077 xóa `media_organization_items` rồi `media_organization_runs` sau khi đợt sắp xếp một
+lần hoàn tất và hai bảng được xác nhận chưa có lượt chạy nào. Migration không sửa
+`media`, `media_folders` hoặc object lưu trữ. Cây thư mục và cơ chế tự đặt media mới vẫn
+dùng `system_key`; runtime không còn entity hay contract lịch sử lượt sắp xếp.
+
+Status: `OWNER_CONFIRMED_2026-08-30` / `CONFIRMED_FROM_CODE`.
+
+Evidence: `MEDIA_RULE_014`, `MEDIA_RULE_015`, migrations V1075–V1077,
+`MediaFolderEntity`, `MediaAutoFolderService`.
+
 ### Live migration audit/checkpoint tables (V370)
 
 `live_migration_runs` and `live_migration_checkpoints` are operational audit data for the one-time WordPress cutover. A run binds one immutable source snapshot SHA-256 and reviewed plan SHA-256 to its status and protected-domain baseline counts. Domain checkpoints are unique by `(run_id, domain,batch_number)`, but they are audit markers rather than partial-commit resume points: all PostgreSQL data, the run row, and checkpoints commit atomically only after post-write validation. A failure rolls the whole database transaction back; a small hash-bound `FAILED` run record may then be committed separately, with no data checkpoints. Content-addressed MinIO objects copied before rollback may remain and are reverified/reused by the next fresh-plan retry. These tables never contain source rows, customer/order/admin payloads, database passwords, OAuth/SMTP secrets, or backup credentials. They are not application catalog/content APIs and must not be repurposed as business data.
@@ -2453,7 +2479,7 @@ Status: `OWNER_CONFIRMED_2026-08-03` and `CONFIRMED_FROM_CODE` — `live-migrati
 
 ## Manual Maintenance State Data Contract — removed 2026-08-30
 
-The manual admin-lock data contract no longer exists. New migration `V1071` removes the legacy `maintenance_state` table, the five obsolete `site_settings` keys from V373, the `DEVELOPER` role and `maintenance.manage`. It also moves the verified technical account `vominhduc760@gmail.com` to `ADMIN` before role cleanup.
+The manual admin-lock data contract no longer exists. New migration `V1071` removes the legacy `maintenance_state` table, the five obsolete `site_settings` keys from V373, the `DEVELOPER` role and `maintenance.manage`. It also moves the verified technical account `vominhduc760@gmail.com` to `ADMIN` before role cleanup. A fresh database where that production account has never existed is a valid no-op for the account move; when the account exists, the migration still stops unless its resulting role is `ADMIN`.
 
 V373, V374, V375 and V1054 remain immutable historical migrations. Automatic outage pages do not persist business state or expose a database/API data shape. Customer, order, inventory, cart and checkout data are not touched.
 

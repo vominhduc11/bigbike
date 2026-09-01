@@ -81,6 +81,14 @@ public final class MediaSpecifications {
         return (root, query, cb) -> cb.equal(root.get("folderId"), folderId);
     }
 
+    /** Match a folder and every descendant folder in the two-level media tree. */
+    public static Specification<MediaEntity> inFolders(Collection<java.util.UUID> folderIds) {
+        return (root, query, cb) -> {
+            if (folderIds == null || folderIds.isEmpty()) return cb.disjunction();
+            return root.get("folderId").in(folderIds);
+        };
+    }
+
     /** Match media whose folder_id IS NULL — "uncategorized" bucket. */
     public static Specification<MediaEntity> noFolder() {
         return (root, query, cb) -> cb.isNull(root.get("folderId"));

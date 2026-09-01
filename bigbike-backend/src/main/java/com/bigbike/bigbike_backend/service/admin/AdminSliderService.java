@@ -43,6 +43,7 @@ public class AdminSliderService {
     private final SafeMediaAssetUrlPolicy safeMediaAssetUrlPolicy;
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
+    private final MediaAutoFolderService mediaAutoFolderService;
 
     @Transactional(readOnly = true)
     public List<Slider> list(String location) {
@@ -112,6 +113,7 @@ public class AdminSliderService {
         entity.setUpdatedAt(now);
 
         sliderJpaRepository.save(entity);
+        mediaAutoFolderService.placeSlider(entity.getId());
         webRevalidationService.revalidate("sliders");
         auditLog("SLIDER_CREATED", entity.getId(), null, sliderSnapshot(entity));
         return entity.getId();
@@ -220,6 +222,7 @@ public class AdminSliderService {
 
         entity.setUpdatedAt(now);
         sliderJpaRepository.save(entity);
+        mediaAutoFolderService.placeSlider(entity.getId());
         webRevalidationService.revalidate("sliders");
         auditLog("SLIDER_UPDATED", sliderId, before, sliderSnapshot(entity));
     }

@@ -11,6 +11,7 @@ import {
   normalizeProduct,
   normalizeRedirect,
   normalizeLegacyDiscontinuedProduct,
+  normalizeMediaFolder,
   normalizeSetting,
 } from './contracts'
 import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStorage'
@@ -1299,7 +1300,7 @@ export async function bulkMoveMedia(ids, folderId) {
 
 export async function fetchMediaFolders() {
   const payload = await requestJson('/admin/media-folders')
-  return Array.isArray(payload?.data) ? payload.data : []
+  return Array.isArray(payload?.data) ? payload.data.map(normalizeMediaFolder) : []
 }
 
 export async function createMediaFolder(input) {

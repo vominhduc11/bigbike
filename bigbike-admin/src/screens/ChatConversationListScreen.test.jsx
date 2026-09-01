@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('react-i18next', () => ({
@@ -51,6 +52,7 @@ function renderScreen(navigate = vi.fn()) {
       <ChatConversationListScreen navigate={navigate} />
     </QueryClientProvider>,
   )
+  return navigate
 }
 
 describe('ChatConversationListScreen', () => {
@@ -60,10 +62,20 @@ describe('ChatConversationListScreen', () => {
     expect(await screen.findByText('chatAdmin.quota.title')).toBeInTheDocument()
     expect(screen.getByText('chatAdmin.quota.used')).toBeInTheDocument()
     expect(screen.getByText('chatAdmin.quota.remaining')).toBeInTheDocument()
+    expect(await screen.findByText('chatAdmin.tableTitle')).toBeInTheDocument()
     expect(
       screen.getByRole('columnheader', { name: 'chatAdmin.columns.result' }),
     ).toBeInTheDocument()
     expect(screen.queryByText(/handoff|waiting for staff/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('columnheader', { name: /handoff/i })).not.toBeInTheDocument()
+  })
+
+  it('opens a conversation from the read-only history', async () => {
+    const user = userEvent.setup()
+    const navigate = renderScreen()
+
+    await screen.findByText('PRODUCT_RESULTS')
+    await user.click(screen.getByTestId('chat-conversations-table').querySelector('tbody tr'))
+    expect(navigate).toHaveBeenCalledWith('/admin/chat/conversation-1')
   })
 })

@@ -85,6 +85,29 @@ class WebSocketConfigAccessTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void retiredChatTopicIsRejectedEvenWithReadPermission() {
+        when(permissionService.getPermissionsForRole("LIMITED")).thenReturn(List.of("chat.read"));
+        assertThat(inbound.preSend(connectMessage(), mock(MessageChannel.class))).isNotNull();
+        assertThatThrownBy(() -> inbound.preSend(
+                subscribeMessage("/topic/admin/chat"), mock(MessageChannel.class)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void retiredCustomerRealtimeTokenCannotConnectToAdminWebSocket() {
+        UUID conversationId = UUID.randomUUID();
+        Claims customerClaims = mock(Claims.class);
+        when(customerClaims.getSubject()).thenReturn(conversationId.toString());
+        when(customerClaims.get("scope", String.class)).thenReturn("chat-realtime");
+        when(jwtService.parseAccessToken("chat-token")).thenReturn(customerClaims);
+        MessageChannel channel = mock(MessageChannel.class);
+
+        assertThatThrownBy(() -> inbound.preSend(
+                connectMessage("customer-session", "chat-token"), channel))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     private ChannelInterceptor captureInboundInterceptor(WebSocketConfig config) {
         ChannelRegistration registration = mock(ChannelRegistration.class);
         config.configureClientInboundChannel(registration);

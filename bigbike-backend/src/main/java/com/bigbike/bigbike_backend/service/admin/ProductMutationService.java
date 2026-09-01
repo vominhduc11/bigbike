@@ -71,6 +71,7 @@ public class ProductMutationService {
     private final AdminInventoryWsService adminInventoryWsService;
     private final SlugRedirectHelper slugRedirectHelper;
     private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
+    private final MediaAutoFolderService mediaAutoFolderService;
 
     public ProductMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
@@ -86,7 +87,8 @@ public class ProductMutationService {
             InventoryPolicyService inventoryPolicyService,
             SlugRedirectHelper slugRedirectHelper,
             AdminInventoryWsService adminInventoryWsService,
-            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor
+            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor,
+            MediaAutoFolderService mediaAutoFolderService
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.productVariantJpaRepository = productVariantJpaRepositoryProvider.getIfAvailable();
@@ -102,6 +104,7 @@ public class ProductMutationService {
         this.slugRedirectHelper = slugRedirectHelper;
         this.adminInventoryWsService = adminInventoryWsService;
         this.catalogReferenceCacheEvictor = catalogReferenceCacheEvictor;
+        this.mediaAutoFolderService = mediaAutoFolderService;
     }
 
     @Transactional
@@ -134,6 +137,7 @@ public class ProductMutationService {
         AdminMutationValidators.throwIfPublishErrors(readinessErrors);
 
         productJpaRepository.save(entity);
+        mediaAutoFolderService.placeProduct(entity.getId());
         pushInventoryEventIfChanged(entity, Map.of());
         auditLog("PRODUCT_CREATED", "PRODUCT", adminId, null, productJson(entity));
         webRevalidationService.revalidateProduct(entity.getSlug(), null);
@@ -200,6 +204,7 @@ public class ProductMutationService {
         AdminMutationValidators.throwIfPublishErrors(readinessErrors);
 
         productJpaRepository.save(entity);
+        mediaAutoFolderService.placeProduct(entity.getId());
         pushInventoryEventIfChanged(entity, inventoryBefore);
         auditLog("PRODUCT_UPDATED", "PRODUCT", adminId, before, productJson(entity));
         if (!previousSlug.equals(entity.getSlug())) {

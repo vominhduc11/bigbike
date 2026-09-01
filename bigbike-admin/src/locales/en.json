@@ -2551,7 +2551,20 @@
     "tagsError": "Couldn't load tags",
     "dismissWhileUploading": "Uploading — can't dismiss yet",
     "uploadProgress": "Upload progress for {{name}}",
-    "hardDeleteError": "Delete failed. The file may still be in use — remove it from those places and try again."
+    "hardDeleteError": "Delete failed. The file may still be in use — remove it from those places and try again.",
+    "expandFolder": "Expand subfolders",
+    "collapseFolder": "Collapse subfolders",
+    "folderNoChildren": "Folder has no subfolders",
+    "folderTree": {
+      "products": "Products",
+      "articles": "Articles",
+      "brands": "Brands",
+      "categories": "Categories",
+      "banners": "Banners",
+      "illustrations": "Illustrations",
+      "videos": "Original videos",
+      "unknownBrand": "Unknown brand"
+    }
   },
   "menus": {
     "title": "Header Menu",
@@ -2939,6 +2952,7 @@
       "bigbike": "BigBike Assistant · AI assistant",
       "source": "Reply source",
       "usedAi": "AI used",
+      "readOnly": "This conversation is view-only; staff cannot take over or reply to the customer here.",
       "sources": {
         "ai": "Automated assistant",
         "rule": "Support rule",
@@ -2954,6 +2968,7 @@
       "active": "Active",
       "endStates": {
         "turnLimit": "Question limit reached",
+        "continued": "Continued in a new conversation",
         "offTopic": "Outside supported topics",
         "continued": "Continued in a linked chat",
         "unavailable": "Automated support could not continue",
