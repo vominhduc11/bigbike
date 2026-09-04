@@ -11,6 +11,7 @@
 | Web catalog size filters | Catalog archive pages fetch `GET /api/v1/catalog/facets` with the current category/search/brand/non-size filters, then fetch `GET /api/v1/products` with repeated `kich-co` values. Legacy unqualified values remain accepted. | `CatalogController` -> `CatalogReadService` -> configured size-scale catalog | Four ordered size groups without subgroups and OR-matched product list; size counts exclude the active size dimension but honor the remaining page context | `OWNER_CONFIRMED_2026-08-14` |
 | Web catalog filter workspace | The category/all/search/brand pages server-render the exact URL context, then use repeated `pwb-brand`/`filter_color`/`filter_finish`/`kich-co`, scalar gender/price and `in_stock` for later client updates. Desktop debounces one product+facet pair; while the mobile full-screen sheet is open only facets refresh until the customer applies. | `CatalogController` -> `CatalogReadService` -> visual-facet configuration + catalog/order repositories | OR inside a facet, AND across facets; canonical colors and finishes; descendant-aware category counts; exact `resultCount`; real best-selling order; no unfiltered-to-filtered content flash | `OWNER_CONFIRMED_2026-08-15` |
 | Admin size-scale manager | Product editor opens the manager, reads `GET /api/v1/admin/size-scale-groups` and `GET /api/v1/admin/size-scales`, then creates/updates one scale with `POST/PATCH /api/v1/admin/size-scales` using `{ name, groupId, values[] }`. | `AdminSizeScaleController` -> `AdminSizeScaleService` -> size-scale repositories | Server derives technical metadata, validates duplicates and usage conflicts, and preserves product-to-scale links | `OWNER_CONFIRMED_2026-08-14` |
+| Admin size filter-group manager | Same manager, second tab. Reads `GET /api/v1/admin/size-scale-groups?includeInactive=true`, then `POST/PATCH/DELETE /api/v1/admin/size-scale-groups` for add / rename / enable-disable / delete. | `AdminSizeScaleController` -> `AdminSizeScaleService` -> size-scale + group repositories -> `WebRevalidationService` | Server derives the immutable group key and sort order; delete blocked with `409` while scales reference the group; deactivating keeps all rows but drops the group from the public size facet; storefront cache revalidated on every write | `OWNER_CONFIRMED_2026-09-04` |
 | Tin tức list page (`/tin-tuc`, `/en/tin-tuc`) | `GET /api/v1/articles` | `ContentController` -> `ContentReadService` | Paginated article list; content-category filter/sidebar/drawer no longer exists | `CONFIRMED_FROM_OWNER_DECISION` (2026-08-03) |
 | Địa chỉ VN (storefront) | không gọi API — dùng dữ liệu tích hợp sẵn `VN_PROVINCES` (`vn-address-data.ts`, hai cấp tỉnh/thành → phường/xã). Backend API `GET /api/v1/address/provinces[...]` đã gỡ 2026-07-15 (AUD-056, owner decision #8 — không có caller). | — | Không có side effect | `REMOVED` |
 | Cart UI | `/api/v1/cart`, `/api/v1/cart/items` | `CartController` -> `CartService` | Session/customer cart, item snapshots | `CONFIRMED_FROM_CODE` |
@@ -47,6 +48,13 @@ the scale name, its group and the ordered comma-separated values; technical
 metadata is derived on the server. Adding a scale or value does not require
 frontend/backend classification code; a product must be explicitly assigned
 before its size options can be saved.
+
+Once a product carries a scale, the variant size picker lists only that scale's
+values, matched with the same normalization the save-time guard uses, plus any
+already-stored value that falls outside the scale so legacy rows never lose a
+selection. Filter groups follow the same data-driven rule: they are runtime rows
+managed from the manager's second tab, keyed by a server-derived immutable key
+that becomes each scale's public filter namespace.
 
 Status: `OWNER_CONFIRMED_2026-08-14`
 

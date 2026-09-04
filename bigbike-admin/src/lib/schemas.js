@@ -22,7 +22,10 @@ export const COLOR_ATTRIBUTE_KEYS = new Set([
   'pa mau',
   'pa mau sac',
 ])
-export const SIZE_ATTRIBUTE_KEYS = new Set(['size', 'kich co'])
+// Phải khớp đúng SizeScaleCatalog.isSizeOptionName ở backend (size | kichco | kichthuoc):
+// chốt chặn "cỡ phải thuộc bảng cỡ" nhận diện dòng cỡ theo tên thuộc tính, nên nếu admin
+// nhận diện hẹp hơn thì dòng cỡ đó sẽ không được lọc mà vẫn bị backend chặn khi lưu.
+export const SIZE_ATTRIBUTE_KEYS = new Set(['size', 'kich co', 'kich thuoc'])
 export const MODEL_ATTRIBUTE_KEYS = new Set(['model', 'doi may', 'iphone'])
 
 /**
@@ -107,6 +110,10 @@ export function normalizeVariantToken(value) {
 
 export function isColorAttributeName(name) {
   return COLOR_ATTRIBUTE_KEYS.has(normalizeVariantToken(name))
+}
+
+export function isSizeAttributeName(name) {
+  return SIZE_ATTRIBUTE_KEYS.has(normalizeVariantToken(name))
 }
 
 function slugField(t) {

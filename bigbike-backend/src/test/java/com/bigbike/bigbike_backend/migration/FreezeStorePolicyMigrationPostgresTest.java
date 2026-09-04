@@ -61,7 +61,7 @@ class FreezeStorePolicyMigrationPostgresTest {
 
     private void executeMigration(Statement statement) throws Exception {
         try (InputStream input = Objects.requireNonNull(getClass().getResourceAsStream(
-                "/db/migration/V1075__freeze_store_policy_content.sql"))) {
+                "/db/migration/V1078__freeze_store_policy_content.sql"))) {
             statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
     }

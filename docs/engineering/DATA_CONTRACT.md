@@ -62,7 +62,7 @@ No column on `orders` is changed. Classification is additive and auditable:
 | `order_overdue_reminder_runs` | One row per Vietnam `run_date`, with threshold, cutoff, candidate count, nullable notification id and completion time. The date key serializes concurrent scheduler instances; zero candidates still records a completed run but creates no notification. |
 | `order_overdue_reminder_orders` | One immutable row per reminded `order_id`, linked to the run date and `reminded_at`; unique order id prevents daily repeat even after notification retention deletes the shared notification. |
 
-An order is `HISTORICAL` only while its batch is active; otherwise it is `OPERATIONAL`. The one-time classification command inserts batch/membership rows only, verifies expected 1,661/388/508 counts before write, is idempotent, and rolls back by setting `active=false`. It never updates/deletes `orders` or any monetary/content/status column.
+An order is `HISTORICAL` only while its batch is active; otherwise it is `OPERATIONAL`. The one-time classification command inserts batch/membership rows only, verifies the production counts confirmed on 2026-09-02 (`1,660` total rows with `legacy_id`, `388 PENDING`, `508 PROCESSING`) before write, is idempotent, and rolls back by setting `active=false`. It never updates/deletes `orders` or any monetary/content/status column.
 
 `admin_notifications` type `ORDER_OVERDUE_DIGEST` has null order reference and payload `{schemaVersion:1,count,thresholdDays,cutoffAt}`. It is `orders.read` scoped and contains no PII/order list. `order_overdue_days` remains a private `INTEGER >= 1` setting in group `order_operations`, with effective value fixed at `2` days by the owner decision on 2026-09-01. The row remains in storage for the reminder, overdue filter and CSV readers; it is no longer an editable Settings field, replacing the 2026-08-31 description.
 
@@ -82,7 +82,7 @@ Evidence:
 - `AdminMediaService.java`
 - product/content DTO mappings in repo
 
-### Admin media folders (`MEDIA_RULE_014`–`MEDIA_RULE_015`, V1077–V1079)
+### Admin media folders (`MEDIA_RULE_014`–`MEDIA_RULE_015`, V1075–V1077)
 
 `media_folders` supports a nullable `parent_id`, `system_key` and `sort_order`; no schema
 or data migration is required for folder management. Only a root folder or one direct child
@@ -96,18 +96,18 @@ is the virtual `Chưa phân loại` bucket. A new folder or a moved folder recei
 `depth`, `systemKey` and `sortOrder`; `mediaCount` includes active and inactive media in all
 descendants, but excludes `DELETED` rows, and filtering a parent includes its descendants.
 
-V1078 bổ sung đúng một thư mục hệ thống cấp gốc `Ảnh minh hoạ` với
+V1076 bổ sung đúng một thư mục hệ thống cấp gốc `Ảnh minh hoạ` với
 `system_key = root:illustrations`. Thư mục này chỉ thay đổi giá trị tham chiếu
 `media.folder_id`; không thay đổi tên, mô tả, URL, đường dẫn hoặc object lưu trữ của media.
 
-V1079 xóa `media_organization_items` rồi `media_organization_runs` sau khi đợt sắp xếp một
+V1077 xóa `media_organization_items` rồi `media_organization_runs` sau khi đợt sắp xếp một
 lần hoàn tất và hai bảng được xác nhận chưa có lượt chạy nào. Migration không sửa
 `media`, `media_folders` hoặc object lưu trữ. Cây thư mục và cơ chế tự đặt media mới vẫn
 dùng `system_key`; runtime không còn entity hay contract lịch sử lượt sắp xếp.
 
 Status: `OWNER_CONFIRMED_2026-08-30` / `CONFIRMED_FROM_CODE`.
 
-Evidence: `MEDIA_RULE_014`, `MEDIA_RULE_015`, migrations V1077–V1079,
+Evidence: `MEDIA_RULE_014`, `MEDIA_RULE_015`, migrations V1075–V1077,
 `MediaFolderEntity`, `MediaAutoFolderService`.
 
 ### Live migration audit/checkpoint tables (V370)
@@ -516,11 +516,33 @@ The `products.size_scale_id` foreign key points to one row in
 `catalog_size_scales` for every product that has a size option. The scale points
 to a configured display group and carries a system-managed filter namespace; its
 `catalog_size_values` carry the canonical key, the user-entered display label
-used for both languages, and explicit order. `catalog_size_groups` contains the
-four current public groups: clothing letters, shoes, waist-inch pants and EU
-pants.
+used for both languages, and explicit order. `catalog_size_groups` holds the
+public display groups; since 2026-09-04 these are runtime data managed by the
+admin rather than a fixed set seeded by migrations. Four groups are active
+(clothing letters, shoes, waist-inch pants, EU pants) and `pants-number` remains
+as an inactive row.
 The old subgroup columns remain only as storage compatibility columns and are
 empty after V1031.
+
+`catalog_size_groups` (created by V1028; no further schema change was needed for
+admin management):
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `varchar(64)` PK | Server-generated, `size-group-<uuid>` for rows created at runtime |
+| `group_key` | `varchar(64)` UNIQUE NOT NULL | Derived once from the Vietnamese label; **never updatable** |
+| `label` | `varchar(255)` NOT NULL | Vietnamese display label, editable |
+| `label_en` | `varchar(255)` NOT NULL | English display label, editable |
+| `sort_order` | `int` NOT NULL | Server-assigned, appended last; no reorder endpoint |
+| `active` | `boolean` NOT NULL DEFAULT true | Deactivating hides the group from the public facet without deleting anything |
+
+`group_key` is immutable because `catalog_size_scales.filter_namespace` is a
+**copy** of it, written only when a scale is saved. Allowing the key to change
+would leave that copy stale and break public filter tokens
+(`kich-co=pants-waist:32`) that customers may have bookmarked or shared. A group
+can only be deleted while no scale references it; the JPA association from group
+to scales must therefore not cascade removals, or a group delete would take its
+scales and every size value with it.
 
 The scale catalog is the source of truth for public grouping, ordering and
 namespace matching. Existing `product_variant_options.option_name`,
@@ -545,6 +567,15 @@ products already use blocks startup, so seed the value in the same migration.
 V1031 moves the two numeric-pants scales into separate groups and clears all
 subgroup assignments without changing scale IDs, value IDs, product links,
 variant IDs, SKUs, availability or option ownership.
+
+Replay hazard: V1031 ends with a hard assertion requiring exactly 6 active
+scales, 73 active values and 0 subgroup rows. Now that scales, values and groups
+are runtime-editable, replaying the full migration chain against a database that
+already holds admin-created rows will raise and fail startup. Applied databases
+are unaffected (Flyway does not re-run applied versions) and fresh test
+containers are safe; the exposure is a dump-restore-then-migrate path. Do not
+edit V1031 — its checksum is recorded — defuse it in a forward migration if it
+ever becomes a problem.
 
 ### warranty_records — removed (2026-06-23, V266) `CONFIRMED_FROM_CODE`
 
@@ -1600,7 +1631,7 @@ còn 1 cột tên (`name`) và 1 cột slug (`slug`), không tách VI/EN.
 
 **Redirect:** catalog danh mục/sản phẩm/bài viết đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`/`autoCreateSlugEnRedirect`) — đổi → old-EN-URL→new-EN-URL; xoá → old-EN-URL→slug VI trong cùng locale; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. Từ 2026-08-03, chi tiết sản phẩm EN dùng `/en/product/`, bài viết EN dùng `/en/tin-tuc/`; các alias cũ `/en/products/{slug}` và `/en/news...` redirect 301 tương thích, trong khi danh sách sản phẩm vẫn là `/en/products/` và danh mục vẫn dùng `/en/categories/`. Mọi redirect danh mục VI mới dùng `/danh-muc/{slug}/`; nguồn `/danh-muc-san-pham/{slug}/` cũ được giữ làm tương thích 301. Brand không có khái niệm slug EN nên không sinh redirect riêng. **Bài viết trước 2026-07-24 KHÔNG có cơ chế redirect** (module nội dung chưa wiring `SlugRedirectHelper`) — từ 2026-07-24 đã bổ sung, hành vi giờ đồng nhất với Sản phẩm/Danh mục.
 
-**Ngoài phạm vi:** module pages/CMS vẫn đã gỡ. Web định tuyến tám route bằng slug cố định. Từ 2026-09-01, tiêu đề/thân bài Bảo hành và Đổi trả là bốn resource UTF-8 dưới `bigbike-backend/src/main/resources/policy-content/`, dùng chung cho endpoint policy và Trợ lý BigBike. Quyết định này thay thế hợp đồng cũ ngày 2026-08-23 về bốn row `site_settings` nhóm `store_policy`; các row đó được xóa bởi `V1075__freeze_store_policy_content.sql`. Khối liên hệ vẫn lấy động từ nhóm `contact`; các trang còn lại vẫn tĩnh.
+**Ngoài phạm vi:** module pages/CMS vẫn đã gỡ. Web định tuyến tám route bằng slug cố định. Từ 2026-09-01, tiêu đề/thân bài Bảo hành và Đổi trả là bốn resource UTF-8 dưới `bigbike-backend/src/main/resources/policy-content/`, dùng chung cho endpoint policy và Trợ lý BigBike. Quyết định này thay thế hợp đồng cũ ngày 2026-08-23 về bốn row `site_settings` nhóm `store_policy`; các row đó được xóa bởi `V1078__freeze_store_policy_content.sql`. Khối liên hệ vẫn lấy động từ nhóm `contact`; các trang còn lại vẫn tĩnh.
 
 Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`/`ProductEntity`/`ArticleEntity` (`slugEn`), `*JpaRepository.findBySlugEn` (category/product/article only — `BrandJpaRepository` has no such method), `JpaCatalogReadRepository`/`JpaContentReadRepository` (map active `slugEn` + OR-resolve), `AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V216`; brand `name_en`/`slug_en` dropped by `V352`.
 

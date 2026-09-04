@@ -160,7 +160,7 @@ class OrderOperationsPostgresIntegrationTest {
                     created_at, activated_at
                 ) values (?, 'LEGACY_WEB_IMPORT_2026_06_11', 'Đơn cũ', 'Historical orders',
                     'Giữ để tra cứu', 'Retained for lookup', '{}'::jsonb,
-                    1661, 388, 508, true, now(), now())
+                    1660, 388, 508, true, now(), now())
                 """, id);
         return id;
     }

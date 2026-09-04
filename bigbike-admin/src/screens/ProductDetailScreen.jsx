@@ -816,7 +816,13 @@ export function ProductDetailScreen({
       }
     },
     onError: (error) => {
-      const fieldErrors = mapValidationErrors(error, t)
+      // Máy chủ chỉ trả mã lỗi + đường dẫn trường; cung cấp tên cỡ và tên bảng cỡ
+      // để câu báo lỗi nói rõ sai ở đâu thay vì chung chung.
+      const fieldErrors = mapValidationErrors(error, t, {
+        sizeScaleName: sizeScales.find((scale) => scale.id === form.sizeScaleId)?.name,
+        getOptionValue: (variantIndex, optionIndex) =>
+          form.variants?.[variantIndex]?.options?.[optionIndex]?.value,
+      })
       setValidationErrors(fieldErrors)
       // N2: lỗi lưu kèm nút "Thử lại" (lưu lại) — chỉ khi KHÔNG phải lỗi ràng buộc
       // theo trường (lỗi field thì hiện ngay dưới ô, bấm lưu lại cũng vô ích cho tới
@@ -825,7 +831,13 @@ export function ProductDetailScreen({
       // Lỗi theo trường (vd trùng slug/SKU) có thể nằm trong thẻ đang thu gọn — mở ra + nhảy tab.
       if (hasFieldErrors) revealErrorSections(fieldErrors)
       toast.error(
-        error.message || t('products.detail.errSaveFailed'),
+        // "Validation failed." của máy chủ là tiếng Anh — khi đã có lỗi theo từng ô
+        // thì hiện câu tiếng Việt chỉ chỗ cần sửa, không đẩy nguyên văn ra màn hình.
+        hasFieldErrors
+          ? t('products.detail.errSaveValidation', {
+              defaultValue: 'Chưa lưu được — còn chỗ chưa hợp lệ, xem các ô báo đỏ.',
+            })
+          : error.message || t('products.detail.errSaveFailed'),
         hasFieldErrors
           ? undefined
           : {
@@ -2865,6 +2877,8 @@ export function ProductDetailScreen({
 
             {showMatrixWizard && (
               <VariantMatrixWizard
+                sizeScaleId={form.sizeScaleId}
+                sizeScales={sizeScales}
                 onGenerate={(newVariants) => {
                   const existing = form.variants
                   function variantSig(options) {

@@ -29,9 +29,9 @@ class MediaFolderTreeMigrationPostgresTest {
             createLegacySchema(statement);
             seedLegacyFolders(statement);
 
-            executeMigration(statement, "V1077__media_folder_tree_and_organization.sql");
-            executeMigration(statement, "V1078__add_media_illustrations_folder.sql");
-            executeMigration(statement, "V1079__remove_media_organization_tool.sql");
+            executeMigration(statement, "V1075__media_folder_tree_and_organization.sql");
+            executeMigration(statement, "V1076__add_media_illustrations_folder.sql");
+            executeMigration(statement, "V1077__remove_media_organization_tool.sql");
 
             assertThat(integerValue(statement, "select count(*) from media_folders")).isEqualTo(34);
             assertThat(integerValue(statement,

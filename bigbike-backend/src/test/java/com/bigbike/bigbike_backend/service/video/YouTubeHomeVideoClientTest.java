@@ -9,12 +9,14 @@ import com.bigbike.bigbike_backend.service.video.YouTubeHomeVideoClient.FetchRes
 import com.bigbike.bigbike_backend.service.video.YouTubeHomeVideoClient.HttpFetcher;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
 class YouTubeHomeVideoClientTest {
 
     private static final String CHANNEL_ID = "UCabcdefghijklmnopqrstuv";
+    private static final String OTHER_CHANNEL_ID = "UCzzzzzzzzzzzzzzzzzzzzzz";
     private static final String CHANNEL_URL = "https://www.youtube.com/@bigbike-shop";
     private static final String FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id=" + CHANNEL_ID;
 
@@ -25,7 +27,7 @@ class YouTubeHomeVideoClientTest {
                 <html><head><link rel="alternate" type="application/rss+xml"
                   href="https://www.youtube.com/feeds/videos.xml?channel_id=%s"></head></html>
                 """.formatted(CHANNEL_ID));
-        fetcher.put(FEED_URL, 200, feedXml(
+        fetcher.put(FEED_URL, 200, feedXml(CHANNEL_ID, CHANNEL_ID,
                 "AAAAAAAAAAA", "TEST  CHỐNG NƯỚC", "2026-08-27T03:00:00Z",
                 "BBBBBBBBBBB", "GẮN ĐỒ CHO KHÁCH NHƯNG ĐẦY DRAMMA", "2026-08-24T03:00:00Z"));
 
@@ -39,12 +41,70 @@ class YouTubeHomeVideoClientTest {
     }
 
     @Test
+    void acceptsYoutubeFeedRootChannelIdWithoutUcPrefix() {
+        StubFetcher fetcher = new StubFetcher();
+        fetcher.put(FEED_URL, 200, feedXml(CHANNEL_ID.substring(2), CHANNEL_ID,
+                "AAAAAAAAAAA", "Video mới nhất", "2026-08-27T03:00:00Z",
+                "BBBBBBBBBBB", "Video kế tiếp", "2026-08-24T03:00:00Z"));
+
+        var feed = client(fetcher).fetchLatest(
+                "https://www.youtube.com/channel/" + CHANNEL_ID);
+
+        assertThat(feed.channelId()).isEqualTo(CHANNEL_ID);
+        assertThat(feed.videos()).extracting(YouTubeHomeVideoClient.FeedVideo::videoId)
+                .containsExactly("AAAAAAAAAAA", "BBBBBBBBBBB");
+    }
+
+    @Test
+    void retriesTransientYoutubeFeedNodesBeforeParsingSuccessfulResponse() {
+        AtomicInteger calls = new AtomicInteger();
+        String validFeed = feedXml(CHANNEL_ID.substring(2), CHANNEL_ID,
+                "AAAAAAAAAAA", "Video mới nhất", "2026-08-27T03:00:00Z",
+                "BBBBBBBBBBB", "Video kế tiếp", "2026-08-24T03:00:00Z");
+        HttpFetcher fetcher = (url, accept, maxBytes) -> switch (calls.getAndIncrement()) {
+            case 0 -> new FetchResult(404, "");
+            case 1 -> new FetchResult(500, "");
+            default -> new FetchResult(200, validFeed);
+        };
+
+        var feed = client(fetcher).fetchLatest(
+                "https://www.youtube.com/channel/" + CHANNEL_ID);
+
+        assertThat(calls).hasValue(3);
+        assertThat(feed.videos()).extracting(YouTubeHomeVideoClient.FeedVideo::videoId)
+                .containsExactly("AAAAAAAAAAA", "BBBBBBBBBBB");
+    }
+
+    @Test
     void rejectsFeedFromAnotherChannelWithoutReturningPartialData() {
         StubFetcher fetcher = new StubFetcher();
-        fetcher.put(FEED_URL, 200, feedXml(
+        fetcher.put(FEED_URL, 200, feedXml(OTHER_CHANNEL_ID, OTHER_CHANNEL_ID,
                 "AAAAAAAAAAA", "Video", "2026-08-27T03:00:00Z",
-                "BBBBBBBBBBB", "Video 2", "2026-08-24T03:00:00Z")
-                .replace(CHANNEL_ID, "UCzzzzzzzzzzzzzzzzzzzzzz"));
+                "BBBBBBBBBBB", "Video 2", "2026-08-24T03:00:00Z"));
+
+        assertThatThrownBy(() -> client(fetcher).fetchLatest(
+                "https://www.youtube.com/channel/" + CHANNEL_ID))
+                .isInstanceOf(YouTubeHomeVideoClient.YouTubeFetchException.class);
+    }
+
+    @Test
+    void rejectsAnotherChannelsSuffixEvenWhenEntriesClaimExpectedChannel() {
+        StubFetcher fetcher = new StubFetcher();
+        fetcher.put(FEED_URL, 200, feedXml(OTHER_CHANNEL_ID.substring(2), CHANNEL_ID,
+                "AAAAAAAAAAA", "Video", "2026-08-27T03:00:00Z",
+                "BBBBBBBBBBB", "Video 2", "2026-08-24T03:00:00Z"));
+
+        assertThatThrownBy(() -> client(fetcher).fetchLatest(
+                "https://www.youtube.com/channel/" + CHANNEL_ID))
+                .isInstanceOf(YouTubeHomeVideoClient.YouTubeFetchException.class);
+    }
+
+    @Test
+    void rejectsFeedWithoutItsOwnChannelId() {
+        StubFetcher fetcher = new StubFetcher();
+        fetcher.put(FEED_URL, 200, feedXml("", CHANNEL_ID,
+                "AAAAAAAAAAA", "Video", "2026-08-27T03:00:00Z",
+                "BBBBBBBBBBB", "Video 2", "2026-08-24T03:00:00Z"));
 
         assertThatThrownBy(() -> client(fetcher).fetchLatest(
                 "https://www.youtube.com/channel/" + CHANNEL_ID))
@@ -78,6 +138,7 @@ class YouTubeHomeVideoClientTest {
     }
 
     private static String feedXml(
+            String feedChannelId, String entryChannelId,
             String firstId, String firstTitle, String firstPublished,
             String secondId, String secondTitle, String secondPublished
     ) {
@@ -97,9 +158,9 @@ class YouTubeHomeVideoClientTest {
                   </entry>
                 </feed>
                 """.formatted(
-                CHANNEL_ID,
-                firstId, CHANNEL_ID, firstTitle, firstPublished, firstId,
-                secondId, CHANNEL_ID, secondTitle, secondPublished, secondId
+                feedChannelId,
+                firstId, entryChannelId, firstTitle, firstPublished, firstId,
+                secondId, entryChannelId, secondTitle, secondPublished, secondId
         );
     }
 

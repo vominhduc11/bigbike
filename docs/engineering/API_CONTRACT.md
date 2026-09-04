@@ -961,8 +961,11 @@ The list and facets always exclude `discontinued=true`. Status:
 
 ### Catalog size scale administration (owner decision 2026-08-14, refined 2026-08-14)
 
-`GET /api/v1/admin/size-scale-groups` returns the four active public display
-groups; `GET /api/v1/admin/size-scales` returns the configured scales and values.
+`GET /api/v1/admin/size-scale-groups` returns the active public display groups
+ordered by configured order; pass `?includeInactive=true` (default `false`) to
+include deactivated groups, which the group manager needs so a disabled group can
+be re-enabled. `GET /api/v1/admin/size-scales` returns the configured scales and
+values, including scales whose group is inactive.
 `POST /api/v1/admin/size-scales` and `PATCH /api/v1/admin/size-scales/{id}` use
 `{ name, groupId, values: string[] }`. The server derives code, namespace,
 English labels and order; the admin screen never edits those fields or subgroup
@@ -972,6 +975,25 @@ A scale or value used by products cannot be removed or moved across namespaces;
 deleting a referenced scale returns `409 CONFLICT` with the number of products
 using it. Legacy value endpoints may remain for compatibility but are no longer
 used by the admin UI and always preserve the same server-managed invariants.
+
+`POST /api/v1/admin/size-scale-groups` creates a filter group from
+`{ label, labelEn }` (both required, max 255). The server derives the group id,
+the `key` used in public filter tokens, the sort order (appended last) and sets
+`active=true`. `PATCH /api/v1/admin/size-scale-groups/{id}` accepts
+`{ label?, labelEn?, active? }`; omitted fields stay unchanged, blank labels are
+rejected, and **`key` is never writable** — it is copied into every scale's
+`filterNamespace` on save, so a mutable key would silently break saved public
+filter links. A key that collides with an existing group returns `409 CONFLICT`;
+when the collision is against a deactivated group the message says to re-enable
+it instead of creating a duplicate. `DELETE /api/v1/admin/size-scale-groups/{id}`
+returns `204` only when no scale references the group, otherwise `409 CONFLICT`
+naming the number of scales. Reads use `products.read`; create, update and delete
+use `products.update` — there is no dedicated size-scale permission. Deactivating
+a group keeps every scale and value row and keeps product saves working (the
+admin validator reads the unfiltered catalog), but removes that group's sizes
+from the public size facet until it is re-enabled. All three writes trigger a
+public catalog revalidation so the storefront filter reflects the change without
+waiting for the cache window.
 
 Admin product read/upsert carries `sizeScaleId`. Saving a product with a size
 option requires a scale and every size option must resolve to a value in that

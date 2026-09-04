@@ -406,7 +406,14 @@ function normalizeContentMutationPath(_contentType) {
   return 'articles'
 }
 
-export function mapValidationErrors(error, translate) {
+/**
+ * @param {unknown} error
+ * @param {Function} [translate] i18n `t`
+ * @param {{ sizeScaleName?: string, getOptionValue?: (variantIndex: number, optionIndex: number) => string }} [context]
+ *   Ngữ cảnh tuỳ chọn để dựng câu lỗi nói rõ sai ở đâu — máy chủ chỉ trả mã lỗi
+ *   và đường dẫn trường, không kèm tên cỡ hay tên bảng cỡ.
+ */
+export function mapValidationErrors(error, translate, context = {}) {
   if (!(error instanceof ApiClientError) || !Array.isArray(error.details)) {
     return {}
   }
@@ -427,7 +434,7 @@ export function mapValidationErrors(error, translate) {
     const rawField = typeof detail.field === 'string' ? detail.field : '_form'
     // Normalize bracket notation variants[0].field -> variants.0.field
     const field = (FIELD_ALIASES[rawField] || rawField).replace(/\[(\d+)\]/g, '.$1')
-    const message = translateValidationMessage(field, detail, translate)
+    const message = translateValidationMessage(field, detail, translate, context)
 
     if (!acc[field]) {
       acc[field] = message
@@ -436,9 +443,41 @@ export function mapValidationErrors(error, translate) {
   }, {})
 }
 
-function translateValidationMessage(field, detail, translate) {
+function translateValidationMessage(field, detail, translate, context = {}) {
   const code = typeof detail?.code === 'string' ? detail.code : ''
   const rawMessage = typeof detail?.message === 'string' ? detail.message : ''
+  const tr = (key, options) => (translate ? translate(key, options) : options.defaultValue)
+
+  // Chốt chặn "cỡ phải thuộc bảng cỡ" (CATALOG_RULE_002/004) trả về câu tiếng Anh.
+  // Dịch theo MÃ lỗi, không theo nội dung câu, để hợp đồng API giữ nguyên.
+  if (field === 'sizeScaleId') {
+    if (code === 'REQUIRED') {
+      return tr('products.detail.sizeScale.errRequired', {
+        defaultValue: 'Sản phẩm có cỡ thì bắt buộc chọn Bảng cỡ áp dụng.',
+      })
+    }
+    if (code === 'NOT_FOUND') {
+      return tr('products.detail.sizeScale.errNotFound', {
+        defaultValue: 'Bảng cỡ này không còn tồn tại. Hãy chọn lại.',
+      })
+    }
+  }
+
+  const sizeValueMatch = /^variants\.(\d+)\.options\.(\d+)\.optionValue$/.exec(field)
+  if (sizeValueMatch && code === 'INVALID_SIZE_SCALE_VALUE') {
+    const value = context.getOptionValue?.(Number(sizeValueMatch[1]), Number(sizeValueMatch[2]))
+    const scale = context.sizeScaleName
+    if (value && scale) {
+      return tr('products.detail.sizeScale.errValueNotInScale', {
+        value,
+        scale,
+        defaultValue: `Cỡ ${value} không có trong bảng ${scale}. Hãy chọn cỡ khác hoặc đổi bảng cỡ.`,
+      })
+    }
+    return tr('products.detail.sizeScale.errValueNotInScaleShort', {
+      defaultValue: 'Cỡ này không có trong bảng cỡ đang chọn. Hãy chọn cỡ khác hoặc đổi bảng cỡ.',
+    })
+  }
 
   if (/^variants\.\d+\.options\.\d+\.attributeValueId$/.test(field)) {
     if (code === 'REQUIRED') {
@@ -613,9 +652,29 @@ export async function fetchProductDetail(productId) {
   }
 }
 
-export async function fetchSizeScaleGroups() {
-  const payload = await requestJson('/admin/size-scale-groups')
+export async function fetchSizeScaleGroups({ includeInactive = false } = {}) {
+  // Nhóm đã tắt không nằm trong danh sách mặc định (ô chọn nhóm chỉ được offer nhóm
+  // đang bật); màn quản lý phải xin thêm, nếu không tắt xong sẽ không bật lại được.
+  const query = includeInactive ? '?includeInactive=true' : ''
+  const payload = await requestJson(`/admin/size-scale-groups${query}`)
   return Array.isArray(payload) ? payload : (payload?.data ?? [])
+}
+
+export async function createSizeScaleGroup(input) {
+  const payload = await requestJson('/admin/size-scale-groups', { method: 'POST', body: input })
+  return payload?.data ?? payload
+}
+
+export async function updateSizeScaleGroup(groupId, input) {
+  const payload = await requestJson(`/admin/size-scale-groups/${groupId}`, {
+    method: 'PATCH',
+    body: input,
+  })
+  return payload?.data ?? payload
+}
+
+export async function deleteSizeScaleGroup(groupId) {
+  await requestJson(`/admin/size-scale-groups/${groupId}`, { method: 'DELETE' })
 }
 
 export async function fetchSizeScales() {

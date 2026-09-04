@@ -1,6 +1,5 @@
 package com.bigbike.bigbike_backend.persistence.entity.catalog;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -36,6 +35,12 @@ public class SizeScaleGroupEntity {
     @Column(nullable = false)
     private boolean active;
 
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    /**
+     * Read-only back-reference. Deliberately NOT cascading: a group delete must never
+     * take its scales — and through them every configured size value — with it. Deleting
+     * a group is only allowed once no scale references it (AdminSizeScaleService.deleteGroup),
+     * and scale/value removal is done explicitly there.
+     */
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
     private List<SizeScaleEntity> scales = new ArrayList<>();
 }

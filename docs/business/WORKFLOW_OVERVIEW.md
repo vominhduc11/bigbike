@@ -27,7 +27,7 @@
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
-| 1 | Owner | Chạy dry-run trên máy chủ; lệnh chỉ tiếp tục khi dấu vết `legacy_id` khớp đúng 1.661 đơn, gồm 388 PENDING và 508 PROCESSING | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, ops script |
+| 1 | Owner | Chạy dry-run trên máy chủ; lệnh chỉ tiếp tục khi dấu vết `legacy_id` khớp đúng 1.660 đơn, gồm 388 PENDING và 508 PROCESSING | `OWNER_CONFIRMED_2026-09-02` | `ORDER_RULE_013`, ops script |
 | 2 | Owner | Chạy execute một lần để ghi đợt + thành viên vào sổ phân loại; chạy lại không nhân đôi và không sửa dòng `orders` | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, `ORDER_RULE_014` |
 | 3 | Sales staff | Mở Đơn hàng ở phạm vi Đơn vận hành mặc định; đổi sang Đơn lịch sử hoặc Tất cả khi tra cứu khách cũ. Đơn lịch sử có nhãn/lý do và chỉ đọc | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `ORDER_RULE_015` |
 | 4 | System, 04:20 giờ Việt Nam | Tìm đơn vận hành vẫn PENDING cũ hơn ngưỡng owner đặt; không có đợt lịch sử active, setting lỗi hoặc danh sách rỗng thì no-op | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_015`, `NOTIFICATION_RULE_002` |

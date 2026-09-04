@@ -5,19 +5,25 @@ import com.bigbike.bigbike_backend.service.security.YouTubeChannelUrlPolicy.Chan
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import okhttp3.ConnectionPool;
+import okhttp3.Dns;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -40,6 +46,7 @@ public class YouTubeHomeVideoClient {
     private static final long MAX_CHANNEL_PAGE_BYTES = 5L * 1024 * 1024;
     private static final long MAX_FEED_BYTES = 512L * 1024;
     private static final long MAX_OEMBED_BYTES = 64L * 1024;
+    private static final int MAX_FEED_ATTEMPTS = 8;
     private static final String FEED_BASE = "https://www.youtube.com/feeds/videos.xml?channel_id=";
     private static final String OEMBED_BASE = "https://www.youtube.com/oembed?format=json&url=";
 
@@ -73,7 +80,7 @@ public class YouTubeHomeVideoClient {
                 ? new FeedReference(FEED_BASE + reference.channelId(), reference.channelId())
                 : discoverFeed(reference.normalizedUrl());
 
-        FetchResult response = httpFetcher.get(
+        FetchResult response = fetchFeedWithRetries(
                 feedReference.feedUrl(),
                 "application/atom+xml,application/xml;q=0.9,text/xml;q=0.8",
                 MAX_FEED_BYTES
@@ -83,6 +90,44 @@ public class YouTubeHomeVideoClient {
         }
 
         return parseFeed(reference.normalizedUrl(), feedReference.channelId(), response.body());
+    }
+
+    private FetchResult fetchFeedWithRetries(String url, String accept, long maxBytes) {
+        FetchResult lastResponse = null;
+        YouTubeFetchException lastFailure = null;
+
+        for (int attempt = 0; attempt < MAX_FEED_ATTEMPTS; attempt++) {
+            try {
+                lastResponse = httpFetcher.get(url, accept, maxBytes);
+                lastFailure = null;
+                if (lastResponse.status() == 200 && !lastResponse.body().isBlank()) {
+                    return lastResponse;
+                }
+                if (!isRetryableFeedResponse(lastResponse)) {
+                    break;
+                }
+            } catch (YouTubeFetchException exception) {
+                lastFailure = exception;
+            }
+        }
+
+        if (lastResponse != null) {
+            return lastResponse;
+        }
+        throw new YouTubeFetchException(
+                "YouTube feed request failed after retrying available nodes.",
+                lastFailure
+        );
+    }
+
+    private static boolean isRetryableFeedResponse(FetchResult response) {
+        int status = response.status();
+        return status == 200
+                || status == 404
+                || status == 408
+                || status == 425
+                || status == 429
+                || status >= 500;
     }
 
     public Availability checkAvailability(String videoId) {
@@ -141,8 +186,8 @@ public class YouTubeHomeVideoClient {
             throw new YouTubeFetchException("YouTube feed root is missing.");
         }
 
-        String feedChannelId = firstText(feed, "yt:channelId");
-        if (!expectedChannelId.equals(feedChannelId)) {
+        String feedChannelId = directChildText(feed, "yt:channelId");
+        if (!expectedChannelId.equals(canonicalFeedChannelId(feedChannelId))) {
             throw new YouTubeFetchException("YouTube feed channel does not match the configured channel.");
         }
 
@@ -200,6 +245,28 @@ public class YouTubeHomeVideoClient {
         return element == null ? null : element.wholeText().trim();
     }
 
+    private static String directChildText(Element parent, String tagName) {
+        for (Element child : parent.children()) {
+            if (tagName.equals(child.tagName())) {
+                return child.wholeText().trim();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * YouTube currently omits the leading {@code UC} in the feed-level channel id while
+     * retaining the full id in the feed URL and every entry. Accept both official forms,
+     * but canonicalize back to the validated full channel id before comparing.
+     */
+    private static String canonicalFeedChannelId(String rawChannelId) {
+        if (YouTubeChannelUrlPolicy.isValidChannelId(rawChannelId)) {
+            return rawChannelId;
+        }
+        String prefixed = rawChannelId == null ? null : "UC" + rawChannelId;
+        return YouTubeChannelUrlPolicy.isValidChannelId(prefixed) ? prefixed : null;
+    }
+
     private static String channelIdFromFeedUrl(String rawUrl) {
         if (rawUrl == null || rawUrl.isBlank()) {
             return null;
@@ -234,6 +301,11 @@ public class YouTubeHomeVideoClient {
 
     private static OkHttpClient defaultHttpClient() {
         return new OkHttpClient.Builder()
+                // YouTube's feed edge nodes can temporarily disagree (some return 404/5xx
+                // while another node returns the valid feed). Do not pin all attempts to
+                // one idle connection; rotate the DNS order and validate the payload after.
+                .dns(new RotatingDns())
+                .connectionPool(new ConnectionPool(0, 1, TimeUnit.SECONDS))
                 .followRedirects(false)
                 .followSslRedirects(false)
                 .connectTimeout(5, TimeUnit.SECONDS)
@@ -241,6 +313,19 @@ public class YouTubeHomeVideoClient {
                 .writeTimeout(5, TimeUnit.SECONDS)
                 .callTimeout(15, TimeUnit.SECONDS)
                 .build();
+    }
+
+    private static final class RotatingDns implements Dns {
+        private final AtomicInteger offset = new AtomicInteger();
+
+        @Override
+        public List<InetAddress> lookup(String hostname) throws UnknownHostException {
+            List<InetAddress> addresses = new ArrayList<>(Dns.SYSTEM.lookup(hostname));
+            if (addresses.size() > 1) {
+                Collections.rotate(addresses, -Math.floorMod(offset.getAndIncrement(), addresses.size()));
+            }
+            return addresses;
+        }
     }
 
     public enum Availability {

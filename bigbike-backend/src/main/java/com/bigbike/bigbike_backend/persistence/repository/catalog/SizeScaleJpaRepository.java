@@ -10,6 +10,9 @@ public interface SizeScaleJpaRepository extends JpaRepository<SizeScaleEntity, S
 
     Optional<SizeScaleEntity> findByCode(String code);
 
+    /** Guard for group deletion: a group with scales must never be removed. */
+    long countByGroup_Id(String groupId);
+
     @Query("select distinct s from SizeScaleEntity s join fetch s.group where s.active = true and s.group.active = true order by s.sortOrder, s.code")
     List<SizeScaleEntity> findAllActiveWithGroup();
 

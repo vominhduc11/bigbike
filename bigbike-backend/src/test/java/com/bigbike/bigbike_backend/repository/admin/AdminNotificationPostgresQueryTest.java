@@ -104,7 +104,7 @@ class AdminNotificationPostgresQueryTest {
         Instant expiredAt = now.minusMonths(7).toInstant();
         Instant retainedAt = now.minusMonths(5).toInstant();
         UUID adminId = UUID.randomUUID();
-        Instant markerAt = now.minusMonths(8).toInstant();
+        Instant markerAt = now.minusMonths(8).toInstant().truncatedTo(ChronoUnit.MICROS);
 
         AdminNotificationReadEntity marker = new AdminNotificationReadEntity();
         marker.setAdminId(adminId);

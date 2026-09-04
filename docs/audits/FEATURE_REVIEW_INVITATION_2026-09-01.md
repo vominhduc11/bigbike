@@ -7,8 +7,9 @@ nhưng giữ luồng gửi tự động. Số đo production được cung cấp
 chưa bật tính năng, chưa có delivery/campaign/opt-out/review thực tế và cấu hình cũ
 là chờ 7 ngày, tối đa 20 thư/ngày. Vì vậy không cần chuyển đổi dữ liệu.
 
-Migration mới được đặt là `V1076__remove_review_invitation_settings.sql` sau khi xác nhận
-`V1075` là migration hiện hành. Migration chỉ xóa ba dòng cấu hình cũ trong
+Sau khi đối chiếu lịch sử production, `V1075`–`V1077` đã thuộc chuỗi migration media;
+migration mới vì vậy được đặt là `V1079__remove_review_invitation_settings.sql`, sau
+`V1078__freeze_store_policy_content.sql`. Migration chỉ xóa ba dòng cấu hình cũ trong
 `site_settings`; không sửa migration đã chạy và không xóa các bảng campaign/delivery/item/
 opt-out/quota.
 

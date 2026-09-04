@@ -1,8 +1,10 @@
 package com.bigbike.bigbike_backend.api.admin;
 
+import com.bigbike.bigbike_backend.api.admin.dto.CreateSizeScaleGroupRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.SizeScaleGroupResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.SizeScaleResponse;
 import com.bigbike.bigbike_backend.api.admin.dto.SizeScaleValueResponse;
+import com.bigbike.bigbike_backend.api.admin.dto.UpdateSizeScaleGroupRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertSizeScaleRequest;
 import com.bigbike.bigbike_backend.api.admin.dto.UpsertSizeScaleValueRequest;
 import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,9 +42,38 @@ public class AdminSizeScaleController extends AdminControllerSupport {
     private final ApiResponseFactory apiResponseFactory;
 
     @GetMapping("/size-scale-groups")
-    public List<SizeScaleGroupResponse> listGroups(HttpServletRequest request) {
+    public List<SizeScaleGroupResponse> listGroups(
+            @RequestParam(name = "includeInactive", defaultValue = "false") boolean includeInactive,
+            HttpServletRequest request) {
         devAdminAuthService.requirePermission(request, "products.read");
-        return sizeScaleService.listGroups();
+        return sizeScaleService.listGroups(includeInactive);
+    }
+
+    @PostMapping("/size-scale-groups")
+    public ApiDataResponse<SizeScaleGroupResponse> createGroup(
+            @Valid @RequestBody CreateSizeScaleGroupRequest payload,
+            HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return apiResponseFactory.data(sizeScaleService.createGroup(payload, resolveAdminId()), request);
+    }
+
+    @PatchMapping("/size-scale-groups/{id}")
+    public ApiDataResponse<SizeScaleGroupResponse> updateGroup(
+            @PathVariable @Pattern(regexp = ID_REGEX) String id,
+            @Valid @RequestBody UpdateSizeScaleGroupRequest payload,
+            HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        return apiResponseFactory.data(
+                sizeScaleService.updateGroup(id, payload, resolveAdminId()), request);
+    }
+
+    @DeleteMapping("/size-scale-groups/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteGroup(
+            @PathVariable @Pattern(regexp = ID_REGEX) String id,
+            HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "products.update");
+        sizeScaleService.deleteGroup(id, resolveAdminId());
     }
 
     @GetMapping("/size-scales")

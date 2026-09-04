@@ -50,7 +50,7 @@ class ReviewInvitationSettingsRemovalMigrationPostgresTest {
 
     private void executeMigration(Statement statement) throws Exception {
         try (InputStream input = Objects.requireNonNull(getClass().getResourceAsStream(
-                "/db/migration/V1076__remove_review_invitation_settings.sql"))) {
+                "/db/migration/V1079__remove_review_invitation_settings.sql"))) {
             statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
         }
     }

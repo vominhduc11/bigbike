@@ -3078,6 +3078,18 @@
             "AdminBearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "required": false,
+            "description": "Include deactivated groups so the group manager can re-enable them.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Size scale groups",
@@ -3097,6 +3109,151 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Create size scale group (admin)",
+        "operationId": "adminCreateSizeScaleGroup",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSizeScaleGroupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created size scale group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SizeScaleGroupDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/size-scale-groups/{id}": {
+      "patch": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Update size scale group (admin)",
+        "operationId": "adminUpdateSizeScaleGroup",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSizeScaleGroupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated size scale group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SizeScaleGroupDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Catalog"
+        ],
+        "summary": "Delete size scale group (admin)",
+        "operationId": "adminDeleteSizeScaleGroup",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -12786,6 +12943,55 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "CreateSizeScaleGroupRequest": {
+        "type": "object",
+        "required": [
+          "label",
+          "labelEn"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "labelEn": {
+            "type": "string",
+            "maxLength": 255
+          }
+        }
+      },
+      "UpdateSizeScaleGroupRequest": {
+        "type": "object",
+        "description": "Partial update; omitted fields stay unchanged. The group key is immutable.",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "labelEn": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SizeScaleGroupDataResponse": {
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SizeScaleGroupResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
           }
         }
       },
