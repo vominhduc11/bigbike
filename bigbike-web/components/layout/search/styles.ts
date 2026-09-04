@@ -6,42 +6,22 @@
 // per the CLAUDE.md keyframe/complex-pseudo exemption). Search reds use
 // --bb-brand-primary (#ff0c09) → text-brand-on-dark (the exact-value token).
 export const preLabelRow =
-  "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1";
+  "flex items-center justify-between border-b border-border bg-card px-4 pt-2 pb-1 max-md:border-0 max-md:bg-transparent max-md:px-0 max-md:pt-0 max-md:pb-2";
 export const preLabel =
   "font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground";
-export const preChips = "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5";
+export const preChips =
+  "flex flex-wrap gap-1.5 px-4 pb-3 pt-2.5 max-md:gap-2 max-md:px-0 max-md:pb-5 max-md:pt-0";
 export const preChip =
-  "inline-flex cursor-pointer items-center gap-[5px] border border-border bg-card px-3 py-[5px] font-cta text-b4-action font-semibold uppercase text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
+  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-3 font-cta text-b4-action font-semibold text-foreground transition-colors duration-fast hover:text-brand-on-dark focus-visible:text-brand-on-dark focus-visible:outline-none";
+export const preContent =
+  "min-h-0 flex-1 overflow-y-auto [overscroll-behavior:contain] max-md:px-6 max-md:pt-4 max-md:pb-[calc(24px_+_env(safe-area-inset-bottom))]";
+export const preSection = "max-md:mb-5";
+export const preRemove =
+  "inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted-foreground transition-colors duration-fast hover:text-foreground focus-visible:text-foreground focus-visible:outline-none";
 export const resultItem =
-  "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none";
+  "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none max-md:px-0";
 export const resultsLabel =
   "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground";
-
-// Mobile-only search body (≤767). The dark 9437 layer is fully overridden by the
-// "whole-site refactor pass" to LIGHT, so these are the merged light values; the
-// panel/form/input/results overlay shell stays in globals.css. Tokens are exact
-// equivalents: bg-background == --bb-bg-page, bg-card == --bb-bg-surface,
-// border-border == --bb-border-subtle, text-muted-foreground == --bb-text-secondary.
-const mFocusRing =
-  "focus-visible:[outline:var(--bb-focus-outline)] focus-visible:[outline-offset:2px]";
-export const mBody =
-  "block md:hidden flex-none min-h-0 overflow-y-auto bg-background px-6 pt-4.5 pb-[calc(24px_+_env(safe-area-inset-bottom))] text-foreground [-webkit-overflow-scrolling:touch]";
-export const mSection = "mb-5.5";
-export const mLabel =
-  "m-0 mb-2 font-cta text-b5-label font-semibold uppercase tracking-normal text-muted-foreground";
-export const mList = "grid [&_svg]:text-muted-foreground";
-export const mListBtn =
-  "flex min-h-11 cursor-pointer items-center gap-3 border-b border-border bg-transparent p-0 text-left font-body text-foreground " +
-  mFocusRing;
-export const mRecentRemove =
-  "flex h-7 w-7 min-h-11 shrink-0 cursor-pointer items-center justify-center border-b border-border bg-transparent p-0 " +
-  mFocusRing;
-export const mChip =
-  "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-border bg-card px-3.5 py-0 font-cta text-b4-action font-semibold uppercase text-foreground [&>svg]:text-brand-on-dark " +
-  mFocusRing;
-export const mGridCard =
-  "grid min-h-11 cursor-pointer gap-0.5 border border-border bg-card px-3 py-2.5 text-left font-body text-foreground no-underline " +
-  mFocusRing;
 
 // ── Search SHELL bundles (were the `.bb-header-search*` overlay rules in
 // globals.css). Dual layout: desktop centered-bar dropdown ↔ mobile (≤767 =
@@ -110,8 +90,8 @@ export const sInput =
   "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:leading-none! " +
   "max-md:min-w-0 max-md:placeholder:text-[color:var(--bb-text-secondary)]";
 export const sResults =
-  "absolute top-full left-10 right-10 z-[1] bg-white [border-top:2px_solid_var(--bb-brand-primary)] " +
+  "absolute top-full left-10 right-10 z-[1] bg-background [border-top:2px_solid_var(--bb-brand-primary)] " +
   "[box-shadow:0_8px_32px_rgba(0,0,0,0.18)] animate-[bb-suggest-in_180ms_var(--bb-ease-standard)_both] motion-reduce:animate-none " +
-  "md:flex md:flex-col md:[max-height:min(520px,calc(100dvh-var(--bb-header-height)-24px))] " +
-  "max-md:static max-md:left-auto max-md:right-auto max-md:flex-[1_1_auto] max-md:min-h-0 max-md:max-h-none " +
-  "max-md:overflow-y-auto max-md:[-webkit-overflow-scrolling:touch] max-md:[box-shadow:none] max-md:animate-none max-md:rounded-none";
+  "md:flex md:flex-col md:overflow-hidden md:[max-height:min(520px,calc(100dvh-var(--bb-header-height)-24px))] " +
+  "max-md:static max-md:left-auto max-md:right-auto max-md:flex max-md:flex-1 max-md:flex-col max-md:min-h-0 max-md:max-h-none " +
+  "max-md:overflow-hidden max-md:[box-shadow:none] max-md:animate-none max-md:rounded-none";
