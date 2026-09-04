@@ -1,8 +1,12 @@
+import type { ImageAsset, ProductPrice } from "@/lib/contracts/public";
+
 export type SearchShortcut = {
   id: string;
   name: string;
   href: string;
   count?: number;
+  image?: ImageAsset | null;
+  price?: ProductPrice | null;
 };
 
 export type SearchShortcuts = {

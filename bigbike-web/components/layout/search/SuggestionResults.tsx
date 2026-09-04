@@ -3,12 +3,12 @@
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { LocalizedLink } from "@/components/i18n/LocalizedLink";
-import { formatVnd, resolveMediaUrl } from "@/lib/utils/format";
 import { toSearchPath } from "@/lib/utils/routes";
-import { MediaImage } from "@/components/ui/MediaImage";
 import type { Locale } from "@/i18n/locale";
 import type { ArticleSuggestion, SearchSuggestion } from "./types";
 import { resultItem, resultsLabel, sResults } from "./styles";
+import { SearchKeyboardHints } from "./SearchKeyboardHints";
+import { SearchProductRowContent } from "./SearchProductRowContent";
 
 // Desktop live results listbox (query ≥1 char, settled): product + article hits,
 // with a sticky "view all" footer. Mounted into the same overlay panel.
@@ -43,9 +43,7 @@ export function SuggestionResults({
         <>
           {/* Scrollable results list — always shows at most max-height of outer container */}
           <div className="md:min-h-0 md:flex-1 md:overflow-y-auto md:[-webkit-overflow-scrolling:touch]">
-            {visibleProducts.length > 0 && (
-              <p className={resultsLabel}>{t("sectionProducts")}</p>
-            )}
+            {visibleProducts.length > 0 && <p className={resultsLabel}>{t("sectionProducts")}</p>}
             {visibleProducts.map((product, index) => (
               <LocalizedLink
                 key={product.id}
@@ -56,26 +54,16 @@ export function SuggestionResults({
                 className={resultItem}
                 role="option"
                 aria-selected={activeIndex === index}
-                onClick={() => { addSearch(trimmedQuery); handleClose(); }}
+                onClick={() => {
+                  addSearch(trimmedQuery);
+                  handleClose();
+                }}
               >
-                {resolveMediaUrl(product.image?.url) ? (
-                  <MediaImage
-                    image={{ ...product.image, url: resolveMediaUrl(product.image?.url)! }}
-                    altFallback={product.name}
-                    width={48}
-                    height={48}
-                    sizes="48px"
-                    className="h-12 w-12 shrink-0 object-contain"
-                  />
-                ) : (
-                  <div className="h-12 w-12 shrink-0 object-contain" aria-hidden />
-                )}
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="truncate text-a5-meta font-medium text-foreground">{product.name}</span>
-                  <span className="text-a5-meta font-bold text-brand-on-dark">
-                    {formatVnd(product.price?.salePrice ?? product.price?.retailPrice)}
-                  </span>
-                </div>
+                <SearchProductRowContent
+                  name={product.name}
+                  price={product.price}
+                  image={product.image}
+                />
               </LocalizedLink>
             ))}
             {visibleArticles.length > 0 && (
@@ -91,10 +79,15 @@ export function SuggestionResults({
                     className={resultItem}
                     role="option"
                     aria-selected={activeIndex === visibleProducts.length + index}
-                    onClick={() => { addSearch(trimmedQuery); handleClose(); }}
+                    onClick={() => {
+                      addSearch(trimmedQuery);
+                      handleClose();
+                    }}
                   >
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="text-a5-meta font-normal text-foreground line-clamp-2">{article.title}</span>
+                      <span className="text-a5-meta font-normal text-foreground line-clamp-2">
+                        {article.title}
+                      </span>
                     </div>
                   </LocalizedLink>
                 ))}
@@ -110,27 +103,23 @@ export function SuggestionResults({
             >
               {t("viewAllResultsBtn", { query: trimmedQuery })}
             </Link>
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-3 pb-2 font-body text-b5-label text-muted-foreground">
-              <span><kbd className="font-cta text-foreground">↑↓</kbd> {t("footerMove")}</span>
-              <span><kbd className="font-cta text-foreground">↵</kbd> {t("footerSelect")}</span>
-              <span><kbd className="font-cta text-foreground">{t("footerEscapeKey")}</kbd> {t("footerClose")}</span>
-              <Link href={searchHref} className="text-brand-on-dark no-underline hover:underline" onClick={handleClose}>
-                {t("footerBrowse")}
-              </Link>
-            </div>
+            <SearchKeyboardHints browseHref={searchHref} handleClose={handleClose} />
           </div>
         </>
       ) : (
-        <div className="px-4 py-5 text-center text-a5-meta text-muted-foreground">
-          <p className="m-0 mb-2">{t("noMatchText", { query: trimmedQuery })}</p>
-          <Link
-            href={searchHref}
-            className="font-semibold text-brand-on-dark no-underline"
-            onClick={handleClose}
-          >
-            {t("noMatchBrowse")}
-          </Link>
-        </div>
+        <>
+          <div className="px-4 py-5 text-center text-a5-meta text-muted-foreground">
+            <p className="m-0 mb-2">{t("noMatchText", { query: trimmedQuery })}</p>
+            <Link
+              href={searchHref}
+              className="font-semibold text-brand-on-dark no-underline"
+              onClick={handleClose}
+            >
+              {t("noMatchBrowse")}
+            </Link>
+          </div>
+          <SearchKeyboardHints browseHref={searchHref} handleClose={handleClose} />
+        </>
       )}
     </div>
   );

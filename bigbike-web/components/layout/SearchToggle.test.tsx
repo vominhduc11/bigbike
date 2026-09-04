@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     isFetching: false,
     refetch: vi.fn(),
   },
+  recentSearches: [] as string[],
 }));
 
 vi.mock("next/navigation", () => ({
@@ -40,7 +41,7 @@ vi.mock("@/lib/hooks/useMediaQueryChange", () => ({
 
 vi.mock("@/lib/hooks/useRecentSearches", () => ({
   useRecentSearches: () => ({
-    searches: [],
+    searches: mocks.recentSearches,
     addSearch: vi.fn(),
     removeSearch: vi.fn(),
     clearAll: vi.fn(),
@@ -58,6 +59,7 @@ describe("SearchToggle", () => {
     mocks.push.mockReset();
     mocks.suggestionState.error = null;
     mocks.suggestionState.isFetching = false;
+    mocks.recentSearches = [];
   });
 
   it("keeps a previous suggestion visible while fetching and leaves close available", () => {
@@ -67,7 +69,9 @@ describe("SearchToggle", () => {
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "mũ bảo" } });
 
     expect(screen.getByRole("option", { name: /mũ bảo hiểm/i })).toBeVisible();
-    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "closeAriaLabel" }));
+    fireEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "closeAriaLabel" }),
+    );
     expect(mocks.closePanel).toHaveBeenCalledOnce();
   });
 
@@ -76,10 +80,49 @@ describe("SearchToggle", () => {
     const input = screen.getByRole("combobox");
     fireEvent.change(input, { target: { value: "mũ" } });
     fireEvent.keyDown(input, { key: "ArrowDown" });
-    expect(screen.getByRole("option", { name: /mũ bảo hiểm/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("option", { name: /mũ bảo hiểm/i })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
 
     fireEvent.keyDown(input, { key: "Enter" });
     expect(mocks.push).toHaveBeenCalledWith("/product/mu-bao-hiem/");
+    expect(mocks.closePanel).toHaveBeenCalledOnce();
+  });
+
+  it("supports keyboard selection in the empty-query state", () => {
+    mocks.recentSearches = ["tai nghe"];
+    render(
+      <SearchToggle
+        shortcuts={{
+          trendingBrands: [{ id: "brand-1", name: "TAICHI", href: "/brands/taichi/" }],
+          suggestedProducts: [],
+          popularCategories: [],
+        }}
+      />,
+    );
+
+    const input = screen.getByRole("combobox");
+    expect(input).toHaveAttribute("aria-expanded", "true");
+    expect(input).toHaveAttribute("aria-controls", "bb-search-suggestions");
+
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(screen.getByRole("option", { name: "tai nghe" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(input).toHaveAttribute("aria-activedescendant", "bb-search-option-0");
+
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(mocks.push).toHaveBeenCalledWith("/tim-kiem/?s=tai%20nghe");
+    expect(mocks.closePanel).toHaveBeenCalledOnce();
+  });
+
+  it("closes the empty-query state with Escape", () => {
+    mocks.recentSearches = ["tai nghe"];
+    render(<SearchToggle />);
+
+    fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
     expect(mocks.closePanel).toHaveBeenCalledOnce();
   });
 });

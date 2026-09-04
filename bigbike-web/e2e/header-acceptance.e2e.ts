@@ -5,6 +5,26 @@ import { expectNoHorizontalOverflow, gotoAndSettle } from "./helpers/ui-quality"
 const PHONE_WIDTHS = [320, 360, 375, 414];
 const DESKTOP_WIDTHS = [1280, 1366, 1440, 1600, 1920];
 const SEARCH_WIDTHS = [1280, 1440, 1920];
+const SEARCH_EMPTY_VIEWPORTS = [
+  { name: "1920x1080", width: 1920, height: 1080 },
+  { name: "1600x900", width: 1600, height: 900 },
+  { name: "1366x768", width: 1366, height: 768 },
+] as const;
+const SEARCH_HISTORY_FIXTURES = [
+  { name: "0 recent searches", items: [] },
+  { name: "3 recent searches", items: ["tai nghe", "Alpinestars", "shoei"] },
+  {
+    name: "5 recent searches",
+    items: [
+      "tai nghe",
+      "Alpinestars",
+      "shoei",
+      "Balo phượt GIVI EA104C",
+      "Găng tay moto mùa hè Komine GK-265 R-Spec Racing",
+    ],
+  },
+] as const;
+const RECENT_SEARCHES_STORAGE_KEY = "bb_recent_searches";
 const VI_TRUNCATED_CATEGORY_LABELS = [
   "Giá đỡ điện thoại và phụ kiện camera hành trình",
   "Đồ lót giáp, đồ mưa và phụ kiện moto",
@@ -29,6 +49,27 @@ function mobileMenuTrigger(page: Page) {
 
 function searchTrigger(page: Page) {
   return page.locator("button.bb-header-search-trigger");
+}
+
+function searchDialog(page: Page) {
+  return page
+    .getByRole("dialog")
+    .filter({ has: page.getByRole("combobox") })
+    .first();
+}
+
+async function openSearchWithHistory(page: Page, recentSearches: readonly string[]) {
+  await page.addInitScript(
+    ({ key, value }) => {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    },
+    { key: RECENT_SEARCHES_STORAGE_KEY, value: recentSearches },
+  );
+  await gotoAndSettle(page, "/", { scroll: false });
+  await searchTrigger(page).click();
+  const dialog = searchDialog(page);
+  await expect(dialog).toBeVisible();
+  return dialog;
 }
 
 test.describe("Header acceptance — compact phones", () => {
@@ -568,6 +609,159 @@ test.describe("Header acceptance — search dropdown alignment", () => {
       expect(edges[1].right, `suggestion right edge @ ${width}px`).toBeCloseTo(edges[0].right, 0);
     });
   }
+});
+
+test.describe("Header acceptance — search empty state", () => {
+  for (const viewport of SEARCH_EMPTY_VIEWPORTS) {
+    test(`${viewport.name} keeps the empty state inside the viewport and scrollable`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      const dialog = await openSearchWithHistory(page, SEARCH_HISTORY_FIXTURES[2].items);
+      const suggestions = dialog.locator("#bb-search-suggestions");
+      await expect(suggestions).toBeVisible();
+
+      const brandOptions = suggestions.locator('[data-search-section="brands"] [role="option"]');
+      const productOptions = suggestions.locator(
+        '[data-search-section="products"] [role="option"]',
+      );
+      if ((await brandOptions.count()) < 5 || (await productOptions.count()) < 3) {
+        test.skip(true, "Runtime catalog has fewer than 5 brands or 3 suggested products");
+        return;
+      }
+
+      const metrics = await suggestions.evaluate((element) => {
+        const panel = element.getBoundingClientRect();
+        const scrollRegion = element.querySelector<HTMLElement>("[data-search-scroll-region]");
+        const keyboardHints = element.querySelector<HTMLElement>("[data-search-keyboard-hints]");
+        if (!scrollRegion || !keyboardHints)
+          throw new Error("Search empty state regions are missing");
+        const scroll = scrollRegion.getBoundingClientRect();
+        const hints = keyboardHints.getBoundingClientRect();
+        scrollRegion.scrollTop = scrollRegion.scrollHeight;
+        return {
+          panel: { left: panel.left, right: panel.right, bottom: panel.bottom },
+          scroll: {
+            clientHeight: scrollRegion.clientHeight,
+            scrollHeight: scrollRegion.scrollHeight,
+            top: scroll.top,
+            bottom: scroll.bottom,
+            scrollTop: scrollRegion.scrollTop,
+          },
+          hints: { top: hints.top, bottom: hints.bottom },
+          viewport: { width: window.innerWidth, height: window.innerHeight },
+        };
+      });
+
+      expect(metrics.panel.left, `panel left @ ${viewport.name}`).toBeGreaterThanOrEqual(-1);
+      expect(metrics.panel.right, `panel right @ ${viewport.name}`).toBeLessThanOrEqual(
+        metrics.viewport.width + 1,
+      );
+      expect(metrics.panel.bottom, `panel bottom @ ${viewport.name}`).toBeLessThanOrEqual(
+        metrics.viewport.height + 1,
+      );
+      expect(metrics.scroll.scrollHeight, `scroll content @ ${viewport.name}`).toBeGreaterThan(
+        metrics.scroll.clientHeight,
+      );
+      expect(metrics.scroll.scrollTop, `scroll region moves @ ${viewport.name}`).toBeGreaterThan(0);
+      expect(
+        metrics.hints.bottom,
+        `keyboard footer remains visible @ ${viewport.name}`,
+      ).toBeLessThanOrEqual(metrics.panel.bottom + 1);
+      await expectNoHorizontalOverflow(page, `empty search state @ ${viewport.name}`);
+    });
+  }
+
+  for (const fixture of SEARCH_HISTORY_FIXTURES) {
+    test(`${fixture.name} renders the expected recent-search count`, async ({ page }) => {
+      await page.setViewportSize({ width: 1366, height: 768 });
+      const dialog = await openSearchWithHistory(page, fixture.items);
+      const suggestions = dialog.locator("#bb-search-suggestions");
+      if ((await suggestions.count()) === 0) {
+        test.skip(true, "Runtime catalog has no empty-state shortcuts");
+        return;
+      }
+      await expect(suggestions).toBeVisible();
+      await expect(
+        suggestions.locator('[data-search-section="recent"] [role="option"]'),
+      ).toHaveCount(fixture.items.length);
+      expect(
+        await suggestions.locator('[data-search-section="brands"] [role="option"]').count(),
+      ).toBeLessThanOrEqual(5);
+      expect(
+        await suggestions.locator('[data-search-section="products"] [role="option"]').count(),
+      ).toBeLessThanOrEqual(3);
+      await expectNoHorizontalOverflow(page, `${fixture.name} @ 1366x768`);
+    });
+  }
+
+  test("click, keyboard navigation, Escape and clearing the query use the same panel", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const clickDialog = await openSearchWithHistory(page, SEARCH_HISTORY_FIXTURES[1].items);
+    const suggestions = clickDialog.locator("#bb-search-suggestions");
+    await expect(suggestions).toBeVisible();
+
+    await suggestions.locator('[data-search-section="recent"] [role="option"]').first().click();
+    await expect.poll(() => new URL(page.url()).searchParams.get("s")).toBe("tai nghe");
+
+    const keyboardDialog = await openSearchWithHistory(page, SEARCH_HISTORY_FIXTURES[1].items);
+    const keyboardInput = keyboardDialog.getByRole("combobox");
+    await keyboardInput.press("ArrowDown");
+    await expect(keyboardInput).toHaveAttribute("aria-expanded", "true");
+    await expect(keyboardInput).toHaveAttribute("aria-controls", "bb-search-suggestions");
+    await expect(keyboardInput).toHaveAttribute("aria-activedescendant", "bb-search-option-0");
+    await expect(keyboardDialog.locator("#bb-search-option-0")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await keyboardInput.press("Enter");
+    await expect.poll(() => new URL(page.url()).searchParams.get("s")).toBe("tai nghe");
+
+    const transitionDialog = await openSearchWithHistory(page, SEARCH_HISTORY_FIXTURES[1].items);
+    const transitionInput = transitionDialog.getByRole("combobox");
+    await transitionInput.fill("tai");
+    await expect(transitionInput).toHaveValue("tai");
+    await transitionInput.fill("");
+    await expect(transitionInput).toHaveValue("");
+    await expect(transitionDialog.locator("#bb-search-suggestions")).toBeVisible();
+    await transitionInput.press("Escape");
+    await expect(transitionDialog).toBeHidden();
+  });
+
+  test("mobile keeps the footer visible while the empty state scrolls", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const dialog = await openSearchWithHistory(page, SEARCH_HISTORY_FIXTURES[2].items);
+    const suggestions = dialog.locator("#bb-search-suggestions");
+    await expect(suggestions).toBeVisible();
+    const productOptions = suggestions.locator('[data-search-section="products"] [role="option"]');
+    if ((await productOptions.count()) < 3) {
+      test.skip(true, "Runtime catalog has fewer than 3 suggested products");
+      return;
+    }
+
+    const metrics = await suggestions.evaluate((element) => {
+      const panel = element.getBoundingClientRect();
+      const scrollRegion = element.querySelector<HTMLElement>("[data-search-scroll-region]");
+      const keyboardHints = element.querySelector<HTMLElement>("[data-search-keyboard-hints]");
+      if (!scrollRegion || !keyboardHints) throw new Error("Search mobile regions are missing");
+      scrollRegion.scrollTop = scrollRegion.scrollHeight;
+      const hints = keyboardHints.getBoundingClientRect();
+      return {
+        panelBottom: panel.bottom,
+        scrollHeight: scrollRegion.scrollHeight,
+        clientHeight: scrollRegion.clientHeight,
+        scrollTop: scrollRegion.scrollTop,
+        hintsBottom: hints.bottom,
+      };
+    });
+    expect(metrics.panelBottom).toBeLessThanOrEqual(845);
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+    expect(metrics.scrollTop).toBeGreaterThan(0);
+    expect(metrics.hintsBottom).toBeLessThanOrEqual(845);
+    await expectNoHorizontalOverflow(page, "mobile empty search state @ 390x844");
+  });
 });
 
 test.describe("Header acceptance — image priority", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Loader2, Search, X } from "lucide-react";
@@ -10,10 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 import { useRecentSearches } from "@/lib/hooks/useRecentSearches";
-import {
-  SearchSuggestionsError,
-  useSearchSuggestions,
-} from "@/lib/query/search-suggestions";
+import { SearchSuggestionsError, useSearchSuggestions } from "@/lib/query/search-suggestions";
 import { cn } from "@/lib/utils";
 import { toArticlePath, toProductPath, toSearchPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
@@ -34,7 +31,6 @@ import {
 } from "./search/styles";
 import { PreSuggestions } from "./search/PreSuggestions";
 import { SuggestionResults } from "./search/SuggestionResults";
-import { MobileSearchBody } from "./search/MobileSearchBody";
 
 type SearchToggleProps = {
   shortcuts?: SearchShortcuts;
@@ -47,6 +43,8 @@ const EMPTY_SHORTCUTS: SearchShortcuts = {
 };
 const EMPTY_PRODUCT_SUGGESTIONS: SearchSuggestion[] = [];
 const EMPTY_ARTICLE_SUGGESTIONS: ArticleSuggestion[] = [];
+
+type SearchNavigationOption = { kind: "recent"; value: string } | { kind: "link"; href: string };
 
 function truncateQueryForDisplay(value: string) {
   const characters = Array.from(value);
@@ -83,32 +81,51 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
   const isDebouncing = trimmedQuery.length >= 1 && trimmedQuery !== debouncedQuery;
   const isLoading = isDebouncing || suggestLoading;
   const searchError = suggestionError instanceof SearchSuggestionsError ? suggestionError : null;
-  const failureKind = queryTooLong || searchError?.status === 400
-    ? "validation"
-    : searchError?.status === 429
-      ? "rate-limit"
-      : suggestionError
-        ? "system"
-        : null;
+  const failureKind =
+    queryTooLong || searchError?.status === 400
+      ? "validation"
+      : searchError?.status === 429
+        ? "rate-limit"
+        : suggestionError
+          ? "system"
+          : null;
   const showFailure = open && trimmedQuery.length > 0 && failureKind !== null;
-  const showSuggestions = open && trimmedQuery.length >= 1 && debouncedQuery.length >= 1 && Boolean(suggestionResult) && !showFailure;
+  const showSuggestions =
+    open &&
+    trimmedQuery.length >= 1 &&
+    debouncedQuery.length >= 1 &&
+    Boolean(suggestionResult) &&
+    !showFailure;
   const hasShortcuts =
-    shortcuts.trendingBrands.length > 0 ||
-    shortcuts.suggestedProducts.length > 0 ||
-    shortcuts.popularCategories.length > 0;
+    shortcuts.trendingBrands.length > 0 || shortcuts.suggestedProducts.length > 0;
   const showPreSuggestions = open && !trimmedQuery && (recentSearches.length > 0 || hasShortcuts);
 
-  const selectableItems = useMemo(
-    () => [
-      ...(suggestionResult?.products ?? []).slice(0, 5).map((product) => ({
-        href: toProductPath(locale === "en" ? product.slugEn || product.slug : product.slug, locale),
-      })),
-      ...(suggestionResult?.articles ?? []).slice(0, 3).map((article) => ({
-        href: toArticlePath(locale === "en" ? article.slugEn || article.slug : article.slug, locale),
-      })),
-    ],
-    [locale, suggestionResult],
-  );
+  const selectableItems: SearchNavigationOption[] = !trimmedQuery
+    ? [
+        ...recentSearches.slice(0, 5).map((value) => ({ kind: "recent" as const, value })),
+        ...shortcuts.trendingBrands
+          .slice(0, 5)
+          .map((item) => ({ kind: "link" as const, href: item.href })),
+        ...shortcuts.suggestedProducts
+          .slice(0, 3)
+          .map((item) => ({ kind: "link" as const, href: item.href })),
+      ]
+    : [
+        ...(suggestionResult?.products ?? []).slice(0, 5).map((product) => ({
+          kind: "link" as const,
+          href: toProductPath(
+            locale === "en" ? product.slugEn || product.slug : product.slug,
+            locale,
+          ),
+        })),
+        ...(suggestionResult?.articles ?? []).slice(0, 3).map((article) => ({
+          kind: "link" as const,
+          href: toArticlePath(
+            locale === "en" ? article.slugEn || article.slug : article.slug,
+            locale,
+          ),
+        })),
+      ];
 
   useEffect(() => {
     if (!open) return;
@@ -144,6 +161,10 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
   function openActiveSuggestion() {
     const selected = selectableItems[activeIndex];
     if (!selected) return false;
+    if (selected.kind === "recent") {
+      runSearch(selected.value);
+      return true;
+    }
     if (trimmedQuery) addSearch(trimmedQuery);
     setQuery("");
     setActiveIndex(-1);
@@ -164,7 +185,8 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
       if (selectableItems.length === 0) return;
       event.preventDefault();
       setActiveIndex((current) => {
-        if (event.key === "ArrowDown") return (current + 1 + selectableItems.length) % selectableItems.length;
+        if (event.key === "ArrowDown")
+          return (current + 1 + selectableItems.length) % selectableItems.length;
         return current <= 0 ? selectableItems.length - 1 : current - 1;
       });
       return;
@@ -176,11 +198,15 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
     }
   }
 
-  const failureCopy = failureKind === "rate-limit"
-    ? { title: t("rateLimitTitle"), description: t("rateLimitDescription") }
-    : failureKind === "validation"
-      ? { title: t("validationErrorTitle"), description: t("validationErrorDescription", { query: currentSearchQueryDisplay }) }
-      : { title: t("systemErrorTitle"), description: t("systemErrorDescription") };
+  const failureCopy =
+    failureKind === "rate-limit"
+      ? { title: t("rateLimitTitle"), description: t("rateLimitDescription") }
+      : failureKind === "validation"
+        ? {
+            title: t("validationErrorTitle"),
+            description: t("validationErrorDescription", { query: currentSearchQueryDisplay }),
+          }
+        : { title: t("systemErrorTitle"), description: t("systemErrorDescription") };
 
   return (
     <div
@@ -232,9 +258,13 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
               aria-label={t("inputAriaLabel")}
               role="combobox"
               aria-autocomplete="list"
-              aria-expanded={showSuggestions}
-              aria-controls={showSuggestions ? "bb-search-suggestions" : undefined}
-              aria-activedescendant={activeIndex >= 0 ? `bb-search-option-${activeIndex}` : undefined}
+              aria-expanded={showSuggestions || showPreSuggestions}
+              aria-controls={
+                showSuggestions || showPreSuggestions ? "bb-search-suggestions" : undefined
+              }
+              aria-activedescendant={
+                activeIndex >= 0 ? `bb-search-option-${activeIndex}` : undefined
+              }
               className={sInput}
             />
 
@@ -274,11 +304,19 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
           </span>
 
           {showFailure && (
-            <div className={cn(sResults, "px-4 py-5 text-center text-a5-meta text-muted-foreground")} role="alert">
+            <div
+              className={cn(sResults, "px-4 py-5 text-center text-a5-meta text-muted-foreground")}
+              role="alert"
+            >
               <p className="m-0 font-semibold text-foreground">{failureCopy.title}</p>
               <p className="m-0 mt-1 break-words">{failureCopy.description}</p>
               {failureKind !== "validation" && (
-                <Button type="button" variant="outline" className="mt-3" onClick={() => void refetch()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => void refetch()}
+                >
                   {t("retry")}
                 </Button>
               )}
@@ -293,6 +331,7 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
               removeSearch={removeSearch}
               clearAll={clearAll}
               handleClose={handleClose}
+              activeIndex={activeIndex}
             />
           )}
 
@@ -304,17 +343,6 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
               addSearch={addSearch}
               handleClose={handleClose}
               activeIndex={activeIndex}
-            />
-          )}
-
-          {!showSuggestions && !showFailure && (
-            <MobileSearchBody
-              recentSearches={recentSearches}
-              shortcuts={shortcuts}
-              runSearch={runSearch}
-              removeSearch={removeSearch}
-              clearAll={clearAll}
-              handleClose={handleClose}
             />
           )}
         </div>
