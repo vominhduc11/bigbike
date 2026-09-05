@@ -73,7 +73,6 @@ public class ChatService {
                 "AI".equals(availability.mode()) ? "AI" : "CONTACT",
                 conversationLimit,
                 settings.contacts(),
-                ChatAssistantSettings.DEFAULT_MEMORY_DAYS,
                 new ChatImageAvailabilityResponse(
                         imagesEnabled, ChatImageStorageService.MAX_UPLOAD_BYTES, 1,
                         imageSettings.conversationLimit(), imageSettings.dailyLimit(),
@@ -159,16 +158,16 @@ public class ChatService {
             saveCustomerMessage(
                     conversation, request.getMessage(), request.getRequestId(),
                     countCustomerTurn);
-            if ("CONTACT_FALLBACK".equals(decision.source())) {
+            if (ChatMessageSource.CONTACT_FALLBACK.equals(decision.source())) {
                 List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> contactActions =
                         ChatActionCatalog.choose(
                                 request.getMessage(), "CONTACT", List.of(), List.of(), settings.contacts());
                 ChatSalesAdvisorService.Advice advice = salesAdvice(
                         conversation, request, settings,
                         ChatToolService.ConversationContext.empty(), decision.answer(), List.of(),
-                        "CONTACT_FALLBACK", "CONTACT", null, contactActions);
+                        ChatMessageSource.CONTACT_FALLBACK, "CONTACT", null, contactActions);
                 saveAssistantMessage(
-                        conversation, advice.answer(), "CONTACT_FALLBACK", false, List.of(), 0,
+                        conversation, advice.answer(), ChatMessageSource.CONTACT_FALLBACK, false, List.of(), 0,
                         request.getRequestId(), "PLAIN_TEXT", "CONTACT", advice.actions(),
                         null, advice);
                 conversationRepo.save(conversation);
@@ -178,7 +177,7 @@ public class ChatService {
             }
             finishTurnIfNeeded(conversation, maxTurns);
             boolean ended = conversation.getEndedReason() != null;
-            String refusalKind = "OUT_OF_SCOPE".equals(decision.source())
+            String refusalKind = ChatMessageSource.OUT_OF_SCOPE.equals(decision.source())
                     ? "OUT_OF_SCOPE" : "REFUSAL";
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> refusalActions =
                     ChatActionCatalog.choose(
@@ -202,7 +201,7 @@ public class ChatService {
             logFallback(availabilityFallbackReason(availability.reason()), FallbackFlow.CONTACT_GATE,
                     "NONE", 0, false);
             saveAssistantMessage(conversation, fallback,
-                    "CONTACT_FALLBACK", false, List.of(), 0,
+                    ChatMessageSource.CONTACT_FALLBACK, false, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "CONTACT", List.of(),
                     null, null);
             return contactResponse(
@@ -247,7 +246,8 @@ public class ChatService {
                     tool.requiredDisclosures(), tool.catalogTotals());
             if (checked.isEmpty()) {
                 String reason = responseGuard.rejectionReason(
-                        tool.localAnswer(), tool.products(), request.getLang(), List.of(),
+                        tool.localAnswer(), tool.products(), request.getLang(),
+                        publicShopPhoneSources(settings),
                         tool.requiredDisclosures(), tool.catalogTotals());
                 return recoverableClarification(
                         conversation, settings, request.getLang(), false,
@@ -273,7 +273,7 @@ public class ChatService {
                     tool.clarification() == null ? ChatActionCatalog.choose(
                             request.getMessage(), responseKind, safe.products(), tool.actions(), settings.contacts())
                             : List.of();
-            String responseSource = clarifiedDuplicate ? "TOOL" : tool.source();
+            String responseSource = clarifiedDuplicate ? ChatMessageSource.TOOL : tool.source();
             ChatSalesAdvisorService.Advice advice = salesAdvice(
                     conversation, request, settings, referenceContext,
                     safe.answer(), safe.products(), responseSource, responseKind,
@@ -310,7 +310,7 @@ public class ChatService {
         if (!chatAiQuotaService.tryReserve(settings.dailyLimit())) {
             conversation.setEndedReason("DAILY_LIMIT_REACHED");
             String fallback = contactFallbackText(request.getLang(), FallbackCause.DAILY_LIMIT);
-            saveAssistantMessage(conversation, fallback, "CONTACT_FALLBACK", false, List.of(), 0,
+            saveAssistantMessage(conversation, fallback, ChatMessageSource.CONTACT_FALLBACK, false, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "CONTACT", List.of(),
                     null, null);
             logFallback(ChatFallbackReason.DAILY_LIMIT_REACHED, FallbackFlow.QUOTA_GATE,
@@ -347,7 +347,7 @@ public class ChatService {
                     ChatActionCatalog.choose(
                             request.getMessage(), "REFUSAL", List.of(), List.of(), settings.contacts());
             saveAssistantMessage(
-                    conversation, refusal, "CONTENT_REFUSAL", true, List.of(), 0,
+                    conversation, refusal, ChatMessageSource.CONTENT_REFUSAL, true, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "REFUSAL", safetyActions,
                     null, null);
             conversationRepo.save(conversation);
@@ -364,7 +364,7 @@ public class ChatService {
                     ChatActionCatalog.choose(
                             request.getMessage(), "CONTACT", List.of(), List.of(), settings.contacts());
             saveAssistantMessage(
-                    conversation, apology, "PROVIDER_UNAVAILABLE", true, List.of(), 0,
+                    conversation, apology, ChatMessageSource.PROVIDER_UNAVAILABLE, true, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "CONTACT", actions,
                     null, null);
             logFallback(ChatFallbackReason.AI_NO_SAFE_RESULT, FallbackFlow.AI, "NONE", 0, false);
@@ -449,7 +449,7 @@ public class ChatService {
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> responseActions =
                 ChatActionCatalog.choose(
                         request.getMessage(), responseKind, safe.products(), proposedActions, settings.contacts());
-        String responseSource = recoveredFromGuard || clarifiedDuplicate ? "TOOL" : hybridAnswer.source();
+        String responseSource = recoveredFromGuard || clarifiedDuplicate ? ChatMessageSource.TOOL : hybridAnswer.source();
         ChatSalesAdvisorService.Advice advice = salesAdvice(
                 conversation, request, settings, referenceContext,
                 safe.answer(), safe.products(), responseSource, responseKind,
@@ -606,7 +606,7 @@ public class ChatService {
             ChatAssistantSettings.Snapshot settings
     ) {
         AiChatClient.Answer answer = hybridAnswer.answer();
-        if ("TOOL".equals(hybridAnswer.source())) {
+        if (ChatMessageSource.TOOL.equals(hybridAnswer.source())) {
             return responseGuard.check(
                     answer.answer(),
                     hybridAnswer.products(),
@@ -675,6 +675,11 @@ public class ChatService {
             ChatAssistantSettings.Snapshot settings
     ) {
         if (!hybridAnswer.executedTools().contains(ChatToolRegistry.GET_SHOP_INFO)) return List.of();
+        return publicShopPhoneSources(settings);
+    }
+
+    /** The shop's own published contact numbers are never a phone echo. */
+    private static List<String> publicShopPhoneSources(ChatAssistantSettings.Snapshot settings) {
         return java.util.stream.Stream.of(
                         settings.contacts().hotline(),
                         settings.contacts().zaloDisplay(),
@@ -903,6 +908,15 @@ public class ChatService {
             UUID requestId,
             boolean countAsSubstantiveTurn
     ) {
+        // A turn is not wrapped in one transaction on purpose: the provider call must never hold a
+        // database connection. That means this row can already be committed while the reply insert
+        // fails, so a retry with the same requestId must reuse the stored question instead of
+        // hitting uk_chat_messages_request_role and burning the requestId for good.
+        if (requestId != null) {
+            Optional<ChatMessageEntity> alreadyStored = messageRepo.findFirstByRequestIdAndRole(
+                    requestId, "CUSTOMER");
+            if (alreadyStored.isPresent()) return alreadyStored.get();
+        }
         conversation.setTurnCount(conversation.getTurnCount() + 1);
         if (countAsSubstantiveTurn) {
             conversation.setCountedTurns(conversation.getCountedTurns() + 1);
@@ -913,7 +927,7 @@ public class ChatService {
         message.setSequenceNo(nextMessageSequence(conversation.getId()));
         message.setRole("CUSTOMER");
         message.setContent(content.trim());
-        message.setSource("TOOL");
+        message.setSource(ChatMessageSource.TOOL);
         message.setRequestId(requestId);
         return messageRepo.save(message);
     }
@@ -938,7 +952,7 @@ public class ChatService {
         }
         boolean repeated = messageRepo.findFirstByConversationIdAndRoleOrderByCreatedAtDesc(
                         conversation.getId(), "ASSISTANT")
-                .map(message -> "CONTACT_FALLBACK".equals(message.getSource())
+                .map(message -> ChatMessageSource.CONTACT_FALLBACK.equals(message.getSource())
                         || isRecoverableClarificationText(message.getContent()))
                 .orElse(false);
         String answer = repeated
@@ -950,7 +964,7 @@ public class ChatService {
                 guardReason, productCount, false);
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions =
                 ChatActionCatalog.choose("", "CLARIFICATION", List.of(), List.of(), settings.contacts());
-        saveAssistantMessage(conversation, answer, "CONTACT_FALLBACK", aiCalled, List.of(), 0,
+        saveAssistantMessage(conversation, answer, ChatMessageSource.CONTACT_FALLBACK, aiCalled, List.of(), 0,
                 requestId, "PLAIN_TEXT", "CLARIFICATION", actions,
                 null, null);
         conversationRepo.save(conversation);
@@ -984,9 +998,18 @@ public class ChatService {
                     answer, products, List.of(), conversation.getSalesStage(),
                     "ANSWERED", null, actions);
         }
-        return salesAdvisorService.advise(
+        ChatSalesAdvisorService.Advice advice = salesAdvisorService.advise(
                 conversation, request.getMessage(), request.getLang(), settings,
                 context, answer, products, source, resultKind, clarification, actions);
+        // The advisor runs after the guard and may rewrite or extend the reply, so its output has
+        // to face the same gate. If the rewrite would not pass, keep the answer that already did
+        // rather than losing the turn.
+        Optional<ChatResponseGuard.CheckedAnswer> rechecked = responseGuard.check(
+                advice.answer(), advice.products(), request.getLang());
+        if (rechecked.isPresent()) return advice;
+        return new ChatSalesAdvisorService.Advice(
+                answer, products, advice.crossSellProducts(), advice.salesStage(),
+                advice.outcomeCode(), advice.nextStep(), advice.actions());
     }
 
     private static String repeatedFallbackText(String lang) {
@@ -1034,7 +1057,9 @@ public class ChatService {
         message.setSequenceNo(nextMessageSequence(conversation.getId()));
         message.setRole("ASSISTANT");
         message.setContent(content);
-        message.setSource(source);
+        // Fail loudly here instead of letting an unknown value become a database rejection that
+        // silently loses a reply the assistant already composed (DATA_CONTRACT.md chat_messages).
+        message.setSource(ChatMessageSource.require(source));
         message.setRequestId(requestId);
         message.setAnswerFormat(answerFormat);
         message.setResultKind(resultKind);
@@ -1370,7 +1395,7 @@ public class ChatService {
             case DAILY_LIMIT -> "Trợ lý BigBike đã dùng hết lượt tư vấn tự động trong hôm nay. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp.";
             case SERVICE_NOT_READY -> "Trợ lý BigBike hiện chưa sẵn sàng. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp.";
             case PROVIDER_UNAVAILABLE -> "Lần tra này chưa hoàn tất. Anh/chị vui lòng thử lại bằng tên mẫu hoặc chi tiết cần kiểm tra, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.";
-            case SAFETY_REVIEW -> "Em chưa có đủ dữ liệu đã xác minh để trả lời rõ mà không đoán. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.";
+            case SAFETY_REVIEW -> "Em chưa có đủ thông tin để trả lời chính xác câu này. Anh/chị liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.";
             case DIRECT_CONTACT -> "Trường hợp này cần BigBike kiểm tra trực tiếp để không đưa ra cam kết ngoài chính sách. Anh/chị vui lòng liên hệ qua Hotline, Zalo hoặc Messenger để được hỗ trợ.";
         };
     }

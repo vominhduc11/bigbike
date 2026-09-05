@@ -81,13 +81,16 @@ public class ChatImageService {
         }
 
         ChatImageEntity image = new ChatImageEntity();
-        image.setId(UUID.randomUUID());
+        // Leave the identifier to @GeneratedValue. Assigning it here made Spring Data treat a brand
+        // new row as detached and call merge(); Hibernate then found no row and threw a stale-state
+        // error, so every customer image upload failed with 409 CONCURRENT_MODIFICATION.
         image.setRequestId(requestId);
         image.setConversationId(conversation.getId());
         image.setStatus("PENDING");
         image.setExpiresAt(conversation.getExpiresAt());
+        // requestId is unique per upload, so it is a stable object key without needing the row id.
         ChatImageStorageService.StoredImage stored = storageService.store(
-                conversation.getId(), image.getId(), file);
+                conversation.getId(), requestId, file);
         registerRollbackCleanup(stored);
         try {
             image.setStorageBucket(stored.bucket());
@@ -341,22 +344,22 @@ public class ChatImageService {
                     english
                             ? "I’ve recorded the damaged-product image. I cannot decide warranty eligibility from an image; please contact BigBike through Hotline, Zalo or Messenger for help."
                             : "Em đã ghi nhận ảnh sản phẩm bị lỗi/hỏng. Em không tự kết luận bảo hành chỉ từ ảnh; anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.",
-                    "CONTACT_FALLBACK", "CONTACT", List.of(), true);
+                    ChatMessageSource.CONTACT_FALLBACK, "CONTACT", List.of(), true);
             case "ORDER_DOCUMENT" -> new ImageTurnResult(
                     english
                             ? "I cannot use numbers or text in this image to confirm an order. Please sign in and open your order history, or use BigBike’s order lookup with the original order details."
                             : "Em không dùng số hoặc chữ trên ảnh để khẳng định thông tin đơn. Anh/chị vui lòng đăng nhập xem Lịch sử đơn hàng, hoặc tra đơn bằng thông tin gốc đã nhận từ BigBike.",
-                    "TOOL", "ANSWER", List.of(), true);
+                    ChatMessageSource.TOOL, "ANSWER", List.of(), true);
             case "SIZE_FROM_PERSON" -> new ImageTurnResult(
                     english
                             ? "I cannot estimate a helmet size from a head or body photo. Please use a measuring tape around the widest part of your head, then compare that measurement with the product’s saved size chart. You can also contact BigBike through Hotline, Zalo or Messenger."
                             : "Em không đoán size mũ từ ảnh đầu hoặc ảnh người. Anh/chị cần dùng thước dây đo vòng qua phần rộng nhất của đầu, rồi đối chiếu bảng size đã lưu của từng mẫu. Anh/chị cũng có thể liên hệ BigBike qua Hotline, Zalo hoặc Messenger.",
-                    "TOOL", "ANSWER", List.of(), true);
+                    ChatMessageSource.TOOL, "ANSWER", List.of(), true);
             case "UNRELATED" -> new ImageTurnResult(
                     english
                             ? "I cannot help analyze this image. I can assist with BigBike products, protective gear, orders and published shop policies."
                             : "Em chưa thể hỗ trợ phân tích ảnh này. Em có thể giúp về sản phẩm, đồ bảo hộ, đơn hàng và chính sách đã công bố của BigBike.",
-                    "OUT_OF_SCOPE", "REFUSAL", List.of(), true);
+                    ChatMessageSource.OUT_OF_SCOPE, "REFUSAL", List.of(), true);
             case "PRODUCT_SEARCH" -> productResult(analysis, context, lang);
             default -> unknownResult(lang, true);
         };
@@ -389,7 +392,7 @@ public class ChatImageService {
                             + ", which BigBike currently sells. This is visual similarity only, not confirmation that it is the same product; please open the model below to compare it yourself."
                     : "Ảnh này trông giống mẫu " + card.name()
                             + " bên em đang bán. Đây chỉ là mức độ giống qua hình, không phải khẳng định cùng một sản phẩm; anh/chị vui lòng mở mẫu bên dưới để tự đối chiếu.";
-            return new ImageTurnResult(answer, "TOOL", "PRODUCT_RESULTS", List.of(card), true);
+            return new ImageTurnResult(answer, ChatMessageSource.TOOL, "PRODUCT_RESULTS", List.of(card), true);
         }
         String resolvedGroup = group;
         List<ChatProductCardResponse> groupCards = resolvedGroup == null ? List.of() : context.products().stream()
@@ -407,7 +410,7 @@ public class ChatImageService {
                     : "Em nhận ra ảnh có vẻ thuộc nhóm " + resolvedGroup
                             + " nhưng chưa xác định đáng tin cậy được mẫu cụ thể. Các mẫu cùng nhóm đang bán bên dưới để anh/chị tự đối chiếu; em không khẳng định mẫu nào là cùng sản phẩm.";
             return new ImageTurnResult(
-                    answer, "TOOL", groupCards.isEmpty() ? "ANSWER" : "PRODUCT_RESULTS",
+                    answer, ChatMessageSource.TOOL, groupCards.isEmpty() ? "ANSWER" : "PRODUCT_RESULTS",
                     groupCards, true);
         }
         return unknownResult(lang, true);
@@ -418,7 +421,7 @@ public class ChatImageService {
         String answer = english
                 ? "The shop’s image-analysis allowance has been reached for today. You can still describe the item in text and continue chatting normally, or contact BigBike through Hotline, Zalo or Messenger."
                 : "Hôm nay shop đã dùng hết lượt đọc ảnh. Anh/chị vẫn có thể mô tả sản phẩm bằng chữ và tiếp tục trò chuyện bình thường, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger.";
-        return new ImageTurnResult(answer, "TOOL", "CLARIFICATION", List.of(), false);
+        return new ImageTurnResult(answer, ChatMessageSource.TOOL, "CLARIFICATION", List.of(), false);
     }
 
     private static ImageTurnResult unsafeResult(String lang) {
@@ -426,7 +429,7 @@ public class ChatImageService {
                 "en".equals(lang)
                         ? "I cannot process this image. I can still help with BigBike products, protective gear and shop policies."
                         : "Em không thể xử lý ảnh này. Em vẫn có thể hỗ trợ sản phẩm, đồ bảo hộ và chính sách của BigBike.",
-                "CONTENT_REFUSAL", "REFUSAL", List.of(), true);
+                ChatMessageSource.CONTENT_REFUSAL, "REFUSAL", List.of(), true);
     }
 
     private static ImageTurnResult unknownResult(String lang, boolean analyzed) {
@@ -434,7 +437,7 @@ public class ChatImageService {
                 "en".equals(lang)
                         ? "I cannot recognize a specific product reliably from this image. Please describe the item in text, or contact BigBike through Hotline, Zalo or Messenger for help."
                         : "Em chưa nhận ra đáng tin cậy được sản phẩm cụ thể trong ảnh. Anh/chị vui lòng mô tả thêm bằng chữ, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.",
-                "TOOL", "CLARIFICATION", List.of(), analyzed);
+                ChatMessageSource.TOOL, "CLARIFICATION", List.of(), analyzed);
     }
 
     private CatalogContext catalogContext(List<Product> products) {

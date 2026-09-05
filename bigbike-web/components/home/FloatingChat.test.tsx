@@ -70,6 +70,7 @@ const defaultResult = {
 beforeEach(() => {
   vi.resetAllMocks();
   window.localStorage.clear();
+  window.sessionStorage.clear();
   api.fetchChatAvailability.mockResolvedValue({
     mode: "AI",
     maxTurns: 40,
@@ -85,10 +86,7 @@ beforeEach(() => {
   });
   api.openChatSession.mockResolvedValue({
     visitorToken: "visitor-token",
-    rememberedThrough: "2026-09-28T00:00:00Z",
-    memoryEnabled: true,
     activeConversationId: null,
-    rememberedContextSummary: null,
   });
   api.fetchChatHistory.mockResolvedValue({
     conversationId: "conversation-1",
@@ -106,8 +104,10 @@ afterEach(() => vi.useRealTimers());
 
 async function openReadyChat(user: ReturnType<typeof userEvent.setup>) {
   render(<FloatingChat />);
-  await waitFor(() => expect(api.openChatSession).toHaveBeenCalled());
+  // CHAT_RULE_049: the visitor session is created when the panel opens, never on page load.
+  expect(api.openChatSession).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "open" }));
+  await waitFor(() => expect(api.openChatSession).toHaveBeenCalled());
   return screen.findByLabelText("messageLabel");
 }
 

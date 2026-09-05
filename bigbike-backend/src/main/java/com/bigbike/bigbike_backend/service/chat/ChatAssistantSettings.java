@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.chat;
 
 import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
+import com.bigbike.bigbike_backend.persistence.entity.chat.ChatVisitorEntity;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
 import com.bigbike.bigbike_backend.service.content.StorePolicyService;
 import java.util.Map;
@@ -26,8 +27,11 @@ public class ChatAssistantSettings {
 
     public static final int DEFAULT_DAILY_LIMIT = 400;
     public static final int DEFAULT_RECENT_TURN_PAIRS = 12;
+    /** CHAT_RULE_005 ceiling for ai_assistant_recent_turn_pairs. */
+    public static final int MAX_RECENT_TURN_PAIRS = 12;
     public static final int DEFAULT_TURN_LIMIT = 40;
-    public static final int DEFAULT_MEMORY_DAYS = 30;
+    /** CHAT_RULE_049: memory lives in the browser session, so no day-based window is published. */
+    public static final int SESSION_MEMORY_HOURS = ChatVisitorEntity.SESSION_HOURS;
     public static final int IMAGE_DAILY_LIMIT = 20;
     public static final int IMAGE_CONVERSATION_LIMIT = 3;
 
@@ -56,7 +60,7 @@ public class ChatAssistantSettings {
                 localized(settings, "contact_address", english, ""),
                 localized(settings, "opening_hours_weekday", english, ""),
                 localized(settings, "opening_hours_weekend", english, ""),
-                Math.min(12, readInteger(settings, KEY_RECENT_TURN_PAIRS, DEFAULT_RECENT_TURN_PAIRS)),
+                Math.min(MAX_RECENT_TURN_PAIRS, readInteger(settings, KEY_RECENT_TURN_PAIRS, DEFAULT_RECENT_TURN_PAIRS)),
                 new BankDetails(
                         value(settings, "bank_name"),
                         value(settings, "bank_account_number"),
@@ -132,7 +136,7 @@ public class ChatAssistantSettings {
             address = address == null ? "" : address;
             openingHoursWeekday = openingHoursWeekday == null ? "" : openingHoursWeekday;
             openingHoursWeekend = openingHoursWeekend == null ? "" : openingHoursWeekend;
-            recentTurnPairs = Math.max(0, Math.min(12, recentTurnPairs));
+            recentTurnPairs = Math.max(0, Math.min(MAX_RECENT_TURN_PAIRS, recentTurnPairs));
             bankDetails = bankDetails == null ? BankDetails.empty() : bankDetails;
             warrantyPolicy = warrantyPolicy == null ? PolicyText.empty() : warrantyPolicy;
             returnExchangePolicy = returnExchangePolicy == null

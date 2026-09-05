@@ -47,20 +47,21 @@ const snapshot: ChatPersistenceSnapshot = {
 describe("chat persistence", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
   });
 
   it("keeps only the minimum display state and preserves the exact remaining turns", () => {
     writeChatSnapshot(snapshot);
 
     expect(readChatSnapshot()).toMatchObject(snapshot);
-    expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain("0909123456");
+    expect(window.sessionStorage.getItem(CHAT_STORAGE_KEY)).not.toContain("0909123456");
   });
 
   it("removes an expired snapshot instead of restoring it", () => {
     writeChatSnapshot({ ...snapshot, expiresAt: Date.now() - 1 });
 
     expect(readChatSnapshot()).toBeNull();
-    expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
+    expect(window.sessionStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
 
   it("removes an older snapshot so obsolete contact data is not restored", () => {
@@ -78,7 +79,7 @@ describe("chat persistence", () => {
     );
 
     expect(readChatSnapshot()).toBeNull();
-    expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
+    expect(window.sessionStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
 
   it("removes a pre-AI-only snapshot from the retired flow", () => {
@@ -91,7 +92,7 @@ describe("chat persistence", () => {
     );
 
     expect(readChatSnapshot()).toBeNull();
-    expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
+    expect(window.sessionStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
 
   it("clears the snapshot immediately", () => {
@@ -99,6 +100,6 @@ describe("chat persistence", () => {
 
     clearChatSnapshot();
 
-    expect(window.localStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
+    expect(window.sessionStorage.getItem(CHAT_STORAGE_KEY)).toBeNull();
   });
 });

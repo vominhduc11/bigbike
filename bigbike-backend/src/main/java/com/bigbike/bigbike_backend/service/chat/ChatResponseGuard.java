@@ -41,6 +41,17 @@ public class ChatResponseGuard {
             "product-condition",
             "shipping-method",
             "signed-in");
+    /**
+     * Ordinary gear vocabulary that is written with a hyphen in both languages. Without this the
+     * slug rule threw away whole comparison answers built from stored product copy, because a
+     * phrase such as "full-face" looks exactly like a catalogue slug to the pattern.
+     */
+    private static final Set<String> SAFE_HYPHENATED_PRODUCT_TERMS = Set.of(
+            "full-face", "fullface-modular", "dual-sport", "off-road", "on-road",
+            "in-mold", "in-mould", "anti-fog", "anti-scratch", "quick-release",
+            "multi-density", "double-d", "micro-metric", "flip-up", "e-bike",
+            "carbon-kevlar", "high-visibility", "water-resistant", "wind-stopper",
+            "touch-screen", "bluetooth-intercom", "usb-c", "type-c");
     private static final Pattern RAW_CURRENCY = Pattern.compile(
             "(?i)(?:\\b\\d[\\d.,]*\\s*(?:VND|VNĐ)\\b|\\b(?:VND|VNĐ)\\b"
                     + "|\\b\\d[\\d.,]*[.,]\\d{1,2}\\s*₫)");
@@ -144,7 +155,7 @@ public class ChatResponseGuard {
             ChatToolService.CatalogTotals catalogTotals
     ) {
         String content = trimToSentenceLimit(answer);
-        if (!isSafeCustomerText(content, lang)
+        if (!isSafeCustomerText(content, lang, products)
                 || !hasSafeAssistantTone(content, lang)
                 || !containsRequiredDisclosures(content, lang, requiredDisclosures)
                 || hasUnsupportedWarehouseWideClaim(content, lang, catalogTotals, products)) {
@@ -194,7 +205,8 @@ public class ChatResponseGuard {
         }
         String content = trimToSentenceLimit(answer);
         if (TECHNICAL_TERMS.matcher(content).find()) return "TECHNICAL_TERM";
-        if (RAW_INTERNAL_CODES.matcher(content).find() || containsRawInternalSlug(content, lang)) {
+        if (RAW_INTERNAL_CODES.matcher(content).find()
+                || containsRawInternalSlug(content, lang, products)) {
             return "INTERNAL_CODE";
         }
         if (RAW_CURRENCY.matcher(content).find()) return "RAW_CURRENCY";
@@ -204,7 +216,7 @@ public class ChatResponseGuard {
                 || UNSUPPORTED_PERSONAL_PROMISE.matcher(normalizedSalesCopy).find()) {
             return "UNSUPPORTED_SALES_CLAIM";
         }
-        if (!isSafeCustomerText(content, lang)) return "WRONG_LANGUAGE";
+        if (!isSafeCustomerText(content, lang, products)) return "WRONG_LANGUAGE";
         if (hasUnsupportedWarehouseWideClaim(content, lang, catalogTotals, products)) {
             return "UNSUPPORTED_CATALOG_CLAIM";
         }
@@ -455,11 +467,17 @@ public class ChatResponseGuard {
 
     /** Shared guard for customer-visible assistant copy. */
     public boolean isSafeCustomerText(String value, String lang) {
+        return isSafeCustomerText(value, lang, List.of());
+    }
+
+    /** Product cards let the slug rule recognise a hyphenated word that is part of a real name. */
+    public boolean isSafeCustomerText(
+            String value, String lang, List<ChatProductCardResponse> products) {
         if (value == null || value.isBlank()) return false;
         String content = value.trim();
         if (TECHNICAL_TERMS.matcher(content).find()
                 || RAW_INTERNAL_CODES.matcher(content).find()
-                || containsRawInternalSlug(content, lang)
+                || containsRawInternalSlug(content, lang, products)
                 || RAW_CURRENCY.matcher(content).find()
                 || URL.matcher(content).find()
                 || FORBIDDEN_RICH_CONTENT.matcher(content).find()
@@ -674,13 +692,37 @@ public class ChatResponseGuard {
     }
 
     private static boolean containsRawInternalSlug(String content, String lang) {
+        return containsRawInternalSlug(content, lang, List.of());
+    }
+
+    /**
+     * The rule exists to stop catalogue slugs such as {@code ronin-red} being read out as a colour
+     * name. A hyphenated word that is ordinary product vocabulary, or that is part of a verified
+     * product name already on screen, is not an internal code.
+     */
+    private static boolean containsRawInternalSlug(
+            String content, String lang, List<ChatProductCardResponse> products) {
+        Set<String> namedInCards = productNameTokens(products);
         Matcher matcher = RAW_INTERNAL_SLUG.matcher(content);
         while (matcher.find()) {
             String candidate = matcher.group().toLowerCase(Locale.ROOT);
             if ("en".equals(lang) && SAFE_ENGLISH_HYPHENATED_TERMS.contains(candidate)) continue;
+            if (SAFE_HYPHENATED_PRODUCT_TERMS.contains(candidate)) continue;
+            if (namedInCards.contains(candidate)) continue;
             return true;
         }
         return false;
+    }
+
+    private static Set<String> productNameTokens(List<ChatProductCardResponse> products) {
+        if (products == null || products.isEmpty()) return Set.of();
+        Set<String> tokens = new LinkedHashSet<>();
+        for (ChatProductCardResponse product : products) {
+            if (product == null || product.name() == null) continue;
+            Matcher matcher = RAW_INTERNAL_SLUG.matcher(product.name().toLowerCase(Locale.ROOT));
+            while (matcher.find()) tokens.add(matcher.group());
+        }
+        return tokens;
     }
 
     private static boolean isSafeProduct(ChatProductCardResponse product) {

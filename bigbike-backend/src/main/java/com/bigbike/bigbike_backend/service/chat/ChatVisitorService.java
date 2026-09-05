@@ -53,6 +53,12 @@ public class ChatVisitorService {
         this(visitorRepo, conversationRepo, messageRepo, jwtService, null);
     }
 
+    /**
+     * CHAT_RULE_049 (owner decision 2026-09-05): a visitor row is created only when the customer
+     * actually opens the chat panel, and it lives for the current browser session. The identifier
+     * stays because it is the ownership key for a guest's conversation and images; what is gone is
+     * the 30-day window, the memory switch and reconnecting to an earlier session's conversation.
+     */
     @Transactional
     public ChatSessionResponse open(ChatSessionRequest request, UUID customerId) {
         ChatVisitorEntity visitor = visitorRepo.findById(request.visitorId()).orElse(null);
@@ -65,17 +71,11 @@ public class ChatVisitorService {
         } else {
             requireToken(visitor, rawToken);
         }
-        visitor.setMemoryEnabled(request.memoryEnabled());
         touch(visitor);
         visitorRepo.save(visitor);
 
         if (customerId != null) {
             conversationRepo.attachVisitorConversations(visitor.getId(), customerId);
-        }
-        if (!request.memoryEnabled()) {
-            return new ChatSessionResponse(
-                    rawToken, visitor.getRememberedUntil(), false, null,
-                    "en".equals(request.locale()) ? "Chat memory is off." : "Ghi nhớ hội thoại đang tắt.");
         }
         // A shared device may retain its visible visitor token across account changes.
         // Select inside the caller's ownership scope instead of finding globally and filtering
@@ -88,14 +88,7 @@ public class ChatVisitorService {
                     .findFirstByVisitorIdAndCustomerIdOrderByLastMessageAtDesc(
                             visitor.getId(), customerId)
                     .orElse(null);
-        String summary = latest == null || latest.getContextJson() == null || latest.getContextJson().isBlank()
-                ? null
-                : ("en".equals(request.locale())
-                    ? "I remember the needs and products from this device."
-                    : "Em đang nhớ nhu cầu và sản phẩm đã xem trên thiết bị này.");
-        return new ChatSessionResponse(
-                rawToken, visitor.getRememberedUntil(), true,
-                latest == null ? null : latest.getId(), summary);
+        return new ChatSessionResponse(rawToken, latest == null ? null : latest.getId());
     }
 
     @Transactional
@@ -187,6 +180,6 @@ public class ChatVisitorService {
     private void touch(ChatVisitorEntity visitor) {
         visitor.touch();
         visitor.setRememberedUntil(Instant.now().plus(
-                ChatAssistantSettings.DEFAULT_MEMORY_DAYS, java.time.temporal.ChronoUnit.DAYS));
+                ChatVisitorEntity.SESSION_HOURS, java.time.temporal.ChronoUnit.HOURS));
     }
 }

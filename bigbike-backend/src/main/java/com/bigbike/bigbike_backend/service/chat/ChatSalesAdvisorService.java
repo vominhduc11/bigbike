@@ -30,6 +30,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChatSalesAdvisorService {
 
     private static final int MAX_ANSWER_CHARS = 2_000;
+    private static final Set<String> NO_FOLLOW_UP_SOURCES = Set.of(
+            ChatMessageSource.OUT_OF_SCOPE,
+            ChatMessageSource.CONTENT_REFUSAL,
+            ChatMessageSource.ROLE_DEFENSE,
+            ChatMessageSource.CONTACT_FALLBACK,
+            ChatMessageSource.PROVIDER_UNAVAILABLE);
+    private static final Set<String> NO_FOLLOW_UP_RESULT_KINDS = Set.of(
+            "OUT_OF_SCOPE", "REFUSAL", "CONTACT", "CLARIFICATION");
 
     private final CatalogReadService catalogReadService;
 
@@ -98,7 +106,12 @@ public class ChatSalesAdvisorService {
                 && conversation.getDeclinedNextStepType().equals(next.response().type())) {
             next = lowPressureAlternative(english);
         }
-        answer = appendNextStep(answer, next.copy());
+        // CHAT_RULE_001 (owner decision 2026-09-05): a follow-up line is only appended when it
+        // fits the question. Pasting a sales prompt onto a refusal, an out-of-scope reply or a
+        // question the assistant just asked reads like a machine and annoyed customers.
+        if (nextStepFitsContext(source, resultKind, clarification, answer)) {
+            answer = appendNextStep(answer, next.copy());
+        }
 
         conversation.setSalesStage(stage);
         conversation.setLastNextStepType(next.response().type());
@@ -385,6 +398,20 @@ public class ChatSalesAdvisorService {
                 : policy.title() + ": " + excerpt;
     }
 
+    /** Sales prompts belong on sales answers, not on refusals or on an open question. */
+    private static boolean nextStepFitsContext(
+            String source,
+            String resultKind,
+            ChatClarificationResponse clarification,
+            String answer
+    ) {
+        if (clarification != null) return false;
+        if (NO_FOLLOW_UP_SOURCES.contains(source)) return false;
+        if (NO_FOLLOW_UP_RESULT_KINDS.contains(resultKind)) return false;
+        String trimmed = answer == null ? "" : answer.trim();
+        return !trimmed.endsWith("?");
+    }
+
     private static String appendNextStep(String answer, String nextStep) {
         if (!hasText(nextStep)) return answer;
         String normalizedAnswer = ChatToolService.normalize(answer);
@@ -409,7 +436,7 @@ public class ChatSalesAdvisorService {
             List<ChatProductCardResponse> products,
             ChatClarificationResponse clarification
     ) {
-        if ("CONTACT_FALLBACK".equals(source)) return "UNANSWERED";
+        if (ChatMessageSource.CONTACT_FALLBACK.equals(source)) return "UNANSWERED";
         if (clarification != null) return "CLARIFICATION";
         if (products != null && !products.isEmpty()) return "PRODUCTS_SHOWN";
         if ("OUT_OF_SCOPE".equals(resultKind) || "REFUSAL".equals(resultKind)) return resultKind;

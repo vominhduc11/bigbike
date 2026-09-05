@@ -5,6 +5,5 @@ public record ChatAvailabilityResponse(
         String reason,
         int maxTurns,
         ChatContactResponse contacts,
-        int memoryDays,
         ChatImageAvailabilityResponse images
 ) {}

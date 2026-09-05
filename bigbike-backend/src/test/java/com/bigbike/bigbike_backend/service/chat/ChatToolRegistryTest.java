@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class ChatToolRegistryTest {
@@ -102,9 +103,12 @@ class ChatToolRegistryTest {
     }
 
     @Test
-    void listCategoriesHasNoArgumentsAndRejectsDynamicQuerying() {
+    void listCategoriesTakesNoRealArgumentsAndRejectsDynamicQuerying() {
         assertThat(registry.validate(ChatToolRegistry.LIST_CATEGORIES, json(Map.of())).arguments()).isEmpty();
-        assertRejected(ChatToolRegistry.LIST_CATEGORIES, Map.of("lang", "vi"));
+        // A redundant language hint is tolerated and dropped rather than costing the whole turn.
+        assertThat(registry.validate(
+                ChatToolRegistry.LIST_CATEGORIES, json(Map.of("lang", "vi"))).arguments()).isEmpty();
+        assertRejected(ChatToolRegistry.LIST_CATEGORIES, Map.of("lang", "fr"));
         assertRejected(ChatToolRegistry.LIST_CATEGORIES, Map.of("query", "SELECT * FROM products"));
     }
 
@@ -162,5 +166,35 @@ class ChatToolRegistryTest {
                 value.forEach(ChatToolRegistryTest::assertSchemaFields);
             }
         }
+    }
+
+    @Test
+    @DisplayName("a redundant lang argument is accepted and never forwarded")
+    void redundantLangDoesNotDropTheToolCall() throws Exception {
+        ChatToolRegistry registry = new ChatToolRegistry();
+
+        // The model sees "lang" on the search tools and adds it here too. Losing the whole call
+        // over that turned warranty, returns and shop-info questions into "the assistant is busy".
+        ChatToolRegistry.ValidatedCall policy = registry.validate(
+                ChatToolRegistry.GET_POLICY,
+                MAPPER.readTree("{\"topic\":\"warranty\",\"lang\":\"vi\"}"));
+        assertThat(policy.arguments()).containsExactly(java.util.Map.entry("topic", "warranty"));
+
+        ChatToolRegistry.ValidatedCall shopInfo = registry.validate(
+                ChatToolRegistry.GET_SHOP_INFO, MAPPER.readTree("{\"lang\":\"en\"}"));
+        assertThat(shopInfo.arguments()).isEmpty();
+
+        ChatToolRegistry.ValidatedCall orders = registry.validate(
+                ChatToolRegistry.GET_MY_ORDERS,
+                MAPPER.readTree("{\"scope\":\"latest\",\"lang\":\"vi\"}"));
+        assertThat(orders.arguments()).containsExactly(java.util.Map.entry("scope", "latest"));
+
+        // An unknown language is still refused, and unrelated arguments are still refused.
+        assertThatThrownBy(() -> registry.validate(
+                ChatToolRegistry.GET_SHOP_INFO, MAPPER.readTree("{\"lang\":\"fr\"}")))
+                .isInstanceOf(ChatToolRegistry.ToolValidationException.class);
+        assertThatThrownBy(() -> registry.validate(
+                ChatToolRegistry.GET_SHOP_INFO, MAPPER.readTree("{\"customerId\":\"1\"}")))
+                .isInstanceOf(ChatToolRegistry.ToolValidationException.class);
     }
 }

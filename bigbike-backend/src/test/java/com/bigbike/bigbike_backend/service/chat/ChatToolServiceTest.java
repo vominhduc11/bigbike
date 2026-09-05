@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.service.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -13,6 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 
 import com.bigbike.bigbike_backend.api.chat.dto.ChatContactResponse;
 import com.bigbike.bigbike_backend.api.chat.dto.ChatClarificationSelectionRequest;
@@ -37,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import com.bigbike.bigbike_backend.domain.catalog.CategorySummary;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -133,7 +136,7 @@ class ChatToolServiceTest {
 
         ChatToolService.ToolOutcome lightest = tools.resolveFastPath(
                 "mũ bảo hiểm nào nhẹ nhất shop đang bán?", "vi", null, settings).orElseThrow();
-        assertThat(lightest.localAnswer()).contains("chưa có cân nặng được xác minh đồng nhất")
+        assertThat(lightest.localAnswer()).contains("chưa ghi cân nặng cho các mũ đang bán")
                 .doesNotContain("nhẹ nhất là");
         assertThat(lightest.products()).isEmpty();
         verifyNoInteractions(catalog);
@@ -212,7 +215,7 @@ class ChatToolServiceTest {
         ChatToolService.ToolOutcome outcome = tools.resolveFastPath(
                 "mũ nào bảo vệ đầu tốt nhất khi bị tai nạn đâm xe?", "vi", null, shopSettings()).orElseThrow();
 
-        assertThat(outcome.localAnswer()).contains("Khi đi đường", "chuẩn an toàn")
+        assertThat(outcome.localAnswer()).contains("vừa đầu", "chuẩn an toàn")
                 .doesNotContain("Bell", "MT Helmet", "HJC");
         assertThat(outcome.products()).extracting(ChatProductCardResponse::name)
                 .containsExactly("Mũ AGV K3", "Mũ LS2 FF800 Storm", "Mũ Caberg Drift");
@@ -907,7 +910,7 @@ class ChatToolServiceTest {
         assertThat(result.products()).isEmpty();
         assertThat(result.terminalAnswer()).isNotNull();
         assertThat(result.terminalAnswer().directContactRecommended()).isFalse();
-        assertThat(result.terminalAnswer().answer()).contains("đúng mẫu", "không đổi sang sản phẩm khác");
+        assertThat(result.terminalAnswer().answer()).contains("chưa tìm thấy", "tầm giá");
     }
 
     @Test
@@ -1042,16 +1045,14 @@ class ChatToolServiceTest {
                 MAPPER.valueToTree(Map.of(
                         "category", "mu-bao-hiem-fullface",
                         "lang", "vi")));
-        ChatToolService.ToolExecution missingFullface = tools.execute(
+        // CHAT_RULE_015: "dưới 3tr" is a budget, so the 3.000.000đ helmet is a match, not a miss.
+        ChatToolService.ToolExecution budgetFullface = tools.execute(
                 fullfaceCall,
                 new ChatToolService.ToolContext(
                         "mbh fullface duoi 3tr", "vi", null, settings()),
                 new ChatToolService.ToolSession());
-        assertThat(missingFullface.terminalAnswer()).isNotNull();
-        assertThat(missingFullface.terminalAnswer().answer())
-                .contains("chưa tìm thấy", "cao hơn tầm giá");
-        assertThat(missingFullface.products()).allSatisfy(card ->
-                assertThat(card.retailPrice()).isGreaterThanOrEqualTo(BigDecimal.valueOf(3_000_000)));
+        assertThat(budgetFullface.products()).extracting(ChatProductCardResponse::slug)
+                .containsExactly("fullface-3000");
     }
 
     @Test
@@ -1588,9 +1589,11 @@ class ChatToolServiceTest {
                 "tìm mũ bảo hiểm 5 triệu", "vi", null, settings());
         assertThat(around.products()).extracting(card -> card.slug()).containsExactly("mu-around");
 
+        // A budget ceiling includes the price the customer named.
         ChatToolService.ToolOutcome below = tools.resolve(
                 "tôi đang tìm mũ dưới 5 triệu", "vi", null, settings());
-        assertThat(below.products()).extracting(card -> card.slug()).containsExactly("mu-under");
+        assertThat(below.products()).extracting(card -> card.slug())
+                .containsExactly("mu-under", "mu-around");
 
         ChatToolService.ToolOutcome above = tools.resolve(
                 "mũ trên 3 triệu", "vi", null, settings());
@@ -1932,7 +1935,7 @@ class ChatToolServiceTest {
         assertThat(result.requiredDisclosures()).isEmpty();
         assertThat(result.terminalAnswer()).isNotNull();
         assertThat(result.terminalAnswer().answer())
-                .contains("chưa có đúng mẫu", "không đổi sang sản phẩm khác", "tầm giá");
+                .contains("chưa tìm thấy", "tầm giá");
     }
 
     @Test
@@ -2088,6 +2091,188 @@ class ChatToolServiceTest {
             assertThat(ChatToolService.extractPriceIntent(question).kind())
                     .as(question).isEqualTo(ChatToolService.PriceKind.NONE);
         }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Owner decision 2026-09-05 (CHAT_RULE_060): three distinct stock answers.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("a model BigBike sells but has run out of is named as sold out, with in-stock alternatives")
+    void soldOutModelIsNotReportedAsNotCarried() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        Category jackets = category("ao-quan-moto-mua-he", "Áo quần moto mùa hè");
+        Product soldOut = inCategory(
+                product("ls2-zoom-lady", "Áo moto nữ LS2 Zoom Lady",
+                        BigDecimal.valueOf(2_500_000), List.of()),
+                jackets, ProductStockState.OUT_OF_STOCK, false);
+        Product alternative = inCategory(
+                product("ao-nu-mua-he", "Áo moto nữ mùa hè Komine",
+                        BigDecimal.valueOf(2_600_000), List.of()),
+                jackets, ProductStockState.IN_STOCK, true);
+        when(catalog.listAssistantCategories(any())).thenReturn(List.of(jackets));
+        when(catalog.searchProductsForAssistant(any(), any(), any(), any(), any(), any(), anyInt(), any()))
+                .thenReturn(List.of(soldOut));
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
+                any(), any(), any(), any()))
+                .thenReturn(new PageResult<>(List.of(alternative), 1, 10, 1, 1));
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+
+        ChatToolService.ToolOutcome outcome = tools.resolve(
+                "Áo moto nữ mùa hè LS2 Zoom lady còn hàng không?", "vi", null, settings());
+
+        assertThat(outcome.localAnswer())
+                .contains("có bán", "tạm hết hàng")
+                .doesNotContain("không kinh doanh");
+        // The customer is pointed at the contact channels, not asked for a phone number.
+        assertThat(outcome.directContactRecommended()).isTrue();
+        assertThat(outcome.products()).extracting(ChatProductCardResponse::slug)
+                .containsExactly("ao-nu-mua-he");
+    }
+
+    @Test
+    @DisplayName("two models named in the question are compared even without previous cards")
+    void namedModelsAreComparedOnTheFirstTurn() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        Product agv = product("agv-k1s", "Mũ AGV K1S", BigDecimal.valueOf(4_500_000),
+                List.of(pricedVariant("agv-m", "Đen", "M", 4_500_000)));
+        Product caberg = product("caberg-avalon-x", "Mũ Caberg Avalon X",
+                BigDecimal.valueOf(3_390_000),
+                List.of(pricedVariant("caberg-l", "Đỏ", "L", 3_999_000)));
+        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
+                any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+                    String query = ChatToolService.normalize(
+                            invocation.getArgument(5) == null ? "" : invocation.getArgument(5));
+                    List<Product> found = query.contains("agv")
+                            ? List.of(agv)
+                            : query.contains("caberg") || query.contains("avalon")
+                            ? List.of(caberg)
+                            : List.of();
+                    return new PageResult<>(found, 1, 10, found.size(), 1);
+                });
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+
+        ChatToolService.ToolOutcome outcome = tools.resolve(
+                "So sánh giúp mình mũ AGV K1S với Caberg Avalon X, nên chọn cái nào?",
+                "vi", null, settings());
+
+        assertThat(outcome.products()).extracting(ChatProductCardResponse::slug)
+                .containsExactlyInAnyOrder("agv-k1s", "caberg-avalon-x");
+        assertThat(outcome.localAnswer()).contains("AGV K1S", "Caberg Avalon X");
+    }
+
+    @Test
+    @DisplayName("a colour plus size question is answered for that exact combination")
+    void colourAndSizeAreCheckedAsOneCombination() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        String slug = "caberg-avalon-x";
+        Product helmet = product(slug, "Mũ Caberg Avalon X", BigDecimal.valueOf(3_390_000),
+                List.of(
+                        pricedVariant("den-m", "Đen", "M", 3_399_000),
+                        pricedVariant("trang-m", "Trắng", "M", 3_399_000),
+                        pricedVariant("do-l", "Đỏ", "L", 3_999_000)));
+        when(catalog.getProductBySlug(eq(slug), any())).thenReturn(helmet);
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+        ChatToolService.ConversationContext context = new ChatToolService.ConversationContext(
+                "mu-bao-hiem", "caberg", null, null, List.of(slug), false);
+
+        ChatToolService.ToolOutcome outcome = tools.resolveFastPath(
+                "Mẫu này có màu đỏ size M không?", "vi", null, settings(), context).orElseThrow();
+
+        // Red only exists in L. Listing the colours and the sizes separately let the customer
+        // believe red/M existed, and they only found out after ordering.
+        assertThat(outcome.localAnswer())
+                .contains("không có size M")
+                .contains("L")
+                .doesNotContain("size M hiện còn hàng")
+                // The product's own spelling, never the accent-stripped token.
+                .contains("màu Đỏ")
+                .doesNotContain("màu do");
+
+        // "Mẫu đó" strips to the same letters as "màu đỏ". On a product that has no red the
+        // assistant must not invent one; it falls back to the plain size answer. (On a product
+        // that does have red, answering for red is still factually correct.)
+        Product noRed = product(slug, "Mũ LS2 OF600 Copter II", BigDecimal.valueOf(2_790_000),
+                List.of(
+                        pricedVariant("den-l", "Đen", "L", 2_790_000),
+                        pricedVariant("xam-l", "Xám", "L", 2_790_000)));
+        CatalogReadService noRedCatalog = mock(CatalogReadService.class);
+        when(noRedCatalog.getProductBySlug(eq(slug), any())).thenReturn(noRed);
+        ChatToolService noRedTools = new ChatToolService(noRedCatalog, mock(OrderReadService.class));
+
+        ChatToolService.ToolOutcome demonstrative = noRedTools.resolveFastPath(
+                "Mẫu đó còn size L không?", "vi", null, settings(), context).orElseThrow();
+        assertThat(demonstrative.localAnswer())
+                .doesNotContain("màu Đỏ")
+                .doesNotContain("không còn size nào");
+    }
+
+    private static Product inCategory(
+            Product base, Category category, ProductStockState stockState, boolean available) {
+        CategorySummary summary = new CategorySummary(
+                category.slug(), category.slug(), null, category.name(), true, false);
+        return new Product(
+                base.id(), base.sku(), base.slug(), base.slugEn(), base.name(), base.shortDescription(),
+                base.description(), base.brand(), summary, List.of(summary), base.image(), base.gallery(),
+                base.videos(), base.price(), base.variants(), stockState, available, base.publishStatus(),
+                base.discontinued(), base.sizeScaleId(),
+                base.homepageBlock(), base.homepageOrder(), base.rating(), base.ratingCount(), base.faqs(),
+                base.commitments(), base.highlights(), base.originBrandCountry(), base.sizeGuide(),
+                base.suitabilityAdvisory(), base.specifications(), base.specStats(), base.trustBadges(),
+                base.quickAnswerSummary(), base.genders(), base.relatedProducts(), base.accessoryProducts(),
+                base.descriptionBlocks(), base.suitabilitySection(), base.sizeGuideSection(), base.seo(),
+                base.translations(), base.createdAt(), base.updatedAt());
+    }
+
+    @Test
+    @DisplayName("ordinary policy phrasing is recognised so the lookup is not dropped")
+    void policyLookupIsGroundedByEverydayWording() throws Exception {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+        ChatToolRegistry registry = new ChatToolRegistry();
+
+        // Each of these used to throw, which the customer saw as "Trợ lý BigBike đang bận".
+        record Case(String question, String topic) {}
+        List<Case> cases = List.of(
+                new Case("Hàng có bị lỗi thì đổi trong bao lâu?", "return_exchange"),
+                new Case("Mua về đội không vừa thì đổi được không?", "return_exchange"),
+                new Case("Mũ bảo hiểm bên mình bảo hành bao lâu?", "warranty"),
+                new Case("Ship về Cần Thơ mấy ngày ạ?", "shipping"),
+                new Case("Mình trả tiền mặt khi nhận hàng được không?", "payment"));
+
+        for (Case testCase : cases) {
+            ChatToolRegistry.ValidatedCall call = registry.validate(
+                    ChatToolRegistry.GET_POLICY,
+                    MAPPER.valueToTree(Map.of("topic", testCase.topic())));
+            assertThatCode(() -> tools.execute(
+                    call,
+                    new ChatToolService.ToolContext(testCase.question(), "vi", null, settings()),
+                    new ChatToolService.ToolSession()))
+                    .as("policy topic %s must stay grounded in: %s",
+                            testCase.topic(), testCase.question())
+                    .doesNotThrowAnyException();
+        }
+
+        // A neighbouring topic falls back to the one the question really grounds instead of
+        // costing the customer the answer.
+        ChatToolRegistry.ValidatedCall mismatched = registry.validate(
+                ChatToolRegistry.GET_POLICY, MAPPER.valueToTree(Map.of("topic", "privacy")));
+        assertThatCode(() -> tools.execute(
+                mismatched,
+                new ChatToolService.ToolContext(
+                        "Mũ bảo hiểm bên mình bảo hành bao lâu?", "vi", null, settings()),
+                new ChatToolService.ToolSession()))
+                .doesNotThrowAnyException();
+
+        // A question that grounds no policy at all is still refused.
+        ChatToolRegistry.ValidatedCall ungrounded = registry.validate(
+                ChatToolRegistry.GET_POLICY, MAPPER.valueToTree(Map.of("topic", "warranty")));
+        assertThatThrownBy(() -> tools.execute(
+                ungrounded,
+                new ChatToolService.ToolContext("Trời hôm nay thế nào?", "vi", null, settings()),
+                new ChatToolService.ToolSession()))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     private static ProductVariant variant(

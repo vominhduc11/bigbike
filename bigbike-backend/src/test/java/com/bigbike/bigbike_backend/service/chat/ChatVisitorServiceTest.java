@@ -52,22 +52,18 @@ class ChatVisitorServiceTest {
     }
 
     @Test
-    @DisplayName("AC15 VI/EN: same-device memory resumes only an unowned guest conversation")
+    @DisplayName("CHAT_RULE_049 VI/EN: the session resumes only an unowned guest conversation")
     void guestResumesOnlyGuestConversationInBothLanguages() {
         ChatConversationEntity latest = conversation(null);
         latest.setContextJson("{\"category\":\"helmet\"}");
         when(conversations.findFirstByVisitorIdAndCustomerIdIsNullOrderByLastMessageAtDesc(visitorId))
                 .thenReturn(Optional.of(latest));
 
-        var vi = service.open(new ChatSessionRequest(
-                visitorId, "visitor-token", "vi", true), null);
-        var en = service.open(new ChatSessionRequest(
-                visitorId, "visitor-token", "en", true), null);
+        var vi = service.open(new ChatSessionRequest(visitorId, "visitor-token", "vi"), null);
+        var en = service.open(new ChatSessionRequest(visitorId, "visitor-token", "en"), null);
 
         assertThat(vi.activeConversationId()).isEqualTo(latest.getId());
-        assertThat(vi.rememberedContextSummary()).contains("nhu cầu", "sản phẩm");
         assertThat(en.activeConversationId()).isEqualTo(latest.getId());
-        assertThat(en.rememberedContextSummary()).contains("needs", "products");
         verify(conversations, never()).findFirstByVisitorIdOrderByLastMessageAtDesc(visitorId);
     }
 
@@ -79,8 +75,8 @@ class ChatVisitorServiceTest {
         when(conversations.findFirstByVisitorIdAndCustomerIdOrderByLastMessageAtDesc(
                 visitorId, customerId)).thenReturn(Optional.of(own));
 
-        var response = service.open(new ChatSessionRequest(
-                visitorId, "visitor-token", "vi", true), customerId);
+        var response = service.open(
+                new ChatSessionRequest(visitorId, "visitor-token", "vi"), customerId);
 
         verify(conversations).attachVisitorConversations(visitorId, customerId);
         assertThat(response.activeConversationId()).isEqualTo(own.getId());
@@ -88,14 +84,14 @@ class ChatVisitorServiceTest {
     }
 
     @Test
-    @DisplayName("AC17 privacy: turning memory off stops resume without silently deleting history")
-    void disablingMemoryDoesNotResumeOrDelete() {
-        var response = service.open(new ChatSessionRequest(
-                visitorId, "visitor-token", "vi", false), null);
+    @DisplayName("CHAT_RULE_049: opening a session keeps the identifier inside the current sitting")
+    void openingASessionOnlyRemembersForTheCurrentSession() {
+        service.open(new ChatSessionRequest(visitorId, "visitor-token", "vi"), null);
 
-        assertThat(response.memoryEnabled()).isFalse();
-        assertThat(response.activeConversationId()).isNull();
-        assertThat(response.rememberedContextSummary()).contains("đang tắt");
+        // No 30-day window any more: the row must expire within the session horizon.
+        assertThat(visitor.getRememberedUntil())
+                .isBefore(Instant.now().plus(
+                        ChatVisitorEntity.SESSION_HOURS + 1, java.time.temporal.ChronoUnit.HOURS));
         verify(conversations, never()).deleteByVisitorId(visitorId);
         verify(visitors, never()).deleteById(visitorId);
     }

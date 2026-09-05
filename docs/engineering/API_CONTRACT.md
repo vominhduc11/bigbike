@@ -2307,7 +2307,7 @@ Automatic outage responses for a genuinely unreachable upstream remain an infras
 
 Theo quyết định của chủ shop ngày 2026-09-01, tên hiển thị là **Trợ lý BigBike** / **BigBike Assistant**. Dòng công bố tương ứng là “Bạn đang trò chuyện với trợ lý AI của BigBike, không phải nhân viên.” / “You are chatting with BigBike Assistant, BigBike’s AI assistant, not a human staff member.”; trạng thái sẵn sàng là “Trợ lý sẵn sàng” / “Assistant ready”. Đây là thay đổi chữ hiển thị, không thay đổi endpoint hoặc response shape.
 
-Mọi response dùng envelope chuẩn `ApiDataResponse`. Chat không nhận `customerId`, email, số điện thoại, model id, telemetry model hay nguồn attribution từ trình duyệt. Model trả lời khách được khóa ở cấu hình máy chủ là **Gemini 3.7 Flash**; kiểm duyệt đánh giá sản phẩm là integration riêng, không thuộc hợp đồng này.
+Mọi response dùng envelope chuẩn `ApiDataResponse`. Chat không nhận `customerId`, email, số điện thoại, model id, telemetry model hay nguồn attribution từ trình duyệt. Trả lời khách phải phân biệt ba trạng thái tồn kho theo `CHAT_RULE_060` (không kinh doanh / có bán nhưng hết hàng / chưa đủ thông tin); câu "có bán nhưng đang tạm hết hàng" kèm mẫu tương đương và thẻ liên hệ là một câu trả lời hợp lệ, không phải khẳng định vắng mặt toàn kho. Model trả lời khách được khóa ở cấu hình máy chủ là **Gemini 3.7 Flash**; kiểm duyệt đánh giá sản phẩm là integration riêng, không thuộc hợp đồng này.
 
 ### `GET /api/v1/chat/availability?lang=vi|en`
 
@@ -2342,7 +2342,7 @@ Body, ownership, idempotency và result giống endpoint thường. Server chỉ
 
 | Method | Path | Contract |
 |---|---|---|
-| `POST` | `/api/v1/chat/sessions` | Body `{visitorId:uuid,locale:"vi|en",memoryEnabled:boolean}`; trả signed visitor token, `rememberedThrough` tối đa 30 ngày, active conversation/context. `memoryEnabled=false` ngừng nối lại, không tự xóa lịch sử. |
+| `POST` | `/api/v1/chat/sessions` | Body `{visitorId:uuid,locale:"vi|en"}`; trả signed visitor token có hiệu lực **trong phiên trình duyệt** (`CHAT_RULE_049`, owner decision 2026-09-05). Không còn `memoryEnabled` trong request và không còn `rememberedThrough` 30 ngày trong response; server không nối lại hội thoại của phiên trước. Client chỉ gọi endpoint này **khi khách mở khung chat**, không gọi lúc tải trang. |
 | `GET` | `/api/v1/chat/conversations/{id}/messages?afterSequence=0` | Chỉ own customer hoặc signed visitor; trả lịch sử AI/customer, continuation và image metadata an toàn. |
 | `DELETE` | `/api/v1/chat/history` | Xác minh principal rồi hard-delete toàn bộ conversation/ảnh của chính principal; idempotent `{deleted:true}`; không xóa cart/tài khoản. |
 | `POST multipart` | `/api/v1/chat/images` | `requestId`, optional `conversationId`, `lang`, file. Khi AI service đã khai báo; validate ownership/idempotency/JPG-PNG-WebP/MIME-decode/re-encode/1 ảnh/8 MB/3 hội thoại/20 ngày, lưu private. |

@@ -38,6 +38,9 @@ public class ChatImageStorageService {
     public static final long MAX_UPLOAD_BYTES = 8L * 1024 * 1024;
     private static final int HEADER_BYTES = 8192;
     private static final Set<String> ALLOWED = Set.of("image/jpeg", "image/png", "image/webp");
+    /** Recognised only to explain the refusal in words a customer can act on. */
+    private static final Set<String> HEIC_TYPES = Set.of(
+            "image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence");
     private static final CompressionProfile PROFILE = new CompressionProfile(1600, 1600, 0.85f, false);
     private static final Tika TIKA = new Tika();
 
@@ -149,12 +152,12 @@ public class ChatImageStorageService {
             throw ValidationException.fromField(
                     "file", "CHAT_IMAGE_TOO_LARGE", "Ảnh không được vượt quá 8 MB.");
         }
+        // The browser-declared content type is only a hint: phones and some browsers send
+        // "image/jpg", an empty value or "application/octet-stream" for a perfectly valid photo.
+        // The sniffed content below is what actually decides, so a declared value is rejected here
+        // only when it clearly names a different, non-image format.
         String declared = file.getContentType() == null
-                ? "" : file.getContentType().toLowerCase(Locale.ROOT);
-        if (!ALLOWED.contains(declared)) {
-            throw ValidationException.fromField(
-                    "file", "CHAT_IMAGE_UNSUPPORTED_TYPE", "Chỉ nhận ảnh JPG, PNG hoặc WebP.");
-        }
+                ? "" : file.getContentType().toLowerCase(Locale.ROOT).trim();
         byte[] header = new byte[HEADER_BYTES];
         int read;
         try (InputStream input = file.getInputStream()) {
@@ -169,12 +172,22 @@ public class ChatImageStorageService {
         }
         String detected = TIKA.detect(
                 Arrays.copyOf(header, read), file.getOriginalFilename()).toLowerCase(Locale.ROOT);
-        if (!ALLOWED.contains(detected) || !detected.equals(declared)) {
+        if (!ALLOWED.contains(detected)) {
+            throw ValidationException.fromField(
+                    "file", "CHAT_IMAGE_UNSUPPORTED_TYPE",
+                    HEIC_TYPES.contains(detected)
+                            ? "Ảnh chụp bằng iPhone (định dạng HEIC) chưa gửi được. "
+                                    + "Anh/chị chụp màn hình ảnh đó hoặc lưu lại dạng JPG rồi gửi lại giúp em."
+                            : "Chỉ nhận ảnh JPG, PNG hoặc WebP.");
+        }
+        // A declared type that contradicts the real content is still suspicious, but only when the
+        // sender named another supported image format; anything else is treated as an unset hint.
+        if (ALLOWED.contains(declared) && !declared.equals(detected)) {
             throw ValidationException.fromField(
                     "file", "CHAT_IMAGE_UNSUPPORTED_TYPE",
                     "Loại tệp không khớp nội dung ảnh; chỉ nhận JPG, PNG hoặc WebP.");
         }
-        return declared;
+        return detected;
     }
 
     private static String detectStoredMime(byte[] bytes, String fallback) {

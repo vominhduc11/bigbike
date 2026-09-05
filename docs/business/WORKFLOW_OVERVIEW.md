@@ -44,7 +44,7 @@
 | 4 | Guest/Customer | Khách gặp giới hạn, thiếu dữ liệu hoặc cần trao đổi ngoài phạm vi được mời tự liên hệ qua Hotline, Zalo hoặc Messenger. Bấm liên hệ chỉ mở thẻ/kênh shop, không tạo hàng chờ. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_008`, `011`, `034`–`039` |
 | 5 | Guest/Customer | Khách có thể gửi tối đa một ảnh/lượt, ba ảnh/hội thoại, 20 ảnh/ngày, tối đa 8MB và chỉ JPG/PNG/WebP. Khi dịch vụ AI chưa khai báo, nút ảnh tự ẩn. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_057`–`059` |
 | 6 | Guest/Customer | Khách bấm thẻ sản phẩm, chọn biến thể còn hàng và thêm vào giỏ; backend hậu kiểm giá, tồn và biến thể trước khi thêm. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_014`, `052` |
-| 7 | Guest/Customer | Cùng thiết bị được nối ngữ cảnh 30 ngày; khách thấy, tắt hoặc xóa được. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_049` |
+| 7 | Guest/Customer | Ngữ cảnh chỉ được nối trong phiên trình duyệt đang mở; tải lại trang vẫn thấy đoạn chat, đóng trình duyệt là hết. Khách vẫn xoá được cuộc trò chuyện. | `OWNER_CONFIRMED_2026-09-05` | `CHAT_RULE_049` |
 
 ### Màn quản trị chat
 

@@ -105,7 +105,7 @@ class ChatImageStorageServiceTest {
     }
 
     @Test
-    void unsupportedDeclaredTypeAndSpoofedMagicBytesAreRejectedClearly() {
+    void nonImageContentIsRejectedClearlyWhateverTheFileClaimsToBe() {
         MinioClient minio = mock(MinioClient.class);
         ImageCompressionService compression = mock(ImageCompressionService.class);
         ChatImageStorageService service = new ChatImageStorageService(minio, compression);
@@ -114,16 +114,38 @@ class ChatImageStorageServiceTest {
                 () -> service.store(
                         UUID.randomUUID(), UUID.randomUUID(),
                         new MockMultipartFile(
-                                "file", "helmet.gif", "image/gif", ONE_PIXEL_PNG)),
+                                "file", "not-an-image.jpg", "image/jpeg",
+                                "this is not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8))),
                 "CHAT_IMAGE_UNSUPPORTED_TYPE");
         assertCode(
                 () -> service.store(
                         UUID.randomUUID(), UUID.randomUUID(),
                         new MockMultipartFile(
-                                "file", "not-an-image.jpg", "image/jpeg",
-                                "this is not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8))),
+                                "file", "clip.gif", "image/gif", GIF_HEADER)),
                 "CHAT_IMAGE_UNSUPPORTED_TYPE");
         verifyNoInteractions(minio, compression);
+    }
+
+    /**
+     * Phones and browsers routinely mislabel a perfectly good photo ("image/jpg", an empty type,
+     * or an extension that does not match). The sniffed content decides, so those uploads must get
+     * past validation instead of being turned away with an unsupported-type error.
+     */
+    @Test
+    void mislabelledButValidPhotoIsAcceptedByContent() {
+        MinioClient minio = mock(MinioClient.class);
+        ImageCompressionService compression = mock(ImageCompressionService.class);
+        ChatImageStorageService service = new ChatImageStorageService(minio, compression);
+
+        for (String declared : new String[] {"image/jpg", "application/octet-stream", ""}) {
+            // Compression is mocked to return null, so a file that clears validation stops at the
+            // later re-encode step. Reaching CHAT_IMAGE_INVALID proves it was not type-rejected.
+            assertCode(
+                    () -> service.store(
+                            UUID.randomUUID(), UUID.randomUUID(),
+                            new MockMultipartFile("file", "helmet.gif", declared, ONE_PIXEL_PNG)),
+                    "CHAT_IMAGE_INVALID");
+        }
     }
 
     @Test
@@ -193,6 +215,12 @@ class ChatImageStorageServiceTest {
 
         verify(minio, never()).putObject(any(PutObjectArgs.class));
     }
+
+    /** A real GIF: a supported-looking extension that is genuinely an unsupported format. */
+    private static final byte[] GIF_HEADER = new byte[] {
+            'G', 'I', 'F', '8', '9', 'a', 1, 0, 1, 0, (byte) 0x80, 0, 0,
+            0, 0, 0, (byte) 0xff, (byte) 0xff, (byte) 0xff, 0x2c, 0, 0, 0, 0,
+            1, 0, 1, 0, 0, 2, 2, 0x44, 1, 0, 0x3b};
 
     private static void assertCode(ThrowingCall call, String expectedCode) {
         assertThatThrownBy(call::run)

@@ -82,7 +82,7 @@ class ChatClarificationDecisionTest {
         assertThat(second.clarification()).isNotNull();
         assertThat(second.clarification().criterion()).isEqualTo("USE_CASE");
         assertThat(second.products()).hasSizeBetween(2, 3);
-        assertThat(second.localAnswer()).contains("chưa phải kết quả cuối");
+        assertThat(second.localAnswer()).contains("lựa chọn đang bán", "vài mẫu bên dưới");
         assertThat(second.clarification().options())
                 .extracting(option -> option.label())
                 .contains("Đi tour đường dài", "Cứ cho em xem tất cả");
@@ -93,7 +93,7 @@ class ChatClarificationDecisionTest {
         ChatToolService.ToolOutcome third = turn("đi tour đường dài", "vi", context);
         assertThat(third.clarification()).isNull();
         assertThat(third.products()).hasSize(5);
-        assertThat(third.localAnswer()).contains("không hỏi thêm");
+        assertThat(third.localAnswer()).contains("mẫu phù hợp bên dưới");
         assertThat(third.nextProductDecision().askedCriteria())
                 .containsExactlyInAnyOrder("GROUP", "USE_CASE");
     }
@@ -107,7 +107,7 @@ class ChatClarificationDecisionTest {
 
         assertThat(outcome.clarification()).isNull();
         assertThat(outcome.products()).hasSize(4);
-        assertThat(outcome.localAnswer()).contains("đủ thông tin");
+        assertThat(outcome.localAnswer()).contains("mẫu phù hợp bên dưới");
     }
 
     @Test
@@ -208,8 +208,8 @@ class ChatClarificationDecisionTest {
         assertThat(delegated.clarification()).isNull();
         assertThat(delegated.products()).hasSize(1);
         assertThat(delegated.localAnswer())
-                .contains("chưa đủ để xếp hạng")
-                .contains("đánh dấu nổi bật");
+                .contains("chưa có đủ đơn đã hoàn tất để xếp thứ tự")
+                .contains("chọn làm nổi bật");
     }
 
     @Test
@@ -309,7 +309,7 @@ class ChatClarificationDecisionTest {
                 String answer = english
                         ? "In this product group, the criteria known so far leave 9 current choices. I’m showing a few representative items that are in stock below; these are not the final results yet. "
                                 + question
-                        : "Trong nhóm hàng này, các tiêu chí đã biết còn 9 lựa chọn đang bán. Em gửi vài món còn hàng tiêu biểu bên dưới; đây chưa phải kết quả cuối. "
+                        : "Trong nhóm hàng này hiện có 9 lựa chọn đang bán, anh/chị xem thử vài mẫu bên dưới. "
                                 + question;
                 assertThat(guard.check(answer, safeCards, lang))
                         .as(guard.rejectionReason(
@@ -335,7 +335,7 @@ class ChatClarificationDecisionTest {
         assertThat(outcome.products()).singleElement()
                 .extracting(card -> card.slug())
                 .isEqualTo("helmet-2");
-        assertThat(outcome.localAnswer()).contains("bán nhiều nhất", "đơn đã hoàn tất");
+        assertThat(outcome.localAnswer()).contains("được mua nhiều nhất", "đơn đã hoàn tất");
     }
 
     @Test
@@ -351,7 +351,7 @@ class ChatClarificationDecisionTest {
         assertThat(belowOrderThreshold.products()).singleElement()
                 .extracting(card -> card.slug())
                 .isEqualTo("helmet-0");
-        assertThat(belowOrderThreshold.localAnswer()).contains("chưa đủ để xếp hạng");
+        assertThat(belowOrderThreshold.localAnswer()).contains("chưa có đủ đơn đã hoàn tất để xếp thứ tự");
 
         when(catalog.assistantCompletedSales(anyList())).thenReturn(
                 new CatalogReadService.AssistantSalesSnapshot(10, List.of(
@@ -362,7 +362,7 @@ class ChatClarificationDecisionTest {
         assertThat(oneProductOnly.products()).singleElement()
                 .extracting(card -> card.slug())
                 .isEqualTo("helmet-0");
-        assertThat(oneProductOnly.localAnswer()).contains("chưa đủ để xếp hạng");
+        assertThat(oneProductOnly.localAnswer()).contains("chưa có đủ đơn đã hoàn tất để xếp thứ tự");
     }
 
     private ChatToolService.ToolOutcome turn(

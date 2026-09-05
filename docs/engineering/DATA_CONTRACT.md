@@ -2545,6 +2545,7 @@ Không có trạng thái/lần đếm/lời mời liên hệ trên hội thoại
 | `role` | `CUSTOMER|ASSISTANT|SYSTEM` | `SYSTEM` chỉ giữ sự kiện hệ thống cần thiết; không còn tin nhắn nhân viên. |
 | `content` / `locale` | text/locale | Nội dung đã qua lớp an toàn và định dạng. |
 | `source` / `outcome_code` / `ai_called` | server-owned | Phân biệt fast-path/AI/fallback an toàn; `ai_called` hỗ trợ quota, không là ledger chi phí. |
+| `source` — giá trị hợp lệ | `varchar(24)` + CHECK `ck_chat_message_source` | Đúng **chín** giá trị: `AI`, `RULE`, `TEMPLATE`, `TOOL`, `CONTACT_FALLBACK`, `PROVIDER_UNAVAILABLE`, `OUT_OF_SCOPE`, `CONTENT_REFUSAL`, `ROLE_DEFENSE`. `RULE` là câu trả lời tất định do backend soạn (chào, chính sách, thông tin cửa hàng, từ chối lịch sự, hỏi lại nhu cầu/ngân sách); `PROVIDER_UNAVAILABLE` là câu xin lỗi khi nhà cung cấp AI không trả lời được. Danh sách này là **một nguồn chân lý duy nhất**: hằng số `ChatMessageSource` trong backend và ràng buộc CHECK trong migration phải luôn khớp nhau (có bài kiểm thử đối chiếu). Trang quản trị hiển thị nhãn cho đủ chín giá trị. |
 | `products_json` / `cross_sell_products_json` | JSONB nullable | Snapshot thẻ đã hậu kiểm, tối đa 8 sản phẩm và 2 phụ kiện. |
 | `created_at` | `TIMESTAMPTZ` | Thứ tự detail/retention. |
 
@@ -2558,7 +2559,9 @@ chat. Khách chỉ mở thẻ liên hệ Hotline/Zalo/Messenger; thao tác này 
 
 ### `chat_visitors`
 
-Định danh first-party ngẫu nhiên chỉ lưu hash token, `memory_enabled`, `last_seen_at`, `remembered_until` và timestamps. Không có IP, fingerprint, contact hoặc prose. Visitor hết cửa sổ nhớ 30 ngày được xóa; `visitor_id` của transcript còn retention thành `NULL`, không xóa sớm transcript.
+Định danh first-party ngẫu nhiên chỉ lưu hash token, `last_seen_at`, `remembered_until` và timestamps. Không có IP, fingerprint, contact hoặc prose.
+
+**Owner decision 2026-09-05 (`CHAT_RULE_049`) — định danh chỉ sống trong phiên.** Dòng `chat_visitors` chỉ được tạo khi khách thực sự mở khung chat (không tạo lúc tải trang), và `remembered_until` là cửa sổ phiên ngắn thay cho 30 ngày cũ. Cột `memory_enabled` bị gỡ cùng nút bật/tắt ghi nhớ. Khi triển khai thay đổi này, toàn bộ định danh cũ bị xoá một lần; `visitor_id` của transcript còn retention chuyển thành `NULL` (khoá ngoại `ON DELETE SET NULL`) nên **không** xoá sớm transcript — hội thoại vẫn giữ đủ 90 ngày theo `CHAT_RULE_013`.
 
 ### `chat_ai_daily_usage`
 

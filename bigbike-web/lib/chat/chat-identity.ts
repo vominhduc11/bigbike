@@ -1,20 +1,16 @@
+// CHAT_RULE_049 (owner decision 2026-09-05): the assistant only remembers inside the browser
+// session. The visitor identifier still exists — it is the key that proves a conversation and its
+// images belong to this guest — but it lives in sessionStorage, is created only when the customer
+// actually opens the chat panel, and disappears when the browser is closed.
 const VISITOR_ID_KEY = "bb_chat_visitor_id_v1";
 const VISITOR_TOKEN_KEY = "bb_chat_visitor_token_v1";
-const MEMORY_ENABLED_KEY = "bb_chat_memory_enabled_v1";
+/** Written by earlier builds that offered a memory switch; cleared so nothing survives an upgrade. */
+const LEGACY_MEMORY_ENABLED_KEY = "bb_chat_memory_enabled_v1";
 
 export type ChatIdentity = {
   visitorId: string;
   visitorToken?: string;
-  memoryEnabled: boolean;
 };
-
-function identityStorage(memoryEnabled: boolean): Storage {
-  return memoryEnabled ? window.localStorage : window.sessionStorage;
-}
-
-function otherIdentityStorage(memoryEnabled: boolean): Storage {
-  return memoryEnabled ? window.sessionStorage : window.localStorage;
-}
 
 function newUuid(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -28,40 +24,34 @@ function newUuid(): string {
   return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
 }
 
+/** Removes anything a previous long-term-memory build left on this device. */
+function dropLegacyLongTermMemory(): void {
+  try {
+    window.localStorage.removeItem(VISITOR_ID_KEY);
+    window.localStorage.removeItem(VISITOR_TOKEN_KEY);
+    window.localStorage.removeItem(LEGACY_MEMORY_ENABLED_KEY);
+  } catch {
+    // Private windows and blocked site data are expected; there is simply nothing to clean up.
+  }
+}
+
 export function readOrCreateChatIdentity(): ChatIdentity {
-  const memoryEnabled = window.localStorage.getItem(MEMORY_ENABLED_KEY) !== "false";
-  const storage = identityStorage(memoryEnabled);
-  const existing = storage.getItem(VISITOR_ID_KEY)?.trim();
+  dropLegacyLongTermMemory();
+  const existing = window.sessionStorage.getItem(VISITOR_ID_KEY)?.trim();
   const visitorId = existing || newUuid();
-  if (!existing) storage.setItem(VISITOR_ID_KEY, visitorId);
+  if (!existing) window.sessionStorage.setItem(VISITOR_ID_KEY, visitorId);
   return {
     visitorId,
-    visitorToken: storage.getItem(VISITOR_TOKEN_KEY)?.trim() || undefined,
-    memoryEnabled,
+    visitorToken: window.sessionStorage.getItem(VISITOR_TOKEN_KEY)?.trim() || undefined,
   };
 }
 
 export function saveChatIdentityToken(token: string): void {
-  const memoryEnabled = window.localStorage.getItem(MEMORY_ENABLED_KEY) !== "false";
-  if (token.trim()) identityStorage(memoryEnabled).setItem(VISITOR_TOKEN_KEY, token.trim());
-}
-
-export function setChatMemoryPreference(enabled: boolean): void {
-  const source = otherIdentityStorage(enabled);
-  const target = identityStorage(enabled);
-  const visitorId = source.getItem(VISITOR_ID_KEY);
-  const visitorToken = source.getItem(VISITOR_TOKEN_KEY);
-  if (visitorId) target.setItem(VISITOR_ID_KEY, visitorId);
-  if (visitorToken) target.setItem(VISITOR_TOKEN_KEY, visitorToken);
-  source.removeItem(VISITOR_ID_KEY);
-  source.removeItem(VISITOR_TOKEN_KEY);
-  window.localStorage.setItem(MEMORY_ENABLED_KEY, enabled ? "true" : "false");
+  if (token.trim()) window.sessionStorage.setItem(VISITOR_TOKEN_KEY, token.trim());
 }
 
 export function clearChatIdentity(): void {
-  window.localStorage.removeItem(VISITOR_ID_KEY);
-  window.localStorage.removeItem(VISITOR_TOKEN_KEY);
-  window.localStorage.removeItem(MEMORY_ENABLED_KEY);
+  dropLegacyLongTermMemory();
   window.sessionStorage.removeItem(VISITOR_ID_KEY);
   window.sessionStorage.removeItem(VISITOR_TOKEN_KEY);
 }

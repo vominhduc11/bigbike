@@ -9,8 +9,8 @@ import type {
 } from "@/lib/api/client-api";
 
 export const CHAT_STORAGE_KEY = "bb_ai_chat_session_v1";
-// The authoritative 30-day memory is server-side. The browser keeps only a short
-// display cache so a reopened tab is quick without turning UI text into a hidden profile.
+// CHAT_RULE_049 (owner decision 2026-09-05): sessionStorage, so reloading the page keeps the
+// conversation visible in that tab while closing the browser leaves nothing behind on the device.
 export const CHAT_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
 const CHAT_SNAPSHOT_VERSION = 5 as const;
@@ -137,7 +137,8 @@ function readImage(value: unknown): ChatImage | undefined {
     typeof value.sizeBytes !== "number" ||
     !Number.isSafeInteger(value.sizeBytes) ||
     value.sizeBytes < 0
-  ) return undefined;
+  )
+    return undefined;
   return {
     id,
     contentPath,
@@ -223,7 +224,12 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
     content,
   };
   if (value.sequenceNo != null) {
-    if (typeof value.sequenceNo !== "number" || !Number.isSafeInteger(value.sequenceNo) || value.sequenceNo < 0) return undefined;
+    if (
+      typeof value.sequenceNo !== "number" ||
+      !Number.isSafeInteger(value.sequenceNo) ||
+      value.sequenceNo < 0
+    )
+      return undefined;
     message.sequenceNo = value.sequenceNo;
   }
   if (value.products != null) {
@@ -233,7 +239,8 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
     message.products = products as ChatProductCard[];
   }
   if (value.crossSellProducts != null) {
-    if (!Array.isArray(value.crossSellProducts) || value.crossSellProducts.length > 2) return undefined;
+    if (!Array.isArray(value.crossSellProducts) || value.crossSellProducts.length > 2)
+      return undefined;
     const products = value.crossSellProducts.map(readProduct);
     if (products.some((product) => !product)) return undefined;
     message.crossSellProducts = products as ChatProductCard[];
@@ -243,10 +250,12 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
   }
   if (isRecord(value.nextStep)) {
     const type = boundedString(value.nextStep.type, 48);
-    const productSlug = value.nextStep.productSlug == null
-      ? null : boundedString(value.nextStep.productSlug, 255);
-    const clarificationId = value.nextStep.clarificationId == null
-      ? null : boundedString(value.nextStep.clarificationId, 120);
+    const productSlug =
+      value.nextStep.productSlug == null ? null : boundedString(value.nextStep.productSlug, 255);
+    const clarificationId =
+      value.nextStep.clarificationId == null
+        ? null
+        : boundedString(value.nextStep.clarificationId, 120);
     if (!type || productSlug === undefined || clarificationId === undefined) return undefined;
     message.nextStep = { type, productSlug, clarificationId };
   }
@@ -300,6 +309,8 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
 function removeSnapshot(): void {
   if (typeof window === "undefined") return;
   try {
+    window.sessionStorage.removeItem(CHAT_STORAGE_KEY);
+    // Clear the key an earlier long-term-memory build wrote to localStorage.
     window.localStorage.removeItem(CHAT_STORAGE_KEY);
   } catch {
     /* Storage can be unavailable in private or restricted browser contexts. */
@@ -311,7 +322,7 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
 
   let raw: string | null;
   try {
-    raw = window.localStorage.getItem(CHAT_STORAGE_KEY);
+    raw = window.sessionStorage.getItem(CHAT_STORAGE_KEY);
   } catch {
     return null;
   }
@@ -373,7 +384,7 @@ export function readChatSnapshot(now = Date.now()): ChatPersistenceSnapshot | nu
 export function writeChatSnapshot(snapshot: ChatPersistenceSnapshot): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(snapshot));
+    window.sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(snapshot));
   } catch {
     /* Storage can be unavailable or full; the live chat remains usable. */
   }

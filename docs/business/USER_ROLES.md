@@ -61,7 +61,7 @@ File này dùng làm nền cho:
 
 | Actor | Được làm | Không được làm | Căn cứ |
 |---|---|---|---|
-| Guest / Customer | Gửi ảnh khi dịch vụ AI đã khai báo, xem lại ảnh của chính hội thoại, tắt nhớ hoặc xoá lịch sử và ảnh của chính mình | Xem ảnh hội thoại khác; dùng ảnh để yêu cầu hệ thống đoán size, bảo hành, giá hoặc dữ liệu đơn | `CHAT_RULE_049`, `057`–`059` |
+| Guest / Customer | Gửi ảnh khi dịch vụ AI đã khai báo, xem lại ảnh của chính hội thoại, xoá lịch sử và ảnh của chính mình (không còn nút bật/tắt ghi nhớ vì trợ lý chỉ nhớ trong phiên) | Xem ảnh hội thoại khác; dùng ảnh để yêu cầu hệ thống đoán size, bảo hành, giá hoặc dữ liệu đơn | `CHAT_RULE_049`, `057`–`059` |
 | Admin có `chat.read` | Xem transcript, ảnh riêng tư thuộc hội thoại và thống kê | Lấy URL ảnh công khai; xem ảnh nếu thiếu `chat.read`; gửi hoặc sửa tin nhắn khách | `CHAT_RULE_047`, `059`, `PERMISSION_MATRIX.md` |
 | Owner/Admin có `settings.read` / `settings.write` | Quản lý bật/tắt trợ lý, quota AI/ngày, ghi nhớ gần đây và hiểu cách nói tự nhiên | Đổi model chat, mở bảng giá/bộ đề/chi phí đã gỡ; đổi model kiểm duyệt đánh giá bằng cài đặt Trợ lý; xem transcript/ảnh riêng tư nếu thiếu `chat.read` | `CHAT_RULE_010`, `057` |
 | System | Gửi ảnh đã kiểm tra tới Gemini 3.7 Flash để nhận diện khi dịch vụ đã khai báo và xoá object theo retention | Log ảnh/PII; giữ ảnh ngoài hạn 90 ngày; coi output AI là bằng chứng catalog; đổi sang model khác | `CHAT_RULE_019`, `057`–`059` |

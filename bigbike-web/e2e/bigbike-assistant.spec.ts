@@ -151,14 +151,13 @@ async function expectChatFitsViewport(page: Page, isDesktop: boolean) {
   if (isDesktop) expect(geometry.headerHeight).toBeLessThanOrEqual(128);
 }
 
+// CHAT_RULE_049 (owner decision 2026-09-05): a session lasts as long as the browser session, so
+// there is no remembered-through date and no memory switch in the payload any more.
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/v1/chat/sessions", (route) =>
     fulfillJson(route, {
       visitorToken: "visitor-token-e2e",
-      rememberedThrough: "2026-09-28T00:00:00Z",
-      memoryEnabled: true,
       activeConversationId: null,
-      rememberedContextSummary: null,
     }),
   );
 });
@@ -238,7 +237,7 @@ test("keeps product-page context for consultation", async ({ page }) => {
   });
 });
 
-test("keeps deletion inside the memory bar with the existing confirmation", async ({ page }) => {
+test("keeps the delete control and drops the memory disclosure and switch", async ({ page }) => {
   await stubAvailability(page);
   await page.goto("/", { waitUntil: "load" });
   await openBigBike(page);
@@ -249,6 +248,16 @@ test("keeps deletion inside the memory bar with the existing confirmation", asyn
     header(page).getByRole("button", { name: /Xoá cuộc trò chuyện|Delete conversation/i }),
   ).toHaveCount(0);
 
+  // The AI disclosure must stay (CHAT_RULE_001).
+  await expect(
+    page.getByText(/trợ lý AI của BigBike|BigBike’s AI assistant/i).first(),
+  ).toBeVisible();
+  // The memory disclosure line and its on/off switch are gone (CHAT_RULE_049).
+  await expect(
+    page.getByText(/nhớ nhu cầu và sản phẩm đã xem|remembers needs and viewed/i),
+  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Tắt ghi nhớ|Turn memory off/i })).toHaveCount(0);
+
   await memoryBar(page)
     .getByRole("button", { name: /Xoá cuộc trò chuyện|Delete conversation/i })
     .click();
@@ -256,6 +265,35 @@ test("keeps deletion inside the memory bar with the existing confirmation", asyn
     page.getByText(/Xoá toàn bộ lịch sử|Delete all of your conversation history/i),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: /Giữ lại lịch sử|Keep history/i })).toBeVisible();
+});
+
+test("creates the visitor session only when the customer opens the chat", async ({ page }) => {
+  await stubAvailability(page);
+  let sessionCalls = 0;
+  await page.route("**/api/v1/chat/sessions", (route) => {
+    sessionCalls += 1;
+    return fulfillJson(route, {
+      visitorToken: "visitor-token-e2e",
+      activeConversationId: null,
+    });
+  });
+
+  await page.goto("/", { waitUntil: "load" });
+  await page.waitForTimeout(1000);
+  // Browsing the storefront must not mint an identifier for someone who never opens the chat.
+  expect(sessionCalls).toBe(0);
+  expect(
+    await page.evaluate(() => window.localStorage.getItem("bb_chat_visitor_id_v1")),
+  ).toBeNull();
+
+  await openBigBike(page);
+  await expect.poll(() => sessionCalls).toBeGreaterThan(0);
+  expect(
+    await page.evaluate(() => window.sessionStorage.getItem("bb_chat_visitor_id_v1")),
+  ).not.toBeNull();
+  expect(
+    await page.evaluate(() => window.localStorage.getItem("bb_chat_visitor_id_v1")),
+  ).toBeNull();
 });
 
 test("uploads a safe PNG fixture and sends the image consultation", async ({ page }) => {

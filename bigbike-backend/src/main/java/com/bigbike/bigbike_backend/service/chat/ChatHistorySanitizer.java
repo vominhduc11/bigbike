@@ -46,7 +46,10 @@ public final class ChatHistorySanitizer {
             List<ChatMessageEntity> messages,
             int requestedPairs
     ) {
-        int limit = Math.max(0, Math.min(3, requestedPairs));
+        // CHAT_RULE_005 caps this at ai_assistant_recent_turn_pairs (default and maximum 12). A
+        // hard-coded 3 silently overrode the setting and cost the assistant the context it needs to
+        // understand follow-ups such as "cái mũ đó còn không".
+        int limit = Math.max(0, Math.min(ChatAssistantSettings.MAX_RECENT_TURN_PAIRS, requestedPairs));
         if (limit == 0 || messages == null || messages.isEmpty()) return List.of();
 
         List<RecentTurn> completed = new ArrayList<>();

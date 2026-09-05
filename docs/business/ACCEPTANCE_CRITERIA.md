@@ -23,7 +23,7 @@ This file captures measurable acceptance criteria that can be verified from curr
 | Trải nghiệm và an toàn hộp thư | Thư VI/EN dẫn thẳng tới đúng sản phẩm và mở form đánh giá không đăng nhập; có từ chối vĩnh viễn nhưng không có màn quản trị cho danh sách này. Hệ thống gửi rải một thư/10 phút trong khung giờ ban ngày, không vượt trần cố định 20/ngày, lưu mọi lỗi và không tự thử lại; công tắc khẩn chỉ ở `BIGBIKE_REVIEW_INVITATION_ENABLED`. | `REVIEW_RULE_015`–`016`; web/API/template/quota tests | `REQUIRED_FOR_2026-09-01` |
 | Trợ lý BigBike — tự liên hệ shop | Không còn nút, API, hàng chờ, nhận việc, tin nhắn hoặc email cho người thật. Khách mở thẻ Hotline/Zalo/Messenger; quản trị vẫn xem lịch sử chỉ đọc bằng `chat.read`. | `CHAT_RULE_008`, `011`, `040`, `045`–`047`; admin/web/API tests | `REQUIRED_FOR_2026-08-30` |
 | Trợ lý BigBike — tư vấn an toàn | Hàng, size, giá, tồn, policy và đơn được xác minh từ nguồn thật; không bịa, hứa giảm giá/quà/ngày giao, hoặc lộ dữ liệu đơn. Cách nói tự nhiên và bộ viết tắt phổ thông đóng trong code vẫn hỗ trợ tìm hàng. | `CHAT_RULE_001`–`020`, `034`–`039`; VI/EN guard tests | `REQUIRED_FOR_2026-08-29` |
-| Trợ lý BigBike — giỏ, nhớ và ảnh | Thẻ chat chỉ thêm biến thể còn hàng sau hậu kiểm; cùng thiết bị được nhớ 30 ngày và khách có quyền tắt/xóa. Khi dịch vụ AI đã khai báo, ảnh luôn dùng được, không có công tắc; giới hạn cố định 1/lượt, 3/hội thoại, 20/ngày, 8 MB và riêng tư 90 ngày. | `CHAT_RULE_014`, `049`, `052`, `057`–`059`; cart/memory/image tests | `REQUIRED_FOR_2026-08-30` |
+| Trợ lý BigBike — giỏ, nhớ và ảnh | Thẻ chat chỉ thêm biến thể còn hàng sau hậu kiểm; ngữ cảnh chỉ được nhớ trong phiên trình duyệt và khách vẫn xoá được cuộc trò chuyện. Mọi câu trả lời trợ lý đã soạn phải lưu được xuống CSDL — không có lượt nào khách thấy màn hình lỗi vì khâu lưu. Khi dịch vụ AI đã khai báo, ảnh luôn dùng được, không có công tắc; giới hạn cố định 1/lượt, 3/hội thoại, 20/ngày, 8 MB và riêng tư 90 ngày. | `CHAT_RULE_014`, `049`, `052`, `057`–`059`; cart/memory/image tests | `REQUIRED_FOR_2026-08-30` |
 
 ## Trợ lý BigBike — nghiệm thu sau rút gọn (owner 2026-08-30)
 
@@ -37,7 +37,7 @@ Mọi ca có chữ khách nhìn thấy phải có tiếng Việt có dấu đầ
 | 4 | Không có đường gọi người thật: không API/hàng chờ/claim/reply/return/close/email/chuông; bấm Hotline/Zalo/Messenger chỉ mở thẻ liên hệ, không tạo request. Lịch sử admin vẫn đọc được với `chat.read`; `chat.reply` không còn. | permission/admin/web tests | `REQUIRED` |
 | 5 | Cài đặt chỉ còn bật/tắt trợ lý, trần AI/ngày, số cặp hỏi–đáp gần nhất và diễn giải tìm hàng; không có ô ảnh, câu chào, gợi ý nhanh, trần hội thoại, lịch trực hoặc email handoff. | settings registry/API/admin tests | `REQUIRED` |
 | 6 | Không còn API, bảng dữ liệu, giao diện hoặc bản dịch cho lead, feedback, attribution, proactive, reports đã gỡ. | migration/reference scan/admin/web tests | `REQUIRED` |
-| 7 | Ảnh được gửi không cần bật setting khi dịch vụ AI đã khai báo; nút tự ẩn khi thiếu dịch vụ; giới hạn 1/lượt, 3/hội thoại, 20/ngày, 8 MB, cảnh báo và lưu riêng tư 90 ngày vẫn đúng; nhớ 30 ngày và thêm giỏ tiếp tục hoạt động. | image/memory/cart tests | `REQUIRED` |
+| 7 | Ảnh được gửi không cần bật setting khi dịch vụ AI đã khai báo; nút tự ẩn khi thiếu dịch vụ; giới hạn 1/lượt, 3/hội thoại, 20/ngày, 8 MB, cảnh báo và lưu riêng tư 90 ngày vẫn đúng; tải ảnh lên phải thành công với ảnh JPG/PNG/WebP hợp lệ; nhớ trong phiên và thêm giỏ tiếp tục hoạt động. | image/memory/cart tests | `REQUIRED` |
 ## Release Caveats
 
 | Topic | Current limitation | Status |

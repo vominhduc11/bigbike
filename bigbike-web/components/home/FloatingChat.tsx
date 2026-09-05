@@ -14,18 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import {
-  ChevronDown,
-  History,
-  ImagePlus,
-  Loader2,
-  MessageCircle,
-  Phone,
-  RefreshCw,
-  Send,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ImagePlus, Loader2, MessageCircle, Phone, RefreshCw, Send, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -70,7 +59,6 @@ import {
   clearChatIdentity,
   readOrCreateChatIdentity,
   saveChatIdentityToken,
-  setChatMemoryPreference,
   type ChatIdentity,
 } from "@/lib/chat/chat-identity";
 import { toLoginPath, toOrderHistoryPath, toOrderLookupPath } from "@/lib/utils/routes";
@@ -421,13 +409,10 @@ export function FloatingChat({
   const [hasInteracted, setHasInteracted] = useState(false);
   const [expandedProductMessages, setExpandedProductMessages] = useState<string[]>([]);
   const [visitorToken, setVisitorToken] = useState<string>();
-  const [memoryEnabled, setMemoryEnabled] = useState(true);
-  const [memorySummary, setMemorySummary] = useState("");
-  const memoryDays = 30;
-  const [memoryUpdating, setMemoryUpdating] = useState(false);
-  const [memoryExpanded, setMemoryExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deletingHistory, setDeletingHistory] = useState(false);
+  /** CHAT_RULE_049: true once the customer has actually opened the chat panel. */
+  const sessionStartedRef = useRef(false);
   const [imageSettings, setImageSettings] = useState({
     enabled: false,
     maxBytes: 8 * 1024 * 1024,
@@ -498,51 +483,40 @@ export function FloatingChat({
     [applyHistory],
   );
 
-  const initializeVisitorSession = useCallback(
-    async (memoryOverride?: boolean) => {
-      if (typeof window === "undefined") return;
-      let identity = readOrCreateChatIdentity();
-      if (memoryOverride != null) identity = { ...identity, memoryEnabled: memoryOverride };
-      identityRef.current = identity;
+  // CHAT_RULE_049: this runs when the customer opens the chat panel, never on page load, so a
+  // visitor identifier is no longer created for everyone who merely browses the site.
+  const initializeVisitorSession = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    let identity = readOrCreateChatIdentity();
+    identityRef.current = identity;
+    try {
+      let session;
       try {
-        let session;
-        try {
-          session = await openChatSession({
-            visitorId: identity.visitorId,
-            visitorToken: identity.visitorToken,
-            locale: activeLocale,
-            memoryEnabled: identity.memoryEnabled,
-          });
-        } catch {
-          clearChatIdentity();
-          identity = readOrCreateChatIdentity();
-          if (memoryOverride != null) identity = { ...identity, memoryEnabled: memoryOverride };
-          identityRef.current = identity;
-          session = await openChatSession({
-            visitorId: identity.visitorId,
-            locale: activeLocale,
-            memoryEnabled: identity.memoryEnabled,
-          });
-        }
-        if (!mountedRef.current) return;
-        saveChatIdentityToken(session.visitorToken);
-        identityRef.current = { ...identity, visitorToken: session.visitorToken };
-        setVisitorToken(session.visitorToken);
-        setMemoryEnabled(session.memoryEnabled);
-        setMemorySummary(session.rememberedContextSummary?.trim() || "");
-        if (session.rememberedThrough) {
-          persistenceExpiresAtRef.current = new Date(session.rememberedThrough).getTime();
-        }
-        if (!session.memoryEnabled) clearChatSnapshot();
-        if (session.activeConversationId) {
-          await syncHistory(session.activeConversationId, session.visitorToken);
-        }
+        session = await openChatSession({
+          visitorId: identity.visitorId,
+          visitorToken: identity.visitorToken,
+          locale: activeLocale,
+        });
       } catch {
-        if (mountedRef.current) setMemorySummary(t("memoryUnavailable"));
+        clearChatIdentity();
+        identity = readOrCreateChatIdentity();
+        identityRef.current = identity;
+        session = await openChatSession({
+          visitorId: identity.visitorId,
+          locale: activeLocale,
+        });
       }
-    },
-    [activeLocale, syncHistory, t],
-  );
+      if (!mountedRef.current) return;
+      saveChatIdentityToken(session.visitorToken);
+      identityRef.current = { ...identity, visitorToken: session.visitorToken };
+      setVisitorToken(session.visitorToken);
+      if (session.activeConversationId) {
+        await syncHistory(session.activeConversationId, session.visitorToken);
+      }
+    } catch {
+      // A failed session leaves the widget usable; the next send retries.
+    }
+  }, [activeLocale, syncHistory]);
 
   const clearConversation = useCallback(
     (closePanel = false) => {
@@ -573,7 +547,6 @@ export function FloatingChat({
       setServiceMode("AI");
       setAvailabilityState("idle");
       setContacts(fallbackContacts);
-      setMemoryExpanded(false);
       setContactNotice("");
       setContactOpen(false);
       setRetryAvailable(false);
@@ -638,7 +611,10 @@ export function FloatingChat({
     };
   }, []);
 
+  // The session is opened by openPanel(), not on mount. Signing in or out while the panel is
+  // already open still needs a refresh so the conversation follows the right owner.
   useEffect(() => {
+    if (panelState === "closed" || !sessionStartedRef.current) return;
     let cancelled = false;
     void Promise.resolve().then(() => {
       if (!cancelled) void initializeVisitorSession();
@@ -646,7 +622,7 @@ export function FloatingChat({
     return () => {
       cancelled = true;
     };
-  }, [auth.status, initializeVisitorSession]);
+  }, [auth.status, initializeVisitorSession, panelState]);
 
   useEffect(() => {
     if (previousAuthStatusRef.current === "authenticated" && auth.status !== "authenticated") {
@@ -668,10 +644,6 @@ export function FloatingChat({
 
   useEffect(() => {
     if (!persistenceReadyRef.current) return;
-    if (!memoryEnabled) {
-      clearChatSnapshot();
-      return;
-    }
     if (!conversationId || messages.length === 0) return;
     if (persistenceExpiresAtRef.current == null) {
       persistenceExpiresAtRef.current = Date.now() + CHAT_STORAGE_TTL_MS;
@@ -692,15 +664,7 @@ export function FloatingChat({
       pendingRequestId,
     };
     writeChatSnapshot(snapshot);
-  }, [
-    activeLocale,
-    conversationId,
-    messages,
-    memoryEnabled,
-    pendingRequestId,
-    remainingTurns,
-    serviceMode,
-  ]);
+  }, [activeLocale, conversationId, messages, pendingRequestId, remainingTurns, serviceMode]);
 
   useEffect(() => {
     if (!persistenceReadyRef.current || !conversationId || persistenceExpiresAtRef.current == null)
@@ -810,6 +774,10 @@ export function FloatingChat({
   function openPanel() {
     setPanelState("expanded");
     setHasInteracted(true);
+    if (!sessionStartedRef.current) {
+      sessionStartedRef.current = true;
+      void initializeVisitorSession();
+    }
     if (availabilityLocaleRef.current !== activeLocale) void requestAvailability();
   }
 
@@ -1100,36 +1068,16 @@ export function FloatingChat({
     setContactOpen((current) => !current);
   }
 
-  async function handleMemoryToggle() {
-    if (memoryUpdating) return;
-    const enabled = !memoryEnabled;
-    setMemoryUpdating(true);
-    setChatMemoryPreference(enabled);
-    setMemoryEnabled(enabled);
-    try {
-      if (!enabled) clearConversation(false);
-      await initializeVisitorSession(enabled);
-      setMemorySummary(
-        enabled ? t("memoryEnabledSummary", { days: memoryDays }) : t("memoryDisabledSummary"),
-      );
-    } finally {
-      if (mountedRef.current) setMemoryUpdating(false);
-    }
-  }
-
   async function handleDeleteHistory() {
     if (deletingHistory) return;
     setDeletingHistory(true);
     try {
       await deleteChatHistory(visitorToken);
-      const keepMemoryPreference = memoryEnabled;
       clearConversation(false);
       clearChatIdentity();
-      setChatMemoryPreference(keepMemoryPreference);
       setVisitorToken(undefined);
-      setMemorySummary(t("historyDeleted"));
       setConfirmDelete(false);
-      await initializeVisitorSession(keepMemoryPreference);
+      await initializeVisitorSession();
     } catch {
       if (mountedRef.current) setContactNotice(t("historyDeleteError"));
     } finally {
@@ -1315,27 +1263,13 @@ export function FloatingChat({
             </DialogDescription>
           </DialogHeader>
 
+          {/*
+            CHAT_RULE_049 (owner decision 2026-09-05): no memory disclosure line and no memory
+            on/off switch — the assistant only remembers inside this browser session, so there is
+            nothing left to turn off. The delete control stays, with its confirmation.
+          */}
           <div data-bigbike-memory-bar className="shrink-0 border-b border-border bg-background">
-            <div className="flex items-stretch">
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-11 min-w-0 flex-1 justify-start gap-2 rounded-none px-4 py-2 text-left hover:scale-100"
-                aria-expanded={memoryExpanded}
-                aria-controls="bigbike-memory-details"
-                onClick={() => setMemoryExpanded((current) => !current)}
-              >
-                <History className="size-4 shrink-0 text-chat" aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate font-body text-a5-meta text-muted-foreground">
-                  {memoryEnabled
-                    ? memorySummary || t("memoryDisclosure", { days: memoryDays })
-                    : t("memoryDisabledSummary")}
-                </span>
-                <ChevronDown
-                  className={`size-4 shrink-0 transition-transform ${memoryExpanded ? "rotate-180" : ""}`}
-                  aria-hidden="true"
-                />
-              </Button>
+            <div className="flex items-stretch justify-end">
               <Button
                 type="button"
                 variant="ghost"
@@ -1343,10 +1277,9 @@ export function FloatingChat({
                 className="size-11 min-h-11 shrink-0 rounded-none border-l border-border p-0 hover:scale-100 hover:bg-secondary"
                 aria-label={t("deleteConversation")}
                 title={t("deleteConversation")}
-                onClick={() => {
-                  setConfirmDelete(true);
-                  setMemoryExpanded(true);
-                }}
+                aria-expanded={confirmDelete}
+                aria-controls="bigbike-memory-details"
+                onClick={() => setConfirmDelete((current) => !current)}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
               </Button>
@@ -1354,60 +1287,37 @@ export function FloatingChat({
             <div
               id="bigbike-memory-details"
               className="border-t border-border px-4 py-3"
-              hidden={!memoryExpanded}
+              hidden={!confirmDelete}
             >
-              <p className="m-0 font-body text-a5-meta leading-relaxed text-muted-foreground">
-                {memoryEnabled
-                  ? memorySummary || t("memoryDisclosure", { days: memoryDays })
-                  : t("memoryDisabledSummary")}
-              </p>
-              <Button
-                type="button"
-                variant="link"
-                className="mt-2 min-h-11 p-0 font-body text-a5-meta"
-                disabled={memoryUpdating}
-                onClick={() => void handleMemoryToggle()}
-              >
-                {memoryUpdating
-                  ? t("memoryUpdating")
-                  : memoryEnabled
-                    ? t("disableMemory")
-                    : t("enableMemory")}
-              </Button>
-              {confirmDelete ? (
-                <div
-                  className="mt-3 border border-state-warning bg-state-warning-bg p-3"
-                  role="alert"
-                >
-                  <p className="m-0 font-body text-a5-meta font-semibold text-foreground">
-                    {t("confirmDeleteHistory")}
-                  </p>
-                  <div className="mt-3 flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={deletingHistory}
-                      onClick={() => setConfirmDelete(false)}
-                    >
-                      {t("cancelDeleteHistory")}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={deletingHistory}
-                      onClick={() => void handleDeleteHistory()}
-                    >
-                      {deletingHistory ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                      ) : (
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      )}
-                      {deletingHistory ? t("deletingHistory") : t("confirmDeleteAction")}
-                    </Button>
-                  </div>
+              <div className="border border-state-warning bg-state-warning-bg p-3" role="alert">
+                <p className="m-0 font-body text-a5-meta font-semibold text-foreground">
+                  {t("confirmDeleteHistory")}
+                </p>
+                <div className="mt-3 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={deletingHistory}
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    {t("cancelDeleteHistory")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={deletingHistory}
+                    onClick={() => void handleDeleteHistory()}
+                  >
+                    {deletingHistory ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Trash2 className="size-4" aria-hidden="true" />
+                    )}
+                    {deletingHistory ? t("deletingHistory") : t("confirmDeleteAction")}
+                  </Button>
                 </div>
-              ) : null}
+              </div>
             </div>
           </div>
 

@@ -143,7 +143,7 @@ GitHub Actions currently runs:
 | Media hardening | `AdminMediaP0Test.java` | `CONFIRMED_FROM_TEST` |
 | Redirect target integrity | `AdminRedirectApiTest.java` + web proxy redirect tests | `REQUIRED_FOR_REDIRECT_RULE_011_012` |
 | Review invitation | Eligibility/cutoff/idempotency/opt-out/quota/token/API/template suites plus web direct-link/unsubscribe tests; no admin invitation surface | `REQUIRED_FOR_REVIEW_RULE_014_016` |
-| Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, memory 30 ngày, cart và ảnh riêng tư VI/EN. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059` |
+| Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, nhớ trong phiên, cart và ảnh riêng tư VI/EN. **Bắt buộc có bài kiểm thử Testcontainers + PostgreSQL (`spring.flyway.enabled=true`, hồ sơ `tc`) chèn mọi giá trị `chat_messages.source` mà backend có thể sinh** — bộ test H2 mặc định tắt Flyway nên không bao giờ thấy ràng buộc CHECK, và đó là lý do lỗi mất câu trả lời sống được nhiều ngày. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059` |
 
 ## Trợ lý BigBike — ma trận kiểm thử (owner decision 2026-08-29)
 

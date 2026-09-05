@@ -498,6 +498,10 @@ public class AiChatClient {
         } catch (ChatToolRegistry.ToolValidationException exception) {
             return rejectedToolAttempt(functionCall, stage, "VALIDATION_REJECTED");
         } catch (IllegalArgumentException exception) {
+            // Log why, not just that: a silent drop of this kind hid a whole class of unanswered
+            // questions for days. The message is developer text only, never customer content.
+            log.warn("chat_tool_call_dropped_detail tool={} stage={} detail={}",
+                    functionCall.name(), stage, exception.getMessage());
             return rejectedToolAttempt(functionCall, stage, "ARGUMENT_MISMATCH");
         } catch (RuntimeException exception) {
             return rejectedToolAttempt(functionCall, stage, "EXECUTION_FAILED");

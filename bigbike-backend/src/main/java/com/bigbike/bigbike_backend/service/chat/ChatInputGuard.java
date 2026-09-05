@@ -38,35 +38,35 @@ public class ChatInputGuard {
         boolean english = "en".equals(lang);
         if (ROLE_ATTACK.matcher(value).find()) {
             return Optional.of(new Decision(
-                    "ROLE_DEFENSE",
+                    ChatMessageSource.ROLE_DEFENSE,
                     english
                             ? "I can only help with BigBike products, store policies and supported shopping tasks. Please tell me what product or shopping information you need."
                             : "Em chỉ hỗ trợ sản phẩm, chính sách và các nhu cầu mua sắm tại BigBike. Anh/chị cho em biết sản phẩm hoặc thông tin mua hàng cần hỗ trợ nhé."));
         }
         if (SELF_HARM.matcher(value).find()) {
             return Optional.of(new Decision(
-                    "CONTENT_REFUSAL",
+                    ChatMessageSource.CONTENT_REFUSAL,
                     english
                             ? "I cannot help with self-harm. If you may be in immediate danger, please contact local emergency services or a trusted person near you now."
                             : "Em không thể hỗ trợ nội dung tự làm hại bản thân. Nếu anh/chị có nguy cơ ngay lúc này, hãy liên hệ dịch vụ khẩn cấp tại địa phương hoặc một người đáng tin đang ở gần ngay nhé."));
         }
         if (COMPLAINT_OR_ABUSE.matcher(value).find()) {
             return Optional.of(new Decision(
-                    "CONTACT_FALLBACK",
+                    ChatMessageSource.CONTACT_FALLBACK,
                     english
                             ? "I am sorry this experience has upset you. Please contact BigBike through Hotline, Zalo or Messenger below for direct support."
                             : "BigBike xin lỗi vì trải nghiệm đã làm anh/chị không hài lòng. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger bên dưới để được hỗ trợ trực tiếp nhé."));
         }
         if (ADULT.matcher(value).find() || MALICIOUS_INTENT.matcher(value).find()) {
             return Optional.of(new Decision(
-                    "CONTENT_REFUSAL",
+                    ChatMessageSource.CONTENT_REFUSAL,
                     english
                             ? "I cannot help with that content. I can still assist with BigBike products, protective gear and store policies."
                             : "Em không thể hỗ trợ nội dung này. Em vẫn có thể tư vấn sản phẩm, đồ bảo hộ và chính sách của BigBike."));
         }
         if (CLEARLY_OUT_OF_SCOPE.matcher(value).find()) {
             return Optional.of(new Decision(
-                    "OUT_OF_SCOPE",
+                    ChatMessageSource.OUT_OF_SCOPE,
                     english
                             ? "That is outside BigBike Assistant's scope. I can help with products, sizing, availability and BigBike store policies."
                             : "Nội dung này nằm ngoài phạm vi của Trợ lý BigBike. Em có thể hỗ trợ sản phẩm, chọn size, tình trạng hàng và chính sách của BigBike."));

@@ -39,6 +39,8 @@ public class ChatToolRegistry {
     private static final Set<String> POLICY_TOPICS = Set.of(
             "warranty", "return_exchange", "payment", "shipping", "size", "privacy");
     private static final Set<String> ORDER_SCOPES = Set.of("latest", "recent");
+    /** Tools whose schema has no language field still receive one from the model now and then. */
+    private static final Set<String> REDUNDANT_LANG_ONLY = Set.of("lang");
     private static final Pattern SLUG = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
     private static final Pattern SQL_SHAPE = Pattern.compile(
             "(?is)(;|--|/\\*|\\*/|\\bselect\\s+.+?\\s+from\\b|"
@@ -109,7 +111,8 @@ public class ChatToolRegistry {
     }
 
     private static ValidatedCall validateGetProduct(JsonNode arguments) {
-        rejectUnknown(arguments, Set.of("slug"));
+        rejectUnknown(arguments, Set.of("slug", "lang"));
+        requireValidRedundantLang(arguments);
         String slug = requiredText(arguments, "slug", 255);
         if (!SLUG.matcher(slug).matches()) throw new ToolValidationException("Invalid slug");
         return new ValidatedCall(GET_PRODUCT, Map.of("slug", slug));
@@ -124,16 +127,30 @@ public class ChatToolRegistry {
     }
 
     private static ValidatedCall validateNoArguments(String name, JsonNode arguments) {
-        rejectUnknown(arguments, Set.of());
+        rejectUnknown(arguments, REDUNDANT_LANG_ONLY);
+        requireValidRedundantLang(arguments);
         return new ValidatedCall(name, Map.of());
     }
 
     private static ValidatedCall validateEnumCall(
             String name, JsonNode arguments, String field, Set<String> allowed) {
-        rejectUnknown(arguments, Set.of(field));
+        Set<String> accepted = new LinkedHashSet<>(REDUNDANT_LANG_ONLY);
+        accepted.add(field);
+        rejectUnknown(arguments, accepted);
+        requireValidRedundantLang(arguments);
         String value = requiredText(arguments, field, 32);
         if (!allowed.contains(value)) throw new ToolValidationException("Invalid enum value");
         return new ValidatedCall(name, Map.of(field, value));
+    }
+
+    /**
+     * A redundant "lang" is tolerated but never forwarded: the answer language comes from the
+     * customer's request, not from anything the model supplies.
+     */
+    private static void requireValidRedundantLang(JsonNode arguments) {
+        if (!arguments.has("lang")) return;
+        String lang = requiredText(arguments, "lang", 2);
+        if (!LANG_VALUES.contains(lang)) throw new ToolValidationException("Invalid enum value");
     }
 
     private static void rejectUnknown(JsonNode arguments, Set<String> allowed) {

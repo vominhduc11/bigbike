@@ -715,12 +715,11 @@ export async function streamChatMessage(
   return result;
 }
 
+// CHAT_RULE_049 (owner decision 2026-09-05): a chat session lasts as long as the browser session,
+// so there is no remembered-through date and no memory switch to report.
 export type ChatSession = {
   visitorToken: string;
-  rememberedThrough: string;
-  memoryEnabled: boolean;
   activeConversationId?: string | null;
-  rememberedContextSummary?: string | null;
 };
 
 export type ChatHistoryMessage = {
@@ -746,13 +745,11 @@ export function openChatSession(input: {
   visitorId: string;
   visitorToken?: string;
   locale: "vi" | "en";
-  memoryEnabled: boolean;
 }): Promise<ChatSession> {
   return clientRequest("POST", "/api/v1/chat/sessions", {
     visitorId: input.visitorId,
     visitorToken: input.visitorToken || null,
     locale: input.locale,
-    memoryEnabled: input.memoryEnabled,
   });
 }
 

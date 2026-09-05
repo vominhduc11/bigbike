@@ -177,7 +177,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
         assertThat(data.path("answer").asText())
-                .contains("chưa có đúng mẫu", "loại hàng", "tầm giá")
+                .contains("chưa tìm thấy", "loại hàng", "tầm giá")
                 .doesNotContain("Gặp nhân viên", "Tanami");
     }
 
@@ -266,7 +266,7 @@ public class ChatProductDiscoveryApiTest {
                 .doesNotContain("TIÊU CHUẨN AN TOÀN")
                 .doesNotEndWith("TIÊU CHUẨN AN TOÀN.");
         assertThat(headsets.path("answer").asText())
-                .contains("9 lựa chọn đang bán", "đây chưa phải kết quả cuối", "tầm giá");
+                .contains("9 lựa chọn đang bán", "vài mẫu bên dưới", "tầm giá");
         assertThat(headsets.path("clarification").isObject()).isTrue();
         assertThat(headsets.path("products").size()).isBetween(1, 3);
         assertThat(contextAfterCategoryChange.category())
@@ -275,7 +275,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(contextAfterCategoryChange.minPrice()).isNull();
         assertThat(contextAfterCategoryChange.maxPrice()).isNull();
         assertThat(aboveThree.path("answer").asText())
-                .contains("5 lựa chọn còn hàng", "không hỏi thêm");
+                .contains("5 mẫu phù hợp bên dưới");
         assertThat(aboveThree.path("products").size()).isEqualTo(5);
     }
 
@@ -401,7 +401,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("reason").asText()).isEqualTo("AI");
         assertThat(data.path("products").size()).isZero();
         assertThat(data.path("answer").asText())
-                .contains("chưa có đúng mẫu", "không đổi sang sản phẩm khác", "tầm giá");
+                .contains("chưa tìm thấy", "tầm giá");
         assertThat(data.path("contacts").path("hotline").asText()).isEqualTo("0900 000 000");
         verify(aiChatClient).answer(
                 anyString(), anyString(), any(ChatToolRegistry.class),
@@ -487,7 +487,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("products").size()).isZero();
         assertThat(data.path("answer").asText())
                 .contains("chưa hoàn tất được lần kiểm tra này", "Hotline", "Zalo", "Messenger")
-                .doesNotContain("chưa có đúng mẫu", "shop không bán");
+                .doesNotContain("chưa tìm thấy mẫu", "shop không bán");
         assertThat(data.path("contacts").path("hotline").asText()).isEqualTo("0900 000 000");
         assertThat(data.path("contacts").path("zaloUrl").asText()).isEqualTo("https://zalo.example");
         assertThat(data.path("contacts").path("messengerUrl").asText()).isEqualTo("https://messenger.example");
@@ -514,7 +514,7 @@ public class ChatProductDiscoveryApiTest {
         assertThat(data.path("products").size()).isZero();
         assertThat(data.path("answer").asText())
                 .contains("chưa hoàn tất được lần kiểm tra này", "Hotline", "Zalo", "Messenger")
-                .doesNotContain("chưa có đúng mẫu", "shop không bán");
+                .doesNotContain("chưa tìm thấy mẫu", "shop không bán");
         UUID conversationId = UUID.fromString(data.path("conversationId").asText());
         assertThat(messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId))
                 .filteredOn(ChatMessageEntity::isAiCalled)
