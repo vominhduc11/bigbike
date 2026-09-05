@@ -1,5 +1,5 @@
-import { AccountLayoutSkeleton } from "@/components/ui/Skeletons";
+import { AccountPageSkeleton } from "@/components/ui/Skeletons";
 
-export default function OrderDetailLoading() {
-  return <AccountLayoutSkeleton rows={3} />;
+export default function AccountAreaLoading() {
+  return <AccountPageSkeleton rows={3} />;
 }

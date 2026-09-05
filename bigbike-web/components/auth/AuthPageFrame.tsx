@@ -18,7 +18,7 @@ function AuthBenefitsPanel({ panel }: { panel: AuthBrandPanel }) {
       className="relative hidden min-h-0 overflow-hidden bg-surface-dark p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-center"
     >
       <Image
-        src="/brand/page-title-bg.png"
+        src="/brand/auth-bg.jpg"
         alt={panel.imageAlt}
         fill
         priority

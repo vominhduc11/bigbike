@@ -69,6 +69,19 @@ describe("Ranh giới stream — điều kiện để mã trạng thái HTTP ho�
         hasLoading && !hasLayout,
         `${segment}/loading.tsx sẽ nuốt mã trạng thái HTTP của route này`,
       ).toBe(false);
+
+      // …nhưng chỉ khi layout THỰC SỰ giữ guard. Một layout rỗng (vd chỉ khai
+      // metadata) vẫn thoả điều kiện file tồn tại mà không chặn được gì, và khung
+      // chờ lại quay về nuốt status. Kiểm chứng đo được 2026-09-05 trên dev server:
+      // với guard ở layout, /product/{slug-sai}/ trả 404, /en/product/{slug-vi}/ trả
+      // 308 kèm Location, và khung chờ vẫn hiện khi điều hướng phía client.
+      if (hasLoading) {
+        const layoutSource = readFileSync(join(dir, "layout.tsx"), "utf8");
+        expect(
+          /notFound\(\)|permanentRedirect\(/.test(layoutSource),
+          `${segment}/layout.tsx phải giữ guard notFound()/permanentRedirect(), nếu không loading.tsx sẽ nuốt mã trạng thái`,
+        ).toBe(true);
+      }
     },
   );
 

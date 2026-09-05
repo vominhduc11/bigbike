@@ -10,7 +10,8 @@ import { CollapsibleContent } from "@/components/ui/collapsible-content";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
-import { getCatalogFacets, getCategoryBySlug, listCategories, listProducts } from "@/lib/api/public-api";
+import { getCatalogFacets, listCategories, listProducts } from "@/lib/api/public-api";
+import { getCategoryByRouteSlug } from "./resolve-category";
 import {
   buildCategoryBreadcrumbJsonLd,
   buildCategoryCollectionJsonLd,
@@ -40,16 +41,6 @@ export async function generateStaticParams() {
 // Trang này đọc bộ lọc và phân trang từ URL. Ép dựng động để Next.js không
 // cố dùng cache tĩnh cho từng tổ hợp searchParams (SEO_RULE_007).
 export const dynamic = "force-dynamic";
-
-async function getCategoryByRouteSlug(slug: string, locale: string) {
-  const result = await getCategoryBySlug(slug, locale);
-  if (result.data || result.error?.status !== 404 || slug.endsWith("-1")) {
-    return result;
-  }
-
-  const legacyDuplicateResult = await getCategoryBySlug(`${slug}-1`, locale);
-  return legacyDuplicateResult.data ? legacyDuplicateResult : result;
-}
 
 type CategoryDetailPageProps = {
   params: Promise<{ locale: string; slug: string }>;

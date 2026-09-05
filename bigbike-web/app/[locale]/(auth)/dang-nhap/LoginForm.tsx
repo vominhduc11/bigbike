@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { Label } from "@/components/ui/label";
-import { AuthSkeleton } from "@/components/ui/Skeletons";
+import { AuthFormSkeleton } from "@/components/ui/Skeletons";
 import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 
 type LoginField = "login" | "password";
@@ -117,7 +117,9 @@ export function LoginForm({
   const visibleError = (field: LoginField) =>
     touchedFields[field] || submittedInvalidField === field ? errors[field] : undefined;
 
-  if (auth.status === "authenticated") return <AuthSkeleton credential />;
+  // Đã ở trong cột biểu mẫu của AuthPageFrame → chỉ thay phần biểu mẫu, không
+  // dựng lại cả hai nửa màn hình. Tiêu đề thật đã render bởi AuthTitleBlock.
+  if (auth.status === "authenticated") return <AuthFormSkeleton withTitle={false} />;
 
   return (
     <div>

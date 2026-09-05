@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { CheckoutSkeleton } from "@/components/ui/Skeletons";
+import { CheckoutBodySkeleton } from "@/components/ui/Skeletons";
 import { Textarea } from "@/components/ui/textarea";
 import { formatVnd, telHref } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
@@ -74,9 +74,10 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
   } = useCheckout();
 
   if (cartLoading && !cart) {
-    // Cùng khung skeleton mà app/dat-hang/loading.tsx dùng cho lần điều hướng đầu —
-    // tái dùng ở đây cho lần giỏ hàng còn đang tải phía client (không phải điều hướng).
-    return <CheckoutSkeleton />;
+    // Cùng khối ruột mà app/dat-hang/loading.tsx dùng cho lần điều hướng đầu. Chỉ
+    // lấy phần ruột: tiêu đề + đường dẫn thật đã render ngay phía trên component
+    // này, dùng cả khung sẽ hiện tiêu đề hai lần.
+    return <CheckoutBodySkeleton />;
   }
 
   if (cartError) {

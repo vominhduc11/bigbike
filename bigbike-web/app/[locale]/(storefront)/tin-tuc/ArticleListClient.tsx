@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import { CatalogPagination } from "@/components/catalog/CatalogPagination";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ArticleCardSkel } from "@/components/ui/skeleton/primitives";
 import { cn } from "@/lib/utils";
 import { fetchPublicArticleList, type PublicArticleListResult } from "@/lib/api/client-api";
 import type { Article } from "@/lib/contracts/public";
@@ -84,14 +84,7 @@ export function ArticleListClient({
           {firstLoading ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="border border-border bg-card">
-                  <Skeleton className="aspect-video w-full rounded-none" />
-                  <div className="space-y-3 p-5 pt-8">
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-5 w-11/12" />
-                    <Skeleton className="h-4 w-4/5" />
-                  </div>
-                </div>
+                <ArticleCardSkel key={index} />
               ))}
             </div>
           ) : articles.length === 0 ? (

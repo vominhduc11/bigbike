@@ -44,7 +44,10 @@ test.describe("Không tìm thấy → 404 thật, không phải 200", () => {
     const html = await response.text();
 
     // Khung chờ trang chủ (HomeSkeleton) từng bị trả về thay cho giao diện 404.
-    expect(html).not.toContain("bb-home");
+    // Từ 2026-09-05 các route chi tiết CÓ khung chờ riêng (guard nằm ở layout.tsx,
+    // chạy trước ranh giới stream) — nên chốt bằng dấu hiệu chung của mọi khung chờ
+    // thay vì tên một class cụ thể: HTML của trang 404 không được chứa khối chờ nào.
+    expect(html).not.toContain('aria-busy="true"');
     // Thẻ noindex phải nằm trong HTML thô — bot không chạy JavaScript.
     expect(html).toMatch(/<meta name="robots"[^>]*content="[^"]*noindex/i);
   });

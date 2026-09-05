@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { CatalogPagination } from "@/components/catalog/CatalogPagination";
-import { Skeleton } from "@/components/ui/skeleton";
+import { BrandCardSkel } from "@/components/ui/skeleton/primitives";
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/i18n/locale";
 import { fetchPublicBrandList, type PublicBrandListResult } from "@/lib/api/client-api";
@@ -81,13 +81,7 @@ export function BrandListClient({
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {Array.from({ length: 10 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex h-full flex-col items-center justify-between gap-4 border border-border bg-white p-5"
-          >
-            <Skeleton className="h-16 w-4/5" />
-            <Skeleton className="h-4 w-3/5" />
-          </div>
+          <BrandCardSkel key={i} />
         ))}
       </div>
     );

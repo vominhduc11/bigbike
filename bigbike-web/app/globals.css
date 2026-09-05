@@ -526,38 +526,6 @@ body {
   text-transform: none;
 }
 
-.bb-grid-products,
-.bb-grid-categories {
-  display: grid;
-  gap: var(--bb-space-4);
-}
-
-.bb-grid-products {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-.bb-grid-categories {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-.bb-query-form {
-  display: grid;
-  gap: var(--bb-space-3);
-  margin-bottom: var(--bb-space-6);
-  padding: var(--bb-space-5);
-  border: 1px solid var(--bb-border-subtle);
-  border-radius: var(--bb-radius-card);
-  background:
-    linear-gradient(135deg, rgba(255, 12, 9, 0.08), rgba(255, 255, 255, 0.025)),
-    var(--bb-bg-surface);
-  box-shadow: var(--bb-shadow-sm);
-}
-
-.bb-query-form input[type="radio"],
-.bb-query-form input[type="checkbox"] {
-  accent-color: var(--bb-brand-primary);
-}
-
 .bb-richtext {
   display: grid;
   gap: var(--bb-space-3);
@@ -703,27 +671,10 @@ body:has([data-page-hero]) .bb-main {
 }
 
 @media (min-width: 768px) {
-  .bb-grid-products {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .bb-grid-categories {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   /* Detail (guide) sidebar+content go 2-col from md(768) to match WP
      col-md-3/col-md-9 (was 1024 → blank 768-1023 tablet band). Ratio 3fr/9fr =
      25%/75% (WP); sidebar placed left via md:order in GuidePage. */
-}
-
-@media (min-width: 1024px) {
-  .bb-grid-products {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .bb-grid-categories {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 768px) {
@@ -846,39 +797,6 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 
 /* -- WP Trust Feature Row ------------------------------------ */
 
-.bb-feature-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--bb-space-4);
-  width: min(100% - calc(var(--bb-page-padding-mobile) * 2), var(--bb-container-xl));
-  margin: var(--bb-space-6) auto;
-}
-
-.bb-feature-tile {
-  display: flex;
-  align-items: center;
-  gap: var(--bb-space-4);
-  min-height: 98px;
-  padding: var(--bb-space-5);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
-    var(--bb-bg-surface-dark);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--bb-radius-card);
-  color: var(--bb-color-white);
-  box-shadow: var(--bb-shadow-sm);
-  transition:
-    border-color var(--bb-duration-normal) var(--bb-ease-standard),
-    transform var(--bb-duration-normal) var(--bb-ease-standard),
-    box-shadow var(--bb-duration-normal) var(--bb-ease-standard);
-}
-
-.bb-feature-tile:hover {
-  border-color: var(--bb-border-brand);
-  transform: translateY(-2px);
-  box-shadow: var(--bb-shadow-md);
-}
-
 /* -- WP About Section ---------------------------------------- */
 
 /* -- WP Promo Banner ------------------------------------------ */
@@ -940,36 +858,6 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 }
 .contact-page .information .desc a:hover {
   color: var(--bb-text-brand) !important;
-}
-
-/* -- WP Floating Chat ---------------------------------------- */
-
-/* -- Responsive ---------------------------------------------- */
-/* BP note: 900px is intentionally NOT the token 1024px.
-   At 901-1024px the two-column about/feature layouts still read well on
-   landscape tablets; collapsing them at 1024px would waste too much space.
-   Token breakpoints (640/768/1024/1280/1440) apply to NEW rules only. */
-@media (max-width: 900px) {
-  .bb-feature-row {
-    grid-template-columns: 1fr;
-    width: min(100% - calc(var(--bb-page-padding-tablet) * 2), var(--bb-container-xl));
-  }
-}
-
-/* BP note: 600px is intentionally NOT the token 640px.
-   This threshold predates the token system and is used in ~30 rules across
-   the homepage CSS. Changing it to 640px risks subtle layout regressions
-   on common 360-600px phone viewports. Aligning this is a follow-up task
-   that requires visual regression testing across all affected screens. */
-@media (max-width: 600px) {
-  .bb-feature-row {
-    margin-top: var(--bb-space-4);
-  }
-
-  .bb-feature-tile {
-    min-height: auto;
-    padding: var(--bb-space-4);
-  }
 }
 
 /* ...............................................................
@@ -1133,15 +1021,6 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
    ========================================================== */
 
 /* -- Section headers -------------------------------------- */
-.bb-section-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--bb-border-default);
-}
 
 /* -- PDP below-fold sections ------------------------------ */
 /* .bb-pdp-below (PdpSkeleton mirror) migrated to inline Tailwind. */
@@ -1202,71 +1081,10 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   }
 }
 
-/* -- Breadcrumb -------------------------------------------- */
-.bb-breadcrumb {
-  max-width: var(--bb-container-wide);
-  margin: 0 auto;
-  padding: 16px 24px;
-  font-family: var(--bb-font-body);
-  font-size: var(--bb-text-a5-meta);
-  letter-spacing: var(--bb-tracking-normal);
-  text-transform: none;
-  color: var(--bb-text-muted);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.bb-breadcrumb a {
-  color: var(--bb-text-muted);
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-}
-.bb-breadcrumb a:hover {
-  color: var(--bb-text-brand);
-}
-.bb-breadcrumb .sep {
-  margin: 0 10px;
-  color: var(--bb-text-brand);
-}
-
-/* -- Page head -------------------------------------------- */
-.bb-page-head {
-  max-width: var(--bb-container-wide);
-  margin: 32px auto 28px;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--bb-border-subtle);
-  padding-bottom: 22px;
-}
-.bb-page-head .kicker {
-  font-family: var(--bb-font-cta);
-  font-size: var(--bb-text-b5-label);
-  letter-spacing: var(--bb-tracking-display);
-  text-transform: uppercase;
-  color: var(--bb-text-brand);
-  font-weight: 700;
-  display: block;
-  margin-bottom: 8px;
-}
-.bb-page-head h1 {
-  font-family: var(--bb-font-body);
-  text-transform: none;
-  font-size: var(--bb-text-a1-title);
-  letter-spacing: var(--bb-tracking-normal);
-  line-height: var(--bb-line-tight);
-  margin: 0;
-  color: var(--bb-text-primary);
-  overflow-wrap: anywhere;
-}
-.bb-page-head .sub {
-  color: var(--bb-text-muted);
-  font-size: var(--bb-text-a5-meta);
-  margin-top: 8px;
-}
-/* No horizontal emblem-clearance: .bb-page-head is only rendered by loading
-   skeletons (no real page uses it — the real catalog/category/brand pages use
-   PageHero, whose banner already covers the hanging logo). Keep it left-aligned
-   so the skeleton matches the post-load layout. */
+/* .bb-breadcrumb / .bb-page-head đã xóa 2026-09-05 (quy trình §6.6): grep toàn web
+   0 caller. Hai class này chỉ còn sống để phục vụ khung chờ cũ — khung chờ nay dựng
+   lại đúng PageHero thật (components/ui/skeleton/primitives.tsx → PageHeroSkel), nên
+   trang thật và khung chờ dùng CHUNG một bố cục thay vì hai bố cục song song. */
 
 /* .bb-cat-hero-breadcrumb đã xóa 2026-07-15 (AUD-057, quy trình §6.6): grep toàn
    web 0 caller — PageHero/Breadcrumb hiện render bằng Tailwind utilities. */
@@ -1630,23 +1448,11 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
 
 /* -- Account page ------------------------------------------ */
 /* === Account section — 2020 legacy mockup parity ===================== */
-.bb-account-layout {
-  display: grid;
-  grid-template-columns: 282px 1fr;
-  gap: 30px;
-  max-width: var(--bb-container-xl);
-  margin: 8px auto 56px;
-  padding: 0 24px;
-}
 
 /* Breadcrumb on account pages: match account layout max-width so the two
    containers share the same margin: auto rail — text aligns with sidebar.
    Also reset the 184px emblem-clearance padding since logo is now above
    the breadcrumb (not beside it) thanks to the bb-main top-padding offset. */
-body:has(.bb-account-layout) .bb-breadcrumb {
-  max-width: var(--bb-container-xl);
-  padding-left: 24px;
-}
 
 /* -- Order status timeline -------------------------------- */
 
@@ -1837,15 +1643,6 @@ body:has(.bb-account-layout) .bb-breadcrumb {
   text-transform: none;
 }
 
-/* -- Order confirmation ------------------------------------ */
-
-/* -- Responsive overrides ---------------------------------- */
-@media (max-width: 767px) {
-  .bb-account-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* ................................................................
  * RESPONSIVE PROFESSIONAL FIXES
  * Mobile-first overrides + touch-target compliance + safe-area
@@ -2002,13 +1799,6 @@ canvas {
   max-width: 100%;
 }
 
-/* -- Trust-feature row reads better as 1 col on phones, 3 on tablet -- */
-@media (min-width: 600px) and (max-width: 1023px) {
-  .bb-feature-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
 /* -- Hero: hide decorative product mark below tablet to
  *    save LCP weight and free room for the headline. */
 /* Phase 2-8: canonical mobile hero ratio - portrait crop keeps CTA visible without
@@ -2019,48 +1809,6 @@ canvas {
   .bb-pagination-page {
     min-width: var(--bb-touch-target);
     min-height: var(--bb-touch-target);
-  }
-}
-
-/* Phase 2-7: product carousel - arrows invisible on touch, cards fill viewport */
-
-/* -- Toast: clamp to viewport on small screens -------------- */
-
-/* -- Form grid: avoid 3-field cramping at 768-1023 by capping
- *    to 2 cols (already 2 cols default), but allow auto-fit when
- *    field count is large. */
-
-/* -- Account: single-column on mobile. The section nav collapses to a
- *    dropdown (rendered in AccountShell, shown via Tailwind md:hidden). */
-@media (max-width: 767px) {
-  .bb-account-layout {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-/* -- PDP actions stack vertically on phones so primary CTA gets full
- *    width instead of being squashed beside add-to-cart. Threshold raised
- *    from 420 - 480 so 430-wide phones (e.g. iPhone 14/15 Pro Max landscape
- *    of inner content area, 430-wide stylus tablets) also stack. */
-
-/* -- Section paddings reduce on mobile to claw back space -- */
-@media (max-width: 600px) {
-  .bb-section-head {
-    gap: 12px;
-    margin-bottom: 18px;
-    padding-bottom: 12px;
-  }
-  .bb-account-layout {
-    padding-inline: 16px;
-  }
-  .bb-page-head {
-    padding-inline: 16px;
-    margin: 20px auto 18px;
-    padding-bottom: 16px;
-  }
-  .bb-breadcrumb {
-    padding: 12px 16px;
   }
 }
 
@@ -2293,9 +2041,6 @@ canvas {
  * ========================================================== */
 
 /* Generic text/border re-skin */
-.bb-page-head h1 {
-  color: var(--bb-text-primary);
-}
 
 /* PDP below-fold dividers (.bb-pdp-below skeleton) — border-default divider
    migrated to inline (border-t border-t-[var(--bb-border-default)]). */
@@ -2305,28 +2050,10 @@ canvas {
 /* Toast - light card */
 
 /* Breadcrumb */
-.bb-breadcrumb {
-  color: var(--bb-text-muted);
-}
-.bb-breadcrumb a {
-  color: var(--bb-text-muted);
-}
 
 /* Page head divider */
-.bb-page-head {
-  border-bottom: 1px solid var(--bb-border-default);
-}
-.bb-page-head h1 {
-  color: var(--bb-text-primary);
-}
-.bb-page-head .sub {
-  color: var(--bb-text-muted);
-}
 
 /* Section heads - divider */
-.bb-section-head {
-  border-bottom: 1px solid var(--bb-border-default);
-}
 
 /* Reviews bg */
 
@@ -2354,15 +2081,6 @@ canvas {
 }
 
 /* Feature row "Cam ket BigBike" - light cards */
-.bb-feature-row {
-  background: var(--bb-bg-section);
-}
-.bb-feature-tile {
-  background: var(--bb-bg-surface);
-  border: 1px solid var(--bb-border-default);
-  color: var(--bb-text-primary);
-  box-shadow: var(--bb-shadow-sm);
-}
 /* Brand carousel section - light bg */
 
 /* SEO content block at bottom of home */
@@ -2463,11 +2181,7 @@ a:not(.font-cta):hover {
 .bb-seo-content {
   background: var(--bb-bg-page);
 }
-
-.bb-empty-state,
-.bb-error-state,
-.bb-query-form,
-.bb-product-card {
+.bb-error-state{
   background: var(--bb-bg-surface);
   color: var(--bb-text-primary);
   border-color: var(--bb-border-subtle);
@@ -2475,14 +2189,7 @@ a:not(.font-cta):hover {
   box-shadow: none;
 }
 
-.bb-product-card:hover {
-  border-color: var(--bb-text-brand);
-  box-shadow: var(--bb-shadow-product);
-  transform: none;
-}
-
-.bb-page h1,
-.bb-page-head h1 {
+.bb-page h1{
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
   font-weight: 600;
@@ -2491,78 +2198,11 @@ a:not(.font-cta):hover {
   text-transform: none;
 }
 
-.bb-breadcrumb a {
-  color: var(--bb-link-text);
-}
-
-.bb-breadcrumb a:hover {
-  color: var(--bb-text-brand);
-}
-
 /* WP breadcrumb: color #717171, weight 600 — overrides blue-link group above */
-.bb-breadcrumb,
-.bb-breadcrumb a {
-  color: var(--bb-text-muted);
-}
-
-.bb-breadcrumb a {
-  font-weight: 600;
-}
 
 input[type="radio"],
 input[type="checkbox"] {
   accent-color: var(--bb-text-brand);
-}
-
-.bb-product-card {
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  border: 1px solid var(--bb-border-subtle);
-  transition:
-    border-color var(--bb-duration-normal) var(--bb-ease-standard),
-    box-shadow var(--bb-duration-normal) var(--bb-ease-standard);
-  padding: 0;
-  /* Restore dark text tokens: the shared card group sets --bb-text-primary to white
-     (for dark-surface cards). bb-product-card is always on a white background. */
-  --bb-text-primary: var(--bb-color-black);
-  --bb-text-secondary: var(--bb-color-gray-500);
-  --bb-text-muted: var(--bb-color-gray-500);
-  color: var(--bb-color-black);
-}
-
-.bb-product-image {
-  background: var(--bb-color-white);
-  border-radius: 0;
-}
-
-.bb-product-image {
-  aspect-ratio: 1 / 1;
-}
-
-.bb-product-image img,
-.bb-product-image > span > img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 0;
-}
-
-.bb-product-card:hover .bb-product-image img,
-.bb-product-card:hover .bb-product-image > span > img {
-  transform: none;
-}
-
-.bb-product-body {
-  padding: 16px 16px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  position: relative;
-  z-index: 2;
-  background: transparent;
 }
 
 .bb-products-section,
@@ -2579,19 +2219,8 @@ input[type="checkbox"] {
 .bb-main > .bb-home {
   padding-bottom: 0;
 }
-
-.bb-section-head {
-  border-bottom: 1px solid rgba(221, 221, 221, 0.28);
-  padding-bottom: 24px;
-  margin-bottom: 32px;
-}
-
-.bb-empty-state,
 .bb-error-state,
-.bb-query-form,
-.bb-query-select,
-.bb-pagination-page,
-.bb-product-card {
+.bb-pagination-page{
   border-radius: 0;
 }
 
@@ -2643,31 +2272,6 @@ input[type="checkbox"] {
 /* Radix Dialog/Sheet được phép tự kiểm soát border-radius qua Tailwind */
 .bb-theme [role="dialog"] {
   border-radius: revert;
-}
-
-/* =========================================================
-   DESIGN.md Canonical Overrides
-   Applied last in cascade — all values per DESIGN.md spec.
-   ========================================================= */
-
-/* -- Price --------------------------------------------- */
-
-/* -- Category card ------------------------------------- */
-
-/* -- Product grid: 2 cols at 640px, 3 cols at 1024px+ ----------------- */
-
-@media (min-width: 640px) {
-  .bb-grid-products,
-  .bb-grid-categories {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1024px) {
-  .bb-grid-products,
-  .bb-grid-categories {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 /* -- Cart badge: migrated to inline Tailwind (CartIcon.tsx). The former
@@ -3019,17 +2623,6 @@ body:has(.bb-home) {
   100% {
     transform: scale(1.6);
     opacity: 0;
-  }
-}
-
-/* Khung chờ (loading skeleton) render `.bb-breadcrumb` ngay đầu trang trên nền
-   phẳng (không hero) → cũng bị logo che trong lúc tải, gây "nhảy" khi vào trang
-   thật. `.bb-breadcrumb` HIỆN CHỈ skeleton dùng (trang thật dùng `.breadcrumb` WP
-   hoặc đặt trong hero) nên offset ở đây chỉ chạm trạng thái tải, an toàn. Khung chờ
-   trang chủ không có `.bb-breadcrumb` (mở đầu bằng hero) nên không bị đụng. */
-@media (min-width: 768px) {
-  .bb-breadcrumb {
-    margin-top: 60px;
   }
 }
 /* PDP type scale §điểm nhấn — tên sản phẩm (h1) = 32px, đồng bậc Display với giá.
@@ -3494,21 +3087,15 @@ body .banner-ads > .container > .row {
     padding-block: 24px calc(var(--bb-mobile-section-y) + 8px);
   }
 
-  .bb-page > [data-bb-rail] > header:first-child,
-  .bb-page-head {
+  .bb-page > [data-bb-rail] > header:first-child{
     margin: 0 0 18px;
     padding: 20px 0 16px;
     border-bottom: 1px solid var(--bb-border-subtle);
     background: transparent;
   }
 
-  .bb-page h1,
-  .bb-page-head h1 {
+  .bb-page h1{
     line-height: var(--bb-line-tight);
-  }
-
-  .bb-page-head .sub {
-    line-height: var(--bb-line-body);
   }
 
   .bb-category-card,
@@ -3516,11 +3103,6 @@ body .banner-ads > .container > .row {
     border: 1px solid var(--bb-border-subtle);
     background: var(--bb-bg-surface);
     box-shadow: none;
-  }
-
-  .bb-grid-categories,
-  .bb-grid-products {
-    gap: var(--bb-mobile-card-gap);
   }
 
   .bb-home,
@@ -3635,20 +3217,6 @@ body .banner-ads > .container > .row {
     width: 100%;
   }
 
-  .bb-account-layout {
-    gap: 18px;
-    margin: 0 auto 34px;
-    padding-inline: var(--bb-mobile-page-x);
-  }
-
-  .bb-account-layout + * {
-    margin-top: 0;
-  }
-
-  .bb-breadcrumb {
-    padding: 12px var(--bb-mobile-page-x);
-  }
-
   .bb-success {
     margin: 24px auto 34px;
   }
@@ -3756,18 +3324,8 @@ html[data-bb-nav-dropdown-open] .bb-scroll-top-anchor {
     visibility: hidden;
   }
 
-  body:has(.bb-account-layout) .bb-floating-chat-anchor,
-  body:has(.bb-account-layout) .bb-scroll-top-anchor {
-    display: none !important;
-  }
-
   .bb-site-header {
     z-index: var(--bb-z-header);
-  }
-
-  .bb-product-image img,
-  .bb-product-image > span > img {
-    object-fit: contain !important;
   }
 
   .bb-home .content-bottom.wyswyg h1,
@@ -3778,22 +3336,8 @@ html[data-bb-nav-dropdown-open] .bb-scroll-top-anchor {
     text-wrap: balance;
   }
 
-  .bb-home .content-bottom.wyswyg p,
-  .bb-page-head .sub {
+  .bb-home .content-bottom.wyswyg p{
     color: var(--bb-text-secondary);
-  }
-
-  body:has(.bb-account-layout) > footer .bg-footer-top {
-    padding-top: 32px;
-  }
-
-  body:has(.bb-account-layout) > footer .bg-footer-top h2 {
-    margin-bottom: 24px;
-    line-height: var(--bb-line-tight);
-  }
-
-  body:has(.bb-account-layout) > footer .bg-black {
-    padding-bottom: calc(18px + var(--bb-mobile-nav-height) + env(safe-area-inset-bottom));
   }
 }
 
