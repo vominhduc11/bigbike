@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CheckoutService {
 
     private static final String CART_STATUS_CONVERTED = "CONVERTED";
@@ -65,6 +67,7 @@ public class CheckoutService {
     private final OrderKeyGenerator orderKeyGenerator;
     private final CartCalculator cartCalculator;
     private final OrderNotificationService orderNotificationService;
+    private final TelegramOrderNotificationService telegramOrderNotificationService;
     private final AdminOrderWsService adminOrderWsService;
     private final JdbcTemplate jdbcTemplate;
     private final WebRevalidationService webRevalidationService;
@@ -150,9 +153,12 @@ public class CheckoutService {
         );
         OrderEntity savedOrder = orderRepo.saveAndFlush(order);
 
-        // Persist line items.
+        // Persist line items and retain the already-available snapshots for optional Telegram.
+        List<OrderLineItemEntity> persistedLineItems = new ArrayList<>();
         for (CartItemEntity cartItem : items) {
-            lineItemRepo.save(buildLineItemFromCart(savedOrder, cartItem, now));
+            OrderLineItemEntity lineItem = buildLineItemFromCart(savedOrder, cartItem, now);
+            lineItemRepo.save(lineItem);
+            persistedLineItems.add(lineItem);
         }
 
         // Inventory is boolean availability only (owner decision 2026-06-23) — no decrement on sale.
@@ -171,6 +177,8 @@ public class CheckoutService {
 
         OrderEntity orderSnapshot = savedOrder;
         String paymentMethodSnapshot = paymentMethod;
+        TelegramOrderSnapshot telegramSnapshot = TelegramOrderSnapshot.from(
+                savedOrder, paymentMethod, persistedLineItems);
         // pushEvent() defers its own send until after-commit internally — call it directly
         // (not nested in runAfterCommit below). Registering a new TransactionSynchronization
         // from inside another synchronization's afterCommit() of the same transaction is
@@ -180,6 +188,17 @@ public class CheckoutService {
         runAfterCommit(() -> {
             orderNotificationService.sendOrderConfirmation(orderSnapshot, paymentMethodSnapshot);
             orderNotificationService.sendAdminNewOrderNotification(orderSnapshot, paymentMethodSnapshot);
+            if (telegramOrderNotificationService.isConfigured()) {
+                try {
+                    telegramOrderNotificationService.sendNewOrderNotification(telegramSnapshot);
+                } catch (RuntimeException exception) {
+                    // The order is already committed; task-submission failure is fail-open and
+                    // must not turn a successful checkout into a 5xx response.
+                    log.warn(
+                            "Telegram new-order notification could not be scheduled for order {} (SCHEDULING_FAILURE)",
+                            orderSnapshot.getOrderNumber());
+                }
+            }
         });
 
         attachOrderToReservation(idempotency, savedOrder.getId(), now);

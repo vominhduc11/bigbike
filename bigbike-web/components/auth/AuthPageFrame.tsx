@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type AuthBrandPanel = {
+export type AuthBrandPanel = {
   eyebrow: ReactNode;
   title: ReactNode;
   description: ReactNode;
@@ -11,7 +11,7 @@ type AuthBrandPanel = {
   imageAlt: string;
 };
 
-function AuthBenefitsPanel({ panel }: { panel: AuthBrandPanel }) {
+export function AuthBenefitsPanel({ panel }: { panel: AuthBrandPanel }) {
   return (
     <aside
       data-auth-brand-panel
@@ -70,6 +70,12 @@ export function AuthPageFrame({
   brandPanel?: AuthBrandPanel;
   authPage: AuthPageKind;
 }) {
+  // All four primary auth pages are mounted inside AuthRouteShell. The shell
+  // keeps the shared panel mounted while only the form content changes.
+  if (primary) {
+    return children;
+  }
+
   if (primary && brandPanel) {
     return (
       <section

@@ -7,6 +7,7 @@
 | PostgreSQL | Primary persistence store for backend and CI | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml`, `.github/workflows/ci.yml` |
 | MinIO | Media/object storage | `CONFIRMED_FROM_CODE` + `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml`, `AdminMediaService.java` |
 | SMTP mail | Transactional email path exists when env is configured. All mail goes through the shared `EmailDispatchService`, rendering Thymeleaf templates under `templates/email/`. Templates include customer mail, **admin `admin-invite`**, the bilingual daily out-of-stock digest, and the bilingual post-purchase review invitation. Review invitations use the same ordinary Gmail mailbox but are paced separately: one attempt per 10-minute tick during 09:00–20:50 Vietnam time and a fixed ceiling of 20/day. They never retry. Transactional calls remain immediate and do not consume this review-invitation quota. A successful SMTP call means only that the provider accepted the message for processing, not that the recipient received it. | `OWNER_CONFIRMED_2026-09-01` | `EmailDispatchService.java`, invitation/digest email services and templates |
+| Telegram Bot API | Optional internal new-order alert. One `sendMessage` call is scheduled asynchronously after the checkout transaction commits; it is disabled when either credential is blank. Provider failure, timeout or rejection is fail-open for checkout and is recorded only as a sanitized warning. | `OWNER_CONFIRMED_2026-09-05` | Telegram order notification service, `CheckoutService.java` |
 | Web revalidation | Backend can call Next.js revalidation endpoint with shared secret | `CONFIRMED_FROM_CONFIG` | `docker-compose.yaml` |
 | WebSocket/STOMP | Admin order, inventory, review, customer and edit-presence channels are live. The inventory topic also carries a lightweight `INVENTORY_OUT_OF_STOCK_DIGEST_READY` refresh event after the persistent morning snapshot commits; it does not duplicate the long list in the frame. Each admin also subscribes to `/user/queue/admin/access`; all topic deliveries recheck current access server-side. | `OWNER_CONFIRMED_2026-08-31` | `WebSocketConfig.java`, `AdminInventoryWsService.java`, `AdminAccessChangeService.java`, `adminWebSocket.js` |
 | Customer order tracking | Customer order detail and guest confirmation pages poll their existing authenticated/secret-link order-read endpoint every 15 seconds while visible, refetch on focus, and stop at `COMPLETED`/`CANCELLED`; no customer WebSocket channel | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web/lib/query/hooks.ts`, `bigbike-web/app/don-hang/xac-nhan/OrderConfirmClient.tsx` |
@@ -21,6 +22,37 @@ fallback. New-order notifications read this resolved value. The backend fails du
 `BIGBIKE_MAIL_ADMIN` is missing or is not a valid email address, so a deployment cannot
 silently queue internal alerts to nowhere. The sender address and customer-email paths are
 separate and are unchanged by this setting.
+
+### Telegram new-order notification
+
+Telegram is an additional, optional channel for the `NEW_ORDER` event only. The backend builds an
+immutable notification snapshot from the cart/order line data already being persisted by checkout;
+it does not perform a product lookup after checkout. The snapshot contains the order number,
+customer contact fields, payment label, source label, total, up to the first ten line items and an
+admin URL for the created order. Blank values are omitted or rendered as `—`; `null` is never sent.
+
+The client calls the Bot API `sendMessage` endpoint with `parse_mode=HTML`, escaping every dynamic
+value before inserting it into the approved Vietnamese message. The order number, title and total
+are bold, the phone number is rendered as copyable code text, and the final admin label is a
+clickable link. Product lines include the snapshotted product/variant name, quantity and unit price.
+If more than ten lines exist, the message adds `… và N món khác`. The formatter preserves valid HTML
+markup and truncates the final text to Telegram's 4,096-character limit rather than rejecting it.
+
+The dispatch is registered after commit and runs on Spring's async executor, so Telegram latency
+cannot hold the customer request or roll back the order. It makes one attempt only. Warnings contain
+the order number and a safe failure category/status; bot token, chat ID, request URL, message body
+and raw provider exception text are never logged.
+
+| Environment variable | Required | Default / disabled state | Purpose |
+|---|---|---|---|
+| `BIGBIKE_TELEGRAM_BOT_TOKEN` | No | Empty disables Telegram | Bot credential; never logged or committed |
+| `BIGBIKE_TELEGRAM_CHAT_ID` | No | Empty disables Telegram | Single internal destination chat; never logged |
+| `BIGBIKE_TELEGRAM_API_BASE_URL` | No | `https://api.telegram.org` when blank | Bot API base URL; tests point this at a fake HTTP server |
+| `BIGBIKE_TELEGRAM_TIMEOUT_SECONDS` | No | `5` when blank or invalid | Connect/read timeout ceiling for the one provider call |
+
+The variables are declared in `.env.example`, `.env.vps.example`, `docker-compose.yaml` and the
+backend application properties. They are not validated as startup-required settings. Local and CI
+tests use a fake base URL and synthetic credentials only; no test contacts Telegram.
 
 ### Post-purchase review invitation mail
 

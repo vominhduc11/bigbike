@@ -431,6 +431,7 @@
     "categoryNotFoundTitle": "Category not found",
     "categoryNotFoundDescription": "We couldn't find the requested category.",
     "categoryLoadFailed": "Failed to load category details.",
+    "systemError": "The system is having trouble right now. Please try again later.",
     "categoryDefaultDescription": "BigBike product category details.",
     "categoryFallback": "Category",
     "parentCategoryFallback": "Parent category",

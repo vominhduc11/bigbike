@@ -16,6 +16,7 @@ type CatalogDefaultProps = {
   beforeGridNode?: ReactNode;
   products?: Product[];
   pagination?: CatalogPagination | null;
+  error?: boolean;
 };
 
 export async function CatalogDefault({
@@ -24,28 +25,33 @@ export async function CatalogDefault({
   beforeGridNode,
   products = [],
   pagination = null,
+  error = false,
 }: CatalogDefaultProps) {
   const t = await getTranslations("Catalog");
   const orderbyCurrent: CatalogOrderbyValue = DEFAULT_CATALOG_ORDERBY;
-  const notice = products.length === 0 ? t("noResults") : null;
+  const notice = error ? t("systemError") : products.length === 0 ? t("noResults") : null;
 
   return (
     <div className="grid gap-8 pb-10 md:grid-cols-[minmax(220px,1fr)_3fr]">
-      <aside className="hidden min-h-80 border-y border-border md:block" aria-label={t("filterMobileHeading")}>
+      <aside
+        className="hidden min-h-80 border-y border-border md:block"
+        aria-label={t("filterMobileHeading")}
+      >
         <p className="m-0 border-b border-border py-4 font-semibold">{t("filterBrand")}</p>
         <p className="m-0 border-b border-border py-4 font-semibold">{t("filterPrice")}</p>
       </aside>
       <CatalogResults
         orderbyCurrent={orderbyCurrent}
-        pagination={pagination}
+        pagination={error ? null : pagination}
         products={products}
         notice={notice}
+        error={error}
         beforeGrid={
-          beforeGridNode != null
-            ? <Fragment key="before-grid">{beforeGridNode}</Fragment>
-            : beforeGridHtml
-              ? <div className="mb-8 [&_p]:mb-4" dangerouslySetInnerHTML={{ __html: beforeGridHtml }} />
-              : null
+          beforeGridNode != null ? (
+            <Fragment key="before-grid">{beforeGridNode}</Fragment>
+          ) : beforeGridHtml ? (
+            <div className="mb-8 [&_p]:mb-4" dangerouslySetInnerHTML={{ __html: beforeGridHtml }} />
+          ) : null
         }
         paginationBaseHref={canonicalPath}
       />

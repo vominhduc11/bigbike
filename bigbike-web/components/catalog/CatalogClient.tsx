@@ -12,7 +12,9 @@ import {
 import { parseCatalogListParams } from "@/lib/utils/catalog-list-params";
 import { DEFAULT_CATALOG_ORDERBY } from "@/lib/utils/catalog-sort";
 import { normalizePriceSelection } from "@/lib/utils/catalog-price-filter";
+import { isCurrentCatalogFacetResponse } from "@/lib/utils/catalog-facet-response";
 import { buildQueryString } from "@/lib/utils/query";
+import { DEFAULT_PRODUCT_PAGE_SIZE } from "@/lib/constants/catalog";
 import { CatalogResults } from "@/components/catalog/CatalogResults";
 import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
 import { CatalogFilterChips } from "@/components/catalog/CatalogFilterChips";
@@ -28,10 +30,10 @@ import {
 } from "@/lib/utils/catalog-filter-state";
 
 /**
- * Lưới sản phẩm CSR dùng chung cho các trang archive (/danh-muc/[slug],
- * /sp, /tim-kiem, /brands/[slug]). Trang chỉ render shell tĩnh (ISR theo
- * slug/tag); component này đọc searchParams ở CLIENT và fetch danh sách lọc/phân
- * trang qua React Query → đổi filter/sort/trang chỉ refetch client, KHÔNG SSR.
+ * Lưới sản phẩm phía client dùng chung cho các trang archive (/danh-muc/[slug],
+ * /sp, /tim-kiem, /brands/[slug]). Server truyền shell và dữ liệu mồi đúng query;
+ * component này đọc searchParams ở CLIENT và fetch danh sách lọc/phân trang qua
+ * React Query → đổi filter/sort/trang chỉ refetch client.
  *
  * Server truyền đúng dữ liệu của URL hiện tại để đường dẫn lọc mở thẳng không chớp
  * danh sách chưa lọc. Sau hydrate, sidebar/sort/pagination cập nhật URL tại client và
@@ -65,6 +67,9 @@ export type CatalogClientProps = {
    */
   initialProducts?: Product[];
   initialPagination?: PublicProductListResult["pagination"];
+  /** Server-side request failed; do not treat its empty fallback as a real result. */
+  initialProductsError?: boolean;
+  initialFacetsError?: boolean;
 };
 
 export function CatalogClient({
@@ -82,6 +87,8 @@ export function CatalogClient({
   emptyQueryNotice,
   initialProducts,
   initialPagination = null,
+  initialProductsError = false,
+  initialFacetsError = false,
 }: CatalogClientProps) {
   const searchParams = useSearchParams();
   const tCat = useTranslations("Catalog");
@@ -98,13 +105,18 @@ export function CatalogClient({
     const params: Record<string, string | string[]> = {};
     searchParams.forEach((value, key) => {
       const previous = params[key];
-      params[key] = previous === undefined
-        ? value
-        : Array.isArray(previous)
-          ? [...previous, value]
-          : [previous, value];
+      params[key] =
+        previous === undefined
+          ? value
+          : Array.isArray(previous)
+            ? [...previous, value]
+            : [previous, value];
     });
-    return parseCatalogListParams(params, { includeCategoryParam, queryParamKeys, defaultSortWhenQuery });
+    return parseCatalogListParams(params, {
+      includeCategoryParam,
+      queryParamKeys,
+      defaultSortWhenQuery,
+    });
   }, [searchParams, includeCategoryParam, queryParamKeys, defaultSortWhenQuery]);
   const [mobileDraft, setMobileDraft] = useState<CatalogFilterState>(catalog.currentFilters);
   const mobileDraftRef = useRef(mobileDraft);
@@ -140,9 +152,12 @@ export function CatalogClient({
   const blockedByEmptyQuery = requireQuery && !hasQuery;
 
   const [initialProductKey] = useState(() => JSON.stringify(productQuery));
-  const initialData = initialProducts && JSON.stringify(debouncedProductQuery) === initialProductKey
-    ? { data: initialProducts, pagination: initialPagination }
-    : undefined;
+  const initialData =
+    initialProducts &&
+    !initialProductsError &&
+    JSON.stringify(debouncedProductQuery) === initialProductKey
+      ? { data: initialProducts, pagination: initialPagination }
+      : undefined;
 
   const { data, isLoading, isFetching, isError } = useQuery({
     queryKey: ["catalog-products", debouncedProductQuery],
@@ -174,10 +189,11 @@ export function CatalogClient({
   );
   const debouncedFacetQuery = useDebounce(facetQuery, 250);
   const [initialFacetKey] = useState(() => JSON.stringify(facetQuery));
-  const initialFacetData = facets && JSON.stringify(debouncedFacetQuery) === initialFacetKey
-    ? { data: facets }
-    : undefined;
-  const { data: facetData } = useQuery({
+  const initialFacetData =
+    facets && !initialFacetsError && JSON.stringify(debouncedFacetQuery) === initialFacetKey
+      ? { data: facets }
+      : undefined;
+  const { data: facetData, isError: isFacetError } = useQuery({
     queryKey: ["catalog-facets", debouncedFacetQuery],
     queryFn: ({ signal }) => fetchPublicCatalogFacets(debouncedFacetQuery, signal),
     enabled: !hasValidationErrors && !blockedByEmptyQuery,
@@ -188,11 +204,11 @@ export function CatalogClient({
   const activeFacets = facetData?.data ?? facets;
 
   useEffect(() => {
-    // Server facets are only safe for the unfiltered initial view. A filtered
-    // route waits for its own context before normalizing a legacy price URL.
+    // URL normalization must wait for both debounce and the matching facet
+    // response. Otherwise an old response can discard a newly selected color.
     if (mobileOpen) return;
-    const facetPayload = facetData?.data ?? facets;
-    if (!facetPayload) return;
+    const facetPayload = facetData?.data;
+    if (!isCurrentCatalogFacetResponse(facetQuery, debouncedFacetQuery, facetPayload)) return;
 
     const normalized = normalizePriceSelection(
       facetPayload.priceRange,
@@ -222,10 +238,25 @@ export function CatalogClient({
     const target = `${canonicalPath}${query ? `?${query}` : ""}`;
     const currentUrl = `${window.location.pathname}${window.location.search}`;
     if (target !== currentUrl) window.history.replaceState(null, "", target);
-  }, [canonicalPath, catalog.filters.color, catalog.filters.maxPrice, catalog.filters.minPrice, facetData?.data, facets, mobileOpen, searchParams]);
+  }, [
+    canonicalPath,
+    catalog.filters.color,
+    catalog.filters.maxPrice,
+    catalog.filters.minPrice,
+    debouncedFacetQuery,
+    facetData?.data,
+    facetQuery,
+    mobileOpen,
+    searchParams,
+  ]);
 
   const products = blockedByEmptyQuery ? [] : (data?.data ?? []);
-  const pagination = blockedByEmptyQuery ? null : (data?.pagination ?? null);
+  const catalogError =
+    (initialProductsError && !data) ||
+    (initialFacetsError && !facetData) ||
+    isError ||
+    isFacetError;
+  const pagination = blockedByEmptyQuery || catalogError ? null : (data?.pagination ?? null);
 
   // Lần tải đầu (chưa có data) → để CatalogResults hiện skeleton (tránh layout shift),
   // không hiện notice "Đang tải". Các lần đổi filter/trang giữ data cũ (placeholderData)
@@ -238,25 +269,28 @@ export function CatalogClient({
     ? catalog.validationErrors.join(" ")
     : blockedByEmptyQuery
       ? emptyQueryText
-      : isError
-        ? tCat("categoryLoadFailed")
+      : catalogError
+        ? tCat("systemError")
         : firstLoading
           ? null
           : products.length === 0
             ? emptyText
             : null;
-  const hasSizeEmptyState = catalog.filters.size.length > 0
-    && !hasValidationErrors
-    && !blockedByEmptyQuery
-    && !isError
-    && !firstLoading
-    && products.length === 0;
+  const hasSizeEmptyState =
+    catalog.filters.size.length > 0 &&
+    !hasValidationErrors &&
+    !blockedByEmptyQuery &&
+    !catalogError &&
+    !firstLoading &&
+    products.length === 0;
   const resolvedNotice = hasSizeEmptyState
     ? tCat("sizeNoResults", { size: catalog.filters.size.join(", ") })
     : notice;
 
   const clearSizeHref = `${canonicalPath}${buildQueryString({
-    orderby: catalog.orderbyCurrent !== DEFAULT_CATALOG_ORDERBY ? catalog.orderbyCurrent : undefined,
+    size: catalog.size !== DEFAULT_PRODUCT_PAGE_SIZE ? catalog.size : undefined,
+    orderby:
+      catalog.orderbyCurrent !== DEFAULT_CATALOG_ORDERBY ? catalog.orderbyCurrent : undefined,
     ...(includeCategoryParam ? { category: catalog.filters.category } : {}),
     "pwb-brand": catalog.filters.brand,
     q: catalog.filters.q,
@@ -270,28 +304,35 @@ export function CatalogClient({
 
   const paginationBaseHref = catalog.buildPaginationHref(canonicalPath);
 
-  const hrefForState = useCallback((state: CatalogFilterState) => {
-    return `${canonicalPath}${buildQueryString({
-      size: catalog.size,
-      orderby: catalog.orderbyCurrent !== DEFAULT_CATALOG_ORDERBY ? catalog.orderbyCurrent : undefined,
-      ...(includeCategoryParam ? { category: state.category } : {}),
-      "pwb-brand": state.brand.length ? state.brand : undefined,
-      q: state.q,
-      filter_color: state.color.length ? state.color : undefined,
-      filter_finish: state.finish.length ? state.finish : undefined,
-      filter_gender: state.gender,
-      "kich-co": state.size.length ? state.size : undefined,
-      min_price: state.minPrice,
-      max_price: state.maxPrice,
-      in_stock: state.inStock ? "true" : undefined,
-    })}`;
-  }, [canonicalPath, catalog.orderbyCurrent, catalog.size, includeCategoryParam]);
+  const hrefForState = useCallback(
+    (state: CatalogFilterState) => {
+      return `${canonicalPath}${buildQueryString({
+        size: catalog.size !== DEFAULT_PRODUCT_PAGE_SIZE ? catalog.size : undefined,
+        orderby:
+          catalog.orderbyCurrent !== DEFAULT_CATALOG_ORDERBY ? catalog.orderbyCurrent : undefined,
+        ...(includeCategoryParam ? { category: state.category } : {}),
+        "pwb-brand": state.brand.length ? state.brand : undefined,
+        q: state.q,
+        filter_color: state.color.length ? state.color : undefined,
+        filter_finish: state.finish.length ? state.finish : undefined,
+        filter_gender: state.gender,
+        "kich-co": state.size.length ? state.size : undefined,
+        min_price: state.minPrice,
+        max_price: state.maxPrice,
+        in_stock: state.inStock ? "true" : undefined,
+      })}`;
+    },
+    [canonicalPath, catalog.orderbyCurrent, catalog.size, includeCategoryParam],
+  );
 
-  const commitState = useCallback((state: CatalogFilterState) => {
-    const target = hrefForState(state);
-    const current = `${window.location.pathname}${window.location.search}`;
-    if (target !== current) window.history.pushState(null, "", target);
-  }, [hrefForState]);
+  const commitState = useCallback(
+    (state: CatalogFilterState) => {
+      const target = hrefForState(state);
+      const current = `${window.location.pathname}${window.location.search}`;
+      if (target !== current) window.history.pushState(null, "", target);
+    },
+    [hrefForState],
+  );
 
   function handleMobileOpenChange(open: boolean) {
     if (open) updateMobileDraft(catalog.currentFilters);
@@ -335,7 +376,9 @@ export function CatalogClient({
         mobileCurrent={mobileDraft}
         resetHref={canonicalPath}
         hiddenParams={{
-          orderby: catalog.orderbyCurrent !== DEFAULT_CATALOG_ORDERBY ? catalog.orderbyCurrent : undefined,
+          size: catalog.size !== DEFAULT_PRODUCT_PAGE_SIZE ? catalog.size : undefined,
+          orderby:
+            catalog.orderbyCurrent !== DEFAULT_CATALOG_ORDERBY ? catalog.orderbyCurrent : undefined,
         }}
         mobileOpen={mobileOpen}
         onMobileOpenChange={handleMobileOpenChange}
@@ -345,7 +388,11 @@ export function CatalogClient({
       />
       <CatalogResults
         orderbyCurrent={catalog.orderbyCurrent}
-        searchRelevance={Boolean(defaultSortWhenQuery === "relevance" && catalog.filters.q && catalog.orderbyCurrent === DEFAULT_CATALOG_ORDERBY)}
+        searchRelevance={Boolean(
+          defaultSortWhenQuery === "relevance" &&
+          catalog.filters.q &&
+          catalog.orderbyCurrent === DEFAULT_CATALOG_ORDERBY,
+        )}
         pagination={pagination}
         products={products}
         notice={resolvedNotice}
@@ -353,11 +400,14 @@ export function CatalogClient({
         emptyActionLabel={hasSizeEmptyState ? tCat("clearFilters") : null}
         isLoading={firstLoading}
         isRefetching={isRefetching}
+        error={catalogError}
         activeFilterCount={activeFilterCount}
         activeFilters={activeFilterChips}
         beforeGrid={
           beforeGridNode ??
-            (beforeGridHtml ? <div className="mb-8 [&_p]:mb-4" dangerouslySetInnerHTML={{ __html: beforeGridHtml }} /> : null)
+          (beforeGridHtml ? (
+            <div className="mb-8 [&_p]:mb-4" dangerouslySetInnerHTML={{ __html: beforeGridHtml }} />
+          ) : null)
         }
         paginationBaseHref={paginationBaseHref}
       />

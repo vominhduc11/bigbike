@@ -200,35 +200,33 @@
             "in": "query",
             "schema": {
               "type": "array",
-              "maxItems": 16,
               "items": { "type": "string" }
             },
             "style": "form",
             "explode": true,
-            "description": "Repeated brand slugs; OR within the dimension."
+            "description": "Repeated brand slugs; OR within the dimension; no fixed list-size cap."
           },
           {
             "name": "filter_color",
             "in": "query",
             "schema": {
               "type": "array",
-              "maxItems": 16,
               "items": { "type": "string" }
             },
             "style": "form",
             "explode": true,
-            "description": "Repeated canonical or legacy color keys; OR within the dimension."
+            "description": "Repeated canonical or legacy color keys; OR within the dimension; no fixed list-size cap."
           },
           {
             "name": "filter_finish",
             "in": "query",
             "schema": {
               "type": "array",
-              "maxItems": 8,
               "items": { "type": "string" }
             },
             "style": "form",
-            "explode": true
+            "explode": true,
+            "description": "Repeated finish keys; OR within the dimension; no fixed list-size cap."
           },
           {
             "name": "filter_gender",
@@ -248,7 +246,6 @@
             "in": "query",
             "schema": {
               "type": "array",
-              "maxItems": 16,
               "items": {
                 "type": "string",
                 "maxLength": 32
@@ -256,7 +253,7 @@
             },
             "style": "form",
             "explode": true,
-            "description": "Repeat this parameter for multi-select. Values may be namespaced (for example shoe:42 or pants-waist:42); unqualified legacy values remain supported. Case-insensitive; 2XL/XXXL are normalized to XXL/3XL. Separate from the pagination size parameter."
+            "description": "Repeat this parameter for multi-select with no fixed list-size cap. Values may be namespaced (for example shoe:42 or pants-waist:42); unqualified legacy values remain supported. Case-insensitive; 2XL/XXXL are normalized to XXL/3XL. Separate from the pagination size parameter."
           },
           {
             "name": "min_price",
@@ -659,7 +656,6 @@
             "required": false,
             "schema": {
               "type": "array",
-              "maxItems": 16,
               "items": {
                 "type": "string",
                 "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
@@ -667,7 +663,7 @@
             },
             "style": "form",
             "explode": true,
-            "description": "Repeated brand context; OR within the dimension."
+            "description": "Repeated brand context; OR within the dimension; no fixed list-size cap."
           },
           {
             "name": "filter_color",
@@ -675,7 +671,6 @@
             "required": false,
             "schema": {
               "type": "array",
-              "maxItems": 16,
               "items": {
                 "type": "string",
                 "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
@@ -683,7 +678,7 @@
             },
             "style": "form",
             "explode": true,
-            "description": "Repeated canonical or legacy color context."
+            "description": "Repeated canonical or legacy color context; no fixed list-size cap."
           },
           {
             "name": "filter_finish",
@@ -691,14 +686,14 @@
             "required": false,
             "schema": {
               "type": "array",
-              "maxItems": 8,
               "items": {
                 "type": "string",
                 "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
               }
             },
             "style": "form",
-            "explode": true
+            "explode": true,
+            "description": "Repeated finish context; no fixed list-size cap."
           },
           {
             "name": "filter_gender",
@@ -725,7 +720,6 @@
             "required": false,
             "schema": {
               "type": "array",
-              "maxItems": 16,
               "items": {
                 "type": "string",
                 "maxLength": 32
@@ -733,7 +727,7 @@
             },
             "style": "form",
             "explode": true,
-            "description": "Repeated active size context values; the price axis honors them while size counts exclude the active size filter."
+            "description": "Repeated active size context values with no fixed list-size cap; the price axis honors them while size counts exclude the active size filter."
           },
           {
             "name": "min_price",

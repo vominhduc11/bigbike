@@ -114,4 +114,17 @@ describe("Ranh giới stream — điều kiện để mã trạng thái HTTP ho�
     const source = readFileSync(join(STOREFRONT, relativeFile), "utf8");
     expect(source).toContain('export const dynamic = "force-dynamic";');
   });
+
+  it("trang tất cả sản phẩm và alias nội bộ luôn dựng động theo query lọc", () => {
+    const productList = readFileSync(join(STOREFRONT, "sp", "page.tsx"), "utf8");
+    const internalProductList = readFileSync(
+      join(STOREFRONT, "internal", "sp", "page.tsx"),
+      "utf8",
+    );
+
+    expect(productList).toContain('export const dynamic = "force-dynamic";');
+    expect(internalProductList).toContain('export const dynamic = "force-dynamic";');
+    expect(internalProductList).toContain("searchParams?: Promise<RouteSearchParams>");
+    expect(internalProductList).toContain("ProductListPage({ params, searchParams })");
+  });
 });

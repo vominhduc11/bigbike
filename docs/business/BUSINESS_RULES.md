@@ -86,6 +86,7 @@ Evidence:
 
 - **`NOTIFICATION_RULE_001` (owner decision 2026-08-28)** — Kho thông báo quản trị được giữ trong 6 tháng theo lịch, tính từ `created_at`; thông báo cũ hơn được dọn tự động hằng ngày theo từng đợt nhỏ. Dọn kho chỉ xóa dòng đã hết hạn, không cập nhật hoặc xóa mốc `last_read_at` riêng của bất kỳ tài khoản nào. Số chưa đọc và trạng thái đã đọc tiếp tục được tính riêng theo tài khoản trên các thông báo còn trong thời hạn; payload chung không được mở rộng thêm dữ liệu cá nhân.
 - **`NOTIFICATION_RULE_002` (behavior confirmed 2026-08-31; owner decision 2026-09-01 supersedes the threshold-editing description)** — Đơn vận hành còn `PENDING` cũ hơn ngưỡng cố định **2 ngày** (tính nghiêm ngặt theo `placed_at`, fallback `created_at`) được gộp vào **một** thông báo `ORDER_OVERDUE_DIGEST` trong chuông quản trị mỗi ngày lúc 04:20 giờ Việt Nam. Không còn ô chỉnh ngưỡng trong trang Cài đặt; key lưu trữ vẫn được giữ để luồng runtime đọc. Không có đơn quá hạn thì không tạo thông báo. Mỗi đơn chỉ được đưa vào bản tin một lần; không phát thông báo lẻ, không gửi email, không đưa PII hoặc danh sách mã đơn vào payload chung. Tác vụ không chạy nhắc khi chưa có đợt phân loại lịch sử đang hoạt động hoặc setting lưu trữ không hợp lệ. `OWNER_CONFIRMED_2026-09-01`
+- **`NOTIFICATION_RULE_003` (owner decision 2026-09-05)** — Khi checkout tạo đơn mới thành công, hệ thống có thể gửi thêm đúng một tin Telegram đến chat nội bộ đã cấu hình, sau khi giao dịch đơn hàng commit. Kênh này chỉ dành cho đơn mới; không gửi khi đơn đổi trạng thái, hết hàng hoặc có đánh giá mới. Telegram là kênh tùy chọn: thiếu bot token hoặc chat ID thì bỏ qua êm và không ảnh hưởng khởi động hay checkout. Lỗi mạng, timeout, phản hồi lỗi hoặc cấu hình sai chỉ ghi cảnh báo đã được loại bỏ bí mật; không làm hỏng đơn, không bắt khách chờ và không tự retry. Tin dùng dữ liệu snapshot của các dòng hàng đã có trong đơn, hiển thị tối đa 10 dòng đầu, cắt dưới giới hạn Telegram và mở thẳng đơn tương ứng trong trang quản trị. `OWNER_CONFIRMED_2026-09-05`
 
 Evidence:
 
@@ -93,6 +94,13 @@ Evidence:
 - `AdminNotificationJpaRepository.java`
 - `admin_notification_reads` migration `V339`
 - legacy-column/index cleanup migration `V1067__admin_notification_retention_and_remove_legacy_read_state.sql`
+
+Evidence for `NOTIFICATION_RULE_003`:
+
+- `CheckoutService.java`
+- `TelegramOrderSnapshot.java`
+- `TelegramOrderNotificationService.java`
+- `TelegramOrderNotificationServiceTest.java`
 
 ## Product catalog CSV export (`PRODUCT_RULE_016`, owner decision 2026-08-09)
 

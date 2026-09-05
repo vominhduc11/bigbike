@@ -7,6 +7,46 @@
    would otherwise be compiled into invalid CSS and break the build. */
 @source not "../.artifacts";
 
+/* Auth route changes keep the shared benefits panel mounted and animate only
+   the incoming form content. The route shell omits this attribute on first
+   load and on auth routes outside login/register, so those screens keep their
+   existing behavior. */
+@keyframes bb-auth-form-forward-in {
+  from {
+    opacity: 0;
+    transform: translate3d(2rem, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes bb-auth-form-back-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-2rem, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+[data-auth-form-content][data-auth-form-transition="forward"] {
+  animation: bb-auth-form-forward-in var(--bb-duration-slow) var(--bb-ease-standard) both;
+}
+
+[data-auth-form-content][data-auth-form-transition="back"] {
+  animation: bb-auth-form-back-in var(--bb-duration-slow) var(--bb-ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-auth-form-content][data-auth-form-transition] {
+    animation: none;
+  }
+}
+
 /* -------------------------------------------------------------------
    shadcn/ui CSS variables -- mapped from BigBike brand tokens.
    Radius = 0 (brand: sharp industrial design).
@@ -671,7 +711,6 @@ body:has([data-page-hero]) .bb-main {
 }
 
 @media (min-width: 768px) {
-
   /* Detail (guide) sidebar+content go 2-col from md(768) to match WP
      col-md-3/col-md-9 (was 1024 → blank 768-1023 tablet band). Ratio 3fr/9fr =
      25%/75% (WP); sidebar placed left via md:order in GuidePage. */
@@ -2181,7 +2220,7 @@ a:not(.font-cta):hover {
 .bb-seo-content {
   background: var(--bb-bg-page);
 }
-.bb-error-state{
+.bb-error-state {
   background: var(--bb-bg-surface);
   color: var(--bb-text-primary);
   border-color: var(--bb-border-subtle);
@@ -2189,7 +2228,7 @@ a:not(.font-cta):hover {
   box-shadow: none;
 }
 
-.bb-page h1{
+.bb-page h1 {
   color: var(--bb-text-primary);
   font-family: var(--bb-font-body);
   font-weight: 600;
@@ -2220,7 +2259,7 @@ input[type="checkbox"] {
   padding-bottom: 0;
 }
 .bb-error-state,
-.bb-pagination-page{
+.bb-pagination-page {
   border-radius: 0;
 }
 
@@ -3087,14 +3126,14 @@ body .banner-ads > .container > .row {
     padding-block: 24px calc(var(--bb-mobile-section-y) + 8px);
   }
 
-  .bb-page > [data-bb-rail] > header:first-child{
+  .bb-page > [data-bb-rail] > header:first-child {
     margin: 0 0 18px;
     padding: 20px 0 16px;
     border-bottom: 1px solid var(--bb-border-subtle);
     background: transparent;
   }
 
-  .bb-page h1{
+  .bb-page h1 {
     line-height: var(--bb-line-tight);
   }
 
@@ -3336,7 +3375,7 @@ html[data-bb-nav-dropdown-open] .bb-scroll-top-anchor {
     text-wrap: balance;
   }
 
-  .bb-home .content-bottom.wyswyg p{
+  .bb-home .content-bottom.wyswyg p {
     color: var(--bb-text-secondary);
   }
 }

@@ -1,5 +1,5 @@
 import { AuthSkeleton } from "@/components/ui/Skeletons";
 
-export default function LoginLoading() {
-  return <AuthSkeleton credential />;
+export default function AuthLoading() {
+  return <AuthSkeleton />;
 }

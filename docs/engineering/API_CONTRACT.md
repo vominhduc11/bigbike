@@ -288,7 +288,7 @@ Query params (all optional):
 - `q` — free-text search term (`@Size(max=100)`).
 
 Public catalog/facet search follows `SEARCH_RULE_001`–`SEARCH_RULE_002`: it is case-insensitive and accent-insensitive, retains every entered customer word, matches only at word boundaries, and searches Vietnamese/English product name, slug, product SKU, variant selling SKU, variant option labels/values, localized brand and localized category. Sellable product markers make the general storefront concepts `sản phẩm`/`hàng mới` searchable without dropping terms; the storefront's fixed `nón` → `mũ` synonym is separate from the Assistant processor. It first returns complete query coverage, then strict-majority coverage, and never applies the Trợ lý BigBike stop-word set. Short descriptions, detailed descriptions, structured description blocks, SEO copy, and other article/content fields are explicitly outside the product search scope. Facets use the same matching semantics as the product list.
-- `pwb-brand`, `filter_color`, `filter_finish`, `kich-co` — repeated current-context values. Values within each parameter use OR semantics; different parameters use AND semantics. Each list accepts at most 16 distinct values (`filter_finish` at most 8).
+- `pwb-brand`, `filter_color`, `filter_finish`, `kich-co` — repeated current-context values. Values within each parameter use OR semantics; different parameters use AND semantics. There is no fixed list-size cap: every repeated value still goes through the existing per-value syntax/length validation, and the server must accept all values exposed by the current public facet dictionary, including values added later. Unknown or stale values retain the existing normalization behavior.
 - `filter_gender` — canonical single-value context; legacy repeated values use the first supported value.
 - `in_stock=true` — restricts the result to `product.stockState = IN_STOCK`; false/blank means no availability restriction.
 - `min_price`, `max_price` — remain accepted for URL/API compatibility and affect the other facet counts, but are deliberately excluded from the price-axis calculation.
@@ -305,6 +305,12 @@ Response shape: `ApiDataResponse<CatalogFacets>`:
 - `priceRange`: `null` when the context has no effective-price products or only one distinct effective price; otherwise `{ minPrice, maxPrice, step: 50000, buckets: [{ minPrice, maxPrice, count }] }`. The endpoints are the true minimum/maximum effective prices in the current category/search/brand/color/gender/size context. Histogram buckets are dynamic (at most 24), include zero-count columns, and are calculated without applying the active `min_price`/`max_price` selection. `step` remains compatibility metadata for existing clients; the public web rounds the lower endpoint down and the upper endpoint up using the documented price bands, then maps slider positions by histogram quantiles so the midpoint approximates the median product price. The web keeps the full endpoint range available, updates continuously while dragging, and snaps only on release. `min_price`/`max_price` remain URL bounds subject only to the documented URL-safe bound and reverse-order normalization; there is no open-ended "and above" endpoint.
 - `resultCount`: count of unique products matching the full current context; powers the mobile `Xem N sản phẩm` action.
 - `resolvedColorKeys`: canonical base-color keys resolved from every active `filter_color` value. A legacy raw alias such as `den-nham` therefore remains valid and resolves to `den`; an unmapped value intentionally omitted from the public color vocabulary resolves to an empty list and does not constrain the result, so the web can remove that stale condition instead of showing a false empty state.
+
+Catalog failures are distinct from an empty result. A successful `200` response with
+`resultCount = 0` is a genuine empty filter result. A transport failure or non-`2xx` response
+from either the product-list or facets request remains an API error; the storefront must present
+a system-failure message and must not turn that failure into the empty-result message. Status:
+`OWNER_CONFIRMED_2026-09-05`.
 
 **Current counting semantics:** counts use `PUBLISHED + discontinued=false`, honor category descendants and count unique products. Every selectable facet excludes its own active dimension while honoring search and all other dimensions; values inside brand/color/finish/size use OR, dimensions use AND. When both color and finish are active, the same raw visual option must satisfy both. Non-selected zero buckets are omitted. The price range never applies its own active price selection. Effective price is the positive sale price only when it is strictly below retail; otherwise it is retail. Status: `CONFIRMED_FROM_OWNER_DECISION_2026-08-19` — `BUSINESS_RULES.md` `CATALOG_RULE_005`–`CATALOG_RULE_011`.
 
@@ -944,6 +950,11 @@ Status: `CONFIRMED_FROM_CODE` — `CatalogController.java`, `CatalogReadService`
 within one dimension match with OR; dimensions match with AND. A legacy raw
 color alias is resolved to its configured base color before matching. Color and
 finish must be present on the same raw visual option when both are active.
+Repeated filter dimensions have no fixed list-size cap; the server validates each
+value individually and accepts the complete set of values exposed by the current
+public facet dictionary. A `200` response with zero matches is an empty result;
+transport failures and non-`2xx` responses remain errors for the storefront to
+report as system failures.
 
 The storefront exposes only these deterministic sort choices:
 

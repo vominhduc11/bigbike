@@ -10,16 +10,16 @@ import { skelStack } from "@/lib/ui-classes";
 import { PageHeroSkel, SkeletonRoot, SkelBlock, SkelText, SkelTitle } from "./primitives";
 
 /**
- * Đăng nhập / Đăng ký / Quên mật khẩu — sao lại components/auth/AuthPageFrame.tsx.
+ * Biểu mẫu đăng nhập / đăng ký / quên mật khẩu khi đang tải.
  *
- * `credential` = trang có tấm ảnh thương hiệu bên trái (đăng nhập, đăng ký): từ
- * 1024px trở lên là hai nửa màn hình, dưới ngưỡng đó chỉ còn cột biểu mẫu. Trang
- * quên mật khẩu dùng khung hẹp căn giữa. Bản khung chờ cũ vẽ một thẻ nhỏ viền đỏ
- * ở giữa màn — không còn giống trang thật sau khi đổi giao diện.
+ * Khung ngoài (2 nửa màn hình: ảnh thương hiệu trái + cột biểu mẫu phải) do
+ * app/[locale]/(auth)/layout.tsx → AuthRouteShell dựng và GIỮ NGUYÊN khi đổi
+ * trang, nên khung chờ chỉ được thay phần biểu mẫu. Dựng lại cả khung ngoài ở
+ * đây sẽ lồng thêm một tấm ảnh thương hiệu thứ hai vào trong cột biểu mẫu.
  */
 export function AuthFormSkeleton({ withTitle = true }: { withTitle?: boolean } = {}) {
   return (
-    <div className="w-full max-w-md" aria-hidden="true">
+    <div className="w-full" aria-hidden="true">
       {/* Tiêu đề (AuthTitleBlock: header mb-6, h1 mb-2) */}
       {withTitle ? (
         <div className="mb-6">
@@ -45,54 +45,11 @@ export function AuthFormSkeleton({ withTitle = true }: { withTitle?: boolean } =
   );
 }
 
-export function AuthSkeleton({ credential = false }: { credential?: boolean } = {}) {
-  const form = <AuthFormSkeleton />;
-
-  if (!credential) {
-    return (
-      <SkeletonRoot
-        labelKey="auth"
-        className="flex min-h-full w-full flex-1 items-start p-6 sm:px-6 md:items-center"
-      >
-        <div className="mx-auto w-full max-w-md">{form}</div>
-      </SkeletonRoot>
-    );
-  }
-
+/** Khung chờ cấp route cho 3 trang xác thực — chỉ phần biểu mẫu, xem ghi chú trên. */
+export function AuthSkeleton() {
   return (
-    <SkeletonRoot
-      labelKey="auth"
-      className="flex min-h-full w-full flex-1 items-start px-4 py-6 sm:px-6 md:items-center lg:p-0"
-    >
-      <div className="mx-auto grid w-full max-w-[1200px] bg-background lg:min-h-svh lg:grid-cols-2">
-        {/* Nửa trái: ảnh thương hiệu + lợi ích (chỉ hiện từ 1024px) */}
-        <div className="relative hidden min-h-0 overflow-hidden bg-surface-dark p-10 lg:flex lg:flex-col lg:justify-center">
-          <div className="relative max-w-md">
-            <div className="mb-4">
-              <SkelText w={120} />
-            </div>
-            <div className="flex flex-col gap-2">
-              <SkelTitle w="85%" h="1.6em" />
-              <SkelTitle w="55%" h="1.6em" />
-            </div>
-            <div className="mt-4 flex flex-col gap-2">
-              <SkelText w="100%" />
-              <SkelText w="80%" />
-            </div>
-            <div className="mt-8 grid gap-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <SkelBlock w={24} h={24} />
-                  <SkelText w="70%" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Nửa phải: biểu mẫu */}
-        <div className="flex min-w-0 justify-center lg:items-start lg:py-16">{form}</div>
-      </div>
+    <SkeletonRoot labelKey="auth">
+      <AuthFormSkeleton />
     </SkeletonRoot>
   );
 }

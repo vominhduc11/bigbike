@@ -1,5 +1,5 @@
 import { AuthSkeleton } from "@/components/ui/Skeletons";
 
-export default function ForgotPasswordLoading() {
+export default function AuthLoading() {
   return <AuthSkeleton />;
 }
