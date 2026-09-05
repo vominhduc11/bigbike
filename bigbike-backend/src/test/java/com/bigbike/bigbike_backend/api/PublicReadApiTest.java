@@ -333,7 +333,39 @@ class PublicReadApiTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void catalogFilters_acceptAllDisplayedValuesWithoutFixedDimensionCap() throws Exception {
+        String[] brands = repeatedValues("brand", 19);
+        String[] colors = repeatedValues("color", 17);
+        String[] finishes = repeatedValues("finish", 17);
+        String[] sizes = repeatedValues("shoe", 55);
+
+        mockMvc.perform(get("/api/v1/products")
+                        .param("pwb-brand", brands)
+                        .param("filter_color", colors)
+                        .param("filter_finish", finishes)
+                        .param("kich-co", sizes))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
+
+        mockMvc.perform(get("/api/v1/catalog/facets")
+                        .param("pwb-brand", brands)
+                        .param("filter_color", colors)
+                        .param("filter_finish", finishes)
+                        .param("kich-co", sizes))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultCount").value(0));
+    }
+
     // ── Seed helpers ─────────────────────────────────────────────────────────────
+
+    private static String[] repeatedValues(String prefix, int count) {
+        String[] values = new String[count];
+        for (int index = 0; index < count; index++) {
+            values[index] = prefix + "-" + (index + 1);
+        }
+        return values;
+    }
 
     private CategoryEntity seedCategory(String slug, String name) {
         return categoryRepo.findBySlug(slug).orElseGet(() -> {

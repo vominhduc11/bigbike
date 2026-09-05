@@ -199,6 +199,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
                     beforeGridNode={beforeGridNode}
                     products={productsResult.data}
                     pagination={productsResult.pagination}
+                    error={Boolean(productsResult.error || facetsResult.error)}
                   />
                 }
               >
@@ -209,6 +210,8 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
                   routeBrandSlug={brand.slug}
                   initialProducts={productsResult.data}
                   initialPagination={productsResult.pagination}
+                  initialProductsError={Boolean(productsResult.error)}
+                  initialFacetsError={Boolean(facetsResult.error)}
                 />
               </Suspense>
             </Container>

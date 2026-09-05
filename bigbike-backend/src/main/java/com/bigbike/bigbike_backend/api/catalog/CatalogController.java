@@ -60,16 +60,16 @@ public class CatalogController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
-            @RequestParam(name = "pwb-brand", required = false) @Size(max = 16)
+            @RequestParam(name = "pwb-brand", required = false)
                 List<@Pattern(regexp = SLUG_REGEX, message = "Invalid brand slug.") String> brands,
             @RequestParam(required = false) @Size(max = 100) String q,
-            @RequestParam(name = "filter_color", required = false) @Size(max = 16)
+            @RequestParam(name = "filter_color", required = false)
                 List<@Pattern(regexp = SLUG_REGEX, message = "Invalid color slug.") String> filterColors,
-            @RequestParam(name = "filter_finish", required = false) @Size(max = 8)
+            @RequestParam(name = "filter_finish", required = false)
                 List<@Pattern(regexp = SLUG_REGEX, message = "Invalid finish slug.") String> filterFinishes,
             @RequestParam(name = "filter_gender", required = false)
                 List<@Size(max = 20) @Pattern(regexp = "(?iu)^\\s*(Nam|Nữ)?\\s*$", message = "Invalid filter_gender.") String> filterGender,
-            @RequestParam(name = "kich-co", required = false) @Size(max = 16)
+            @RequestParam(name = "kich-co", required = false)
                 List<@Size(max = 32) String> sizeFilters,
             @RequestParam(name = "min_price", required = false) @Min(0) Long minPrice,
             @RequestParam(name = "max_price", required = false) @Min(0) Long maxPrice,
@@ -190,16 +190,16 @@ public class CatalogController {
     @GetMapping("/catalog/facets")
     public ApiDataResponse<CatalogFacets> getCatalogFacets(
             @RequestParam(required = false) @Pattern(regexp = SLUG_REGEX, message = "Invalid category slug.") String category,
-            @RequestParam(name = "pwb-brand", required = false) @Size(max = 16)
+            @RequestParam(name = "pwb-brand", required = false)
                 List<@Pattern(regexp = SLUG_REGEX, message = "Invalid brand slug.") String> brands,
             @RequestParam(required = false) @Size(max = 100) String q,
-            @RequestParam(name = "filter_color", required = false) @Size(max = 16)
+            @RequestParam(name = "filter_color", required = false)
                 List<@Pattern(regexp = SLUG_REGEX, message = "Invalid color slug.") String> filterColors,
-            @RequestParam(name = "filter_finish", required = false) @Size(max = 8)
+            @RequestParam(name = "filter_finish", required = false)
                 List<@Pattern(regexp = SLUG_REGEX, message = "Invalid finish slug.") String> filterFinishes,
             @RequestParam(name = "filter_gender", required = false)
                 List<@Size(max = 20) @Pattern(regexp = "(?iu)^\\s*(Nam|Nữ)?\\s*$", message = "Invalid filter_gender.") String> filterGender,
-            @RequestParam(name = "kich-co", required = false) @Size(max = 16)
+            @RequestParam(name = "kich-co", required = false)
                 List<@Size(max = 32) String> sizeFilters,
             @RequestParam(name = "min_price", required = false) @Min(0) Long minPrice,
             @RequestParam(name = "max_price", required = false) @Min(0) Long maxPrice,

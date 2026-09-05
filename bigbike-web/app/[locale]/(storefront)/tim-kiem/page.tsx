@@ -117,6 +117,8 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
                 requireQuery
                 initialProducts={productsResult.data}
                 initialPagination={productsResult.pagination}
+                initialProductsError={Boolean(productsResult.error)}
+                initialFacetsError={Boolean(facetsResult.error)}
               />
             </Suspense>
             {catalog.filters.q && (

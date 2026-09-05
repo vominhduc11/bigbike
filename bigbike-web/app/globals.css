@@ -7,6 +7,46 @@
    would otherwise be compiled into invalid CSS and break the build. */
 @source not "../.artifacts";
 
+/* Auth route changes keep the shared benefits panel mounted and animate only
+   the incoming form content. The route shell omits this attribute on first
+   load and on auth routes outside login/register, so those screens keep their
+   existing behavior. */
+@keyframes bb-auth-form-forward-in {
+  from {
+    opacity: 0;
+    transform: translate3d(2rem, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes bb-auth-form-back-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-2rem, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+[data-auth-form-content][data-auth-form-transition="forward"] {
+  animation: bb-auth-form-forward-in var(--bb-duration-slow) var(--bb-ease-standard) both;
+}
+
+[data-auth-form-content][data-auth-form-transition="back"] {
+  animation: bb-auth-form-back-in var(--bb-duration-slow) var(--bb-ease-standard) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-auth-form-content][data-auth-form-transition] {
+    animation: none;
+  }
+}
+
 /* -------------------------------------------------------------------
    shadcn/ui CSS variables -- mapped from BigBike brand tokens.
    Radius = 0 (brand: sharp industrial design).

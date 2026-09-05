@@ -431,6 +431,7 @@
     "categoryNotFoundTitle": "Không tìm thấy danh mục",
     "categoryNotFoundDescription": "Không tìm thấy danh mục sản phẩm yêu cầu.",
     "categoryLoadFailed": "Không tải được thông tin danh mục.",
+    "systemError": "Hệ thống đang gặp sự cố. Vui lòng thử lại sau.",
     "categoryDefaultDescription": "Chi tiết danh mục sản phẩm BigBike.",
     "categoryFallback": "Danh mục",
     "parentCategoryFallback": "Danh mục cha",

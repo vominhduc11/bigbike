@@ -10,7 +10,12 @@ import { CollapsibleContent } from "@/components/ui/collapsible-content";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
-import { getCatalogFacets, getCategoryBySlug, listCategories, listProducts } from "@/lib/api/public-api";
+import {
+  getCatalogFacets,
+  getCategoryBySlug,
+  listCategories,
+  listProducts,
+} from "@/lib/api/public-api";
 import {
   buildCategoryBreadcrumbJsonLd,
   buildCategoryCollectionJsonLd,
@@ -56,8 +61,11 @@ type CategoryDetailPageProps = {
   searchParams: Promise<RouteSearchParams>;
 };
 
-export async function generateMetadata({ params, searchParams }: CategoryDetailPageProps): Promise<Metadata> {
-  const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+export async function generateMetadata({
+  params,
+  searchParams,
+}: CategoryDetailPageProps): Promise<Metadata> {
+  const { slug, locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   const priceFiltered = hasPriceRangeFilter(await searchParams);
   setRequestLocale(locale);
   const tCatalog = await getTranslations("Catalog");
@@ -90,9 +98,16 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
     description:
       category.seo?.description ??
       (category.description
-        ? category.description.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim().slice(0, 160) || defaultDescription
+        ? category.description
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s{2,}/g, " ")
+            .trim()
+            .slice(0, 160) || defaultDescription
         : defaultDescription),
-    canonicalPath: toCategoryPath(locale === "en" ? category.slugEn?.trim() || category.slug : category.slug, locale),
+    canonicalPath: toCategoryPath(
+      locale === "en" ? category.slugEn?.trim() || category.slug : category.slug,
+      locale,
+    ),
     locale,
     ogImage: category.seo?.ogImage?.url ?? (category.image ?? category.icon)?.url ?? undefined,
     // Cờ đã resolve theo locale ở backend (SeoIndexPolicy) — SEO_RULE_001/002.
@@ -110,8 +125,11 @@ export async function generateMetadata({ params, searchParams }: CategoryDetailP
   });
 }
 
-export default async function CategoryDetailPage({ params, searchParams }: CategoryDetailPageProps) {
-  const { slug, locale } = await params as Awaited<typeof params> & { locale: Locale };
+export default async function CategoryDetailPage({
+  params,
+  searchParams,
+}: CategoryDetailPageProps) {
+  const { slug, locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   const catalog = parseCatalogListParams(await searchParams);
   setRequestLocale(locale);
   if (!isValidSlug(slug)) {
@@ -131,11 +149,16 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
       <div>
         <PageHero
           title={fallbackTitle}
-          breadcrumb={[{ label: locale === "en" ? "Home" : "Trang chủ", href: toHomePath(locale) }, { label: fallbackTitle }]}
+          breadcrumb={[
+            { label: locale === "en" ? "Home" : "Trang chủ", href: toHomePath(locale) },
+            { label: fallbackTitle },
+          ]}
         />
         <div id="main-content">
           <Container>
-            <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground"><Tr ns="Catalog" k="categoryLoadFailed" /></p>
+            <p className="border border-border bg-card p-4 text-a4-content text-muted-foreground">
+              <Tr ns="Catalog" k="categoryLoadFailed" />
+            </p>
           </Container>
         </div>
       </div>
@@ -150,19 +173,33 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
   const [allCategoriesResult, facetsResult, productsResult] = await Promise.all([
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
     getCatalogFacets({
-      category: category.slug, brand: catalog.filters.brand, q: catalog.filters.q,
-      filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
-      filterGender: catalog.filters.gender, sizeFilter: catalog.filters.size,
-      minPrice: catalog.filters.minPrice, maxPrice: catalog.filters.maxPrice,
-      inStock: catalog.filters.inStock, lang: locale,
+      category: category.slug,
+      brand: catalog.filters.brand,
+      q: catalog.filters.q,
+      filterColor: catalog.filters.color,
+      filterFinish: catalog.filters.finish,
+      filterGender: catalog.filters.gender,
+      sizeFilter: catalog.filters.size,
+      minPrice: catalog.filters.minPrice,
+      maxPrice: catalog.filters.maxPrice,
+      inStock: catalog.filters.inStock,
+      lang: locale,
     }),
     listProducts({
-      page: catalog.page, size: catalog.size, sort: catalog.productSort,
-      category: category.slug, brand: catalog.filters.brand, q: catalog.filters.q,
-      filterColor: catalog.filters.color, filterFinish: catalog.filters.finish,
-      filterGender: catalog.filters.gender, sizeFilter: catalog.filters.size,
-      minPrice: catalog.filters.minPrice, maxPrice: catalog.filters.maxPrice,
-      inStock: catalog.filters.inStock, lang: locale,
+      page: catalog.page,
+      size: catalog.size,
+      sort: catalog.productSort,
+      category: category.slug,
+      brand: catalog.filters.brand,
+      q: catalog.filters.q,
+      filterColor: catalog.filters.color,
+      filterFinish: catalog.filters.finish,
+      filterGender: catalog.filters.gender,
+      sizeFilter: catalog.filters.size,
+      minPrice: catalog.filters.minPrice,
+      maxPrice: catalog.filters.maxPrice,
+      inStock: catalog.filters.inStock,
+      lang: locale,
     }),
   ]);
 
@@ -173,9 +210,15 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
     : null;
   const categoryName = safeText(category.name, tCatalog("categoryFallback"));
   const categoryIntroHtml = category.introContent?.trim()
-    ? sanitizeRichHtml(category.introContent, { allowInlineStyles: true, rewriteMediaUrls: true, locale })
+    ? sanitizeRichHtml(category.introContent, {
+        allowInlineStyles: true,
+        rewriteMediaUrls: true,
+        locale,
+      })
     : null;
-  const categoryDescription = stripHtmlToText(categoryIntroHtml ?? category.description ?? "").slice(0, 500);
+  const categoryDescription = stripHtmlToText(
+    categoryIntroHtml ?? category.description ?? "",
+  ).slice(0, 500);
   const breadcrumbJsonLd = serializeJsonLd(
     buildCategoryBreadcrumbJsonLd(category, parentCategory, canonicalPath),
   );
@@ -190,9 +233,8 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
     ),
   );
   const categoryFaqs = extractCategoryFaqs(categoryIntroHtml);
-  const faqJsonLd = categoryFaqs.length > 0
-    ? serializeJsonLd(buildFaqPageJsonLd(categoryFaqs))
-    : null;
+  const faqJsonLd =
+    categoryFaqs.length > 0 ? serializeJsonLd(buildFaqPageJsonLd(categoryFaqs)) : null;
   const beforeGridNode = categoryIntroHtml ? (
     <CollapsibleContent className="mb-8">
       <LHtml
@@ -210,7 +252,12 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
       ? [
           {
             label: safeText(parentCategory.name, tCatalog("categoryFallback")),
-            href: toCategoryPath(locale === "en" ? parentCategory.slugEn?.trim() || parentCategory.slug : parentCategory.slug, locale),
+            href: toCategoryPath(
+              locale === "en"
+                ? parentCategory.slugEn?.trim() || parentCategory.slug
+                : parentCategory.slug,
+              locale,
+            ),
           },
         ]
       : []),
@@ -226,7 +273,9 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: collectionJsonLd }} />
-      {faqJsonLd ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqJsonLd }} /> : null}
+      {faqJsonLd ? (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: faqJsonLd }} />
+      ) : null}
 
       <LocalizedContentProvider kind="category" slug={category.slug}>
         <AltSlugRegistrar kind="category" viSlug={category.slug} enSlug={category.slugEn ?? null} />
@@ -238,7 +287,9 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
             breadcrumb={heroBreadcrumb}
             bgUrl={heroBgUrl}
             illustrationUrl={heroIllustrationUrl}
-            illustrationImage={category.icon ? { ...category.icon, url: heroIllustrationUrl ?? undefined } : null}
+            illustrationImage={
+              category.icon ? { ...category.icon, url: heroIllustrationUrl ?? undefined } : null
+            }
             illustrationAlt={category.icon?.alt ?? categoryName}
           />
 
@@ -251,6 +302,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
                     beforeGridNode={beforeGridNode}
                     products={productsResult.data}
                     pagination={productsResult.pagination}
+                    error={Boolean(productsResult.error || facetsResult.error)}
                   />
                 }
               >
@@ -261,6 +313,8 @@ export default async function CategoryDetailPage({ params, searchParams }: Categ
                   routeCategorySlug={category.slug}
                   initialProducts={productsResult.data}
                   initialPagination={productsResult.pagination}
+                  initialProductsError={Boolean(productsResult.error)}
+                  initialFacetsError={Boolean(facetsResult.error)}
                 />
               </Suspense>
             </Container>

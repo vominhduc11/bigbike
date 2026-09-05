@@ -27,7 +27,7 @@ import {
 
 const ORDERBY_INVALID_MESSAGE = "orderby không hợp lệ.";
 
- type CatalogListParseOptions = {
+type CatalogListParseOptions = {
   /**
    * Trang /sp và /tim-kiem cho phép lọc theo `category` qua query param;
    * trang danh mục/thương hiệu lấy category từ route nên không đọc param này.
@@ -41,7 +41,7 @@ const ORDERBY_INVALID_MESSAGE = "orderby không hợp lệ.";
   defaultSortWhenQuery?: string;
 };
 
- type CatalogListFilters = {
+type CatalogListFilters = {
   q: string | undefined;
   category: string | undefined;
   brand: string[];
@@ -102,12 +102,12 @@ export function parseCatalogListParams(
   });
   const qParsed = parseTextParam(readSearchParamAlias(params, ...queryParamKeys), 100);
   const categoryParsed = parseSlugParam(params.category, "category");
-  const brandParsed = parseCatalogSlugList(params["pwb-brand"] ?? params.brand, "pwb-brand", 16);
-  const colorParsed = parseCatalogSlugList(params.filter_color, "filter_color", 16);
-  const finishParsed = parseCatalogSlugList(params.filter_finish, "filter_finish", 8);
+  const brandParsed = parseCatalogSlugList(params["pwb-brand"] ?? params.brand, "pwb-brand");
+  const colorParsed = parseCatalogSlugList(params.filter_color, "filter_color");
+  const finishParsed = parseCatalogSlugList(params.filter_finish, "filter_finish");
   const genderValues = readSearchParamValues(params.filter_gender)
     .map((value) => value.trim().toLowerCase())
-    .map((value) => value === "nam" ? "Nam" : value === "nu" || value === "nữ" ? "Nữ" : null)
+    .map((value) => (value === "nam" ? "Nam" : value === "nu" || value === "nữ" ? "Nữ" : null))
     .filter((value): value is "Nam" | "Nữ" => value !== null);
   // The public contract is single-select. Older articles may still emit
   // repeated filter_gender values; keep the first supported value so those
@@ -119,24 +119,25 @@ export function parseCatalogListParams(
     .map(normalizeSizeFilterToken)
     .filter((value): value is string => Boolean(value))
     .filter((value, index, values) => values.indexOf(value) === index);
-  const sizeError = invalidSize
-    ? `Tham số "kich-co" không được dài quá 32 ký tự.`
-    : null;
+  const sizeError = invalidSize ? `Tham số "kich-co" không được dài quá 32 ký tự.` : null;
   const minPriceParsed = parseCatalogPriceParam(params.min_price, "min_price");
   const maxPriceParsed = parseCatalogPriceParam(params.max_price, "max_price");
   const inStockParsed = parseCatalogBooleanParam(params.in_stock, "in_stock");
   // A legacy URL can contain the two ends in reverse order. It is still a usable
   // URL: swap them before the first product request, then the facet response can
   // clamp and snap them to the actual range for this catalog context.
-  if (minPriceParsed.value != null && maxPriceParsed.value != null
-    && minPriceParsed.value > maxPriceParsed.value) {
+  if (
+    minPriceParsed.value != null &&
+    maxPriceParsed.value != null &&
+    minPriceParsed.value > maxPriceParsed.value
+  ) {
     [minPriceParsed.value, maxPriceParsed.value] = [maxPriceParsed.value, minPriceParsed.value];
   }
   const orderbyParam = readSingleSearchParam(params.orderby);
-  const orderbyError = orderbyParam && !isCatalogOrderbyValue(orderbyParam) ? ORDERBY_INVALID_MESSAGE : null;
-  const defaultSort = qParsed.value && options.defaultSortWhenQuery
-    ? options.defaultSortWhenQuery
-    : DEFAULT_SORT;
+  const orderbyError =
+    orderbyParam && !isCatalogOrderbyValue(orderbyParam) ? ORDERBY_INVALID_MESSAGE : null;
+  const defaultSort =
+    qParsed.value && options.defaultSortWhenQuery ? options.defaultSortWhenQuery : DEFAULT_SORT;
   const sortParsed = parseSortParam(params.sort, PRODUCT_SORT_VALUES, defaultSort);
   const orderbyCurrent = isCatalogOrderbyValue(orderbyParam)
     ? orderbyParam
@@ -221,7 +222,6 @@ export function parseCatalogListParams(
 function parseCatalogSlugList(
   value: RouteSearchParams[string],
   field: string,
-  maxItems: number,
 ): { value: string[]; error: string | null } {
   const values = readSearchParamValues(value)
     .map((item) => item.trim().toLowerCase())
@@ -229,9 +229,6 @@ function parseCatalogSlugList(
     .filter((item, index, all) => all.indexOf(item) === index);
   const invalid = values.find((item) => !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item));
   if (invalid) return { value: [], error: `Tham số "${field}" không hợp lệ.` };
-  if (values.length > maxItems) {
-    return { value: values.slice(0, maxItems), error: `Tham số "${field}" có quá nhiều giá trị.` };
-  }
   return { value: values, error: null };
 }
 
@@ -269,7 +266,8 @@ function normalizeSizeFilterToken(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return "";
   const colon = trimmed.indexOf(":");
-  const namespace = colon > 0 ? trimmed.slice(0, colon).trim().toLowerCase().replace(/\s+/g, "-") : "";
+  const namespace =
+    colon > 0 ? trimmed.slice(0, colon).trim().toLowerCase().replace(/\s+/g, "-") : "";
   const value = (colon > 0 ? trimmed.slice(colon + 1) : trimmed)
     .trim()
     .replace(/\s+/g, "")

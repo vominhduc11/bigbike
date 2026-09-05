@@ -67,7 +67,9 @@ describe("catalog size filter query contract", () => {
   });
 
   it("keeps repeated namespaced size values and canonicalizes aliases", () => {
-    const parsed = parseCatalogListParams({ "kich-co": ["shoe:42", "pants-waist:42", "2xl", "2XL"] });
+    const parsed = parseCatalogListParams({
+      "kich-co": ["shoe:42", "pants-waist:42", "2xl", "2XL"],
+    });
 
     expect(parsed.filters.size).toEqual(["shoe:42", "pants-waist:42", "XXL"]);
     expect(parsed.validationErrors).toEqual([]);
@@ -103,6 +105,25 @@ describe("catalog multi-select query contract", () => {
     expect(href).toContain("filter_color=den");
     expect(href).toContain("filter_color=xam");
     expect(href).toContain("in_stock=true");
+  });
+
+  it("does not discard values beyond the former per-dimension limits", () => {
+    const brands = Array.from({ length: 19 }, (_, index) => `brand-${index + 1}`);
+    const colors = Array.from({ length: 17 }, (_, index) => `color-${index + 1}`);
+    const finishes = Array.from({ length: 17 }, (_, index) => `finish-${index + 1}`);
+    const sizes = Array.from({ length: 55 }, (_, index) => `shoe:${index + 1}`);
+    const parsed = parseCatalogListParams({
+      "pwb-brand": brands,
+      filter_color: colors,
+      filter_finish: finishes,
+      "kich-co": sizes,
+    });
+
+    expect(parsed.filters.brand).toEqual(brands);
+    expect(parsed.filters.color).toEqual(colors);
+    expect(parsed.filters.finish).toEqual(finishes);
+    expect(parsed.filters.size).toEqual(sizes);
+    expect(parsed.validationErrors).toEqual([]);
   });
 });
 

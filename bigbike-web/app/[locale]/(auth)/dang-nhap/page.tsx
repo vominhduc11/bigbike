@@ -28,23 +28,8 @@ export async function generateMetadata({ params }: LoginPageProps): Promise<Meta
 export default async function LoginPage({ params }: LoginPageProps) {
   const { locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "Auth.brand" });
   return (
-    <AuthPageFrame
-      primary
-      authPage="login"
-      brandPanel={{
-        eyebrow: <Tr ns="Auth.brand" k="eyebrow" />,
-        title: <Tr ns="Auth.brand" k="title" />,
-        description: <Tr ns="Auth.brand" k="description" />,
-        benefits: [
-          <Tr key="orders" ns="Auth.brand" k="benefitOrders" />,
-          <Tr key="address" ns="Auth.brand" k="benefitAddress" />,
-          <Tr key="offers" ns="Auth.brand" k="benefitOffers" />,
-        ],
-        imageAlt: t("imageAlt"),
-      }}
-    >
+    <AuthPageFrame primary authPage="login">
       <AuthTitleBlock title={<Tr ns="Auth" k="tabLogin" />} compact>
         <p className="sr-only">
           <Tr ns="Auth.login" k="intro" />
