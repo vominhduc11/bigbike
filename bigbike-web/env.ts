@@ -22,7 +22,13 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_API_BASE_URL: z.string().url().optional(),
-    NEXT_PUBLIC_GTM_ID: z.string().optional(),
+    // Google Analytics 4 measurement id (G-XXXXXXXXXX). Blank/unset → no analytics script is
+    // rendered at all. Validated here so a typo fails the build instead of silently sending
+    // the shop's traffic nowhere.
+    NEXT_PUBLIC_GA4_MEASUREMENT_ID: z
+      .string()
+      .regex(/^G-[A-Z0-9]{4,}$/, "must look like G-XXXXXXXXXX")
+      .optional(),
     NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
     // Canonical site origin — used client-side for absolute URL generation
     NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
@@ -46,7 +52,7 @@ export const env = createEnv({
     INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN || undefined,
     BIGBIKE_REDIRECT_CACHE_TTL_SECONDS: process.env.BIGBIKE_REDIRECT_CACHE_TTL_SECONDS || undefined,
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || undefined,
-    NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID || undefined,
+    NEXT_PUBLIC_GA4_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || undefined,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN || undefined,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || undefined,
     NEXT_PUBLIC_ADMIN_ORIGIN: process.env.NEXT_PUBLIC_ADMIN_ORIGIN || undefined,

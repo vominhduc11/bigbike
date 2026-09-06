@@ -11,6 +11,7 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { trackRemoveFromCart } from "@/lib/analytics";
 import { useCart } from "@/lib/cart-context";
 import type { CartItem } from "@/lib/contracts/commerce";
 import { useCartQuery, useRemoveCartItem, useUpdateCartItem } from "@/lib/query/hooks";
@@ -83,6 +84,7 @@ export function MobileCartSheet() {
 
     try {
       await removeItem.mutateAsync(item.id);
+      trackRemoveFromCart(item);
       refreshCount();
     } catch {
       setErrorMessage(t("removeFailed"));

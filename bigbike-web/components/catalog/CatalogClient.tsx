@@ -16,6 +16,7 @@ import { isCurrentCatalogFacetResponse } from "@/lib/utils/catalog-facet-respons
 import { buildQueryString } from "@/lib/utils/query";
 import { DEFAULT_PRODUCT_PAGE_SIZE } from "@/lib/constants/catalog";
 import { CatalogResults } from "@/components/catalog/CatalogResults";
+import type { Ga4List } from "@/lib/analytics";
 import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
 import { CatalogFilterChips } from "@/components/catalog/CatalogFilterChips";
 import type { CatalogFacets, Product } from "@/lib/contracts/public";
@@ -70,9 +71,16 @@ export type CatalogClientProps = {
   /** Server-side request failed; do not treat its empty fallback as a real result. */
   initialProductsError?: boolean;
   initialFacetsError?: boolean;
+  /**
+   * GA4 list attribution for this grid (`view_item_list` / `select_item`). Deliberately not
+   * passed to the `CatalogDefault` Suspense fallback: both would mount and the impression would
+   * be reported twice.
+   */
+  analyticsList?: Ga4List;
 };
 
 export function CatalogClient({
+  analyticsList,
   canonicalPath,
   facets = null,
   beforeGridHtml = null,
@@ -387,6 +395,7 @@ export function CatalogClient({
         hideBrandFilter={Boolean(routeBrandSlug)}
       />
       <CatalogResults
+        analyticsList={analyticsList}
         orderbyCurrent={catalog.orderbyCurrent}
         searchRelevance={Boolean(
           defaultSortWhenQuery === "relevance" &&

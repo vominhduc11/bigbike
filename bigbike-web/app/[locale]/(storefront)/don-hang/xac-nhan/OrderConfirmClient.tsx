@@ -50,20 +50,7 @@ export function OrderConfirmClient() {
 
   return (
     <>
-      {order ? (
-        <PurchaseEvent
-          orderId={order.id}
-          orderNumber={order.orderNumber}
-          revenue={order.totalAmount}
-          currency={order.currency ?? "VND"}
-          items={order.lineItems.map((item) => ({
-            item_id: item.productId ?? item.id,
-            item_name: item.productName,
-            price: item.unitPrice,
-            quantity: item.quantity,
-          }))}
-        />
-      ) : null}
+      {order ? <PurchaseEvent order={order} /> : null}
       <OrderConfirmView
         orderNumber={orderNumber}
         orderKey={orderKey}

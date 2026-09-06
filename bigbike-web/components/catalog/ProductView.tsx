@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useEffect, type ReactNode } from "react";
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
@@ -36,6 +36,7 @@ import { DiscontinuedSuggestions } from "@/components/catalog/DiscontinuedSugges
 import { MobilePdpAnchorNav, type AnchorNavItem } from "@/components/catalog/MobilePdpAnchorNav";
 import { PdpSectionHeading, PDP_SECTION_SEP } from "@/components/catalog/product-view/PdpSection";
 import { buildTrustItems, ProductTrustCard } from "@/components/catalog/product-view/ProductTrustCard";
+import { trackViewItem, type Ga4List } from "@/lib/analytics";
 import type { RecentProduct } from "@/lib/recently-viewed";
 import type { CategorySummary, DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
 import type { Locale } from "@/i18n/locale";
@@ -73,17 +74,19 @@ function LocalizedProductSwiper({
   field,
   viProducts,
   currentProductId,
+  analyticsList,
 }: {
   field: "relatedProducts" | "accessoryProducts";
   viProducts: Product[];
   currentProductId: string;
+  analyticsList: Ga4List;
 }) {
   const locale = useLocale() as Locale;
   const enProducts = useLocalizedField<Product[]>(field);
   const products = safeArray(locale === "en" ? enProducts ?? viProducts : viProducts).filter(
     (p) => p.id !== currentProductId,
   );
-  return <ProductSwiper products={products} autoHeight />;
+  return <ProductSwiper products={products} autoHeight analyticsList={analyticsList} />;
 }
 
 /**
@@ -130,6 +133,15 @@ export function ProductView({
   const locale = useLocale() as Locale;
   const tProduct = useTranslations("Product");
   const tA11y = useTranslations("A11y");
+
+  // `view_item`, once per product. Skipped in the admin live-preview iframe: a staff member
+  // checking a draft is not a customer viewing a product, and counting them would inflate the
+  // shop's own reports.
+  useEffect(() => {
+    if (previewMode) return;
+    trackViewItem(product);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id, previewMode]);
 
   // Fetch site settings client-side using the active locale to ensure we get English translations of
   // static fields (hours, address, zalo) when locale = "en". `initialData` chỉ gán cho key `vi`
@@ -318,7 +330,12 @@ export function ProductView({
               ) : (
                 <PdpSectionHeading title={<Tr ns="Product" k="relatedTitle" />} />
               )}
-              <LocalizedProductSwiper field="relatedProducts" viProducts={related} currentProductId={product.id} />
+              <LocalizedProductSwiper
+                field="relatedProducts"
+                viProducts={related}
+                currentProductId={product.id}
+                analyticsList={{ id: "related_products", name: "Sản phẩm tương tự" }}
+              />
             </div>
           ) : null}
         </section>
@@ -403,7 +420,12 @@ export function ProductView({
       <div key="accessories" id="pdp-accessories" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
         <section>
           <PdpSectionHeading title={<Tr ns="Product" k="crossSellTitle" />} />
-          <LocalizedProductSwiper field="accessoryProducts" viProducts={accessories} currentProductId={product.id} />
+          <LocalizedProductSwiper
+            field="accessoryProducts"
+            viProducts={accessories}
+            currentProductId={product.id}
+            analyticsList={{ id: "accessory_products", name: "Phụ kiện đi kèm" }}
+          />
         </section>
       </div>
     );

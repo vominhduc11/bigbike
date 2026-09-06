@@ -124,6 +124,7 @@ export default async function ProductListPage({ params, searchParams }: ProductL
             }
           >
             <CatalogClient
+              analyticsList={{ id: "all_products", name: "Tất cả sản phẩm" }}
               canonicalPath={canonicalPath}
               facets={facetsResult.data}
               initialProducts={productsResult.data}

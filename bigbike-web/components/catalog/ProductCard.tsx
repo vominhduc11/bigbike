@@ -6,6 +6,7 @@ import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 import { Button } from "@/components/ui/button";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { trackSelectItem, type Ga4List } from "@/lib/analytics";
 import type { Product } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,14 @@ type ProductCardProps = {
   layout?: "grid" | "carousel";
   /** Exact responsive slot occupied by the image in the caller's grid. */
   imageSizes?: string;
+  /**
+   * Product list this card belongs to. Opt-in: when omitted the card reports no `select_item`.
+   * Surfaces whose item shape has no SKU (recently-viewed, header search suggestions) must leave
+   * it unset rather than send an id Google Merchant Center cannot match.
+   */
+  analyticsList?: Ga4List;
+  /** Position within `analyticsList`, zero-based. */
+  analyticsIndex?: number;
 };
 
 const CATALOG_GRID_IMAGE_SIZES =
@@ -29,7 +38,14 @@ const CATALOG_GRID_IMAGE_SIZES =
 const CAROUSEL_IMAGE_SIZES =
   "(min-width: 1280px) 278px, (min-width: 768px) calc((100vw - 138px) / 4), calc((100vw - 52px) / 2)";
 
-export function ProductCard({ product, className, layout = "grid", imageSizes }: ProductCardProps) {
+export function ProductCard({
+  product,
+  className,
+  layout = "grid",
+  imageSizes,
+  analyticsList,
+  analyticsIndex,
+}: ProductCardProps) {
   const t = useTranslations("Product");
   const { current, retail, isSale, discountPercent } = derivePricing(product.price);
   const imageUrl = toLegacyWpMediaUrl(resolveMediaUrl(product.image?.url?.trim()));
@@ -43,6 +59,14 @@ export function ProductCard({ product, className, layout = "grid", imageSizes }:
     <article
       data-product-card
       className={cn("group mt-8 flex h-full min-w-0 flex-col", className)}
+      // The card exposes three links to the same product (image, hover button, title). Listening
+      // on the shared parent reports one `select_item` per click instead of three bindings that
+      // are easy to let drift apart, and still covers keyboard activation, which also bubbles.
+      onClick={
+        analyticsList
+          ? () => trackSelectItem(product, analyticsList, analyticsIndex)
+          : undefined
+      }
     >
       <div
         className="relative mb-5 aspect-square overflow-hidden bg-background"

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useEffect, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 
@@ -10,6 +10,7 @@ import { MobileFilterTrigger } from "@/components/catalog/MobileFilterTrigger";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { ProductCardSkel } from "@/components/ui/skeleton/primitives";
 import Link from "@/i18n/StorefrontLink";
+import { trackViewItemList, type Ga4List } from "@/lib/analytics";
 import type { Product } from "@/lib/contracts/public";
 import type { CatalogOrderbyValue } from "@/lib/utils/catalog-sort";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,8 @@ export type CatalogResultsProps = {
   isRefetching?: boolean;
   error?: boolean;
   searchRelevance?: boolean;
+  /** Which product list this grid represents, for GA4 list attribution. Omit to skip tracking. */
+  analyticsList?: Ga4List;
 };
 
 export function CatalogResults({
@@ -52,8 +55,20 @@ export function CatalogResults({
   isRefetching = false,
   error = false,
   searchRelevance = false,
+  analyticsList,
 }: CatalogResultsProps) {
   const t = useTranslations("Catalog");
+
+  // Report the list once per result set. Filtering, sorting and paging all produce a new set of
+  // ids, which is exactly when GA4 should hear about a new impression; a quantity tweak or a
+  // background refetch does not change the key and stays silent.
+  const productIdsKey = products.map((p) => p.id).join(",");
+  useEffect(() => {
+    if (!analyticsList || isLoading || productIdsKey === "") return;
+    trackViewItemList(products, analyticsList);
+    // `products` is a fresh array on every render; the id list is the stable identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productIdsKey, isLoading, analyticsList?.id]);
   return (
     <div className="min-w-0">
       <div className="pb-10">
@@ -110,8 +125,13 @@ export function CatalogResults({
                 )}
                 aria-busy={isRefetching || undefined}
               >
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {products.map((product, index) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    analyticsList={analyticsList}
+                    analyticsIndex={index}
+                  />
                 ))}
               </div>
               {isRefetching ? (

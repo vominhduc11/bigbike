@@ -4,11 +4,13 @@ import Link from "@/i18n/StorefrontLink";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
+import { trackAddToCart } from "@/lib/analytics";
 import { addCartItem } from "@/lib/api/client-api";
 import { useCartQuery } from "@/lib/query/hooks";
 import { queryKeys } from "@/lib/query/keys";
 import { useAuth } from "@/lib/auth/auth-store";
 import { toCartPath } from "@/lib/utils/routes";
+import type { Cart } from "@/lib/contracts/commerce";
 import type { Locale } from "@/i18n/locale";
 
 type Toast = {
@@ -24,7 +26,7 @@ type CartContextValue = {
     quantity: number,
     variantId?: string,
     suppressToast?: boolean,
-  ) => Promise<import("@/lib/contracts/commerce").Cart>;
+  ) => Promise<Cart>;
   showToast: (title: string, message: string) => void;
   refreshCount: () => void;
 };
@@ -74,8 +76,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       variantId?: string,
       suppressToast = false,
     ) => {
+      const previous = qc.getQueryData<Cart>(queryKeys.cart());
       const updated = await addCartItem(productId, quantity, variantId);
       qc.setQueryData(queryKeys.cart(), updated);
+      // Single choke point for `add_to_cart`: `addCartItem` throws on failure, so reaching this
+      // line means the backend accepted the item. Covers the PDP button, the mobile sticky bar
+      // (which clicks that same button) and the assistant's product card.
+      //
+      // The line is found by diffing the cart, not by matching the id we sent: the server owns
+      // line identity and may clamp the quantity to available stock, so the diff reports what
+      // was really added rather than what was asked for. The id match is only a fallback.
+      const previousQuantities = new Map(
+        (previous?.items ?? []).map((line) => [line.id, line.quantity]),
+      );
+      const grown = updated.items
+        .map((line) => ({ line, delta: line.quantity - (previousQuantities.get(line.id) ?? 0) }))
+        .filter((entry) => entry.delta > 0)
+        .sort((a, b) => b.delta - a.delta)[0];
+      const addedLine =
+        grown?.line ?? updated.items.find((line) => line.productId === productId);
+      if (addedLine) trackAddToCart(addedLine, grown?.delta ?? quantity);
       if (!suppressToast) showToast(t("toastAddedTitle"), t("toastAddedBody"));
       return updated;
     },

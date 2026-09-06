@@ -128,6 +128,7 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
                 dịch cho canonical, chỗ này phải khớp. */}
           <Suspense fallback={null}>
             <CatalogClient
+              analyticsList={{ id: "search_results", name: "Kết quả tìm kiếm" }}
               canonicalPath={translatePath(SEARCH_PATH, locale)}
               facets={facetsResult.data}
               includeCategoryParam

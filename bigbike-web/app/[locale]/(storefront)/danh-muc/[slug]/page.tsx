@@ -297,6 +297,7 @@ export default async function CategoryDetailPage({
                 }
               >
                 <CatalogClient
+                  analyticsList={{ id: `category_${category.slug}`, name: category.name }}
                   canonicalPath={canonicalPath}
                   facets={facetsResult.data}
                   beforeGridNode={beforeGridNode}

@@ -14,5 +14,12 @@ export function HomeFeaturedProducts({ initialProducts }: { initialProducts: Pro
   const products = initialProducts;
   if (products.length === 0) return null;
 
-  return <ProductSwiper key={locale} products={products} autoplay />;
+  return (
+    <ProductSwiper
+      key={locale}
+      products={products}
+      autoplay
+      analyticsList={{ id: "home_featured", name: "Sản phẩm nổi bật" }}
+    />
+  );
 }

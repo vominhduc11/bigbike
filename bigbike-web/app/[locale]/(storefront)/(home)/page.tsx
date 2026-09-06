@@ -3,7 +3,6 @@ import Link from "@/i18n/StorefrontLink";
 import { preload } from "react-dom";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
-import { HomeAnalytics } from "@/components/home/HomeAnalytics";
 import { Tr } from "@/components/i18n/Tr";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { toHeroSlide } from "@/components/home/heroSliderModel";
@@ -347,8 +346,6 @@ export default async function HomePage({ params }: HomePageProps) {
       <div data-bb-focus="seo_home">
       <HomeContentBottom html={homeContentBottomMarkup} />
       </div>
-
-      <HomeAnalytics />
     </>
   );
 }

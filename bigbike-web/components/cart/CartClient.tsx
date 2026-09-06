@@ -5,7 +5,7 @@ import { ChevronLeft, ShoppingCart } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCartQuery, useRemoveCartItem, useUpdateCartItem } from "@/lib/query/hooks";
-import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
+import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics";
 import { toProductListPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { Button } from "@/components/ui/button";
@@ -47,11 +47,7 @@ export function CartClient() {
 
   useEffect(() => {
     if (!cart) return;
-    pushDataLayer("view_cart", {
-      currency: cart.currency ?? "VND",
-      value: cart.totals.totalAmount,
-      items: toGtmCartItems(cart.items),
-    });
+    trackViewCart(cart);
     // Fire once per cart load (item identity), not on every quantity tweak.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart?.id]);
@@ -112,17 +108,21 @@ export function CartClient() {
 
   const handleRemove = useCallback(
     async (itemId: string) => {
+      // Read the line before the mutation: once it is gone from the cart there is nothing
+      // left to describe to analytics.
+      const removed = cart?.items.find((i) => i.id === itemId);
       setItemMutating(itemId, true);
       setError("");
       try {
         await removeItem.mutateAsync(itemId);
+        if (removed) trackRemoveFromCart(removed);
       } catch {
         setError(t("removeFailed"));
       } finally {
         setItemMutating(itemId, false);
       }
     },
-    [setItemMutating, removeItem, t],
+    [cart, setItemMutating, removeItem, t],
   );
 
   const continueHref = toProductListPath(locale);

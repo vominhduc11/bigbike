@@ -15,7 +15,7 @@ import {
   createCheckoutAddressSchema,
   type CheckoutAddressFormValues,
 } from "@/lib/schemas/checkout";
-import { pushDataLayer, toGtmCartItems } from "@/lib/analytics";
+import { trackAddShippingInfo, trackBeginCheckout } from "@/lib/analytics";
 import { toOrderConfirmPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import type { CheckoutPaymentMethod } from "./atoms";
@@ -85,8 +85,9 @@ function clearCheckoutDraft(): void {
 /**
  * Toàn bộ state + logic nghiệp vụ của trang Thanh toán: 2 form địa chỉ (billing +
  * giao tới địa chỉ khác) react-hook-form/zod, prefill từ profile/address,
- * GTM begin_checkout, price-change và đặt đơn (idempotency key). Đơn online không
- * tính phí vận chuyển. Tách khỏi JSX để file component chỉ còn markup.
+ * đo lường GA4 (begin_checkout + add_shipping_info), price-change và đặt đơn
+ * (idempotency key). Đơn online không tính phí vận chuyển. Tách khỏi JSX để file
+ * component chỉ còn markup.
  */
 export function useCheckout() {
   const t = useTranslations("Checkout");
@@ -103,7 +104,8 @@ export function useCheckout() {
     orderNumber: string;
     orderKey: string;
   } | null>(null);
-  const gtmCartId = useRef<string | null>(null);
+  const beginCheckoutCartId = useRef<string | null>(null);
+  const shippingInfoCartId = useRef<string | null>(null);
   const [customerNote, setCustomerNote] = useState("");
   const [shipToDifferent, setShipToDifferent] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("COD");
@@ -177,14 +179,33 @@ export function useCheckout() {
   const formShippingAddress = useWatch({ control: controlShip });
 
   useEffect(() => {
-    if (!cart || gtmCartId.current === cart.id) return;
-    pushDataLayer("begin_checkout", {
-      currency: cart.currency ?? "VND",
-      value: cart.totals.totalAmount,
-      items: toGtmCartItems(cart.items),
-    });
-    gtmCartId.current = cart.id;
+    if (!cart || beginCheckoutCartId.current === cart.id) return;
+    trackBeginCheckout(cart);
+    beginCheckoutCartId.current = cart.id;
   }, [cart]);
+
+  // `add_shipping_info` — there is no carrier chooser to hook (shipping is always free in the
+  // system and any real fee is settled with the customer off-platform), so the meaningful moment
+  // is "khách đã điền xong địa chỉ giao hàng". Fired once per cart, before the payment step, so
+  // GA4's ordered checkout funnel keeps its steps in sequence. This only READS the watched
+  // fields — it deliberately does not touch the form's own validation rules.
+  const deliveryAddressFilled = (() => {
+    const fields = shipToDifferent ? formShippingAddress : formAddress;
+    const vn = shipToDifferent ? vnShip : vnAddress;
+    return Boolean(
+      fields?.fullName?.trim() &&
+      fields?.phone?.trim() &&
+      fields?.addressLine1?.trim() &&
+      vn.province &&
+      vn.ward,
+    );
+  })();
+
+  useEffect(() => {
+    if (!cart || !deliveryAddressFilled || shippingInfoCartId.current === cart.id) return;
+    trackAddShippingInfo(cart);
+    shippingInfoCartId.current = cart.id;
+  }, [cart, deliveryAddressFilled]);
 
   // Không dùng "chạy một lần" (useRef khoá) — nếu request profile/addresses tới
   // chậm hơn lần mount trước, hoặc trang được giữ lại (không remount) khi khách rời

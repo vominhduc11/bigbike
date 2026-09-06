@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -8,6 +8,7 @@ import { Autoplay, Pagination } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import "swiper/css/pagination";
+import { trackViewItemList, type Ga4List } from "@/lib/analytics";
 import type { Product } from "@/lib/contracts/public";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,12 @@ type Props = {
    * khi hết. Chỉ bật ở carousel "Sản phẩm nổi bật" trang chủ.
    */
   autoplay?: boolean;
+  /**
+   * GA4 list attribution (`view_item_list` / `select_item`). Opt-in on purpose: surfaces whose
+   * items carry no SKU — "Đã xem gần đây" reconstructs its cards from localStorage — must leave
+   * this unset instead of reporting ids Google Merchant Center cannot match.
+   */
+  analyticsList?: Ga4List;
 };
 
 // Mũi tên carousel — chevron đen lớn trong rãnh hai bên (chuẩn .product-slide của
@@ -48,7 +55,13 @@ const ARROW_BTN =
  *
  * Caller tự cung cấp tiêu đề (block-title) bên ngoài — component này chỉ là dải trượt.
  */
-export function ProductSwiper({ products, className, autoHeight = false, autoplay = false }: Props) {
+export function ProductSwiper({
+  products,
+  className,
+  autoHeight = false,
+  autoplay = false,
+  analyticsList,
+}: Props) {
   const t = useTranslations("Common");
   const swiperRef = useRef<SwiperType | null>(null);
   // Gắn vùng chấm bằng selector (giống ArticleCarousel — luôn bind được kể cả khi
@@ -56,6 +69,14 @@ export function ProductSwiper({ products, className, autoHeight = false, autopla
   // useId đảm bảo nhiều ProductSwiper trên cùng trang không tranh nhau một vùng chấm.
   const paginationId = `bb-pswiper-pag-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const [isLocked, setIsLocked] = useState(false);
+
+  // One impression per set of products, keyed on the ids rather than the array identity.
+  const productIdsKey = products.map((p) => p.id).join(",");
+  useEffect(() => {
+    if (!analyticsList || productIdsKey === "") return;
+    trackViewItemList(products, analyticsList);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productIdsKey, analyticsList?.id]);
 
   if (products.length === 0) return null;
 
@@ -102,9 +123,14 @@ export function ProductSwiper({ products, className, autoHeight = false, autopla
             [BB_BREAKPOINTS.md]: { slidesPerView: 4, slidesPerGroup: autoplay ? 1 : 4, spaceBetween: 30 },
           }}
         >
-          {products.map((p) => (
+          {products.map((p, index) => (
             <SwiperSlide key={p.id} className="h-auto">
-              <ProductCard product={p} layout="carousel" />
+              <ProductCard
+                product={p}
+                layout="carousel"
+                analyticsList={analyticsList}
+                analyticsIndex={index}
+              />
             </SwiperSlide>
           ))}
         </Swiper>

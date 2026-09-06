@@ -84,7 +84,7 @@ export const viewport: Viewport = {
   ],
 };
 
-const GTM_ID = env.NEXT_PUBLIC_GTM_ID;
+const GA4_ID = env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
 
 export default async function RootLayout({
   children,
@@ -101,25 +101,29 @@ export default async function RootLayout({
   return (
     <html lang={locale} className="h-full antialiased">
       <body className="bb-theme min-h-full flex flex-col pt-0!">
-        {GTM_ID && (
-          <Script
-            id="gtm-init"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');`,
-            }}
-          />
-        )}
-        {GTM_ID && (
-          <noscript>
-            <iframe
-              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
-              height="0"
-              width="0"
-              style={{ display: "none", visibility: "hidden" }}
-              title="GTM"
+        {GA4_ID && (
+          <>
+            {/*
+              The single Google Analytics 4 install of the storefront. A second one anywhere
+              would double every number the property reports, revenue included.
+              `window.gtag` must be defined here and not by a helper: gtag pushes its own
+              `arguments` object onto the dataLayer, which a plain array push cannot emulate.
+              Page views — including client-side navigation — are recorded by GA4's Enhanced
+              Measurement, so the storefront never fires `page_view` itself.
+            */}
+            <Script
+              id="ga4-init"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];function gtag(){window.dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${GA4_ID}');`,
+              }}
             />
-          </noscript>
+            <Script
+              id="ga4-src"
+              strategy="afterInteractive"
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}
+            />
+          </>
         )}
         <ClientIntlProvider locale={locale} messages={messages}>
           <QueryProvider>

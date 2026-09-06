@@ -204,6 +204,7 @@ export default async function BrandDetailPage({ params, searchParams }: BrandDet
                 }
               >
                 <CatalogClient
+                  analyticsList={{ id: `brand_${brand.slug}`, name: brand.name }}
                   canonicalPath={canonicalPath}
                   facets={facetsResult.data}
                   beforeGridNode={beforeGridNode}

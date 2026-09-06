@@ -102,7 +102,9 @@ const PURPOSE: Bi[] = [
   },
 ];
 
-const ANALYTICS: string[] = ["Google Analytics 4 (GA4)", "Facebook Pixel"];
+// Đúng thực tế đang chạy: chỉ có Google Analytics 4. Facebook Pixel bị gỡ khỏi danh sách
+// ngày 06/09/2026 — website chưa bao giờ cài công cụ này, khai với khách là sai sự thật.
+const ANALYTICS: string[] = ["Google Analytics 4 (GA4)"];
 const ANALYTICS_GENERIC: Bi = {
   vi: "Công cụ tracking theo dõi hành vi người dùng",
   en: "User-behaviour tracking tools",

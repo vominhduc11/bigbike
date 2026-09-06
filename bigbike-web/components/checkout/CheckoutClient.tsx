@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatVnd, telHref } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
 import { type Locale } from "@/i18n/locale";
+import { trackAddPaymentInfo } from "@/lib/analytics";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { queryKeys } from "@/lib/query/keys";
 import type { PublicSiteSetting } from "@/lib/contracts/public";
@@ -201,7 +202,18 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
           <section className="border border-border bg-background p-6">
             <h2 className="mb-6 font-body text-a2-page font-semibold">{t("paymentMethodTitle")}</h2>
             
-            <PaymentMethodSelector value={paymentMethod} onValueChange={setPaymentMethod} />
+            {/*
+              `add_payment_info` hangs off the real interaction, not off state: the draft restore
+              in useCheckout() calls setPaymentMethod() directly, and that path must stay silent
+              or a returning customer would be counted as choosing a method they never touched.
+            */}
+            <PaymentMethodSelector
+              value={paymentMethod}
+              onValueChange={(next) => {
+                setPaymentMethod(next);
+                trackAddPaymentInfo(cart, next);
+              }}
+            />
 
             <CheckoutConfirmRow
               checked={confirmedChecked}

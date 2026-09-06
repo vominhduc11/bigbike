@@ -14,7 +14,12 @@ export function DiscontinuedSuggestions({ products }: { products: Product[] }) {
       <h2 id="discontinued-suggestions-title" className="m-0 font-body text-a3-section font-semibold uppercase leading-title text-foreground">
         {t("discontinuedSuggestionsTitle")}
       </h2>
-      <ProductSwiper products={products} className="mt-2" autoHeight />
+      <ProductSwiper
+        products={products}
+        className="mt-2"
+        autoHeight
+        analyticsList={{ id: "discontinued_suggestions", name: "Gợi ý thay thế hàng ngừng bán" }}
+      />
     </section>
   );
 }

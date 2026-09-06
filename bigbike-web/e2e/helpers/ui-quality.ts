@@ -33,7 +33,6 @@ const BENIGN_CONSOLE = [
   /Download the React DevTools/i,
   /ResizeObserver loop (limit exceeded|completed)/i,
   /\[Fast Refresh\]/i,
-  /Google Tag Manager/i,
   /preload(ed)? .* (is found, but is not used|but not used)/i,
   /ERR_BLOCKED_BY_CLIENT/i,
 ];

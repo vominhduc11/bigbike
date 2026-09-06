@@ -304,6 +304,12 @@ services:
         # and checked on postMessage. Local default = localhost:4000; for production set
         # NEXT_PUBLIC_ADMIN_ORIGIN=https://admin.bigbike.vn in .env.
         NEXT_PUBLIC_ADMIN_ORIGIN: ${NEXT_PUBLIC_ADMIN_ORIGIN:-http://localhost:4000}
+        # Google Analytics 4 measurement id. MUST be a build arg: the storefront fires its
+        # events from the browser, and a NEXT_PUBLIC_ value that is only supplied at runtime
+        # has already been compiled out of the client bundle as `undefined` — one of the two
+        # reasons the previous Google Tag Manager install stayed silent (the other being that
+        # its id was left blank everywhere). Empty → no script at all.
+        NEXT_PUBLIC_GA4_MEASUREMENT_ID: ${NEXT_PUBLIC_GA4_MEASUREMENT_ID:-}
     container_name: bigbike-web
     restart: unless-stopped
     depends_on:
@@ -328,8 +334,9 @@ services:
       BIGBIKE_REDIRECT_CACHE_TTL_SECONDS: "${BIGBIKE_REDIRECT_CACHE_TTL_SECONDS:-300}"
       # Must equal BIGBIKE_INTERNAL_TOKEN on bigbike-backend above.
       INTERNAL_API_TOKEN: "${INTERNAL_API_TOKEN:-}"
-      # Google Tag Manager — leave empty in staging to avoid GA4 pollution.
-      NEXT_PUBLIC_GTM_ID: "${NEXT_PUBLIC_GTM_ID:-}"
+      # Google Analytics 4 — also passed as a build arg above (that is the one the browser
+      # actually reads). Leave empty in staging to avoid polluting the live property.
+      NEXT_PUBLIC_GA4_MEASUREMENT_ID: "${NEXT_PUBLIC_GA4_MEASUREMENT_ID:-}"
       # Sentry — server-side DSN + source map upload credentials.
       SENTRY_DSN: "${SENTRY_DSN:-}"
       NEXT_PUBLIC_SENTRY_DSN: "${NEXT_PUBLIC_SENTRY_DSN:-}"

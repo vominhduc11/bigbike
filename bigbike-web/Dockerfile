@@ -30,6 +30,11 @@ ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 # iframe is allowed to embed the storefront. Empty → only 'self' may frame /preview/*.
 ARG NEXT_PUBLIC_ADMIN_ORIGIN=http://localhost:4000
 ENV NEXT_PUBLIC_ADMIN_ORIGIN=${NEXT_PUBLIC_ADMIN_ORIGIN}
+# Google Analytics 4 measurement id. The storefront fires its events from the browser, so this
+# value has to exist during `next build` — a value supplied only at container runtime is already
+# compiled out of the client bundle as `undefined`. Empty default → no analytics script renders.
+ARG NEXT_PUBLIC_GA4_MEASUREMENT_ID=
+ENV NEXT_PUBLIC_GA4_MEASUREMENT_ID=${NEXT_PUBLIC_GA4_MEASUREMENT_ID}
 # Next 16 defaults `next build` to Turbopack, whose native bindings are unavailable
 # on this Alpine/musl (linux-x64) image — fall back to the Webpack builder.
 RUN --mount=type=cache,target=/app/.next/cache \
