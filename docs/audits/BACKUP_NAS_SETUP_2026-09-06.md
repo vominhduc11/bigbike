@@ -164,7 +164,76 @@ Dấu kiểm tra đọc ngược từ NAS khớp bản ghi khi sao lưu:
 Kiểm tra nội dung gói: chỉ có cấu hình BigBike. Lọc `4thitek` cho **0 kết quả**.
 
 
-### 9. Sao lưu kho ảnh — gói nén thay vì chép từng tệp
+### 9. Diễn tập khôi phục — kho ảnh/video
+
+Giải nén toàn bộ chuỗi gói từ NAS ra một thư mục thử trên máy chủ, đối chiếu với kho ảnh đang chạy,
+rồi tự xoá. **Không chạm kho ảnh thật, không dừng dịch vụ nào.** Mất 2.392 giây (~40 phút).
+
+```
+  media-base-20260906T224645.tar.zst           dau kiem tra KHOP, giai nen OK
+  media-inc-20260906T235625.tar.zst            dau kiem tra KHOP, giai nen OK
+```
+
+| Mục | Đang chạy | Khôi phục | Kết quả |
+|---|---|---|---|
+| Tổng số tệp | 6.198 | 6.198 | KHỚP |
+| Ảnh trong `bigbike-media` | 4.565 | 4.565 | KHỚP |
+| Ảnh trong `bigbike-chat-private` | 2 | 2 | KHỚP |
+| Đối chiếu nội dung 20 tệp ngẫu nhiên | — | 20 giống hệt, 0 lệch | KHỚP |
+
+### 10. Danh sách bản sao thật trên NAS lúc 07/09/2026 01:34
+
+| Nhóm | Tên | Dung lượng | Giờ tạo |
+|---|---|---|---|
+| Bán hàng — giờ | `db-20260907T011002.dump` | 14M | 07/09 01:10 |
+| | `db-20260907T001003.dump` | 14M | 07/09 00:10 |
+| | `db-20260906T231003.dump` | 14M | 06/09 23:10 |
+| | `db-20260906T222513.dump` | 14M | 06/09 22:25 |
+| Bán hàng — ngày | `db-20260907.dump`, `db-20260906.dump` | 14M mỗi bản | 07/09 00:10, 06/09 22:25 |
+| Bán hàng — tháng | `db-202609.dump` | 14M | 06/09 22:25 |
+| Cấu hình — ngày | `config-20260907T005340.tar.gz` | 29K | 07/09 00:53 |
+| | `config-20260907T004003.tar.gz` | 27K | 07/09 00:40 |
+| | `config-20260906T222610.tar.gz` | 52K | 06/09 22:26 |
+| Cấu hình — tháng | `config-202609.tar.gz` | 52K | 06/09 22:26 |
+| Kho ảnh | `media-base-20260906T224645.tar.zst` | 1.4G | 06/09 22:58 |
+| | `media-inc-20260907T010002.tar.zst` | 381K | 07/09 01:00 |
+| | `media-inc-20260906T235625.tar.zst` | 381K | 06/09 23:56 |
+
+Chỗ trống còn lại: NAS **1,2 TB / 1,8 TB**; máy chủ **58 GB / 127 GB**.
+
+Kiểm tra toàn vẹn bản mới nhất (đọc ngược từ NAS):
+
+```
+  Tep      : db-20260907T011002.dump
+  Dau ghi  : 145bcb86686e7cd25048c1a9b068bd882b6a64a38ba43ef17ae2ce1392928385
+  Doc lai  : 145bcb86686e7cd25048c1a9b068bd882b6a64a38ba43ef17ae2ce1392928385
+  Ket qua  : KHOP — ban sao con nguyen ven
+  Doc thu  : mo duoc muc luc ban sao — dung duoc de khoi phuc
+```
+
+Không còn bản tạm nào trên đĩa máy chủ sau khi chạy xong (`/var/tmp/bigbike-*` rỗng).
+
+### 11. Lịch tự động đang sống — bốn lượt tự chạy đúng giờ mới
+
+```
+07/09/2026 00:40:11 [config]  Xong. Cau hinh van hanh da sao luu (27K).
+07/09/2026 01:00:17 [media]   Xong. Kho anh (6223 tep) da sao luu — goi inc 381K.
+07/09/2026 01:10:44 [db]      Xong. Du lieu ban hang da co ban sao moi tren NAS (14M).
+07/09/2026 01:40    [watchdog] chay moi gio
+```
+
+Cả bốn lượt chạy **trong lúc diễn tập khôi phục đang chiếm đường truyền** mà không lượt nào hỏng —
+khoá chống chồng lượt hoạt động đúng.
+
+| Việc | Lần chạy kế tiếp |
+|---|---|
+| Dữ liệu bán hàng | 07/09 02:10, rồi mỗi giờ |
+| Người gác | 07/09 01:40, rồi mỗi giờ |
+| Tin tổng kết | 07/09 06:00 |
+| Cấu hình vận hành | 08/09 00:40 |
+| Kho ảnh/video | 08/09 01:00 |
+
+### 12. Sao lưu kho ảnh — gói nén thay vì chép từng tệp
 
 | Lượt | Kết quả đo thật |
 |---|---|
@@ -173,7 +242,7 @@ Kiểm tra nội dung gói: chỉ có cấu hình BigBike. Lọc `4thitek` cho *
 
 So với cách chép từng tệp đã thử và bỏ (**11 tệp/phút → ~9,6 tiếng mỗi lượt**).
 
-### 10. Tốc độ đường truyền — bất đối xứng, ảnh hưởng tới thời gian khôi phục
+### 13. Tốc độ đường truyền — bất đối xứng, ảnh hưởng tới thời gian khôi phục
 
 | Chiều | Tốc độ đo |
 |---|---|
@@ -185,7 +254,7 @@ So với cách chép từng tệp đã thử và bỏ (**11 tệp/phút → ~9,6
 
 **Điều cần nhớ: khôi phục kho ảnh 1,46 GB mất khoảng 50 phút.**
 
-### 11. Ba lỗi tự bắt được nhờ chạy thật
+### 14. Ba lỗi tự bắt được nhờ chạy thật
 
 Không lỗi nào bị lệnh kiểm tra cú pháp phát hiện — chỉ lộ ra khi chạy trên hệ thống thật:
 
