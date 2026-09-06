@@ -14,7 +14,15 @@ Type=nfs
 # soft        : NAS mat dien/mat mang thi tra loi I/O error roi bo cuoc, KHONG treo vo han.
 # timeo=600   : 60 giay moi lan thu; duong nay tung nghen lien 28 giay (06/09/2026).
 # retrans=2   : bo cuoc sau ~3 phut thay vi treo mai.
-Options=nfsvers=4.0,proto=tcp,soft,timeo=600,retrans=2,noatime,retry=0,_netdev,nconnect=8,rsize=65536,wsize=65536
+# rsize/wsize : 131072 la muc toi da NAS chap nhan (xin 1 MB thi bi ha xuong muc nay).
+# nconnect=8  : do 06/09/2026 KHONG cai thien toc do - nut that nam o duong truyen
+#               chu khong o so kenh. Giu lai vi vo hai.
+#
+# Toc do do that: ghi len NAS ~2,0 MB/s, doc tu NAS ~0,5 MB/s. Doc cham hon ghi ba lan
+# vi NAS dat o nha dung mang dan dung: toc do TAI LEN cua NAS (tuc la luc may chu doc)
+# thap hon toc do tai xuong. Day la gioi han cua duong truyen tai nha, khong sua duoc
+# bang cau hinh. He qua: khoi phuc kho anh 1,46 GB mat khoang 50 phut.
+Options=nfsvers=4.0,proto=tcp,soft,timeo=600,retrans=2,noatime,retry=0,_netdev,nconnect=8,rsize=131072,wsize=131072
 TimeoutSec=120
 
 [Install]

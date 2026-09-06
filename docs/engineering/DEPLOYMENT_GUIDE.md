@@ -311,7 +311,12 @@ Full procedure, including the owner-facing Vietnamese page, lives in
 
 The hosting provider blocks **all outbound UDP**. Consequences, all measured 2026-09-06:
 
-- Tailscale cannot build a direct path and always relays via DERP Hong Kong (~105 ms, ~1.1 MB/s).
+- Tailscale cannot build a direct path and always relays via DERP Hong Kong (~105 ms).
+- Measured throughput is asymmetric: **~2.0 MB/s writing to the NAS, ~0.5 MB/s reading back from it**.
+  The NAS sits on a residential line at the owner's home, so a read is that line *uploading*. Raising
+  `rsize`/`wsize` (the NAS caps both at 131072) and `nconnect=8` changed nothing — the bottleneck is the
+  home link, not the mount. Budget restores accordingly: the 1.46 GB media archive takes ~50 minutes to
+  pull back.
 - `systemd-timesyncd` has never synced (`Packet count: 0`). The clock is held to ~1 s by `kvm-clock` from the
   hypervisor, which is why the age-based watchdog is still trustworthy. `/etc/systemd/timesyncd.conf` now
   points at IPv4 pool servers, but it cannot work until UDP egress is allowed.

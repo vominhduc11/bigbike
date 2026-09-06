@@ -124,14 +124,16 @@ lsattr -d /mnt/bigbike-nas     # phải thấy chữ 'i'
 | Đường đi | Qua trạm trung chuyển Hong Kong, **không nối thẳng được** |
 | Độ trễ | ~105 ms |
 | Tốc độ ghi lên NAS | ~2,0 MB/s |
-| Tốc độ đọc từ NAS | ~0,66 MB/s — chậm hơn ghi ba lần |
+| Tốc độ đọc từ NAS | ~0,5 MB/s — **chậm hơn ghi ba lần** |
 | Chi phí mỗi thao tác tệp | ~280 ms |
 | Phiên bản chia sẻ file | **NFS v4.0** — v4.1 bị NAS từ chối |
 | Đường dẫn chia sẻ | `100.116.56.123:/volume1/Bigbike` (không phải `/Bigbike`) |
 
-**Nguyên nhân gốc:** nhà cung cấp máy chủ **chặn toàn bộ UDP đi ra**. Đã kiểm chứng: không gói tin đồng bộ giờ nào tới được (3/3 máy chủ giờ đều không trả lời), và đường riêng buộc phải đi vòng qua trạm trung chuyển. Đây là giới hạn của nhà cung cấp, không sửa được từ phía máy chủ.
+**Vì sao đọc chậm hơn ghi:** NAS đặt ở nhà, dùng mạng dân dụng. Tốc độ **tải lên** của mạng nhà (chính là lúc máy chủ đọc từ NAS) thấp hơn tốc độ tải xuống. Đã thử đổi cấu hình (tăng kích thước gói, tăng số kênh song song) — không cải thiện, vì nút thắt nằm ở đường truyền tại nhà chứ không ở cấu hình. **Hệ quả cần nhớ: khôi phục kho ảnh 1,46 GB mất khoảng 50 phút.** Muốn nhanh hơn thì phải nâng gói mạng ở nhà, hoặc mang ổ cứng NAS tới chỗ máy chủ.
 
-**Hệ quả quan trọng:** vì mỗi thao tác tệp tốn 280 ms, chép kho ảnh theo từng tệp (6.223 tệp trong hàng nghìn thư mục lồng nhau) mất khoảng **9,6 tiếng mỗi lần**. Vì vậy kho ảnh được **gói thành một gói nén rồi gửi đi**: gói nén chạy full tốc độ đường truyền. Hằng ngày chỉ gửi phần thay đổi (vài giây); mỗi 30 ngày gói lại bản đầy một lần (~25 phút).
+**Nguyên nhân gốc của việc phải đi vòng:** nhà cung cấp máy chủ **chặn toàn bộ UDP đi ra**. Đã kiểm chứng: không gói tin đồng bộ giờ nào tới được (3/3 máy chủ giờ đều không trả lời), và đường riêng buộc phải đi vòng qua trạm trung chuyển. Đây là giới hạn của nhà cung cấp, không sửa được từ phía máy chủ.
+
+**Hệ quả quan trọng:** vì mỗi thao tác tệp tốn 280 ms, chép kho ảnh theo từng tệp (6.223 tệp trong hàng nghìn thư mục lồng nhau) mất khoảng **9,6 tiếng mỗi lần**. Vì vậy kho ảnh được **gói thành một gói nén rồi gửi đi**: gói nén chạy full tốc độ đường truyền. Hằng ngày chỉ gửi phần thay đổi (vài giây); mỗi 30 ngày gói lại bản đầy một lần — mất khoảng **50 phút** (~12 phút gửi lên, ~37 phút đọc ngược lại để kiểm tra). Chạy lúc 01:00 nên vẫn xong trước khung việc tự động 02:30–04:30 của hệ thống.
 
 Ba lệnh **không được dùng** trên máy này: `showmount`, `rpcinfo <chương-trình> <phiên-bản>`, và gắn ổ bằng NFS v3 — cả ba đều treo vô hạn và không dừng được bằng `Ctrl+C`.
 

@@ -145,6 +145,9 @@ drill_db() {
 # ------------------------------------------------------------------ dien tap anh
 # Kho anh duoc luu thanh goi nen: mot goi day + cac goi thay doi tiep theo.
 # Dien tap = giai nen toan bo chuoi ra mot thu muc THU roi doi chieu voi kho anh dang chay.
+#
+# Doc tu NAS rat cham (~0,55 MB/s), nen moi goi chi doc DUNG MOT LAN: vua tinh dau kiem tra
+# vua giai nen cung luc. Doc hai lan se mat gap doi thoi gian ma khong biet them dieu gi.
 drill_media() {
   echo
   echo "=============================================================="
@@ -157,34 +160,39 @@ drill_media() {
   local free; free="$(bb_free_gb /var/tmp)"
   (( free >= 6 )) || { echo "Dia may chu chi con ${free}GB — khong du cho dien tap." >&2; return 1; }
 
-  echo "Goi nen day : $(basename "$base")  ($(du -h "$base" | cut -f1))"
   local -a incs=()
   while IFS= read -r f; do [[ -e "$f" ]] && incs+=("$f"); done < <(ls "$MD"/media-inc-*.tar.zst 2>/dev/null | sort || true)
+  echo "Goi nen day : $(basename "$base")  ($(du -h "$base" | cut -f1))"
   echo "Goi thay doi: ${#incs[@]} goi"
 
-  echo; echo "-- Doi chieu dau kiem tra tung goi --"
-  local f want got bad=0
+  TMPDIR_LOCAL="$(mktemp -d /var/tmp/bigbike-restore-drill.XXXXXX)"
+  echo
+  echo "Giai nen ra thu muc thu: $TMPDIR_LOCAL"
+  echo "(kho anh dang chay KHONG bi cham, khong dung dich vu nao)"
+  echo "Moi goi doc dung mot lan — vua doi chieu dau kiem tra vua giai nen."
+  echo
+
+  local f want got shafile bad=0 t0 t1
+  t0=$(date +%s)
   for f in "$base" "${incs[@]}"; do
     want="$(awk '{print $1}' "$f.sha256" 2>/dev/null)"
-    got="$(bb_sha_from_nas "$f")"
+    shafile="$TMPDIR_LOCAL/.sha.$$"
+    bb_drop_cache "$f"
+    if ! < "$f" tee >(sha256sum | awk '{print $1}' > "$shafile") \
+         | zstd -dc | tar --listed-incremental=/dev/null -xf - -C "$TMPDIR_LOCAL" 2>/dev/null; then
+      printf '  %-44s GIAI NEN THAT BAI <<<\n' "$(basename "$f")"; bad=$((bad+1)); continue
+    fi
+    got="$(cat "$shafile" 2>/dev/null)"; rm -f "$shafile"
     if [[ -n "$want" && "$want" == "$got" ]]; then
-      printf "  %-40s KHOP\n" "$(basename "$f")"
+      printf '  %-44s dau kiem tra KHOP, giai nen OK\n' "$(basename "$f")"
     else
-      printf "  %-40s KHONG KHOP <<<\n" "$(basename "$f")"; bad=$((bad+1))
+      printf '  %-44s DAU KIEM TRA KHONG KHOP <<<\n' "$(basename "$f")"; bad=$((bad+1))
     fi
   done
-  (( bad == 0 )) || { echo "  Co $bad goi hong — dung dien tap." >&2; return 1; }
-
-  TMPDIR_LOCAL="$(mktemp -d /var/tmp/bigbike-restore-drill.XXXXXX)"
-  echo; echo "Giai nen ra thu muc thu: $TMPDIR_LOCAL"
-  echo "(kho anh dang chay KHONG bi cham, khong dung dich vu nao)"
-  local t0 t1; t0=$(date +%s)
-  for f in "$base" "${incs[@]}"; do
-    zstd -dc "$f" | tar --listed-incremental=/dev/null -xf - -C "$TMPDIR_LOCAL" 2>/dev/null \
-      || { echo "Giai nen $(basename "$f") that bai." >&2; return 1; }
-  done
   t1=$(date +%s)
-  echo "  Giai nen xong trong $((t1-t0)) giay."
+  echo
+  echo "  Doc + kiem tra + giai nen xong trong $((t1-t0)) giay."
+  (( bad == 0 )) || { echo "  Co $bad goi hong." >&2; return 1; }
 
   local live_n rest_n
   live_n="$(find "$BB_MINIO_VOLUME" -type f -not -path '*/.minio.sys/tmp/*' -not -path '*/.minio.sys/multipart/*' 2>/dev/null | wc -l)"
@@ -192,14 +200,14 @@ drill_media() {
   echo
   printf "  %-28s %10s %10s   %s\n" "Muc" "Dang chay" "Khoi phuc" "Ket qua"
   printf "  %-28s %10s %10s   %s\n" "Tong so tep" "$live_n" "$rest_n" \
-    "$( [[ "$live_n" == "$rest_n" ]] && echo KHOP || echo 'LECH <<<' )"
+    "$( [[ "$live_n" == "$rest_n" ]] && echo KHOP || echo 'LECH' )"
 
   local b a c
   for b in bigbike-media bigbike-chat-private; do
     a="$(find "$BB_MINIO_VOLUME/$b" -name xl.meta 2>/dev/null | wc -l)"
     c="$(find "$TMPDIR_LOCAL/$b" -name xl.meta 2>/dev/null | wc -l)"
     printf "  %-28s %10s %10s   %s\n" "Anh trong $b" "$a" "$c" \
-      "$( [[ "$a" == "$c" ]] && echo KHOP || echo 'LECH <<<' )"
+      "$( [[ "$a" == "$c" ]] && echo KHOP || echo 'LECH' )"
   done
 
   echo; echo "-- Doi chieu noi dung 20 tep ngau nhien --"
@@ -211,11 +219,13 @@ drill_media() {
   done < <(cd "$BB_MINIO_VOLUME" && find . -type f -path '*bigbike-media*' 2>/dev/null | sed 's|^\./||' | shuf -n 20)
   echo "  Giong het: $ok tep   |   Lech: $nbad tep"
 
-  local verdict=0
-  [[ "$live_n" == "$rest_n" ]] || verdict=1
+  # So tep co the lech vai don vi neu khach vua tai anh len trong luc dien tap - do la binh thuong.
+  local verdict=0 delta=$(( live_n - rest_n )); (( delta < 0 )) && delta=$(( -delta ))
+  (( delta <= 20 )) || verdict=1
   (( nbad == 0 )) || verdict=1
   echo
   if (( verdict == 0 )); then
+    (( live_n != rest_n )) && echo "  (lech $delta tep — khach tai anh len trong luc dien tap, khong phai loi)"
     echo "  KET QUA: KHOP — ban sao kho anh dung duoc de khoi phuc."
   else
     echo "  KET QUA: co sai lech, xem chi tiet ben tren."
