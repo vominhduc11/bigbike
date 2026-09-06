@@ -13,6 +13,8 @@
 | Customer order tracking | Customer order detail and guest confirmation pages poll their existing authenticated/secret-link order-read endpoint every 15 seconds while visible, refetch on focus, and stop at `COMPLETED`/`CANCELLED`; no customer WebSocket channel | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web/lib/query/hooks.ts`, `bigbike-web/app/don-hang/xac-nhan/OrderConfirmClient.tsx` |
 | VN address data | Dữ liệu hai cấp tỉnh/thành → phường/xã có ở cả API đọc backend và bundle web. Storefront dùng bundle `VN_PROVINCES`; hiện không có caller nội bộ cho API. | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address.json`, `vn-address-data.ts`, `VnAddressFields.tsx` |
 | Google Gemini (shared backend credential) | Review moderation and Trợ lý BigBike share one backend-only credential but remain separate features. The assistant is fixed to Gemini 3.7 Flash with same-model retries; review moderation keeps its independent model/switch/failure behavior. **Not** a translation path. | `OWNER_CONFIRMED_2026-08-29` | `AiReviewModerationClient.java`, `AiChatClient.java`, `CHAT_RULE_019`, `REVIEW_RULE_012`/`013` |
+| Synology NAS (offsite backup) | Sole offsite copy of sales data, media and operational config. Reached over the existing Tailscale tailnet — **no new Internet-facing port**. NFS v4.0 mount at `/mnt/bigbike-nas`, all writes confined to the `vps-backups/` subdirectory. Hourly database dumps, daily media and config archives, SHA-256 verified by read-back. | `OWNER_CONFIRMED_2026-09-06` | `scripts/ops/backup-to-nas.sh`, `/etc/cron.d/bigbike-backup`, [BACKUP_RESTORE_RUNBOOK.md](BACKUP_RESTORE_RUNBOOK.md) |
+| Google Analytics 4 (storefront) | `gtag.js` loaded once from the storefront root layout with measurement id `NEXT_PUBLIC_GA4_MEASUREMENT_ID`. Ten e-commerce events plus GA4's own `page_view`. Google Tag Manager was removed 2026-09-06 — GA4 is wired directly and there must be exactly one measurement install in the repo. Blank id → the scripts are not rendered at all. | `OWNER_CONFIRMED_2026-09-06` | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `bigbike-web/Dockerfile`, `docker-compose.yaml` |
 
 ### Internal notification recipient
 
@@ -25,7 +27,7 @@ separate and are unchanged by this setting.
 
 ### Telegram new-order notification
 
-Telegram is an additional, optional channel for the `NEW_ORDER` event only. The backend builds an
+Telegram carries two unrelated internal alert kinds. **(1) New orders** — described below; this was the only use until 2026-09-06. **(2) Backup alerts** — the offsite backup jobs post failure alerts, a >24h staleness alert and a daily 06:00 digest through the same bot and chat id, sent from shell (`scripts/ops/lib/nas-common.sh`) rather than from the backend, and always paired with the same message to `BIGBIKE_MAIL_ADMIN` per owner decision 2026-09-06. The backend Java path below is unchanged and remains scoped to `NEW_ORDER`. The backend builds an
 immutable notification snapshot from the cart/order line data already being persisted by checkout;
 it does not perform a product lookup after checkout. The snapshot contains the order number,
 customer contact fields, payment label, source label, total, up to the first ten line items and an
@@ -378,6 +380,88 @@ UI.
 > deployment (`bigbike.vn` + `api.bigbike.vn`) `BIGBIKE_COOKIES_DOMAIN` must be set, or the
 > storefront cannot see the session and the post-login redirect bounces straight back to the
 > login page. See `DEPLOYMENT_GUIDE.md` §Cookie Domain.
+
+## Google Analytics 4 (storefront)
+
+`bigbike-web` reports to Google Analytics 4 directly. Google Tag Manager was removed on
+2026-09-06: it had been installed but its container id was never populated in any environment
+file, so the property recorded nothing. Replacing it with `gtag.js` keeps a single, auditable
+measurement path — **exactly one install may exist in the repo**, because a second one would
+double every number the property reports, revenue included.
+
+| Aspect | Contract |
+|---|---|
+| Property | Measurement id `G-REZM4NT0CS` — the shop's existing GA4 property. It carries four years of history and must never be replaced with a freshly created one. |
+| Load point | `bigbike-web/app/[locale]/layout.tsx` only. An inline `next/script` (`id="ga4-init"`, `strategy="afterInteractive"`) defines `window.dataLayer` + `window.gtag` and calls `gtag('js')` / `gtag('config')`; a second `next/script` pulls `https://www.googletagmanager.com/gtag/js?id=…`. Both render only when the id is set. |
+| Page views | GA4's own Enhanced Measurement ("page changes based on browser history events") handles client-side navigation. The storefront fires **no** manual `page_view` — doing so would double-count unless the shop owner disabled that GA4 setting by hand. |
+| Event helper | `bigbike-web/lib/analytics.ts` is the single choke point. It calls `window.gtag("event", …)` and no-ops when `gtag` is absent (server render, or id not configured). No component talks to `gtag` directly. |
+| Events | `view_item_list`, `select_item`, `view_item`, `add_to_cart`, `remove_from_cart`, `view_cart`, `begin_checkout`, `add_shipping_info`, `add_payment_info`, `purchase`. |
+| `add_shipping_info` | The storefront has no carrier chooser — shipping inside the system is always free and any real fee is settled with the customer off-platform. The event is emitted once per cart with a fixed `shipping_tier`, so GA4's ordered checkout funnel stays complete. |
+| Money | `currency` is always `"VND"` and is present on every event that carries a value. Prices are integers (`Math.round`); VND has no minor unit, so values are never scaled by 100. Formatted strings must never be sent. |
+| Item ids | `item_id` is the real merchant **SKU**, matching Google Merchant Center and Google Ads. Cart/order lines fall back to the internal product id only when a line has no SKU. Before 2026-09-06 the internal UUID was sent instead, so product-level reports do not join across that date. |
+| `purchase` | `transaction_id` is the real `orderNumber`, never a timestamp or random value, and fires **once** per order — guarded by an in-memory latch plus a `sessionStorage` key on the order id. |
+| Privacy | GA4 receives order number, SKU, product name, quantity and price only. It must never receive customer name, email, phone, address, or the order lookup `orderKey`. |
+| CSP | No change required. `next.config.ts` already allows `https://www.googletagmanager.com` in `script-src` (which is where `gtag.js` is served from) and `https://www.google-analytics.com` in `connect-src`. |
+
+### Environment
+
+| Variable | Required | Default | Purpose |
+|---|---|---|---|
+| `NEXT_PUBLIC_GA4_MEASUREMENT_ID` | Yes, to enable measurement | *(empty)* | GA4 measurement id, shape `G-XXXXXXXXXX`. Production: `G-REZM4NT0CS`. Leave empty on staging/local so test traffic never pollutes the property. Validated at build time by `bigbike-web/env.ts`; a malformed value fails the build rather than reaching the browser. |
+
+**This variable must be declared in three places, not two.** Unlike a backend
+variable, a `NEXT_PUBLIC_*` value is compiled into the browser bundle by
+`next build`, so it needs:
+
+1. `build.args:` on the `bigbike-web` service in `docker-compose.yaml`, **and**
+2. a matching `ARG` + `ENV` pair in `bigbike-web/Dockerfile`, placed before the
+   `RUN npm run build` line, **and**
+3. `environment:` on the same service, for anything read during server render.
+
+Declaring it only under `environment:` is one half of the defect that kept the
+previous Google Tag Manager install silent; the other half was that
+`NEXT_PUBLIC_GTM_ID` was left blank in every env file. Both were confirmed inside
+the running container on 2026-09-06.
+**Changing this value therefore requires rebuilding the web image — a restart is
+not enough.** See `DEPLOYMENT_GUIDE.md` §"Storefront analytics (Google Analytics 4)".
+
+**On the VPS, always `docker compose --env-file .env.vps …`.** Keep
+`.env.example`, `.env.vps.example` and `bigbike-web/.env.example` in step when
+this contract changes; never commit a populated `.env` / `.env.vps`.
+
+## Offsite backup target (Synology NAS over Tailscale)
+
+`OWNER_CONFIRMED_2026-09-06`
+
+The only copy of BigBike data outside this VPS. See [BACKUP_RESTORE_RUNBOOK.md](BACKUP_RESTORE_RUNBOOK.md)
+for the operating and restore procedure, and DEPLOYMENT_GUIDE.md for the schedule.
+
+### Environment
+
+This integration introduces **no new environment variable**. It reuses, read directly from `.env.vps` by the
+shell library and never echoed or logged: `BIGBIKE_TELEGRAM_BOT_TOKEN`, `BIGBIKE_TELEGRAM_CHAT_ID`,
+`BIGBIKE_MAIL_HOST`/`_PORT`/`_USERNAME`/`_PASSWORD`/`_FROM`/`_FROM_NAME`/`_STARTTLS`, and `BIGBIKE_MAIL_ADMIN`.
+Postgres credentials are never expanded on the host: `pg_dump` runs inside `bigbike-postgres` and dereferences
+`$POSTGRES_PASSWORD` there.
+
+### Transport
+
+Tailscale node `home-nas` (`100.116.56.123`), export `/volume1/Bigbike`, **NFS v4.0** over TCP 2049. The NAS
+rejects `nfsvers=4.1`. Because the provider blocks outbound UDP, the tailnet always relays through DERP Hong
+Kong: ~105 ms RTT, ~1.1 MB/s, ~280 ms per file operation. That per-operation cost is why media is shipped as a
+single incremental archive rather than a file-by-file mirror.
+
+### What is backed up
+
+| Kind | Contents | Cadence |
+|---|---|---|
+| `db` | `pg_dump --format=custom` of the `bigbike` database, taken online | hourly |
+| `media` | The whole `bigbike_minio_data` volume — both `bigbike-media` and `bigbike-chat-private` buckets — minus MinIO's in-flight `tmp`/`multipart` staging | daily |
+| `config` | `.env`/`.env.vps`, `docker-compose.yaml`, the **live** nginx vhosts from `/etc/nginx/sites-available` (BigBike only), ufw rules, the backup schedule, the NAS mount units, and the repo's uncommitted working-tree patch | daily |
+
+The config job filters `*bigbike*` explicitly so the co-tenant 4thitek stack's nginx configuration is never
+collected. Application source is not backed up — it lives in Git — but the uncommitted patch is, because the
+VPS has repeatedly carried working-tree changes that Git did not yet hold.
 
 ## Not Confirmed In Active Repo
 

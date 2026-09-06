@@ -62,11 +62,11 @@ Mọi ca có chữ khách nhìn thấy phải có tiếng Việt có dấu đầ
 | Email production deliverability | Code path confirmed; runtime not tested. | `NEEDS_PRODUCTION_RUNTIME_VERIFICATION` |
 | WebSocket per-subscribe topic-level authz | CONNECT và SUBSCRIBE đều kiểm quyền hiện hành cho các topic quản trị còn lại; không còn topic chat khách hoặc token chat realtime. | `CONFIRMED_FROM_CODE_AND_TEST` |
 
-> **Production-ready verdict:** ❌ NOT_READY. 12 blocker chia 4 nhóm (B01 hoá đơn điện tử + B12 kênh hỗ trợ khách đã chuyển **OUT_OF_SCOPE** — owner chốt 2026-07-06, không còn tính blocker):
+> **Production-ready verdict:** ❌ NOT_READY. 11 blocker chia 4 nhóm (B01 hoá đơn điện tử + B12 kênh hỗ trợ khách đã chuyển **OUT_OF_SCOPE** — owner chốt 2026-07-06, không còn tính blocker):
 >
 > - **Business / Operational** (2 — B05 bank reconciliation, B08 verify-email POST drift).
 > - **Legal / Compliance** (3 — B02 Bộ Công Thương registration, B03 policy content, B04 customer-data export/delete).
-> - **Ops / Security / Infra** (4 — B07 PROD_CONFIG bundle, B09 SUPER_ADMIN seed, B10 MinIO/SMTP smoke, B11 backup runbook).
+> - **Ops / Security / Infra** (3 — B07 PROD_CONFIG bundle, B09 SUPER_ADMIN seed, B10 MinIO/SMTP smoke; **B11 backup runbook đã đóng 06/09/2026** — sao lưu tự động ra NAS + diễn tập khôi phục thật, xem `BACKUP_RESTORE_RUNBOOK.md`).
 > - **Strategic Business Decisions** (3 — B13 payment provider, B14 shipping carrier, B15 receiving + warranty; B15 resolved — serial-tracking removed platform-wide 2026-06-23 (V259) and the warranty feature removed entirely 2026-06-23 (V264)).
 >
 > Mức phạt và phạm vi nghĩa vụ pháp lý cụ thể cần legal counsel xác nhận theo hành vi vi phạm hiện hành; audit không thay thế tư vấn pháp lý chính thức.

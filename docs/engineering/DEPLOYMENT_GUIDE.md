@@ -104,6 +104,7 @@ so an explicit `false` overrides the profile's dev setting and prevents `V368+` 
 - Telegram new-order alerts are optional and add to the internal email; they never replace it. Set `BIGBIKE_TELEGRAM_BOT_TOKEN` and `BIGBIKE_TELEGRAM_CHAT_ID` in the selected deployment env-file to enable the channel. Leave either value blank to disable it without affecting backend startup or checkout. `BIGBIKE_TELEGRAM_API_BASE_URL` may point at a controlled fake HTTP service for tests and otherwise defaults to `https://api.telegram.org`; `BIGBIKE_TELEGRAM_TIMEOUT_SECONDS` defaults to 5 seconds. The client sends one post-commit asynchronous request per new order, makes no retry, and logs only a sanitized warning on failure. Never put the bot token or chat ID in Compose, checked-in examples, application logs or incident text; the real values are injected directly on the server.
 - `BIGBIKE_REVIEW_INVITATION_ENABLED` is the only emergency switch for automatic post-purchase review invitations and defaults to `true`. The workflow always waits 7 days after completion and allows 20 send attempts per Vietnam calendar day. Set it to `false` in the backend deployment environment and restart/redeploy the backend; the next scheduler callback closes the active campaign and skips pending deliveries. Setting it back to `true` starts a new campaign cutoff without backfill. There is no admin Settings control or reporting screen. `OWNER_CONFIRMED_2026-09-01`
 - `EmailDispatchService` logs a successful SMTP handoff as provider acceptance only. It does not claim final delivery, because SMTP acceptance cannot confirm that the recipient mailbox accepted the message later. `CONFIRMED_FROM_CODE`
+- `NEXT_PUBLIC_GA4_MEASUREMENT_ID` enables storefront analytics and is baked into the browser bundle at build time, so changing it requires `docker compose --env-file <file> up -d --build bigbike-web`; a plain restart keeps the previous value. It is declared in `build.args:`, `environment:` and `bigbike-web/Dockerfile`. Leave it blank on local/staging. `CONFIRMED_FROM_CONFIG`
 - **Backend memory and garbage collection** — the backend container remains capped at `1g`; Java
   uses G1GC with `MaxRAMPercentage=50.0`, so the JVM heap stays within that existing container
   limit. Do not raise the backend to 4 GB on the shared 8 GB server.
@@ -203,6 +204,35 @@ build upload values (`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`) are op
 credentials for the build operator only, never browser configuration. `CONFIRMED_FROM_CODE` —
 `sentry.*.config.ts`, `instrumentation.ts`, storefront reporting helper.
 
+### Storefront analytics (Google Analytics 4)
+
+`bigbike-web` reports to GA4 property `G-REZM4NT0CS` through `gtag.js`, loaded once from
+`app/[locale]/layout.tsx`. Google Tag Manager was removed on 2026-09-06. To enable a deployment,
+set `NEXT_PUBLIC_GA4_MEASUREMENT_ID` in that deployment's env file **and rebuild the web image**,
+because the value is compiled into the browser bundle by `next build`. A blank value renders no
+script at all, which is the intended state for local and staging so test traffic never reaches the
+live property. The root `.env.example`, `.env.vps.example` and `bigbike-web/.env.example` carry the
+blank placeholder; never commit the populated env file.
+
+Unlike a backend variable, this one must be declared in **three** places to reach the browser:
+`build.args:` and `environment:` on the `bigbike-web` service in `docker-compose.yaml`, plus a
+matching `ARG` + `ENV` pair before `RUN npm run build` in `bigbike-web/Dockerfile`. The previous
+Google Tag Manager install failed on both counts, verified in the running container on 2026-09-06:
+`NEXT_PUBLIC_GTM_ID` was blank in every env file, and it was declared only under `environment:`,
+so even a populated value would have stayed `undefined` in the browser bundle — the compiled
+client chunk still read it at runtime instead of carrying a literal, unlike `NEXT_PUBLIC_SITE_URL`
+and `NEXT_PUBLIC_API_BASE_URL` beside it. **A restart does not pick up a changed measurement id;
+a rebuild does.**
+
+Exactly one measurement install may exist in the repo. A second one double-counts every metric the
+property reports, revenue included. Analytics events carry only order number, SKU, product name,
+quantity, price and currency. They must not carry customer name, email, phone, address, or the
+order lookup `orderKey`. No CSP change is required: `next.config.ts` already allows
+`https://www.googletagmanager.com` in `script-src` (the host that serves `gtag.js`) and
+`https://www.google-analytics.com` in `connect-src`. `OWNER_CONFIRMED_2026-09-06` —
+`bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `INTEGRATION_GUIDE.md`
+§"Google Analytics 4 (storefront)".
+
 - **Public Review CSRF boundary** — `CustomerCsrfFilter` exempts CSRF validation only for `POST /api/v1/products/{productId}/reviews` and `POST /api/v1/products/{productId}/reviews/photos`. These two endpoints intentionally support guests, and the storefront calls them directly on the API host with credentials so an existing customer session can supply authoritative identity. The exemption must match the HTTP method and complete path shape; it must never use the broad `/api/v1/products/` prefix or exempt neighboring/future product mutations. Exact-origin credentialed CORS and the dedicated per-IP `REVIEW` / `REVIEW_PHOTO` limits remain mandatory. `CONFIRMED_FROM_CODE_AND_SECURITY_REVIEW_2026-07-28`
 - **`BIGBIKE_TRUSTED_PROXIES`** — comma-separated exact proxy addresses or narrow, private CIDRs (minimum IPv4 `/24`, IPv6 `/64`) trusted to set `X-Forwarded-For`. Per-IP rate limiting consumes forwarding data only when the direct peer matches this list and the header contains exactly one IP. The minimum prefix is enforced at startup, so a `/16` or `/12` bridge range fails the boot — the checked-in Compose default `172.20.0.0/16` is therefore **not** bootable as-is and every environment must set an explicit narrow value. The `bigbike-dev` bridge allocates `172.20.0.x`, so `172.20.0.0/24` is the correct entry for the single-VPS Compose deployment. Do not use broad Docker ranges such as `172.16.0.0/12`; first verify the real ingress/container hop with `docker inspect` and `nginx -T`. Every public nginx proxy location must remove client-provided forwarding data and emit one canonical client address; BFF/admin internal proxies may forward only that single canonical value. `CONFIRMED_FROM_CODE_AND_CONFIG_2026-08-12`
 - **Rate limiting and Redis** — production uses `BIGBIKE_RATE_LIMIT_STORE=redis` and a separate `BIGBIKE_RATE_LIMIT_HMAC_SECRET` (32+ chars); do not reuse JWT, internal API, mail or provider secrets. `BIGBIKE_RATE_LIMIT_REDIS_URL` accepts `rediss://` for a managed HA Redis-compatible service, or plaintext `redis://` **only** when the host stays inside the deployment network — a single-label service name (`redis`) or a loopback/private address. A publicly routable host over plaintext `redis://` is rejected at startup, because counters and HMAC-keyed bucket ids would cross the public internet in the clear. The single-VPS Compose deployment runs the in-network `redis` service, which exposes no host port (`OWNER_CONFIRMED_2026-08-12`: managed TLS Redis deferred; revisit before horizontal scaling). Backend production startup still rejects a missing Redis/HMAC configuration, unsafe proxy CIDR, or an accidental local-only limiter. Compose explicitly passes the documented per-tier `BIGBIKE_RATE_LIMIT_TIERS_<TIER>_{LIMIT,WINDOW}` overrides; leave them empty unless an owner-approved, expiry-bound change has staging evidence. Configure Redis memory quota/`noeviction`, alert at capacity pressure, and verify failover on staging before horizontal scaling. `RATE_LIMITING.md` is the canonical tier/failure policy. `OWNER_CONFIRMED_2026-08-12`
@@ -242,6 +272,53 @@ bash scripts/ops/classify-legacy-orders.sh --dry-run
 The script prints its measured duration; with only 1,660 memberships this should normally finish in under one minute, but the production host determines the actual duration. To undo a mistaken classification without changing any order, run `bash scripts/ops/classify-legacy-orders.sh --rollback`. This deactivates the batch and immediately restores all orders to the operational scope while retaining the classification list and audit evidence. After checking the exact `1,660/1,660/0` candidate/membership/mismatch gate, restore it with `bash scripts/ops/classify-legacy-orders.sh --reactivate`.
 
 Script tự in thời gian thực tế; với 1.660 dấu thành viên, bình thường hoàn tất dưới một phút nhưng máy chủ thật quyết định thời gian cuối cùng. Nếu đánh dấu sai, chạy `bash scripts/ops/classify-legacy-orders.sh --rollback`; lệnh này chỉ tắt lô, đưa toàn bộ đơn trở lại phạm vi vận hành ngay, đồng thời giữ danh sách đánh dấu và dấu vết kiểm tra. Sau khi xác nhận chốt `1.660/1.660/0` cho số ứng viên/số đã đánh dấu/số lệch, bật lại bằng `bash scripts/ops/classify-legacy-orders.sh --reactivate`.
+
+## Backup and restore
+
+Full procedure, including the owner-facing Vietnamese page, lives in
+[BACKUP_RESTORE_RUNBOOK.md](BACKUP_RESTORE_RUNBOOK.md). Summary of the deployed setup:
+
+- **Target.** A Synology NAS at the owner's home, reached over the existing Tailscale tailnet at
+  `100.116.56.123:/volume1/Bigbike`, mounted at `/mnt/bigbike-nas`. Everything the backup writes stays
+  inside the single subdirectory `vps-backups/`; the owner's unrelated business files at the share root
+  are never read, moved or deleted. No new port is exposed to the Internet.
+- **Schedule and retention live in exactly one file**, `/etc/cron.d/bigbike-backup`: sales data hourly at
+  `:10`, operational config daily at `01:00`, media daily at `01:30`, a staleness watchdog hourly at `:40`,
+  and a daily digest at `06:00`. Retention is `BB_KEEP_HOURLY=48`, `BB_KEEP_DAILY=30`, `BB_KEEP_MONTHLY=12`.
+  The 01:00–01:30 window is deliberate: it clears the backend's own 02:30–04:30 scheduled-job block.
+- **Sales data** uses `pg_dump --format=custom` against the running `bigbike-postgres` while the shop keeps
+  serving; the datadir is never copied. The dump is written to a small `/var/tmp` scratch file, shipped, then
+  removed by an `EXIT` trap even on failure. Hourly→daily→monthly promotion uses hardlinks on the NAS, so no
+  byte crosses the link twice.
+- **Media** is **not** mirrored file-by-file. Measured on 2026-09-06, the NAS link costs ~280 ms per file
+  operation; the 6,223-file MinIO tree would take ~9.6 h per run. Media is instead streamed as one
+  `tar --listed-incremental` + `zstd` archive: a full base every `BB_MEDIA_REBASE_DAYS` (30) and a small
+  delta archive daily. The stream goes straight to the NAS — no full copy ever lands on the server disk.
+- **Integrity.** Every artifact carries a SHA-256 sidecar and is re-read from the NAS (`O_DIRECT`, falling
+  back to `posix_fadvise(DONTNEED)`) before the `.part` file is renamed into place. A mismatch deletes the
+  bad copy and raises an alert.
+- **Alerting** reuses the existing Telegram bot and the internal mailbox `BIGBIKE_MAIL_ADMIN` — both channels,
+  per owner decision 2026-09-06. No new channel and no new credential were introduced.
+- **Guards.** Three independent layers stop a backup from silently filling the server disk when the NAS is
+  unreachable: a `mountpoint` check, a `.nas-marker` sentinel that only exists on the NAS, and `chattr +i`
+  on `/mnt/bigbike-nas` so the kernel itself refuses writes to the bare mountpoint. Mounting over the
+  immutable directory still works — verified 2026-09-06.
+- **Reboot.** `mnt-bigbike\x2dnas.automount` is enabled, so the mount is re-established on demand after a
+  reboot without ever blocking boot. The mount is `soft,timeo=600,retrans=2`, so a dead NAS produces an I/O
+  error in ~3 minutes instead of wedging processes in uninterruptible sleep.
+
+### NAS link constraints — verified on the host, do not re-derive
+
+The hosting provider blocks **all outbound UDP**. Consequences, all measured 2026-09-06:
+
+- Tailscale cannot build a direct path and always relays via DERP Hong Kong (~105 ms, ~1.1 MB/s).
+- `systemd-timesyncd` has never synced (`Packet count: 0`). The clock is held to ~1 s by `kvm-clock` from the
+  hypervisor, which is why the age-based watchdog is still trustworthy. `/etc/systemd/timesyncd.conf` now
+  points at IPv4 pool servers, but it cannot work until UDP egress is allowed.
+- The NAS speaks **NFS v4.0 only** — `nfsvers=4.1` is rejected with `Protocol not supported` — and the export
+  path is `/volume1/Bigbike`, not `/Bigbike`.
+- `showmount`, a targeted `rpcinfo <prog> <ver>`, and any NFSv3 mount **hang unkillably** on this host because
+  the NAS accepts TCP on mountd's port but never answers the RPC. Never put them in a health check.
 
 ## Deployment Caveats
 

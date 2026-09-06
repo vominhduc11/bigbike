@@ -1,0 +1,21 @@
+[Unit]
+Description=BigBike offsite backup target (Synology NAS over Tailscale)
+Documentation=file:///root/myproject/bigbike/docs/engineering/BACKUP_RESTORE_RUNBOOK.md
+After=network-online.target tailscaled.service
+Wants=network-online.target
+Requires=tailscaled.service
+
+[Mount]
+What=100.116.56.123:/volume1/Bigbike
+Where=/mnt/bigbike-nas
+Type=nfs
+# nfsvers=4.0 : NAS chi ho tro v4.0 (v4.1 tra ve "Protocol not supported"), do duong
+#               di qua DERP relay nen khong dung portmapper/mountd cua NFSv3 duoc.
+# soft        : NAS mat dien/mat mang thi tra loi I/O error roi bo cuoc, KHONG treo vo han.
+# timeo=600   : 60 giay moi lan thu; duong nay tung nghen lien 28 giay (06/09/2026).
+# retrans=2   : bo cuoc sau ~3 phut thay vi treo mai.
+Options=nfsvers=4.0,proto=tcp,soft,timeo=600,retrans=2,noatime,retry=0,_netdev,nconnect=8,rsize=65536,wsize=65536
+TimeoutSec=120
+
+[Install]
+WantedBy=multi-user.target

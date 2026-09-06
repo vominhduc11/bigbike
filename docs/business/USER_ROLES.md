@@ -51,7 +51,7 @@ File này dùng làm nền cho:
 | Media Storage / MinIO | Third-party/system actor | Lưu file/media object. | Media upload/storage backend. | `CONFIRMED_FROM_CODE` | `AdminMediaController`, `MinioConfig`, `MinioProperties`, `docker-compose.yaml` |
 | Payment Provider | Third-party actor | Tự động ghi nhận payment event qua webhook/provider nếu có. | Payment integration. | `NOT_FOUND_IN_REPO` | No payment webhook/provider evidence found in audited files. |
 | Shipping Provider | Third-party actor | Tạo vận đơn/tracking với carrier nếu có. | Shipping integration. | `NOT_FOUND_IN_REPO` | Shipping admin module đã gỡ; không có carrier-specific controller/service. |
-| Analytics / Observability Service | Third-party/system actor | Tracking/frontend analytics/errors. | Web analytics/Sentry/GTM references. | `INFERRED_FROM_STRUCTURE` | `bigbike-web/package.json`, `bigbike-web/app/page.tsx`, `docker-compose.yaml` |
+| Analytics / Observability Service | Third-party/system actor | Tracking/frontend analytics/errors. | Google Analytics 4 (`gtag.js`, storefront e-commerce events) and Sentry error reporting. Google Tag Manager was removed 2026-09-06. | `CONFIRMED_FROM_CODE` | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `docker-compose.yaml` |
 | Support Agent | Internal user | Hỗ trợ khách hàng/order issues. | Potentially admin customers/orders. | `NEEDS_VERIFICATION` | No explicit `SUPPORT` role found. |
 | Warehouse / Inventory Staff | Internal user | Quản lý kho/tồn/stock movement. | Inventory module. | `NEEDS_VERIFICATION` | Inventory module exists, no explicit warehouse role found. |
 
@@ -313,11 +313,11 @@ Custom roles không thể lưu permission set thiếu dependency. Quyền sensit
 
 | Field | Value |
 |---|---|
-| Purpose | Theo dõi frontend analytics/errors hoặc monitoring. |
-| System Interaction | Package/env references exist; production setup not verified. |
+| Purpose | Theo dõi hành vi khách trên storefront (Google Analytics 4) và lỗi frontend (Sentry). |
+| System Interaction | GA4 nạp một lần từ root layout của storefront khi `NEXT_PUBLIC_GA4_MEASUREMENT_ID` có giá trị; phát 10 sự kiện thương mại điện tử cộng `page_view` do GA4 tự ghi nhận. Sentry bật khi DSN có giá trị. Cả hai đều được nhúng vào bundle lúc build. |
 | Related Processes | SEO/Marketing, Operations, Debugging. |
-| Status | `INFERRED_FROM_STRUCTURE` |
-| Evidence | `bigbike-web/package.json`, `bigbike-web/app/page.tsx`, `docker-compose.yaml` |
+| Status | `CONFIRMED_FROM_CODE` |
+| Evidence | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `docker-compose.yaml` |
 
 ## 7. Role Responsibilities
 
@@ -445,7 +445,7 @@ Production auth status:
 | Warehouse / Inventory Staff | `NEEDS_VERIFICATION` | Inventory module exists, but no explicit warehouse role found. |
 | Payment Provider | `NOT_FOUND_IN_REPO` | No payment webhook/provider integration found. |
 | Shipping Provider | `NOT_FOUND_IN_REPO` | No carrier-specific integration found. |
-| Backup / Ops Admin | `NOT_FOUND_IN_REPO` | No backup/restore operations role found. |
+| Backup / Ops Admin | `NOT_FOUND_IN_REPO` | Vẫn không có vai trò nào trong phần mềm. Từ 06/09/2026 việc sao lưu chạy tự động ở mức máy chủ và việc khôi phục là thao tác dòng lệnh do chủ shop hoặc người kỹ thuật thực hiện — cố ý KHÔNG đưa vào mô hình phân quyền của ứng dụng, vì khôi phục là thao tác phá huỷ và không nên bấm được từ trang quản trị. Xem `BACKUP_RESTORE_RUNBOOK.md`. |
 | Marketing Manager | `NEEDS_VERIFICATION` | Content/SEO exist, but no explicit marketing role found. |
 | SEO Editor (removed) | `CONFIRMED_FROM_CODE` | Built-in role removed by `V211__reduce_default_roles.sql`; SEO redirect permissions folded into `EDITOR`. Re-create as a custom role if a dedicated SEO-only operator is needed. |
 | Custom Role | `CONFIRMED_FROM_CODE` | `AdminRoleService` supports create/edit/delete of custom roles (`is_system = FALSE`); deletion blocked while any admin user is still assigned. Governance enforced and documented in `PERMISSION_MATRIX.md` → Role Governance. |
@@ -467,7 +467,7 @@ Production auth status:
 | Media Storage / MinIO | `AdminMediaController`, `MinioConfig`, `MinioProperties`, `docker-compose.yaml` | Media upload/storage integration. | High |
 | Payment Provider | Audited payment/order/checkout evidence | No external payment webhook/provider found. | High for not found in audited scope |
 | Shipping Provider | `BUSINESS_RULES.md` `SHIP_RULE_001`, `CheckoutService`, repository search | Shipping-method config was removed; no carrier provider found. | High for not found in audited scope |
-| Analytics / Observability | `bigbike-web/package.json`, `bigbike-web/app/page.tsx`, `docker-compose.yaml` | Analytics/Sentry/GTM-like references inferred. | Medium |
+| Analytics / Observability | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `docker-compose.yaml` | Google Analytics 4 + Sentry, xác nhận trực tiếp trong mã nguồn. | Low |
 | Module context | `docs/business/MODULE_CATALOG.md` | Existing module map used to relate roles to modules. | High |
 | Process context | `docs/business/BUSINESS_PROCESS.md` | Existing process map used to relate roles to business processes. | High |
 | Project context | `docs/business/PROJECT_OVERVIEW.md` | Existing project actor/component context. | High |
@@ -485,7 +485,7 @@ Production auth status:
 9. Shipping provider actor is not confirmed. Current fulfillment is arranged manually, with no shipping-method choice or fee.
 10. Email service code paths exist, but production SMTP deliverability was not runtime-tested.
 11. Media storage/MinIO exists, but CDN/public media delivery runtime behavior needs deployment verification.
-12. Analytics/observability service is inferred from package/config references; exact production tracking actor needs verification.
+12. Analytics/observability service is confirmed in code: Google Analytics 4 (`G-REZM4NT0CS`) for storefront behaviour and Sentry for frontend errors. Google Tag Manager was removed 2026-09-06.
 13. Build/test/runtime were not run during this documentation task. Do not treat this file as green-build evidence.
 
 ## 16. Relationship With Other Docs

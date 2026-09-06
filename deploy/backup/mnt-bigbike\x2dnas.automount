@@ -1,0 +1,12 @@
+[Unit]
+Description=Automount BigBike offsite backup target (NAS)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Automount]
+Where=/mnt/bigbike-nas
+# Nha ket noi sau 30 phut khong dung, de link relay khong bi giu mo vo ich.
+TimeoutIdleSec=1800
+
+[Install]
+WantedBy=multi-user.target

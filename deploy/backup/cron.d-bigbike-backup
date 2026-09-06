@@ -1,0 +1,49 @@
+# ============================================================================
+#  BIGBIKE — LICH SAO LUU RA NAS
+#  DAY LA CHO DUY NHAT DE CHINH NHIP CHAY VA SO BAN GIU LAI.
+#  Sua xong khong can lam gi them, he thong tu doc lai.
+#  Kiem tra sau khi sua:  systemctl status cron  &&  run-parts --report --test /etc/cron.d
+# ============================================================================
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+MAILTO=""
+BB_REPO=/root/myproject/bigbike
+
+# ---------------------------------------------------------------------------
+#  SO BAN GIU LAI  (bo qua han tu xoa)
+# ---------------------------------------------------------------------------
+BB_KEEP_HOURLY=48
+BB_KEEP_DAILY=30
+BB_KEEP_MONTHLY=12
+
+#  Qua bao nhieu gio khong co ban sao moi thi bao dong
+BB_ALERT_STALE_HOURS=24
+
+#  Bao nhieu ngay thi lam lai goi nen day cua kho anh (giua cac lan chi gui phan thay doi)
+BB_MEDIA_REBASE_DAYS=30
+
+#  Kho anh: bao nhieu ngay thi goi lai ban day mot lan
+#  (giua cac lan chi gui phan thay doi, rat nhanh)
+BB_MEDIA_REBASE_DAYS=30
+
+# ---------------------------------------------------------------------------
+#  NHIP CHAY   (phut  gio  ngay  thang  thu)
+#  Gio 01:00-01:30 chon co chu dich: tranh khung 02:45-04:30 he thong dang
+#  chay cac viec don dep tu dong, va tranh gio khach mua hang.
+# ---------------------------------------------------------------------------
+
+# Du lieu ban hang — moi gio, phut thu 10
+10 * * * *  root  flock -n /var/lock/bb-backup-db.lock    timeout 1800 bash $BB_REPO/scripts/ops/backup-to-nas.sh db      >/dev/null 2>&1
+
+# Cau hinh van hanh — 01:00 hang ngay
+0 1 * * *   root  flock -n /var/lock/bb-backup-config.lock timeout 900  bash $BB_REPO/scripts/ops/backup-to-nas.sh config  >/dev/null 2>&1
+
+# Kho anh/video — 01:30 hang ngay, chi chuyen phan moi/doi
+30 1 * * *  root  flock -n /var/lock/bb-backup-media.lock  timeout 14400 bash $BB_REPO/scripts/ops/backup-to-nas.sh media  >/dev/null 2>&1
+
+# Nguoi gac — moi gio, phut thu 40. Bao dong neu qua han tren ma khong co ban moi.
+40 * * * *  root  flock -n /var/lock/bb-backup-watch.lock  timeout 600  bash $BB_REPO/scripts/ops/backup-to-nas.sh watchdog >/dev/null 2>&1
+
+# Tin tong ket moi sang 06:00. Tin nay ngung den = he thong sao luu da chet.
+0 6 * * *   root  flock -n /var/lock/bb-backup-digest.lock timeout 600  bash $BB_REPO/scripts/ops/backup-to-nas.sh digest   >/dev/null 2>&1

@@ -145,7 +145,7 @@ Nguyên tắc đọc file này:
 |---|---|
 | Category | Project Term / Integration Term |
 | Definition | Kết nối với service ngoài hoặc infrastructure service ngoài business core. |
-| BigBike Context | Confirmed: PostgreSQL, MinIO, email code path/config, Sentry/GTM references. Not confirmed: payment gateway webhook, shipping carrier provider. |
+| BigBike Context | Confirmed: PostgreSQL, MinIO, email code path/config, Sentry, Google Analytics 4. Not confirmed: payment gateway webhook, shipping carrier provider. |
 | Example | MinIO media storage là integration; Payment webhook chưa thấy evidence. |
 | Related Docs | `WORKFLOW_OVERVIEW.md`, `BUSINESS_RULES.md` |
 | Status | `CONFIRMED_FROM_REPO` một phần; external payment/shipping `NOT_FOUND_IN_REPO` |
@@ -746,7 +746,7 @@ Nguyên tắc đọc file này:
 | Field | Value |
 |---|---|
 | Definition | Dịch vụ ngoài hoặc infrastructure service hệ thống kết nối để hoàn thành một phần workflow. |
-| BigBike Context | Confirmed: PostgreSQL, MinIO, email config/code path, Sentry/GTM references. Not confirmed: payment provider/shipping carrier production integration. |
+| BigBike Context | Confirmed: PostgreSQL, MinIO, email config/code path, Sentry, Google Analytics 4. Not confirmed: payment provider/shipping carrier production integration. |
 | Example | MinIO lưu media; Payment Provider chưa thấy trong repo. |
 | Related Docs | `WORKFLOW_OVERVIEW.md`, `USER_ROLES.md` |
 | Status | `CONFIRMED_FROM_REPO` một phần |
@@ -848,7 +848,7 @@ Nguyên tắc đọc file này:
 | Audit Log completeness | Technical / Business Term | `DOCUMENTED_NEEDS_VERIFICATION` | Audit log exists, coverage every sensitive action needs matrix. |
 | Staging Environment | Project Term | `NOT_FOUND_IN_REPO` | dev/mock/prod confirmed; staging not confirmed. |
 | CDN | Integration Term | `NEEDS_BUSINESS_CONFIRMATION` | Media public/CDN runtime delivery chưa xác nhận. |
-| Backup / Restore Workflow | Workflow Term | `NOT_FOUND_IN_REPO` | Workflow overview ghi chưa thấy evidence. |
+| Backup / Restore Workflow | Workflow Term | `CONFIRMED_FROM_CODE_AND_TEST` | Quy trình sao lưu ra NAS riêng và khôi phục, dựng và diễn tập thật ngày 06/09/2026. Không phải quyền hay màn hình trong phần mềm — là việc chạy trên máy chủ. Xem `BACKUP_RESTORE_RUNBOOK.md`. |
 
 ## 19. Relationship With Other Docs
 
