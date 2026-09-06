@@ -5,6 +5,5 @@ public record ChatImageAvailabilityResponse(
         long maxBytes,
         int maxPerTurn,
         int maxPerConversation,
-        int dailyLimit,
-        String disclosure
+        int dailyLimit
 ) {}

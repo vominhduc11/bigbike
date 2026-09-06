@@ -5,6 +5,7 @@ import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity
 import com.bigbike.bigbike_backend.persistence.entity.chat.ChatVisitorEntity;
 import com.bigbike.bigbike_backend.persistence.repository.settings.SiteSettingJpaRepository;
 import com.bigbike.bigbike_backend.service.content.StorePolicyService;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -113,7 +114,15 @@ public class ChatAssistantSettings {
         var document = storePolicyService.get(topic, lang);
         String text = Jsoup.parseBodyFragment(document.bodyHtml()).text()
                 .replaceAll("\\s+", " ").trim();
-        return new PolicyText(document.title(), text);
+        List<StorePolicyService.PolicySection> sections;
+        try {
+            sections = storePolicyService.sections(topic, lang);
+        } catch (RuntimeException ignored) {
+            // A structural surprise in the published page must not cost the customer the answer;
+            // the assistant simply falls back to the opening lines of the policy.
+            sections = List.of();
+        }
+        return new PolicyText(document.title(), text, sections);
     }
 
     public record ImageSettings(boolean enabled, int dailyLimit, int conversationLimit) {}
@@ -157,9 +166,21 @@ public class ChatAssistantSettings {
         }
     }
 
-    public record PolicyText(String title, String text) {
+    public record PolicyText(
+            String title,
+            String text,
+            List<StorePolicyService.PolicySection> sections
+    ) {
+        public PolicyText(String title, String text) {
+            this(title, text, List.of());
+        }
+
+        public PolicyText {
+            sections = sections == null ? List.of() : List.copyOf(sections);
+        }
+
         public static PolicyText empty() {
-            return new PolicyText("", "");
+            return new PolicyText("", "", List.of());
         }
 
         public boolean available() {

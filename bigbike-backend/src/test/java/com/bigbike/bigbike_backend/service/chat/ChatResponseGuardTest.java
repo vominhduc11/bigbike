@@ -14,6 +14,47 @@ class ChatResponseGuardTest {
     private final ChatResponseGuard guard = new ChatResponseGuard();
 
     @Test
+    @DisplayName("published policy wording survives, invented warehouse wording does not")
+    void completenessRuleAppliesToModelProseOnly() {
+        // Verbatim from the shop's warranty table; the whole answer used to be discarded and the
+        // customer saw "Trợ lý BigBike đang bận" every single time they asked about warranty.
+        String published = "Chính sách bảo hành. Với SCS, thời hạn là 24 tháng. "
+                + "Toàn bộ sản phẩm được áp dụng, trừ va đập, cấn, móp và vào nước do sử dụng.";
+        assertThat(guard.check(published, List.of(), "vi")).isPresent();
+
+        // The same shape written by the model, with no verified figures behind it, stays blocked.
+        assertThat(guard.checkModel(published, List.of(), "vi", List.of(), Set.of(), null,
+                List.of("search_products"))).isEmpty();
+        assertThat(guard.checkModel(
+                "BigBike có tất cả các mẫu anh/chị cần. Anh/chị xem thử bên dưới nhé.",
+                List.of(), "vi", List.of(), Set.of(), null, List.of("search_products"))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a statement about people and the law is not a warehouse claim")
+    void trafficLawWordingIsNotACatalogClaim() {
+        assertThat(guard.checkModel(
+                "Tất cả người điều khiển xe hai bánh đều phải đội mũ đạt chuẩn. "
+                        + "Em không tư vấn quy định pháp luật nên anh/chị kiểm tra với cơ quan chức năng nhé.",
+                List.of(), "vi", List.of(), Set.of(), null, List.of("get_policy"))).isPresent();
+    }
+
+    @Test
+    @DisplayName("a reply that asserts nothing is allowed without a current-turn lookup")
+    void refusalsDoNotNeedToolEvidence() {
+        String refusal = "Em hỗ trợ về sản phẩm BigBike đang bán, chính sách cửa hàng và đơn của "
+                + "tài khoản đã đăng nhập. Nội dung này ngoài phần em phụ trách. "
+                + "Anh/chị liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.";
+        assertThat(guard.checkModel(refusal, List.of(), "vi", List.of(), Set.of(), null, List.of()))
+                .isPresent();
+
+        // A claim about stock still needs evidence from this turn.
+        assertThat(guard.checkModel(
+                "BigBike hiện không có sản phẩm nào phù hợp. Anh/chị thử yêu cầu khác giúp em nhé.",
+                List.of(), "vi", List.of(), Set.of(), null, List.of())).isEmpty();
+    }
+
+    @Test
     @DisplayName("customer text rejects technical vocabulary and raw internal status")
     void rejectsTechnicalCustomerText() {
         assertThat(guard.check("Đây là JSON của đơn hàng. API đang lỗi. Anh/chị thử lại nhé.", List.of(), "vi"))

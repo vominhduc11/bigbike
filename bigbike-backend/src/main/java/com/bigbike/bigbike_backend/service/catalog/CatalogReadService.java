@@ -290,6 +290,21 @@ public class CatalogReadService {
     }
 
     /**
+     * Resolves one colour spelling to the storefront's base-colour keys. BigBike Assistant needs
+     * the same synonym table the catalogue filters use, otherwise a variant stored as
+     * "gloss black" is invisible to a customer asking for "đen".
+     */
+    public Set<String> assistantColorFacets(String rawColor) {
+        if (rawColor == null || rawColor.isBlank()) return Set.of();
+        return activeVisualCatalog().resolve(List.of(rawColor), List.of()).colors();
+    }
+
+    /** Every colour spelling the catalogue recognises; empty when the facet data is unavailable. */
+    public Set<String> assistantColorVocabulary() {
+        return activeVisualCatalog().colorVocabulary();
+    }
+
+    /**
      * Internal BigBike Assistant discovery path. It deliberately has its own repository predicate so the
      * public {@code q} endpoint keeps its established response and matching contract.
      * Returned products retain listing variants because the chat service must verify sellability

@@ -143,7 +143,7 @@ GitHub Actions currently runs:
 | Media hardening | `AdminMediaP0Test.java` | `CONFIRMED_FROM_TEST` |
 | Redirect target integrity | `AdminRedirectApiTest.java` + web proxy redirect tests | `REQUIRED_FOR_REDIRECT_RULE_011_012` |
 | Review invitation | Eligibility/cutoff/idempotency/opt-out/quota/token/API/template suites plus web direct-link/unsubscribe tests; no admin invitation surface | `REQUIRED_FOR_REVIEW_RULE_014_016` |
-| Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, nhớ trong phiên, cart và ảnh riêng tư VI/EN. **Bắt buộc có bài kiểm thử Testcontainers + PostgreSQL (`spring.flyway.enabled=true`, hồ sơ `tc`) chèn mọi giá trị `chat_messages.source` mà backend có thể sinh** — bộ test H2 mặc định tắt Flyway nên không bao giờ thấy ràng buộc CHECK, và đó là lý do lỗi mất câu trả lời sống được nhiều ngày. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059` |
+| Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, nhớ trong phiên, cart và ảnh riêng tư VI/EN. Web phải có bài kiểm khung chat: nhãn AI ngắn, ba nút ở đầu khung, màn mở đầu lời chào + bốn gợi ý, tỉ lệ đầu+đáy ≤40% và đáy đoạn chat bám sát đáy khung sau khi trả lời xong (`CHAT_RULE_061`). **Bắt buộc có bài kiểm thử Testcontainers + PostgreSQL (`spring.flyway.enabled=true`, hồ sơ `tc`) chèn mọi giá trị `chat_messages.source` mà backend có thể sinh** — bộ test H2 mặc định tắt Flyway nên không bao giờ thấy ràng buộc CHECK, và đó là lý do lỗi mất câu trả lời sống được nhiều ngày. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059_061` |
 
 ## Trợ lý BigBike — ma trận kiểm thử (owner decision 2026-08-29)
 
@@ -154,7 +154,12 @@ GitHub Actions currently runs:
 - Backend: setting registry chỉ còn các key được giữ; review moderation không bị ảnh hưởng; migration V1070 assert dữ liệu handoff đã được dọn trước khi bỏ cấu trúc.
 - Web/admin: không render/call/mocking cho model chooser/evaluation/cost/fallback, lead/form liên hệ, feedback, proactive, attribution, unanswered/data gaps, template/abbreviation editor; đầy đủ VI/EN và không mojibake.
 - Web: action lỗi mở đúng panel Hotline/Zalo/Messenger mà không tạo request; không có lối gọi người thật; add cart/variant vẫn có hậu kiểm; memory v2 xoay token cũ và quyền tắt/xóa vẫn đúng.
-- Image: khi AI service có cấu hình thì luôn bật, có disclosure, 1 ảnh/lượt, 3/hội thoại, 20/ngày, 8 MB, private ownership/retention; thiếu service thì nút tự ẩn; image intent tiếp tục dùng fixture, không chạy bulk provider thật.
+- Image: khi AI service có cấu hình thì luôn bật, 1 ảnh/lượt, 3/hội thoại, 20/ngày, 8 MB, private ownership/retention; `availability` không còn trả `disclosure` và khung chat không còn dòng công bố ảnh (owner decision 2026-09-06); thiếu service thì nút tự ẩn; image intent tiếp tục dùng fixture, không chạy bulk provider thật.
+- Backend (owner decision 2026-09-06): mọi câu hỏi trong phạm vi phải có bài kiểm chứng minh **không** ra thông báo lỗi kỹ thuật — chính sách bảo hành, quy định đội mũ, hai câu mặc cả giá (`ChatAnsweredQuestionsTest`).
+- Backend: bài kiểm nhận diện danh mục phải dùng bộ danh mục **giống kho thật**, gồm các tên đụng hư từ (`Phụ kiện cho xe`, `Áo mưa, đồ đi mưa moto`, `Túi đeo hông`). Bộ danh mục rút gọn không bắt được lỗi này — đó là lý do lỗi bấm nút đổi nhóm hàng sống sót (`ChatCategoryAliasHygieneTest`).
+- Backend: bấm hết các nút của một vòng hỏi lại phải giữ nguyên nhóm hàng ở **mọi** nhóm được kiểm.
+- Backend: mỗi câu chữ mới hiển thị cho khách phải được khẳng định là đi qua được `ChatResponseGuard.check`; tên sản phẩm có thể chứa từ bị coi là thuật ngữ kỹ thuật nên phải bỏ tên đó ra khỏi câu thay vì mất cả câu trả lời.
+- Backend: luật cấm khẳng định bao trùm phải có bài kiểm cả hai chiều — đoạn trích chính sách đi qua được `check`, câu model tự khẳng định về kho vẫn bị `checkModel` chặn.
 - E2E: dùng REST/SSE/STOMP mock hoặc fixture, dữ liệu tiền tố `E2E_`; không gọi AI thật và không chạm dữ liệu khách.
 
 Các context PostgreSQL profile `tc` chạy toàn bộ migration từ kho trống. Migration production có thể dùng snapshot hợp lệ nhưng không sửa version đã áp dụng. Nếu server local không chạy do migration đã áp dụng không có trong source, ghi `Not run` và tiếp tục unit/build/static checks.

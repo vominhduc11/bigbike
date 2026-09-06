@@ -826,6 +826,33 @@ only distinct successful changes in `affected`, and exposes deterministic
 Status: `OWNER_CONFIRMED_2026-07-28`. Canonical rules:
 `BUSINESS_RULES.md` `REVIEW_RULE_009` and `REVIEW_RULE_010`.
 
+## 15A. Trợ lý BigBike — vòng hỏi lại khi chọn hàng (quyết định owner 2026-09-06)
+
+Khi khách nói chung chung, trợ lý hỏi lại theo thứ tự cố định và mỗi câu đều kèm nút bấm.
+Trạng thái nằm trong `chat_conversations.context_json`, sống theo hội thoại, không có dữ liệu cá nhân.
+
+| Bước đang hỏi | Chuyển tiếp | Điều kiện |
+|---|---|---|
+| `GROUP` | `USE_CASE` | Khách chọn nhóm hàng. Bấm "Cứ cho em xem tất cả" ở bước này trả mẫu tiêu biểu trải đều các nhóm, không phải danh sách rẻ nhất toàn kho. |
+| `USE_CASE` | `PRICE` | Khách chọn nhu cầu dùng. |
+| `PRICE` | `TYPE` | Khách chọn tầm giá, hoặc câu hỏi đã có sẵn tầm giá. |
+| `TYPE` | `SIZE` | Khách chọn kiểu hàng trong nhóm. |
+| `SIZE` | `COLOR` | Khách chọn size đang còn hàng. |
+| `COLOR` | kết thúc | Khách chọn màu đang còn hàng. |
+| bất kỳ | kết thúc | Không còn tiêu chí nào thu hẹp được, hoặc số mẫu còn lại đã đủ ít. |
+
+Bất biến bắt buộc:
+
+- **Nhóm hàng bị khoá trong suốt vòng hỏi lại.** Nhãn nút là câu chữ do phần mềm viết ra;
+  khi khách bấm nút, nhãn đó **không** được đọc lại như một yêu cầu tìm hàng mới.
+  Chỉ tiêu chí đang hỏi được đổi bộ lọc. Khách đổi nhóm bằng cách tự nói rõ nhóm mới.
+- Mỗi tiêu chí chỉ hỏi **một lần** trong hội thoại; đã hỏi rồi thì không quay lại.
+- Câu hỏi chỉ xuất hiện khi tiêu chí đó thật sự còn ≥ 2 lựa chọn trong tập hàng còn lại.
+- Vòng hỏi lại **không tốn lượt AI** và **không tính vào trần lượt tư vấn** (`CHAT_RULE_009`).
+- Câu chốt nêu tên và giá vài mẫu tiêu biểu; còn tiêu chí thu hẹp được thì hỏi tiếp kèm nút bấm.
+
+Status: `OWNER_CONFIRMED_2026-09-06`; `CHAT_RULE_017`, `CHAT_RULE_034`–`CHAT_RULE_039`, `CHAT_RULE_060`.
+
 ## 15B. Trợ lý BigBike — không còn giao người thật (quyết định owner 2026-08-30)
 
 Từ quyết định của chủ shop ngày 2026-08-30, state machine giao người thật đã bị gỡ bỏ.
@@ -842,7 +869,7 @@ Status: `OWNER_CONFIRMED_2026-08-30`; `CHAT_RULE_008`, `009`, `011`, `040`, `045
 
 | From | To | Guard / side effect |
 |---|---|---|
-| — | `PENDING` | Dịch vụ AI đã khai báo, disclosure bắt buộc đã hiển thị trước nút chọn/gửi, ownership hợp lệ, JPG/PNG/WebP ≤8 MB và trong trần ba ảnh/thread. Object đã re-encode nằm trong private bucket. Nếu dịch vụ chưa khai báo, nút ảnh tự ẩn. |
+| — | `PENDING` | Dịch vụ AI đã khai báo, ownership hợp lệ, JPG/PNG/WebP ≤8 MB và trong trần ba ảnh/thread. (owner decision 2026-09-06: khung chat không còn dòng công bố ảnh, nội dung công bố nằm ở trang Chính sách bảo mật — không còn là điều kiện chặn của bước này.) Object đã re-encode nằm trong private bucket. Nếu dịch vụ chưa khai báo, nút ảnh tự ẩn. |
 | `PENDING` | `ATTACHED` | Cùng customer/visitor + request id gắn ảnh vào customer message; retry idempotent. |
 | `ATTACHED` | `PROCESSING` | Atomic daily image slot còn; slot không hoàn lại sau provider call. |
 | `PROCESSING` | `READY` | Intent/evidence server-owned đã lưu; outward answer vẫn đi qua anti-fabrication guard. |
@@ -854,7 +881,7 @@ Status: `OWNER_CONFIRMED_2026-08-30`; `CHAT_RULE_008`, `009`, `011`, `040`, `045
 
 Forbidden: public bucket/URL; token trong query; reuse ảnh làm history provider ở lượt sau; lưu raw filename/EXIF/embedding khách; `UNRECOGNIZED → READY` không có customer upload mới hoặc calibration/evidence mới.
 
-Status: `OWNER_CONFIRMED_2026-08-30`; `CHAT_RULE_057`–`059`.
+Status: `OWNER_CONFIRMED_2026-08-30`; disclosure guard gỡ theo `owner decision 2026-09-06`; `CHAT_RULE_057`–`059`.
 
 ## 15D. Review Invitation Delivery State Machine
 

@@ -189,7 +189,6 @@ export type ChatAvailability = {
     maxPerTurn: number;
     maxPerConversation: number;
     dailyLimit: number;
-    disclosure: string;
   };
 };
 
@@ -589,9 +588,6 @@ export function fetchChatAvailability(lang: "vi" | "en"): Promise<ChatAvailabili
             ? source.images.maxPerConversation
             : 3,
           dailyLimit: Number.isFinite(source.images?.dailyLimit) ? source.images.dailyLimit : 0,
-          disclosure: isSafeChatDisplayText(source.images?.disclosure, lang)
-            ? source.images.disclosure
-            : "",
         },
       };
     },

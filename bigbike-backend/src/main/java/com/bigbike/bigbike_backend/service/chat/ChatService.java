@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -65,9 +66,8 @@ public class ChatService {
             imageSettings = new ChatAssistantSettings.ImageSettings(true, 20, 3);
         }
         boolean imagesEnabled = imageSettings.enabled() && aiClient.isConfigured();
-        String imageDisclosure = "en".equals(lang)
-                ? "Your image is stored privately by BigBike for up to 90 days and sent to Google's AI service for recognition. Do not upload sensitive documents unless needed."
-                : "Ảnh được BigBike lưu riêng tối đa 90 ngày và gửi tới dịch vụ AI của Google để nhận diện. Anh/chị không nên gửi giấy tờ nhạy cảm khi không cần thiết.";
+        // Owner decision 2026-09-06 (CHAT_RULE_059): khung chat không còn dòng công bố ảnh.
+        // Nội dung công bố nằm ở trang Chính sách bảo mật của storefront.
         return new ChatAvailabilityResponse(
                 availability.mode(),
                 "AI".equals(availability.mode()) ? "AI" : "CONTACT",
@@ -75,8 +75,7 @@ public class ChatService {
                 settings.contacts(),
                 new ChatImageAvailabilityResponse(
                         imagesEnabled, ChatImageStorageService.MAX_UPLOAD_BYTES, 1,
-                        imageSettings.conversationLimit(), imageSettings.dailyLimit(),
-                        imageDisclosure));
+                        imageSettings.conversationLimit(), imageSettings.dailyLimit()));
     }
 
     public ChatMessageResponse send(ChatMessageRequest request, UUID customerId) {
@@ -872,23 +871,55 @@ public class ChatService {
             if ("ASSISTANT".equals(latest.getRole())
                     && latest.getProductsJson() != null
                     && !latest.getProductsJson().isBlank()) {
-                try {
-                    List<ChatProductCardResponse> cards = objectMapper.readValue(
-                            latest.getProductsJson(), new TypeReference<>() {});
-                    slugs = cards.stream()
-                            .filter(card -> card != null && card.slug() != null && !card.slug().isBlank())
-                            .map(ChatProductCardResponse::slug)
-                            .distinct()
-                            .limit(8)
-                            .toList();
-                } catch (JsonProcessingException exception) {
-                    log.warn("Trợ lý BigBike previous-card context ignored reason=INVALID_PRODUCTS_JSON");
-                }
+                List<String> latestSlugs = cardSlugs(latest);
+                if (!latestSlugs.isEmpty()) slugs = latestSlugs;
             }
         }
         return new ChatToolService.ConversationContext(
                 context.category(), context.brand(), context.minPrice(), context.maxPrice(),
-                slugs, context.awaitingOrderLogin(), context.productDecision());
+                slugs, context.awaitingOrderLogin(), context.productDecision(),
+                rememberedProductSlugs(messages, slugs));
+    }
+
+    /**
+     * Owner decision 2026-09-06: within one conversation the assistant remembers every model it
+     * has shown across the recent-turn window, not only the last list. Reading it back from the
+     * stored replies keeps the memory bounded by the same window as CHAT_RULE_005 and needs no
+     * new stored state. Newest first, so "cái mũ lúc nãy" resolves to the nearer mention.
+     */
+    private List<String> rememberedProductSlugs(
+            List<ChatMessageEntity> messages, List<String> latestSlugs) {
+        LinkedHashSet<String> remembered = new LinkedHashSet<>(latestSlugs);
+        if (messages == null || messages.isEmpty()) return List.copyOf(remembered);
+        int assistantTurns = 0;
+        for (int index = messages.size() - 1; index >= 0; index--) {
+            ChatMessageEntity message = messages.get(index);
+            if (!"ASSISTANT".equals(message.getRole())) continue;
+            if (++assistantTurns > ChatAssistantSettings.MAX_RECENT_TURN_PAIRS) break;
+            remembered.addAll(cardSlugs(message));
+            if (remembered.size()
+                    >= ChatToolService.ConversationContext.RECENT_PRODUCT_MEMORY) break;
+        }
+        return List.copyOf(remembered);
+    }
+
+    private List<String> cardSlugs(ChatMessageEntity message) {
+        if (message.getProductsJson() == null || message.getProductsJson().isBlank()) {
+            return List.of();
+        }
+        try {
+            List<ChatProductCardResponse> cards = objectMapper.readValue(
+                    message.getProductsJson(), new TypeReference<>() {});
+            return cards.stream()
+                    .filter(card -> card != null && card.slug() != null && !card.slug().isBlank())
+                    .map(ChatProductCardResponse::slug)
+                    .distinct()
+                    .limit(8)
+                    .toList();
+        } catch (JsonProcessingException exception) {
+            log.warn("Trợ lý BigBike previous-card context ignored reason=INVALID_PRODUCTS_JSON");
+            return List.of();
+        }
     }
 
     private void saveConversationContext(

@@ -67,7 +67,10 @@ public class ChatSalesAdvisorService {
                 ? cheaperAlternative(products, context, lang) : null;
         if (cheaper != null) {
             products = List.of(cheaper.card());
-            answer = cheaper.answer();
+            // Owner decision 2026-09-06: keep the shop's own reply and add the cheaper option to
+            // it. Replacing the answer used to delete the price commitment the customer asked
+            // about and left only a product pitch.
+            answer = append(answer, cheaper.answer());
             stage = "CHOOSING";
             outcome = "CHEAPER_ALTERNATIVE";
         }
@@ -453,7 +456,9 @@ public class ChatSalesAdvisorService {
     private static boolean isPriceObjection(String normalized) {
         return containsAny(normalized,
                 "dat qua", "mac qua", "gia cao", "re hon", "qua ngan sach",
-                "too expensive", "price is high", "cheaper", "over budget");
+                "giam gia", "bot gia", "gia tot hon", "gia mem hon", "mac ca", "tra gia",
+                "too expensive", "price is high", "cheaper", "over budget",
+                "discount", "better price", "lower price");
     }
 
     private static boolean asksSize(String normalized) {

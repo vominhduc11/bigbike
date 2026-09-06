@@ -102,9 +102,19 @@ public class ChatResponseGuard {
             "(?<![a-z0-9])(?:\\d+(?:[.,]\\d+)?|mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi|"
                     + "one|two|three|four|five|six|seven|eight|nine|ten)\\s*"
                     + "(?:trieu|tr|million|nghin|ngan|k|cu|lit)(?![a-z0-9])");
-    /** Assertions of completeness remain unsupported even when one count was supplied. */
+    /**
+     * Assertions of completeness remain unsupported even when one count was supplied. The English
+     * rule below has always required a catalogue noun; the Vietnamese one did not, so it also
+     * caught sentences about people and traffic law ("tất cả người điều khiển xe mô tô"). Bind it
+     * to a catalogue subject the same way, allowing the usual determiners in between.
+     */
     private static final Pattern VI_ABSOLUTE_CATALOG_CLAIM = Pattern.compile(
-            "\\b(?:tat\\s+ca|toan\\s+bo|duy\\s+nhat)\\b");
+            "\\b(?:tat\\s+ca|toan\\s+bo|duy\\s+nhat)\\b"
+                    + "(?:\\s+(?:cac|nhung|moi|deu|la|deu\\s+la)){0,2}"
+                    + "\\s+(?:mau|san\\s+pham|mat\\s+hang|loai|hang|mu|non|tai\\s+nghe"
+                    + "|kho|shop|cua\\s+hang|bigbike)\\b"
+                    + "|\\b(?:kho|shop|cua\\s+hang|bigbike)\\s+(?:deu\\s+)?"
+                    + "(?:co|con)\\s+(?:tat\\s+ca|toan\\s+bo)\\b");
     private static final Pattern EN_ABSOLUTE_CATALOG_CLAIM = Pattern.compile(
             "\\b(?:all\\s+(?:products|items|helmets|models|headsets)|the\\s+only)\\b");
     /** A number plus a product unit is a catalogue statement unless it is explicitly a card count. */
@@ -158,7 +168,11 @@ public class ChatResponseGuard {
         if (!isSafeCustomerText(content, lang, products)
                 || !hasSafeAssistantTone(content, lang)
                 || !containsRequiredDisclosures(content, lang, requiredDisclosures)
-                || hasUnsupportedWarehouseWideClaim(content, lang, catalogTotals, products)) {
+                // Completeness wording is a model-invention rule. Text composed by this backend —
+                // greetings, refusals and, above all, quotations from the shop's own published
+                // policy — cannot invent a warehouse fact. Blocking it threw away the whole
+                // warranty answer because the published table says "Toàn bộ sản phẩm".
+                || hasUnsupportedWarehouseWideClaim(content, lang, catalogTotals, products, false)) {
             return Optional.empty();
         }
         // CHAT_RULE_007: floor lowered to 2 on 2026-08-10. The prompt still aims for 3-5,
@@ -299,7 +313,14 @@ public class ChatResponseGuard {
             ChatToolService.CatalogTotals catalogTotals,
             List<String> currentTurnTools
     ) {
-        if (currentTurnTools == null || currentTurnTools.isEmpty()) return Optional.empty();
+        // The evidence requirement exists so the model cannot assert catalogue facts from memory.
+        // A reply that asserts nothing — a polite refusal, or an invitation to contact the shop —
+        // needs no evidence, and discarding it turned an answerable question into an apology
+        // about an unfinished lookup.
+        if ((currentTurnTools == null || currentTurnTools.isEmpty())
+                && !assertsNothingCheckable(answer, products, catalogTotals, lang)) {
+            return Optional.empty();
+        }
         if (answer == null || EMAIL.matcher(answer).find()) return Optional.empty();
         String normalizedSalesCopy = ChatToolService.normalize(answer);
         if (FALSE_URGENCY_OR_SOCIAL_PROOF.matcher(normalizedSalesCopy).find()
@@ -314,8 +335,32 @@ public class ChatResponseGuard {
         if (!containsRequiredDisclosures(answer, lang, requiredDisclosures)) {
             return Optional.empty();
         }
-        if (hasUnsupportedWarehouseWideClaim(answer, lang, catalogTotals, products)) return Optional.empty();
+        if (hasUnsupportedWarehouseWideClaim(answer, lang, catalogTotals, products, true)) {
+            return Optional.empty();
+        }
         return check(answer, products, lang, requiredDisclosures, catalogTotals);
+    }
+
+    /**
+     * True when the reply carries no product card, no figure and no claim about what the shop
+     * does or does not stock — nothing a current-turn tool could have verified.
+     */
+    private static boolean assertsNothingCheckable(
+            String answer,
+            List<ChatProductCardResponse> products,
+            ChatToolService.CatalogTotals catalogTotals,
+            String lang
+    ) {
+        if (answer == null || answer.isBlank()) return false;
+        if (products != null && !products.isEmpty()) return false;
+        if (catalogTotals != null) return false;
+        if (answer.codePoints().anyMatch(Character::isDigit)) return false;
+        String normalized = ChatToolService.normalize(answer).replaceAll("\\s+", " ").trim();
+        boolean english = "en".equals(lang);
+        return !(english ? EN_UNSCOPED_ABSENCE_CLAIM : VI_UNSCOPED_ABSENCE_CLAIM)
+                        .matcher(normalized).find()
+                && !(english ? EN_ABSOLUTE_CATALOG_CLAIM : VI_ABSOLUTE_CATALOG_CLAIM)
+                        .matcher(normalized).find();
     }
 
     /**
@@ -465,6 +510,15 @@ public class ChatResponseGuard {
         return digits.startsWith("84") ? "0" + digits.substring(2) : digits;
     }
 
+    /**
+     * True when the text carries a word this gate treats as internal jargon. Callers that build a
+     * sentence out of catalogue values use it to leave a value out rather than have the whole
+     * reply discarded: a product really can be named "... API".
+     */
+    public static boolean mentionsTechnicalTerm(String value) {
+        return value != null && TECHNICAL_TERMS.matcher(value).find();
+    }
+
     /** Shared guard for customer-visible assistant copy. */
     public boolean isSafeCustomerText(String value, String lang) {
         return isSafeCustomerText(value, lang, List.of());
@@ -522,10 +576,20 @@ public class ChatResponseGuard {
             ChatToolService.CatalogTotals catalogTotals,
             List<ChatProductCardResponse> products
     ) {
+        return hasUnsupportedWarehouseWideClaim(value, lang, catalogTotals, products, true);
+    }
+
+    private static boolean hasUnsupportedWarehouseWideClaim(
+            String value,
+            String lang,
+            ChatToolService.CatalogTotals catalogTotals,
+            List<ChatProductCardResponse> products,
+            boolean modelAuthored
+    ) {
         String normalized = ChatToolService.normalize(value).replaceAll("\\s+", " ").trim();
         if (normalized.isBlank()) return false;
         boolean english = "en".equals(lang);
-        if ((english ? EN_ABSOLUTE_CATALOG_CLAIM : VI_ABSOLUTE_CATALOG_CLAIM)
+        if (modelAuthored && (english ? EN_ABSOLUTE_CATALOG_CLAIM : VI_ABSOLUTE_CATALOG_CLAIM)
                 .matcher(normalized).find()) {
             return true;
         }

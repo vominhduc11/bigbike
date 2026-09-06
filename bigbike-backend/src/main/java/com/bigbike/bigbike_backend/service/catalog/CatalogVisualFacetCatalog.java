@@ -155,6 +155,15 @@ final class CatalogVisualFacetCatalog {
         return false;
     }
 
+    /** Every spelling the catalogue accepts for a colour, canonical keys included. */
+    Set<String> colorVocabulary() {
+        Set<String> terms = new LinkedHashSet<>(colorsByKey.keySet());
+        facetsByAlias.forEach((alias, facets) -> {
+            if (!facets.colors().isEmpty()) terms.add(alias);
+        });
+        return Set.copyOf(terms);
+    }
+
     Set<String> colorsFor(Product product) {
         return facetKeysFor(product, true);
     }

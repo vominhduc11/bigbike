@@ -26,6 +26,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  chatActionButton,
+  chatActionGrid,
+  chatHeaderIconButton,
+  chatSuggestionButton,
+  chatSuggestionGrid,
+} from "@/components/home/floating-chat/styles";
+import {
   deleteChatHistory,
   fetchChatAvailability,
   fetchChatImageBlob,
@@ -271,6 +278,17 @@ function BigBikeAvatar({ size }: { size: BigBikeAvatarSize }) {
   );
 }
 
+/**
+ * CHAT_RULE_061 (owner decision 2026-09-06): bốn gợi ý mở đầu ĐÓNG CỨNG trong phần mềm.
+ * Không có ô cài đặt trong quản trị, không có API, không lưu trong bảng settings.
+ */
+const GREETING_SUGGESTIONS = [
+  { key: "suggestionHelmetBudget", intent: "PRODUCT_FINDING" },
+  { key: "suggestionHelmetSize", intent: "PRODUCT_FINDING" },
+  { key: "suggestionOrderStatus", intent: "UNKNOWN" },
+  { key: "suggestionReturnPolicy", intent: "UNKNOWN" },
+] as const satisfies ReadonlyArray<{ key: string; intent: PromptIntent }>;
+
 function validTurnCount(value: number | null | undefined, fallback: number): number {
   return Number.isFinite(value) && Number(value) >= 0 ? Math.floor(Number(value)) : fallback;
 }
@@ -303,14 +321,14 @@ function ActionButtons({
   if (!actions.length) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={chatActionGrid}>
       {actions.map((action) => (
         <Button
           key={action.type}
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 px-3"
+          className={chatActionButton}
           disabled={disabled}
           onClick={() => onAction(action)}
         >
@@ -331,14 +349,14 @@ function ClarificationButtons({
   onSelect: (option: ChatClarificationOption) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2" data-bigbike-clarification-options>
+    <div className={chatActionGrid} data-bigbike-clarification-options>
       {clarification.options.map((option) => (
         <Button
           key={option.id}
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-11 h-auto whitespace-normal px-3 text-left"
+          className={chatActionButton}
           disabled={disabled}
           onClick={() => onSelect(option)}
         >
@@ -419,7 +437,6 @@ export function FloatingChat({
     maxPerTurn: 1,
     maxPerConversation: 3,
     dailyLimit: 20,
-    disclosure: "",
   });
   const [pendingImage, setPendingImage] = useState<PendingChatImage | null>(null);
   const [imageError, setImageError] = useState("");
@@ -429,6 +446,9 @@ export function FloatingChat({
   const messageInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const conversationContentRef = useRef<HTMLDivElement>(null);
+  const pinFrameRef = useRef<number | null>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const availabilityBusyRef = useRef(false);
   const availabilityLocaleRef = useRef<string | undefined>(undefined);
   const mountedRef = useRef(true);
@@ -688,13 +708,79 @@ export function FloatingChat({
     };
   }, [clearConversation, conversationId]);
 
-  useEffect(() => {
-    if (panelState !== "expanded" || !nearBottomRef.current) return;
-    const frame = requestAnimationFrame(() => {
-      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+  /**
+   * Bám đáy đoạn chat. Trước đây chỉ cuộn đúng một lần lúc tin vừa tới, trong khi
+   * chữ còn chạy hiệu ứng gõ (~1,3s), ảnh sản phẩm còn tải và thẻ còn nở ra khi bấm
+   * "Xem thêm sản phẩm" — nên câu trả lời mới nhất luôn bị hụt 22–52px ở đáy.
+   * Nay mọi thay đổi chiều cao đều kéo đoạn chat về sát đáy, nhưng CHỈ khi khách
+   * đang ở gần đáy: khách đang đọc lại tin cũ thì không bị giật.
+   */
+  const pinToBottom = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (pinFrameRef.current != null) return;
+    pinFrameRef.current = window.requestAnimationFrame(() => {
+      pinFrameRef.current = null;
+      const element = listRef.current;
+      if (!element || !nearBottomRef.current) return;
+      // Đặt thẳng scrollTop thay vì cuộn mượt — cuộn mượt đuổi không kịp chữ đang gõ.
+      element.scrollTop = element.scrollHeight;
     });
-    return () => cancelAnimationFrame(frame);
-  }, [contactOpen, messages, panelState, sending]);
+  }, []);
+
+  /**
+   * Khung chat mở qua Radix Dialog nên phần thân chỉ gắn vào DOM sau khi effect của
+   * lần render mở panel đã chạy. Vì vậy phải gắn observer bằng callback ref — dùng
+   * useEffect thì ref còn rỗng, observer không bao giờ được tạo và khung chat lại
+   * hụt đáy khi khách bấm "Xem thêm sản phẩm".
+   */
+  const observeForPin = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (typeof ResizeObserver === "undefined") return;
+      if (!node) {
+        resizeObserverRef.current?.disconnect();
+        resizeObserverRef.current = null;
+        return;
+      }
+      if (!resizeObserverRef.current) {
+        resizeObserverRef.current = new ResizeObserver(() => pinToBottom());
+      }
+      resizeObserverRef.current.observe(node);
+    },
+    [pinToBottom],
+  );
+
+  const registerConversation = useCallback(
+    (node: HTMLDivElement | null) => {
+      listRef.current = node;
+      if (node) observeForPin(node);
+    },
+    [observeForPin],
+  );
+
+  const registerConversationContent = useCallback(
+    (node: HTMLDivElement | null) => {
+      conversationContentRef.current = node;
+      observeForPin(node);
+    },
+    [observeForPin],
+  );
+
+  useEffect(() => {
+    if (panelState !== "expanded") return;
+    pinToBottom();
+  }, [contactOpen, messages, panelState, pinToBottom, sending]);
+
+  useEffect(
+    () => () => {
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+      if (pinFrameRef.current != null && typeof window !== "undefined") {
+        window.cancelAnimationFrame(pinFrameRef.current);
+        pinFrameRef.current = null;
+      }
+    },
+    [],
+  );
 
   const requestAvailability = useCallback(
     async (force = false) => {
@@ -725,7 +811,6 @@ export function FloatingChat({
           maxPerTurn: 1,
           maxPerConversation: 3,
           dailyLimit: 20,
-          disclosure: availability.images?.disclosure || t("imageDisclosure"),
         });
         if (!conversationId) setRemainingTurns(DEFAULT_MAX_TURNS);
         setAvailabilityState("ready");
@@ -1171,8 +1256,15 @@ export function FloatingChat({
     }
   }
 
-  const statusLabel = serviceMode === "CONTACT" ? t("contactStatus") : t("aiStatus");
+  // Owner decision 2026-09-06: nhãn ngắn thay cả câu công bố AI dài lẫn dòng "Trợ lý sẵn sàng".
+  const statusLabel = serviceMode === "CONTACT" ? t("contactStatus") : t("aiHeaderTagline");
   const composerLocked = sending || !visitorToken || serviceMode !== "AI";
+  /**
+   * CHAT_RULE_061 (owner decision 2026-09-06): màn mở đầu chỉ hiện khi khách vừa mở chat và
+   * chưa có tin nhắn nào; biến mất ngay khi có tin nhắn đầu tiên.
+   */
+  const showGreeting =
+    availabilityState === "ready" && displayMessages.length === 0 && !sending && !contactOpen;
 
   function renderFab() {
     const tooltipId = "bigbike-fab-tooltip";
@@ -1228,76 +1320,93 @@ export function FloatingChat({
             event.preventDefault();
             focusLauncherSoon();
           }}
-          className="bb-floating-chat-panel left-0! right-0! top-0! bottom-0! flex h-dvh max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! flex-col overflow-hidden! rounded-none! border-0 bg-background p-0 max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100 [&>button]:hidden md:left-auto! md:right-[var(--bb-floating-action-right)]! md:top-auto! md:bottom-[var(--bb-floating-chat-bottom)]! md:h-[var(--bb-floating-chat-panel-height)]! md:max-h-[calc(100dvh-var(--bb-floating-chat-bottom))]! md:w-106! md:border md:shadow-[var(--bb-shadow-md)]"
+          className="left-0! right-0! top-0! bottom-0! flex h-dvh max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! flex-col overflow-hidden! rounded-none! border-0 bg-background p-0 max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100 [&>button]:hidden md:left-auto! md:right-[var(--bb-floating-action-right)]! md:top-auto! md:bottom-[var(--bb-floating-chat-bottom)]! md:h-[var(--bb-floating-chat-panel-height)]! md:max-h-[calc(100dvh-var(--bb-floating-chat-bottom))]! md:w-106! md:border md:shadow-[var(--bb-shadow-md)]"
         >
+          {/*
+            Owner decision 2026-09-06 (CHAT_RULE_001, CHAT_RULE_049): đầu khung chỉ còn MỘT dòng
+            phụ — nhãn ngắn "TRỢ LÝ AI · HỖ TRỢ 24/7" gộp luôn vai trò dòng trạng thái cũ. Ba nút
+            biểu tượng (liên hệ · xoá · đóng) nằm cùng một hàng, cùng kích thước; dải ngang riêng
+            cho nút xoá đã bị gỡ để trả chỗ đọc tin lại cho khách.
+          */}
           <DialogHeader
             data-bigbike-chat-header
             className="shrink-0 gap-1 border-x-0 border-t-0 border-b-4 border-chat bg-surface-dark px-3 py-3 text-primary-foreground"
           >
             <div className="flex min-w-0 items-center gap-2">
-              <BigBikeAvatar size="header" />
-              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-                <DialogTitle className="font-cta text-b4-action font-semibold uppercase tracking-wide">
-                  {t("bigbikeTitle")}
-                </DialogTitle>
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full! bg-chat" aria-hidden="true" />
-                  <span className="font-cta text-b5-label font-semibold uppercase tracking-wide">
-                    {statusLabel}
-                  </span>
-                </div>
+              {/*
+                Ảnh đại diện đã có ở nút mở chat và ở mỗi tin của trợ lý; giữ thêm một cái ở đây
+                chỉ ăn 52px bề ngang và làm tên trợ lý bị cắt cụt khi có ba nút bên phải.
+              */}
+              <DialogTitle className="min-w-0 flex-1 truncate font-cta text-b4-action font-semibold uppercase tracking-wide">
+                {t("bigbikeTitle")}
+              </DialogTitle>
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={chatHeaderIconButton}
+                  aria-label={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
+                  title={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
+                  aria-expanded={contactOpen}
+                  aria-controls="bigbike-contact-inline"
+                  onClick={toggleContact}
+                >
+                  <Phone className="size-5" aria-hidden="true" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={chatHeaderIconButton}
+                  aria-label={t("deleteConversation")}
+                  title={t("deleteConversation")}
+                  aria-expanded={confirmDelete}
+                  aria-controls="bigbike-delete-confirm"
+                  onClick={() => setConfirmDelete((current) => !current)}
+                >
+                  <Trash2 className="size-5" aria-hidden="true" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={chatHeaderIconButton}
+                  aria-label={t("close")}
+                  onClick={closePanel}
+                >
+                  <X className="size-5" aria-hidden="true" />
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-11 min-h-11 shrink-0 border border-primary-foreground/60 p-0 text-primary-foreground hover:scale-100 hover:bg-primary-foreground/10"
-                aria-label={t("close")}
-                onClick={closePanel}
-              >
-                <X className="size-5" aria-hidden="true" />
-              </Button>
             </div>
-            <DialogDescription className="font-body text-a5-meta leading-relaxed opacity-80">
-              {t("aiDisclosure")}
+            {/* Dòng phụ chiếm trọn bề ngang, thẳng hàng với tên trợ lý, để nhãn không bị cắt. */}
+            <DialogDescription className="flex min-w-0 items-center gap-2 font-cta text-b5-label font-semibold uppercase tracking-wide text-primary-foreground opacity-80">
+              <span className="size-2 shrink-0 rounded-full! bg-chat" aria-hidden="true" />
+              <span className="truncate">{statusLabel}</span>
             </DialogDescription>
           </DialogHeader>
 
           {/*
-            CHAT_RULE_049 (owner decision 2026-09-05): no memory disclosure line and no memory
-            on/off switch — the assistant only remembers inside this browser session, so there is
-            nothing left to turn off. The delete control stays, with its confirmation.
+            Hộp xác nhận xoá chỉ tồn tại khi khách bấm nút xoá — lúc bình thường không render nên
+            không chiếm một chút chiều cao nào. Nút xoá dùng kiểu nút đen của hệ thiết kế để không
+            trông giống nút "Chọn mua" màu đỏ (owner decision 2026-09-06).
           */}
-          <div data-bigbike-memory-bar className="shrink-0 border-b border-border bg-background">
-            <div className="flex items-stretch justify-end">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-11 min-h-11 shrink-0 rounded-none border-l border-border p-0 hover:scale-100 hover:bg-secondary"
-                aria-label={t("deleteConversation")}
-                title={t("deleteConversation")}
-                aria-expanded={confirmDelete}
-                aria-controls="bigbike-memory-details"
-                onClick={() => setConfirmDelete((current) => !current)}
-              >
-                <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
-            </div>
+          {confirmDelete ? (
             <div
-              id="bigbike-memory-details"
-              className="border-t border-border px-4 py-3"
-              hidden={!confirmDelete}
+              id="bigbike-delete-confirm"
+              data-bigbike-delete-confirm
+              className="shrink-0 border-b border-border bg-background px-4 py-3"
             >
               <div className="border border-state-warning bg-state-warning-bg p-3" role="alert">
                 <p className="m-0 font-body text-a5-meta font-semibold text-foreground">
                   {t("confirmDeleteHistory")}
                 </p>
-                <div className="mt-3 flex justify-end gap-2">
+                <div className="mt-3 grid grid-cols-2 gap-2 auto-rows-fr">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="h-full min-h-11 w-full px-3"
                     disabled={deletingHistory}
                     onClick={() => setConfirmDelete(false)}
                   >
@@ -1305,21 +1414,24 @@ export function FloatingChat({
                   </Button>
                   <Button
                     type="button"
+                    variant="dark"
                     size="sm"
+                    // `text-primary-foreground` phải khai lại ở đây: bó class của size ghi đè
+                    // màu chữ của variant "dark", nút sẽ thành chữ đen trên nền đen.
+                    className="h-full min-h-11 w-full px-3 text-primary-foreground"
                     disabled={deletingHistory}
                     onClick={() => void handleDeleteHistory()}
                   >
+                    {/* Không lặp lại biểu tượng thùng rác: nhãn phải gọn một dòng ở màn 360px. */}
                     {deletingHistory ? (
                       <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                    ) : (
-                      <Trash2 className="size-4" aria-hidden="true" />
-                    )}
+                    ) : null}
                     {deletingHistory ? t("deletingHistory") : t("confirmDeleteAction")}
                   </Button>
                 </div>
               </div>
             </div>
-          </div>
+          ) : null}
 
           <p className="sr-only" aria-live="polite" aria-atomic="true">
             {announcement}
@@ -1337,12 +1449,37 @@ export function FloatingChat({
               </div>
             ) : null}
             <div
-              ref={listRef}
+              ref={registerConversation}
               data-bigbike-conversation
               className="h-full overflow-x-hidden overflow-y-auto overscroll-contain bg-secondary p-4"
               onScroll={onConversationScroll}
             >
-              <div className="grid gap-4">
+              <div ref={registerConversationContent} className="grid gap-4">
+                {showGreeting ? (
+                  <div data-bigbike-greeting className="flex gap-3">
+                    <BigBikeAvatar size="message" />
+                    <div className="grid min-w-0 flex-1 gap-2">
+                      <div className="border border-border bg-background px-4 py-3 font-body text-a5-meta leading-relaxed text-foreground">
+                        {t("greetingIntro")}
+                      </div>
+                      <div className={chatSuggestionGrid} data-bigbike-greeting-suggestions>
+                        {GREETING_SUGGESTIONS.map((suggestion) => (
+                          <Button
+                            key={suggestion.key}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className={chatSuggestionButton}
+                            disabled={composerLocked}
+                            onClick={() => void submitMessage(t(suggestion.key), suggestion.intent)}
+                          >
+                            {t(suggestion.key)}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 {displayMessages.map((message, index) => {
                   if (message.role === "SYSTEM") {
                     return (
@@ -1589,16 +1726,11 @@ export function FloatingChat({
               </p>
             ) : null}
 
-            {imageSettings.enabled ? (
-              <p
-                className="mb-3 font-body text-a5-meta leading-relaxed text-muted-foreground"
-                data-chat-image-disclosure
-              >
-                {imageSettings.disclosure || t("imageDisclosure")}
-              </p>
-            ) : null}
-
-            <form onSubmit={handleSubmit} className="flex min-w-0 items-end gap-2">
+            {/*
+              Owner decision 2026-09-06 (CHAT_RULE_059): khung chat không còn dòng công bố ảnh.
+              Nội dung công bố nằm ở trang Chính sách bảo mật của storefront.
+            */}
+            <form onSubmit={handleSubmit} className="flex min-w-0 items-center gap-2">
               {imageSettings.enabled ? (
                 <>
                   <input
@@ -1614,7 +1746,7 @@ export function FloatingChat({
                     type="button"
                     variant="outline"
                     size="icon"
-                    className="size-12 min-h-12 shrink-0 p-0"
+                    className="size-12 h-12 min-h-12 shrink-0 p-0"
                     onClick={() => imageInputRef.current?.click()}
                     disabled={composerLocked || Boolean(pendingImage)}
                     aria-label={t("chooseImage")}
@@ -1632,7 +1764,7 @@ export function FloatingChat({
               <Input
                 ref={messageInputRef}
                 id="bigbike-chat-message"
-                className="min-w-0 flex-1"
+                className="h-12 min-h-12 min-w-0 flex-1"
                 value={draft}
                 maxLength={1000}
                 disabled={composerLocked}
@@ -1643,10 +1775,11 @@ export function FloatingChat({
                 }
                 onChange={(event) => setDraft(event.target.value)}
               />
+              {/* Nút liên hệ đã chuyển lên đầu khung (owner decision 2026-09-06) để ô nhập rộng hơn. */}
               <Button
                 type="submit"
                 size="icon"
-                className="size-12 min-h-12 shrink-0 p-0"
+                className="size-12 h-12 min-h-12 shrink-0 p-0"
                 disabled={(!draft.trim() && !pendingImage) || composerLocked}
                 aria-label={t("send")}
               >
@@ -1655,22 +1788,6 @@ export function FloatingChat({
                 ) : (
                   <Send className="size-5" aria-hidden="true" />
                 )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-12 min-h-12 shrink-0 p-0"
-                aria-label={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
-                title={contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
-                aria-expanded={contactOpen}
-                aria-controls="bigbike-contact-inline"
-                onClick={toggleContact}
-              >
-                <Phone className="size-4" aria-hidden="true" />
-                <span className="sr-only">
-                  {contactOpen ? t("contactToggleClose") : t("contactToggleOpen")}
-                </span>
               </Button>
             </form>
           </div>

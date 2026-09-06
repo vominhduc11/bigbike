@@ -503,9 +503,6 @@ body {
   --bb-floating-scroll-top-bottom: calc(
     var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-floating-action-gap)
   );
-  --bb-floating-chat-panel-bottom: calc(
-    var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-space-2)
-  );
 }
 
 @media (min-width: 768px) {
@@ -517,23 +514,16 @@ body {
 }
 
 .bb-floating-chat-anchor,
-.bb-scroll-top-anchor,
-.bb-floating-chat-panel,
-.bb-floating-chat-portal-fab {
+.bb-scroll-top-anchor {
   right: var(--bb-floating-action-right);
 }
 
-.bb-floating-chat-anchor,
-.bb-floating-chat-portal-fab {
+.bb-floating-chat-anchor {
   bottom: var(--bb-floating-chat-bottom);
 }
 
 .bb-scroll-top-anchor {
   bottom: var(--bb-floating-scroll-top-bottom);
-}
-
-.bb-floating-chat-panel {
-  bottom: var(--bb-floating-chat-panel-bottom);
 }
 
 /* Generic page wrapper - light theme (WP cu uses page-title banner + container). */

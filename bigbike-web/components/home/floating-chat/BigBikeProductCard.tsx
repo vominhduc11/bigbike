@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, Loader2, ShoppingCart } from "lucide-react";
+import { CheckCircle2, ImageOff, Loader2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MediaImage } from "@/components/ui/MediaImage";
 import { VariantPicker } from "@/components/catalog/purchase/VariantPicker";
@@ -37,10 +37,7 @@ function formatPrice(product: ChatProductCard, locale: Locale): string | null {
   }).format(price);
 }
 
-export function BigBikeProductCard({
-  product,
-  locale,
-}: BigBikeProductCardProps) {
+export function BigBikeProductCard({ product, locale }: BigBikeProductCardProps) {
   const t = useTranslations("Support");
   const { addToCart } = useCart();
   const [detail, setDetail] = useState<Product | null>(null);
@@ -86,20 +83,27 @@ export function BigBikeProductCard({
 
   async function handleAdd(loadedOverride?: Product) {
     if (adding || loading) return;
-    const loaded = loadedOverride ?? await loadDetail();
+    const loaded = loadedOverride ?? (await loadDetail());
     if (!loaded) return;
     const loadedVariants = loaded.variants ?? [];
     const loadedAttributes = Array.from(collectAttributeNames(loadedVariants));
-    const variant = loadedVariants.length > 0
-      ? findMatchingVariant(loadedVariants, selectedOptions, { requireAll: true })
-      : null;
-    if (loadedVariants.length > 0 && (loadedAttributes.some((attribute) => !selectedOptions[attribute]) || !variant)) {
+    const variant =
+      loadedVariants.length > 0
+        ? findMatchingVariant(loadedVariants, selectedOptions, { requireAll: true })
+        : null;
+    if (
+      loadedVariants.length > 0 &&
+      (loadedAttributes.some((attribute) => !selectedOptions[attribute]) || !variant)
+    ) {
       setPickerOpen(true);
       setNoticeKind("error");
       setNotice(t("selectVariantRequired"));
       return;
     }
-    if (loaded.stockState === "OUT_OF_STOCK" || (variant && (!variant.isAvailable || variant.stockState === "OUT_OF_STOCK"))) {
+    if (
+      loaded.stockState === "OUT_OF_STOCK" ||
+      (variant && (!variant.isAvailable || variant.stockState === "OUT_OF_STOCK"))
+    ) {
       setNoticeKind("error");
       setNotice(t("selectedVariantOutOfStock"));
       return;
@@ -109,10 +113,13 @@ export function BigBikeProductCard({
     try {
       const cart = await addToCart(loaded.id, 1, variant?.id, true);
       setNoticeKind("success");
-      const selection = variant?.name?.trim() || Object.values(selectedOptions).filter(Boolean).join(" / ");
-      setNotice(selection
-        ? t("addedToCartDetailWithVariant", { name, variant: selection })
-        : t("addedToCartDetail", { name }));
+      const selection =
+        variant?.name?.trim() || Object.values(selectedOptions).filter(Boolean).join(" / ");
+      setNotice(
+        selection
+          ? t("addedToCartDetailWithVariant", { name, variant: selection })
+          : t("addedToCartDetail", { name }),
+      );
       setCartCount(cart.items.reduce((sum, item) => sum + item.quantity, 0));
     } catch {
       setNoticeKind("error");
@@ -135,11 +142,16 @@ export function BigBikeProductCard({
   }
 
   const price = formatPrice(product, locale);
-  const stock = product.stockState === "IN_STOCK"
-    ? { label: t("inStock"), className: "text-success", dotClassName: "bg-success" }
-    : product.stockState === "OUT_OF_STOCK"
-      ? { label: t("outOfStock"), className: "text-destructive", dotClassName: "bg-destructive" }
-      : { label: t("stockUnconfirmed"), className: "text-muted-foreground", dotClassName: "bg-muted-foreground" };
+  const stock =
+    product.stockState === "IN_STOCK"
+      ? { label: t("inStock"), className: "text-success", dotClassName: "bg-success" }
+      : product.stockState === "OUT_OF_STOCK"
+        ? { label: t("outOfStock"), className: "text-destructive", dotClassName: "bg-destructive" }
+        : {
+            label: t("stockUnconfirmed"),
+            className: "text-muted-foreground",
+            dotClassName: "bg-muted-foreground",
+          };
 
   return (
     <article
@@ -153,25 +165,43 @@ export function BigBikeProductCard({
         className="flex min-w-0 text-inherit no-underline"
       >
         <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden border-r border-border bg-secondary">
-          <MediaImage
-            image={product.imageUrl ? { url: product.imageUrl } : null}
-            altFallback={name}
-            width={240}
-            height={240}
-            className="size-full! min-h-0! border-0! object-contain p-2"
-            sizes="120px"
-          />
+          {/*
+            Sản phẩm thiếu ảnh: hiện khung trống trung tính. Không dùng MediaImage ở đây vì khi
+            thiếu ảnh nó in tên sản phẩm vào ô ảnh — đúng cho thẻ lớn ngoài trang, nhưng trong ô
+            96px của khung chat thì tràn ba dòng và trông như lỗi (owner decision 2026-09-06).
+          */}
+          {product.imageUrl ? (
+            <MediaImage
+              image={{ url: product.imageUrl }}
+              altFallback={name}
+              width={240}
+              height={240}
+              className="size-full! min-h-0! border-0! object-contain p-2"
+              sizes="120px"
+            />
+          ) : (
+            <ImageOff className="size-6 text-muted-foreground" aria-hidden="true" />
+          )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col p-4">
           <div className="min-w-0">
-            <h4 className="line-clamp-2 font-body text-product-card font-semibold leading-title text-foreground">
+            {/* Chừa sẵn chỗ hai dòng để mọi thẻ trong cùng danh sách cao bằng nhau. */}
+            <h4 className="line-clamp-2 min-h-10 font-body text-product-card font-semibold leading-title text-foreground">
               {name}
             </h4>
             <p className="mt-2 font-body text-a5-meta font-semibold text-primary">
               {price ?? t("priceUnavailable")}
             </p>
-            <p className={cn("mt-2 flex items-center gap-2 font-cta text-b5-label font-semibold uppercase tracking-wide", stock.className)}>
-              <span className={cn("size-2 shrink-0 rounded-full!", stock.dotClassName)} aria-hidden="true" />
+            <p
+              className={cn(
+                "mt-2 flex items-center gap-2 font-cta text-b5-label font-semibold uppercase tracking-wide",
+                stock.className,
+              )}
+            >
+              <span
+                className={cn("size-2 shrink-0 rounded-full!", stock.dotClassName)}
+                aria-hidden="true"
+              />
               {stock.label}
             </p>
           </div>
@@ -187,8 +217,11 @@ export function BigBikeProductCard({
               onPick={pick}
               disableUnavailableOptions
             />
-            {selectedVariant && (!selectedVariant.isAvailable || selectedVariant.stockState === "OUT_OF_STOCK") ? (
-              <p className="mt-3 font-body text-a5-meta font-semibold text-destructive">{t("selectedVariantOutOfStock")}</p>
+            {selectedVariant &&
+            (!selectedVariant.isAvailable || selectedVariant.stockState === "OUT_OF_STOCK") ? (
+              <p className="mt-3 font-body text-a5-meta font-semibold text-destructive">
+                {t("selectedVariantOutOfStock")}
+              </p>
             ) : null}
           </div>
         ) : null}
@@ -200,7 +233,11 @@ export function BigBikeProductCard({
             disabled={loading || adding || product.stockState === "OUT_OF_STOCK"}
             onClick={() => void handleChooseBuy()}
           >
-            {adding || loading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <ShoppingCart className="size-4" aria-hidden="true" />}
+            {adding || loading ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <ShoppingCart className="size-4" aria-hidden="true" />
+            )}
             {adding || loading ? t("addingToCart") : t("chooseBuy")}
           </Button>
         ) : null}
@@ -219,7 +256,11 @@ export function BigBikeProductCard({
                 <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="font-semibold leading-relaxed">{notice}</p>
-                  {cartCount != null ? <p className="mt-1 text-muted-foreground">{t("cartItemCount", { count: cartCount })}</p> : null}
+                  {cartCount != null ? (
+                    <p className="mt-1 text-muted-foreground">
+                      {t("cartItemCount", { count: cartCount })}
+                    </p>
+                  ) : null}
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <Button asChild variant="outline" size="sm" className="min-h-11 min-w-0 px-2">
                       <Link href={toCartPath(locale)}>{t("viewCart")}</Link>
@@ -230,7 +271,9 @@ export function BigBikeProductCard({
                   </div>
                 </div>
               </div>
-            ) : notice}
+            ) : (
+              notice
+            )}
           </div>
         ) : null}
       </div>

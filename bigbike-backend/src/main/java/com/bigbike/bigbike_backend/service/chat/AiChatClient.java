@@ -307,6 +307,8 @@ public class AiChatClient {
         List<ChatProductCardResponse> products = List.of();
         List<ChatActionResponse> actions = List.of();
         List<String> executedTools = new ArrayList<>();
+        List<List<ChatProductCardResponse>> productsByTool = new ArrayList<>();
+        boolean droppedOnlyForGrounding = false;
         Set<ChatToolService.RequiredDisclosure> requiredDisclosures = new LinkedHashSet<>();
         ChatToolService.CatalogTotals catalogTotals = null;
         ChatToolService.SearchScope searchScope = null;
@@ -356,10 +358,16 @@ public class AiChatClient {
                         functionCall, registry, executor, session, "initial");
                 ChatToolService.ToolExecution result = attempt.result();
                 toolResults.add(result);
-                if (!attempt.successful()) continue;
+                if (!attempt.successful()) {
+                    droppedOnlyForGrounding = attempt.droppedForGrounding();
+                    continue;
+                }
                 validToolResults++;
                 executedTools.add(result.name());
                 products = mergeProducts(products, result.products());
+                if (result.products() != null && !result.products().isEmpty()) {
+                    productsByTool.add(List.copyOf(result.products()));
+                }
                 actions = mergeActions(actions, result.actions());
                 requiredDisclosures.addAll(result.requiredDisclosures());
                 if (result.catalogTotals() != null) catalogTotals = result.catalogTotals();
@@ -367,7 +375,13 @@ public class AiChatClient {
             }
             if (validToolResults == 0) {
                 appendFunctionExchange(contents, turn, toolResults);
-                if (providerBudget.calls() >= MAX_PROVIDER_CALLS - 1) return Optional.empty();
+                if (providerBudget.calls() >= MAX_PROVIDER_CALLS - 1) {
+                    return droppedOnlyForGrounding
+                            ? answerWithoutToolEvidence(
+                                    contents, registry, providerBudget, responseInstruction,
+                                    requiredDisclosures)
+                            : Optional.empty();
+                }
                 stage = "tool_validation_recovery";
                 turn = requestTurn(buildToolRequestBody(
                                 contents, registry.functionDeclarations(), null, true,
@@ -385,16 +399,28 @@ public class AiChatClient {
                             functionCall, registry, executor, session, "recovery");
                     ChatToolService.ToolExecution result = attempt.result();
                     toolResults.add(result);
-                    if (!attempt.successful()) continue;
+                    if (!attempt.successful()) {
+                        droppedOnlyForGrounding = attempt.droppedForGrounding();
+                        continue;
+                    }
                     validToolResults++;
                     executedTools.add(result.name());
                     products = mergeProducts(products, result.products());
+                    if (result.products() != null && !result.products().isEmpty()) {
+                        productsByTool.add(List.copyOf(result.products()));
+                    }
                     actions = mergeActions(actions, result.actions());
                     requiredDisclosures.addAll(result.requiredDisclosures());
                     if (result.catalogTotals() != null) catalogTotals = result.catalogTotals();
                     if (result.searchScope() != null) searchScope = result.searchScope();
                 }
-                if (validToolResults == 0) return Optional.empty();
+                if (validToolResults == 0) {
+                    return droppedOnlyForGrounding
+                            ? answerWithoutToolEvidence(
+                                    contents, registry, providerBudget, responseInstruction,
+                                    requiredDisclosures)
+                            : Optional.empty();
+                }
             }
             if (toolResults.size() == 1 && toolResults.get(0).terminalAnswer() != null) {
                 ChatToolService.DeterministicAnswer terminal = toolResults.get(0).terminalAnswer();
@@ -443,6 +469,9 @@ public class AiChatClient {
                     if (!attempt.successful()) continue;
                     executedTools.add(result.name());
                     products = mergeProducts(products, result.products());
+                    if (result.products() != null && !result.products().isEmpty()) {
+                        productsByTool.add(List.copyOf(result.products()));
+                    }
                     actions = mergeActions(actions, result.actions());
                     requiredDisclosures.addAll(result.requiredDisclosures());
                     if (result.catalogTotals() != null) catalogTotals = result.catalogTotals();
@@ -468,7 +497,8 @@ public class AiChatClient {
                 log.warn("Trợ lý BigBike orchestration rejected stage={} type=UnparsableFinalJson", stage);
                 return Optional.empty();
             }
-            List<ChatProductCardResponse> safeProducts = products;
+            List<ChatProductCardResponse> safeProducts = cardsForAnswer(
+                    finalAnswer.get().answer(), products, productsByTool);
             List<ChatActionResponse> safeActions = actions;
             int totalProviderCalls = providerCalls;
             ChatToolService.CatalogTotals safeCatalogTotals = catalogTotals;
@@ -515,7 +545,57 @@ public class AiChatClient {
                 tool,
                 "{\"ok\":false,\"reason\":\"" + reason + "\",\"retryable\":true}",
                 List.of(),
-                List.of()), false);
+                List.of()), false, reason);
+    }
+
+    /**
+     * Cards must be about the product the reply is about. Every tool result used to be merged into
+     * one list, so a broad catalogue search fired alongside a comparison question attached bolts,
+     * hip bags and a phone case underneath an answer about helmet noise. Nothing is ever added
+     * here — the set can only be narrowed.
+     */
+    private static List<ChatProductCardResponse> cardsForAnswer(
+            String answer,
+            List<ChatProductCardResponse> merged,
+            List<List<ChatProductCardResponse>> productsByTool
+    ) {
+        if (merged.isEmpty() || productsByTool.size() <= 1) return merged;
+        String normalizedAnswer = ChatToolService.normalize(answer == null ? "" : answer);
+        List<ChatProductCardResponse> named = merged.stream()
+                .filter(card -> card != null && card.name() != null && !card.name().isBlank())
+                .filter(card -> normalizedAnswer.contains(ChatToolService.normalize(card.name())))
+                .toList();
+        if (!named.isEmpty()) return named;
+        // Nothing in the reply names a card. The last product-producing tool is the one the model
+        // asked for most recently, which is the closest thing to what it is talking about.
+        return productsByTool.get(productsByTool.size() - 1);
+    }
+
+    /**
+     * Last resort when no declared function could be grounded in the question. The reply carries
+     * no tool evidence, so the safety layer will only let it through if it asserts nothing about
+     * the catalogue — which is exactly what a polite refusal or a "please contact the shop" reply
+     * does. Without this, a question the assistant was perfectly able to decline came back to the
+     * customer as "Trợ lý BigBike chưa hoàn tất được lần kiểm tra này".
+     */
+    private Optional<HybridAnswer> answerWithoutToolEvidence(
+            List<Map<String, Object>> contents,
+            ChatToolRegistry registry,
+            ProviderBudget providerBudget,
+            String responseInstruction,
+            Set<ChatToolService.RequiredDisclosure> requiredDisclosures
+    ) {
+        if (providerBudget.calls() >= MAX_PROVIDER_CALLS) return Optional.empty();
+        ModelTurn turn = requestTurn(buildToolRequestBody(
+                        contents, registry.functionDeclarations(), null, false,
+                        "No declared function fits this question. Answer in prose without stating "
+                                + "any product, price, stock or policy fact. Decline politely if it "
+                                + "is outside BigBike's scope, and offer the shop's contact channels."),
+                providerBudget, "ungrounded_tool_recovery");
+        if (turn.finalText() == null) return Optional.empty();
+        return parseFinalOrSalvage(turn).map(answer -> new HybridAnswer(
+                answer, List.of(), List.of(), List.of(),
+                requiredDisclosures, providerBudget.calls(), "AI", null, null));
     }
 
     private static boolean requiresSequentialProductLookup(String question, List<String> executedTools) {
@@ -1035,7 +1115,17 @@ public class AiChatClient {
 
     private record FunctionCall(String name, JsonNode arguments, String id) {}
 
-    private record ToolAttempt(ChatToolService.ToolExecution result, boolean successful) {}
+    /** {@code reason} is null on success; otherwise the fixed code the drop was logged with. */
+    private record ToolAttempt(
+            ChatToolService.ToolExecution result, boolean successful, String reason) {
+        ToolAttempt(ChatToolService.ToolExecution result, boolean successful) {
+            this(result, successful, null);
+        }
+
+        boolean droppedForGrounding() {
+            return !successful && "ARGUMENT_MISMATCH".equals(reason);
+        }
+    }
 
     private record ModelTurn(
             List<FunctionCall> functionCalls,

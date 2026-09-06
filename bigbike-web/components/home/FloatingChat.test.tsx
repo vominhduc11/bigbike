@@ -81,7 +81,6 @@ beforeEach(() => {
       maxPerTurn: 1,
       maxPerConversation: 3,
       dailyLimit: 20,
-      disclosure: "imageDisclosure",
     },
   });
   api.openChatSession.mockResolvedValue({
@@ -135,20 +134,64 @@ describe("FloatingChat", () => {
     expect(screen.getByText("Mũ 3/4")).toBeInTheDocument();
   });
 
-  it("shows the bilingual AI disclosure and opens direct shop contacts without creating a request", async () => {
+  // Owner decision 2026-09-06 (CHAT_RULE_001): the long "not a human staff member" sentence is
+  // replaced by one short label that also absorbs the old "assistant ready" status line.
+  it("shows the short AI label instead of the long disclosure and opens direct shop contacts without creating a request", async () => {
     const user = userEvent.setup();
     await openReadyChat(user);
-    expect(screen.getByText("aiDisclosure")).toBeInTheDocument();
+    expect(screen.getByText("aiHeaderTagline")).toBeInTheDocument();
+    expect(screen.queryByText("aiDisclosure")).not.toBeInTheDocument();
+    expect(screen.queryByText("aiStatus")).not.toBeInTheDocument();
     expect(screen.getByLabelText("messageLabel")).toBeVisible();
-    expect(screen.queryByText("defaultGreeting")).not.toBeInTheDocument();
-    expect(screen.queryByText("quickFind")).not.toBeInTheDocument();
-    expect(screen.queryByText("quickFilter")).not.toBeInTheDocument();
-    expect(screen.queryByText("quickCompare")).not.toBeInTheDocument();
-    expect(screen.queryByText("quickCheck")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "contactToggleOpen" }));
 
     expect(await screen.findByText("contactTitle")).toBeInTheDocument();
     expect(api.streamChatMessage).not.toHaveBeenCalled();
+  });
+
+  // CHAT_RULE_061 (owner decision 2026-09-06): the empty state carries a greeting plus exactly
+  // four hardcoded suggestions; both disappear once the conversation starts.
+  it("greets the customer with four fixed suggestions and drops them after the first message", async () => {
+    const user = userEvent.setup();
+    await openReadyChat(user);
+
+    expect(screen.getByText("greetingIntro")).toBeInTheDocument();
+    const suggestions = [
+      "suggestionHelmetBudget",
+      "suggestionHelmetSize",
+      "suggestionOrderStatus",
+      "suggestionReturnPolicy",
+    ];
+    for (const key of suggestions) {
+      expect(screen.getByRole("button", { name: key })).toBeInTheDocument();
+    }
+
+    await user.click(screen.getByRole("button", { name: "suggestionHelmetBudget" }));
+
+    await waitFor(() =>
+      expect(api.streamChatMessage).toHaveBeenCalledWith(
+        "suggestionHelmetBudget",
+        "vi",
+        undefined,
+        expect.any(String),
+        expect.any(Function),
+        expect.any(AbortSignal),
+        null,
+        undefined,
+        "visitor-token",
+      ),
+    );
+    await waitFor(() => expect(screen.queryByText("greetingIntro")).not.toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "suggestionHelmetSize" })).not.toBeInTheDocument();
+  });
+
+  // Owner decision 2026-09-06: the image-privacy line is gone from the chat frame; the wording
+  // now lives only on the privacy-policy page.
+  it("no longer renders an image privacy line in the chat frame", async () => {
+    const user = userEvent.setup();
+    await openReadyChat(user);
+    expect(document.querySelector("[data-chat-image-disclosure]")).toBeNull();
+    expect(screen.queryByText("imageDisclosure")).not.toBeInTheDocument();
   });
 
   it("does not expose a human-chat action when the assistant cannot answer", async () => {
@@ -175,32 +218,39 @@ describe("FloatingChat", () => {
     expect(screen.getByRole("button", { name: "chooseImage" })).toBeInTheDocument();
   });
 
-  it("keeps the composer outside the scrolling conversation and exposes only close in the header", async () => {
+  // Owner decision 2026-09-06 (CHAT_RULE_049 keeps the delete control): the header carries the
+  // three icon buttons; the separate strip that used to hold only the trash icon is gone, and the
+  // delete confirmation takes no height until the customer asks for it.
+  it("keeps the composer outside the scrolling conversation and puts contact, delete and close in the header", async () => {
     const user = userEvent.setup();
     await openReadyChat(user);
 
     const panel = document.querySelector("[data-bigbike-assistant]");
     const header = document.querySelector("[data-bigbike-chat-header]");
-    const memoryBar = document.querySelector("[data-bigbike-memory-bar]");
     const composer = document.querySelector("[data-bigbike-composer]");
 
     expect(panel).toBeInTheDocument();
     expect(header).toBeInTheDocument();
-    expect(memoryBar).toBeInTheDocument();
+    expect(document.querySelector("[data-bigbike-memory-bar]")).toBeNull();
     expect(composer?.parentElement).toBe(panel);
-    expect(
-      within(header as HTMLElement).getByRole("button", { name: "close" }),
-    ).toBeInTheDocument();
+
+    const headerButtons = within(header as HTMLElement).getAllByRole("button");
+    expect(headerButtons).toHaveLength(3);
+    for (const name of ["contactToggleOpen", "deleteConversation", "close"]) {
+      expect(within(header as HTMLElement).getByRole("button", { name })).toBeInTheDocument();
+    }
     expect(
       within(header as HTMLElement).queryByRole("button", { name: "minimize" }),
     ).not.toBeInTheDocument();
     expect(
-      within(header as HTMLElement).queryByRole("button", { name: "deleteConversation" }),
+      within(composer as HTMLElement).queryByRole("button", { name: "contactToggleOpen" }),
     ).not.toBeInTheDocument();
 
+    expect(document.querySelector("[data-bigbike-delete-confirm]")).toBeNull();
     await user.click(
-      within(memoryBar as HTMLElement).getByRole("button", { name: "deleteConversation" }),
+      within(header as HTMLElement).getByRole("button", { name: "deleteConversation" }),
     );
+    expect(document.querySelector("[data-bigbike-delete-confirm]")).toBeInTheDocument();
     expect(screen.getByText("confirmDeleteHistory")).toBeInTheDocument();
     expect(api.deleteChatHistory).not.toHaveBeenCalled();
   });
@@ -237,7 +287,6 @@ describe("FloatingChat", () => {
         maxPerTurn: 1,
         maxPerConversation: 3,
         dailyLimit: 20,
-        disclosure: "",
       },
     });
     const user = userEvent.setup();

@@ -2303,9 +2303,9 @@ The manual admin-lock contract has been removed completely. There is no replacem
 
 Automatic outage responses for a genuinely unreachable upstream remain an infrastructure concern documented in `DEPLOYMENT_GUIDE.md`; they are not emitted by this removed business feature.
 
-## Trợ lý BigBike (owner decision 2026-08-30; display-name decision 2026-09-01)
+## Trợ lý BigBike (owner decision 2026-08-30; display-name decision 2026-09-01; chat-frame decision 2026-09-06)
 
-Theo quyết định của chủ shop ngày 2026-09-01, tên hiển thị là **Trợ lý BigBike** / **BigBike Assistant**. Dòng công bố tương ứng là “Bạn đang trò chuyện với trợ lý AI của BigBike, không phải nhân viên.” / “You are chatting with BigBike Assistant, BigBike’s AI assistant, not a human staff member.”; trạng thái sẵn sàng là “Trợ lý sẵn sàng” / “Assistant ready”. Đây là thay đổi chữ hiển thị, không thay đổi endpoint hoặc response shape.
+Theo quyết định của chủ shop ngày 2026-09-01, tên hiển thị là **Trợ lý BigBike** / **BigBike Assistant**. Theo quyết định ngày 2026-09-06, câu công bố AI dài và dòng trạng thái “Trợ lý sẵn sàng” / “Assistant ready” đã bị bỏ khỏi khung chat và thay bằng một nhãn ngắn duy nhất “TRỢ LÝ AI · HỖ TRỢ 24/7” / “AI ASSISTANT · 24/7 SUPPORT” (mode `CONTACT` vẫn hiện “Kênh liên hệ shop” / “Shop contact channels”). Đây là thay đổi chữ hiển thị phía web, không thay đổi endpoint. Cùng đợt này trường `images.disclosure` bị gỡ khỏi `GET /chat/availability` — đó là thay đổi response shape duy nhất.
 
 Mọi response dùng envelope chuẩn `ApiDataResponse`. Chat không nhận `customerId`, email, số điện thoại, model id, telemetry model hay nguồn attribution từ trình duyệt. Trả lời khách phải phân biệt ba trạng thái tồn kho theo `CHAT_RULE_060` (không kinh doanh / có bán nhưng hết hàng / chưa đủ thông tin); câu "có bán nhưng đang tạm hết hàng" kèm mẫu tương đương và thẻ liên hệ là một câu trả lời hợp lệ, không phải khẳng định vắng mặt toàn kho. Model trả lời khách được khóa ở cấu hình máy chủ là **Gemini 3.7 Flash**; kiểm duyệt đánh giá sản phẩm là integration riêng, không thuộc hợp đồng này.
 
@@ -2315,7 +2315,7 @@ Response `data`: `{ mode, reason, maxTurns, contacts, images }`.
 
 - `mode`: `AI|CONTACT`; `reason` là mã an toàn public.
 - `contacts`: `{hotline,zaloUrl,messengerUrl,zaloDisplay,messengerDisplay}` từ setting contact; chỉ mở thẻ liên hệ khi khách chủ động bấm nút liên hệ.
-- `images`: `{enabled,maxBytes,maxPerTurn,maxPerConversation,dailyLimit,disclosure}`. Khi dịch vụ AI đã khai báo, `enabled=true`; nếu chưa khai báo, widget tự ẩn nút ảnh. Các giới hạn cố định là 8 MB, 1/lượt, 3/hội thoại, 20/ngày.
+- `images`: `{enabled,maxBytes,maxPerTurn,maxPerConversation,dailyLimit}`. Khi dịch vụ AI đã khai báo, `enabled=true`; nếu chưa khai báo, widget tự ẩn nút ảnh. Các giới hạn cố định là 8 MB, 1/lượt, 3/hội thoại, 20/ngày. Trường `disclosure` **đã bị gỡ** (owner decision 2026-09-06): khung chat không còn dòng công bố ảnh, nội dung công bố nằm ở trang Chính sách bảo mật của storefront.
 - Endpoint không tạo conversation, không gọi Gemini và không có trường proactive/model/cost.
 
 ### `POST /api/v1/chat/messages`
@@ -2328,7 +2328,11 @@ Response `data`: `{ conversationId, assistantMessageId, mode, reason, answer, an
 - Customer turn có trần cố định 40; clarification và retry cùng `requestId` không tính. Khi đạt trần, backend tạo hội thoại nối tiếp cùng thread/context đã làm sạch, không trả hard `TURN_LIMIT` và không chặn khách.
 - Transaction không giữ lock/connection trong lúc provider chờ. Storefront không tạo request liên hệ khi khách mở thẻ contact.
 
-Trước quota/AI, backend xử lý fast-path policy/shop/order, nội dung ngoài phạm vi/an toàn và vòng làm rõ bằng dữ kiện đã xác minh. Các nhánh này có `ai_called=false` và không dùng quota. Chỉ lượt cần AI mới giữ đúng một slot daily atomically; retry cùng logical turn không giữ slot thứ hai.
+Trước quota/AI, backend xử lý fast-path policy/shop/order, nội dung ngoài phạm vi/an toàn và vòng làm rõ bằng dữ kiện đã xác minh. Từ 2026-09-06 fast-path còn phủ **câu hỏi quy định pháp luật về trang bị** (từ chối lịch sự kèm phần shop trả lời được) và **câu mặc cả giá** (`CHAT_RULE_008`, đặt sau nhánh ngoài phạm vi để "giá vàng có giảm không" không bị hiểu là mặc cả). Các nhánh này có `ai_called=false` và không dùng quota. Chỉ lượt cần AI mới giữ đúng một slot daily atomically; retry cùng logical turn không giữ slot thứ hai.
+
+`clarificationSelection` là **đường duy nhất** được đổi bộ lọc trong một vòng hỏi lại. Nhãn nút vẫn đi kèm làm `message` cho lịch sử hội thoại, nhưng khi `clarificationId`/`optionId` khớp câu hỏi đang treo thì backend **không** phân tích lại nhãn đó thành yêu cầu tìm hàng mới — nhóm hàng và các bộ lọc đã chọn được giữ nguyên (`CHAT_RULE_034`–`CHAT_RULE_039`, `STATE_MACHINES.md` §15A).
+
+`products` trong response là hàng mà câu trả lời thật sự nói tới: khi một lượt gọi nhiều tool, backend chỉ giữ thẻ được nhắc tên trong `answer`, còn lại lấy kết quả của lần tra sản phẩm gần nhất; không có thẻ liên quan thì trả mảng rỗng (`CHAT_RULE_020`).
 
 Một logical turn có deadline backend 65 giây và tối đa bốn lần gọi provider. Khi timeout, quá tải, `429`, `5xx`, lỗi mạng hoặc payload rỗng/không hợp lệ, backend chỉ thử lại **Gemini 3.7 Flash** khi còn budget. Không đổi model và không retry để né safety/content refusal. Nếu hết budget, response là lời xin lỗi lịch sự kèm action liên hệ trực tiếp đã cấu hình; không tạo handoff.
 
