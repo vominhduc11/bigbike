@@ -20,27 +20,25 @@ BB_KEEP_MONTHLY=12
 #  Qua bao nhieu gio khong co ban sao moi thi bao dong
 BB_ALERT_STALE_HOURS=24
 
-#  Bao nhieu ngay thi lam lai goi nen day cua kho anh (giua cac lan chi gui phan thay doi)
-BB_MEDIA_REBASE_DAYS=30
-
 #  Kho anh: bao nhieu ngay thi goi lai ban day mot lan
 #  (giua cac lan chi gui phan thay doi, rat nhanh)
 BB_MEDIA_REBASE_DAYS=30
 
 # ---------------------------------------------------------------------------
 #  NHIP CHAY   (phut  gio  ngay  thang  thu)
-#  Gio 01:00-01:30 chon co chu dich: tranh khung 02:45-04:30 he thong dang
-#  chay cac viec don dep tu dong, va tranh gio khach mua hang.
+#  Gio 00:40-01:00 chon co chu dich: tranh han khung 02:30-04:30 he thong dang
+#  chay cac viec don dep tu dong, va tranh gio khach mua hang. Lan goi lai
+#  kho anh hang thang mat ~50 phut nen van xong truoc 02:00.
 # ---------------------------------------------------------------------------
 
 # Du lieu ban hang — moi gio, phut thu 10
 10 * * * *  root  flock -n /var/lock/bb-backup-db.lock    timeout 1800 bash $BB_REPO/scripts/ops/backup-to-nas.sh db      >/dev/null 2>&1
 
-# Cau hinh van hanh — 01:00 hang ngay
-0 1 * * *   root  flock -n /var/lock/bb-backup-config.lock timeout 900  bash $BB_REPO/scripts/ops/backup-to-nas.sh config  >/dev/null 2>&1
+# Cau hinh van hanh — 00:40 hang ngay
+40 0 * * *   root  flock -n /var/lock/bb-backup-config.lock timeout 900  bash $BB_REPO/scripts/ops/backup-to-nas.sh config  >/dev/null 2>&1
 
-# Kho anh/video — 01:30 hang ngay, chi chuyen phan moi/doi
-30 1 * * *  root  flock -n /var/lock/bb-backup-media.lock  timeout 14400 bash $BB_REPO/scripts/ops/backup-to-nas.sh media  >/dev/null 2>&1
+# Kho anh/video — 01:00 hang ngay, chi chuyen phan moi/doi
+0 1 * * *   root  flock -n /var/lock/bb-backup-media.lock  timeout 14400 bash $BB_REPO/scripts/ops/backup-to-nas.sh media  >/dev/null 2>&1
 
 # Nguoi gac — moi gio, phut thu 40. Bao dong neu qua han tren ma khong co ban moi.
 40 * * * *  root  flock -n /var/lock/bb-backup-watch.lock  timeout 600  bash $BB_REPO/scripts/ops/backup-to-nas.sh watchdog >/dev/null 2>&1

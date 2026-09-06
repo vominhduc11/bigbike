@@ -19,8 +19,8 @@ Có ba loại bản sao:
 | Loại | Bao lâu một lần | Giữ lại |
 |---|---|---|
 | **Dữ liệu bán hàng** — đơn hàng, khách hàng, sản phẩm, tồn kho, cấu hình cửa hàng | Mỗi giờ | 48 bản theo giờ, 30 bản theo ngày, 12 bản theo tháng |
-| **Kho ảnh/video sản phẩm** | Mỗi ngày lúc 01:30 sáng | Bản mới nhất |
-| **Cấu hình vận hành** — thông số hệ thống, cấu hình web, cả phần mã đang sửa dở chưa lưu | Mỗi ngày lúc 01:00 sáng | 30 bản ngày, 12 bản tháng |
+| **Kho ảnh/video sản phẩm** | Mỗi ngày lúc 01:00 sáng | Bản mới nhất |
+| **Cấu hình vận hành** — thông số hệ thống, cấu hình web, cả phần mã đang sửa dở chưa lưu | Mỗi ngày lúc 00:40 sáng | 30 bản ngày, 12 bản tháng |
 
 Bản quá hạn **tự xoá**, không cần ai dọn.
 
@@ -123,7 +123,8 @@ lsattr -d /mnt/bigbike-nas     # phải thấy chữ 'i'
 |---|---|
 | Đường đi | Qua trạm trung chuyển Hong Kong, **không nối thẳng được** |
 | Độ trễ | ~105 ms |
-| Tốc độ | ~1,1 MB/s |
+| Tốc độ ghi lên NAS | ~2,0 MB/s |
+| Tốc độ đọc từ NAS | ~0,66 MB/s — chậm hơn ghi ba lần |
 | Chi phí mỗi thao tác tệp | ~280 ms |
 | Phiên bản chia sẻ file | **NFS v4.0** — v4.1 bị NAS từ chối |
 | Đường dẫn chia sẻ | `100.116.56.123:/volume1/Bigbike` (không phải `/Bigbike`) |

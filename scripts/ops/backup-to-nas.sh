@@ -272,46 +272,103 @@ job_watchdog() {
 # =========================================================================== digest
 job_digest() {
   bb_nas_require
-  local newest cnt_h cnt_d cnt_m free_nas free_vps ok24 err24 media_files media_at
+  local newest cnt_h cnt_d cnt_m free_nas free_vps stats media_line age_h
   newest="$(newest_db || true)"
-  cnt_h="$(ls "$BB_NAS_ROOT"/db/hourly/*.dump 2>/dev/null | wc -l)"
-  cnt_d="$(ls "$BB_NAS_ROOT"/db/daily/*.dump 2>/dev/null | wc -l)"
-  cnt_m="$(ls "$BB_NAS_ROOT"/db/monthly/*.dump 2>/dev/null | wc -l)"
+  cnt_h="$(find "$BB_NAS_ROOT/db/hourly"  -maxdepth 1 -name 'db-*.dump' 2>/dev/null | wc -l)"
+  cnt_d="$(find "$BB_NAS_ROOT/db/daily"   -maxdepth 1 -name 'db-*.dump' 2>/dev/null | wc -l)"
+  cnt_m="$(find "$BB_NAS_ROOT/db/monthly" -maxdepth 1 -name 'db-*.dump' 2>/dev/null | wc -l)"
   free_nas="$(df -h "$BB_NAS_MOUNT" | tail -1 | awk '{print $4}')"
   free_vps="$(df -h / | tail -1 | awk '{print $4}')"
-  media_files="$(grep -m1 '^files=' "$BB_NAS_ROOT/media/current.manifest" 2>/dev/null | cut -d= -f2)"
-  media_at="$(grep -m1 '^synced_at=' "$BB_NAS_ROOT/media/current.manifest" 2>/dev/null | cut -d= -f2 | cut -dT -f1)"
-  ok24="$(awk -v c="$(date -d '24 hours ago' -Is)" -F'"' '$4>c && $0~/"status": "ok"/' "$BB_LEDGER" 2>/dev/null | wc -l)"
-  err24="$(grep -c '"status": "error"' <(tail -500 "$BB_LEDGER" 2>/dev/null) 2>/dev/null || echo 0)"
+
+  # Dem so luot thanh cong / that bai trong 24 gio qua tu so chay
+  stats="$(BB_L="$BB_LEDGER" python3 - <<'PYSTAT' 2>/dev/null || echo "?|?")
+import json,os,datetime
+cut=datetime.datetime.now().astimezone()-datetime.timedelta(hours=24)
+ok=err=0
+try:
+    with open(os.environ["BB_L"],encoding="utf-8") as f:
+        for line in f:
+            try: r=json.loads(line)
+            except Exception: continue
+            try: t=datetime.datetime.fromisoformat(r.get("at",""))
+            except Exception: continue
+            if t<cut: continue
+            if r.get("status")=="ok": ok+=1
+            else: err+=1
+except FileNotFoundError: pass
+print(f"{ok}|{err}")
+PYSTAT
+)"
+  local ok24="${stats%%|*}" err24="${stats##*|}"
+
+  if [[ -f "$BB_NAS_ROOT/media/current.manifest" ]]; then
+    local mf ma mk
+    mf="$(grep -m1 '^source_files=' "$BB_NAS_ROOT/media/current.manifest" | cut -d= -f2 || true)"
+    ma="$(grep -m1 '^synced_at='    "$BB_NAS_ROOT/media/current.manifest" | cut -d= -f2 | cut -dT -f1 || true)"
+    mk="$(grep -m1 '^kind='         "$BB_NAS_ROOT/media/current.manifest" | cut -d= -f2 || true)"
+    media_line="Kho anh: ${mf:-?} tep, sao luu ngay ${ma:-?} (goi ${mk:-?})"
+  else
+    media_line="Kho anh: CHUA SAO LUU LAN NAO"
+  fi
+
+  if [[ -n "$newest" ]]; then
+    age_h=$(( ( $(date +%s) - $(stat -c%Y "$newest") ) / 3600 ))
+    newest="$(basename "$newest") — cach day ${age_h} gio"
+  else
+    newest="CHUA CO"
+  fi
 
   local body="Luc: $(bb_human)
 
+24 gio qua: ${ok24} luot thanh cong, ${err24} luot hong
 Du lieu ban hang: ${cnt_h} ban theo gio, ${cnt_d} theo ngay, ${cnt_m} theo thang
-Ban moi nhat: $( [[ -n "$newest" ]] && basename "$newest" || echo 'CHUA CO' )$( [[ -n "$newest" ]] && printf ' (%s)' "$(date -d @"$(stat -c%Y "$newest")" '+%d/%m %H:%M')" )
-Kho anh: ${media_files:-?} tep, dong bo ngay ${media_at:-?}
+Ban moi nhat: ${newest}
+${media_line}
 Cho trong NAS: ${free_nas}   |   Cho trong may chu: ${free_vps}
 
 Neu tin nay ngung den, tuc la he thong sao luu da chet - hay kiem tra ngay."
-  bb_telegram "<b>✅ BigBike sao luu — tong ket ngay</b>
+
+  bb_telegram "<b>BigBike sao luu — tong ket ngay</b>
 ${body}" || true
-  bb_email "✅ BigBike sao luu — tong ket ngay $(date '+%d/%m/%Y')" "$body" || true
-  bb_log "Da gui tin tong ket."
+  bb_email "BigBike sao luu — tong ket ngay $(date '+%d/%m/%Y')" "$body" || true
+  bb_log "Da gui tin tong ket (${ok24} thanh cong / ${err24} hong trong 24 gio)."
 }
 
 # ============================================================================= list
+_bb_list_dir() {
+  local dir="$1" pat="$2" keep="$3" label="$4" n=0
+  printf '\n%s (giu %s)\n' "$label" "$keep"
+  while IFS='|' read -r name size mtime; do
+    [[ -n "$name" ]] || continue
+    printf '  %-34s %8s   %s\n' "$name" "$(numfmt --to=iec "$size")" "$(date -d @"$mtime" '+%d/%m/%Y %H:%M')"
+    n=$((n+1))
+  done < <(find "$dir" -maxdepth 1 -type f -name "$pat" -printf '%f|%s|%T@\n' 2>/dev/null | sort -t'|' -k3 -rn | cut -d'|' -f1,2,3 | awk -F'|' '{printf "%s|%s|%d\n",$1,$2,$3}')
+  (( n == 0 )) && echo "  (chua co ban nao)"
+  return 0
+}
+
 job_list() {
   bb_nas_require
-  echo "=== Du lieu ban hang — theo gio (giu $BB_KEEP_HOURLY) ==="
-  ls -lh --time-style='+%d/%m/%Y %H:%M' "$BB_NAS_ROOT"/db/hourly/*.dump 2>/dev/null | awk '{print $5"\t"$6" "$7"\t"$8}' | sed 's|.*/||' || echo "(chua co)"
-  echo "=== theo ngay (giu $BB_KEEP_DAILY) ==="
-  ls -lh --time-style='+%d/%m/%Y %H:%M' "$BB_NAS_ROOT"/db/daily/*.dump 2>/dev/null | awk '{print $5"\t"$6" "$7"\t"$8}' | sed 's|.*/||' || echo "(chua co)"
-  echo "=== theo thang (giu $BB_KEEP_MONTHLY) ==="
-  ls -lh --time-style='+%d/%m/%Y %H:%M' "$BB_NAS_ROOT"/db/monthly/*.dump 2>/dev/null | awk '{print $5"\t"$6" "$7"\t"$8}' | sed 's|.*/||' || echo "(chua co)"
-  echo "=== Cau hinh van hanh ==="
-  ls -lh --time-style='+%d/%m/%Y %H:%M' "$BB_NAS_ROOT"/config/daily/*.tar.gz 2>/dev/null | awk '{print $5"\t"$6" "$7"\t"$8}' | sed 's|.*/||' || echo "(chua co)"
-  echo "=== Kho anh/video ==="
-  cat "$BB_NAS_ROOT/media/current.manifest" 2>/dev/null || echo "(chua dong bo lan nao)"
-  echo "=== Cho trong NAS ==="; df -h "$BB_NAS_MOUNT" | tail -1
+  echo "======================================================================"
+  echo " CAC BAN SAO LUU DANG CO TREN NAS — $(bb_human)"
+  echo "======================================================================"
+  _bb_list_dir "$BB_NAS_ROOT/db/hourly"      'db-*.dump'        "$BB_KEEP_HOURLY ban"  "DU LIEU BAN HANG — theo gio"
+  _bb_list_dir "$BB_NAS_ROOT/db/daily"       'db-*.dump'        "$BB_KEEP_DAILY ban"   "DU LIEU BAN HANG — theo ngay"
+  _bb_list_dir "$BB_NAS_ROOT/db/monthly"     'db-*.dump'        "$BB_KEEP_MONTHLY ban" "DU LIEU BAN HANG — theo thang"
+  _bb_list_dir "$BB_NAS_ROOT/config/daily"   'config-*.tar.gz'  "$BB_KEEP_DAILY ban"   "CAU HINH VAN HANH — theo ngay"
+  _bb_list_dir "$BB_NAS_ROOT/config/monthly" 'config-*.tar.gz'  "$BB_KEEP_MONTHLY ban" "CAU HINH VAN HANH — theo thang"
+  _bb_list_dir "$BB_NAS_ROOT/media"          'media-*.tar.zst'  "1 goi day + cac goi thay doi" "KHO ANH/VIDEO"
+  echo
+  echo "CHO TRONG"
+  printf '  NAS     : %s trong tong %s\n' \
+    "$(df -h "$BB_NAS_MOUNT" | tail -1 | awk '{print $4}')" "$(df -h "$BB_NAS_MOUNT" | tail -1 | awk '{print $2}')"
+  printf '  May chu : %s trong tong %s\n' \
+    "$(df -h / | tail -1 | awk '{print $4}')" "$(df -h / | tail -1 | awk '{print $2}')"
+  local newest
+  newest="$(newest_db || true)"
+  if [[ -n "$newest" ]]; then
+    printf '\nBAN MOI NHAT cach day %s gio.\n' "$(( ( $(date +%s) - $(stat -c%Y "$newest") ) / 3600 ))"
+  fi
 }
 
 # =========================================================================== verify
@@ -334,7 +391,7 @@ job_verify() {
   docker ps --format '{{.Names}}' | grep -qx "$BB_PG_CONTAINER" \
     && { docker exec -i "$BB_PG_CONTAINER" pg_restore -l < "$f" >/dev/null 2>&1 \
          && echo "  Doc thu  : mo duoc muc luc ban sao — dung duoc de khoi phuc" \
-         || bb_fail "Dau khop nhung khong mo duoc noi dung ban sao."; }
+         || bb_fail "Dau khop nhung khong mo duoc noi dung ban sao."; } || true
 }
 
 case "$BB_JOB" in

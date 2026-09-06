@@ -283,9 +283,9 @@ Full procedure, including the owner-facing Vietnamese page, lives in
   inside the single subdirectory `vps-backups/`; the owner's unrelated business files at the share root
   are never read, moved or deleted. No new port is exposed to the Internet.
 - **Schedule and retention live in exactly one file**, `/etc/cron.d/bigbike-backup`: sales data hourly at
-  `:10`, operational config daily at `01:00`, media daily at `01:30`, a staleness watchdog hourly at `:40`,
+  `:10`, operational config daily at `00:40`, media daily at `01:00`, a staleness watchdog hourly at `:40`,
   and a daily digest at `06:00`. Retention is `BB_KEEP_HOURLY=48`, `BB_KEEP_DAILY=30`, `BB_KEEP_MONTHLY=12`.
-  The 01:00–01:30 window is deliberate: it clears the backend's own 02:30–04:30 scheduled-job block.
+  The 00:40–01:00 window is deliberate: even the monthly media re-base (~50 min: ~12 min to write, ~37 min to read back) finishes before the backend's own 02:30–04:30 scheduled-job block.
 - **Sales data** uses `pg_dump --format=custom` against the running `bigbike-postgres` while the shop keeps
   serving; the datadir is never copied. The dump is written to a small `/var/tmp` scratch file, shipped, then
   removed by an `EXIT` trap even on failure. Hourly→daily→monthly promotion uses hardlinks on the NAS, so no
