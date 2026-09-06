@@ -166,29 +166,42 @@ drill_media() {
   echo "Goi thay doi: ${#incs[@]} goi"
 
   TMPDIR_LOCAL="$(mktemp -d /var/tmp/bigbike-restore-drill.XXXXXX)"
+  # Giai nen vao thu muc CON rieng. Giai nen kieu tang dan tu xoa moi tep "la" trong thu muc
+  # dich, nen neu de tep tam chung cho thi chinh chung bi xoa mat (da dinh dung loi nay).
+  local OUT="$TMPDIR_LOCAL/tree"; mkdir -p "$OUT"
   echo
-  echo "Giai nen ra thu muc thu: $TMPDIR_LOCAL"
+  echo "Giai nen ra thu muc thu: $OUT"
   echo "(kho anh dang chay KHONG bi cham, khong dung dich vu nao)"
   echo "Moi goi doc dung mot lan — vua doi chieu dau kiem tra vua giai nen."
   echo
 
-  local f want got shafile bad=0 t0 t1
+  local f want got shafile fifo bad=0 t0 t1 shapid rc
   t0=$(date +%s)
+  shafile="$TMPDIR_LOCAL/.sha"
+  fifo="$TMPDIR_LOCAL/.fifo"
   for f in "$base" "${incs[@]}"; do
     want="$(awk '{print $1}' "$f.sha256" 2>/dev/null)"
-    shafile="$TMPDIR_LOCAL/.sha.$$"
+    rm -f "$fifo" "$shafile"; mkfifo "$fifo"
+    # Tinh dau kiem tra o mot tien trinh rieng doc qua ong dan co ten, roi CHO no xong han.
+    # Dung dang >(...) o day la sai: bash khong cho tien trinh do ket thuc, nen doc ra
+    # con rong va bao "khong khop" oan (da dinh dung loi nay).
+    ( sha256sum < "$fifo" | awk '{print $1}' > "$shafile" ) &
+    shapid=$!
     bb_drop_cache "$f"
-    if ! < "$f" tee >(sha256sum | awk '{print $1}' > "$shafile") \
-         | zstd -dc | tar --listed-incremental=/dev/null -xf - -C "$TMPDIR_LOCAL" 2>/dev/null; then
+    rc=0
+    < "$f" tee "$fifo" | zstd -dc | tar --listed-incremental=/dev/null -xf - -C "$OUT" 2>/dev/null || rc=$?
+    wait "$shapid" 2>/dev/null || true
+    if (( rc != 0 )); then
       printf '  %-44s GIAI NEN THAT BAI <<<\n' "$(basename "$f")"; bad=$((bad+1)); continue
     fi
-    got="$(cat "$shafile" 2>/dev/null)"; rm -f "$shafile"
+    got="$(cat "$shafile" 2>/dev/null)"
     if [[ -n "$want" && "$want" == "$got" ]]; then
       printf '  %-44s dau kiem tra KHOP, giai nen OK\n' "$(basename "$f")"
     else
       printf '  %-44s DAU KIEM TRA KHONG KHOP <<<\n' "$(basename "$f")"; bad=$((bad+1))
     fi
   done
+  rm -f "$fifo" "$shafile"
   t1=$(date +%s)
   echo
   echo "  Doc + kiem tra + giai nen xong trong $((t1-t0)) giay."
@@ -196,7 +209,7 @@ drill_media() {
 
   local live_n rest_n
   live_n="$(find "$BB_MINIO_VOLUME" -type f -not -path '*/.minio.sys/tmp/*' -not -path '*/.minio.sys/multipart/*' 2>/dev/null | wc -l)"
-  rest_n="$(find "$TMPDIR_LOCAL" -type f 2>/dev/null | wc -l)"
+  rest_n="$(find "$OUT" -type f 2>/dev/null | wc -l)"
   echo
   printf "  %-28s %10s %10s   %s\n" "Muc" "Dang chay" "Khoi phuc" "Ket qua"
   printf "  %-28s %10s %10s   %s\n" "Tong so tep" "$live_n" "$rest_n" \
@@ -205,7 +218,7 @@ drill_media() {
   local b a c
   for b in bigbike-media bigbike-chat-private; do
     a="$(find "$BB_MINIO_VOLUME/$b" -name xl.meta 2>/dev/null | wc -l)"
-    c="$(find "$TMPDIR_LOCAL/$b" -name xl.meta 2>/dev/null | wc -l)"
+    c="$(find "$OUT/$b" -name xl.meta 2>/dev/null | wc -l)"
     printf "  %-28s %10s %10s   %s\n" "Anh trong $b" "$a" "$c" \
       "$( [[ "$a" == "$c" ]] && echo KHOP || echo 'LECH' )"
   done
@@ -214,7 +227,7 @@ drill_media() {
   local ok=0 nbad=0 rel h1 h2
   while IFS= read -r rel; do
     h1="$(sha256sum "$BB_MINIO_VOLUME/$rel" 2>/dev/null | awk '{print $1}')"
-    h2="$(sha256sum "$TMPDIR_LOCAL/$rel"    2>/dev/null | awk '{print $1}')"
+    h2="$(sha256sum "$OUT/$rel"             2>/dev/null | awk '{print $1}')"
     if [[ -n "$h1" && "$h1" == "$h2" ]]; then ok=$((ok+1)); else nbad=$((nbad+1)); echo "    LECH: $rel"; fi
   done < <(cd "$BB_MINIO_VOLUME" && find . -type f -path '*bigbike-media*' 2>/dev/null | sed 's|^\./||' | shuf -n 20)
   echo "  Giong het: $ok tep   |   Lech: $nbad tep"

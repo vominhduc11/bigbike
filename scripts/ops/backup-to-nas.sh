@@ -281,7 +281,8 @@ job_digest() {
   free_vps="$(df -h / | tail -1 | awk '{print $4}')"
 
   # Dem so luot thanh cong / that bai trong 24 gio qua tu so chay
-  stats="$(BB_L="$BB_LEDGER" python3 - <<'PYSTAT' 2>/dev/null || echo "?|?")
+  local pystat
+  pystat="$(cat <<'PYSTAT'
 import json,os,datetime
 cut=datetime.datetime.now().astimezone()-datetime.timedelta(hours=24)
 ok=err=0
@@ -299,6 +300,8 @@ except FileNotFoundError: pass
 print(f"{ok}|{err}")
 PYSTAT
 )"
+  stats="$(BB_L="$BB_LEDGER" python3 -c "$pystat" 2>/dev/null)" || stats="?|?"
+  [[ "$stats" == *"|"* ]] || stats="?|?"
   local ok24="${stats%%|*}" err24="${stats##*|}"
 
   if [[ -f "$BB_NAS_ROOT/media/current.manifest" ]]; then
