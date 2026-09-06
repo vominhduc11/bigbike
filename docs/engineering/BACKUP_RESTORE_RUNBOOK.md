@@ -68,6 +68,14 @@ Lệnh này khôi phục vào một bản thử tách riêng rồi tự dọn. *
 | Cả hệ thống hỏng, máy chủ vẫn còn | Theo Phần 3 — khôi phục dữ liệu bán hàng rồi tới kho ảnh. Mất tối đa **1 giờ** dữ liệu gần nhất. |
 | Máy chủ mất trắng, phải thuê máy mới | Lấy mã nguồn từ GitHub, lấy cấu hình + dữ liệu + ảnh từ NAS. Toàn bộ hướng dẫn ở Phần 3. |
 
+### Mất bao lâu để lấy lại
+
+| Việc | Thời gian đo thật |
+|---|---|
+| Kiểm tra một bản sao còn tốt không | ~30 giây |
+| Lấy lại toàn bộ dữ liệu bán hàng | **~1 phút** |
+| Lấy lại toàn bộ kho ảnh (1,46 GB) | **~50 phút** — mạng nhà tải lên chậm, không rút ngắn được bằng cấu hình |
+
 ### Điều cần biết trước
 
 - **Mất tối đa 1 giờ dữ liệu bán hàng.** Sao lưu chạy mỗi giờ, nên đơn đặt trong vòng một giờ trước sự cố có thể mất.
@@ -215,4 +223,20 @@ Script cố tình **không** tự ghi đè kho ảnh đang chạy.
 
 # PHẦN 4 — BẰNG CHỨNG DIỄN TẬP
 
-Kết quả chạy thật, xem `docs/audits/BACKUP_NAS_SETUP_2026-09-06.md`.
+Toàn bộ kết quả chạy thật ngày 06–07/09/2026 — danh sách bản sao, đối chiếu số liệu khôi phục,
+ảnh chụp báo động, tốc độ đo được và các lỗi tự bắt được — ghi tại
+[`../audits/BACKUP_NAS_SETUP_2026-09-06.md`](../audits/BACKUP_NAS_SETUP_2026-09-06.md).
+
+Tóm tắt: diễn tập khôi phục dữ liệu bán hàng cho **9/9 con số khớp chính xác**; diễn tập cắt
+kết nối NAS làm báo động kêu đúng ở cả Telegram lẫn email; kết nối tự nối lại được mà không cần
+khởi động lại máy chủ.
+
+## Bài học ghi lại cho lần sau
+
+- **Kiểm tra cú pháp script không đủ.** Cả ba lỗi trong lần dựng này đều lọt qua `bash -n` và chỉ
+  lộ ra khi chạy thật. Sửa xong phải chạy thử từng lệnh con.
+- **Giải nén kiểu tăng dần tự xoá mọi tệp lạ trong thư mục đích.** Không bao giờ để tệp làm việc
+  chung thư mục với chỗ giải nén.
+- **Trên máy này tuyệt đối không chạy `showmount` hay `rpcinfo` có tham số** — treo không dừng được.
+- **`pkill -f <mẫu>` có thể tự giết phiên đang chạy** nếu mẫu khớp chính dòng lệnh của nó. Dùng
+  `pgrep -x` theo tên tiến trình.
