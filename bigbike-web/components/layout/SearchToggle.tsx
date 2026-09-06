@@ -78,8 +78,10 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
   } = useSearchSuggestions(locale, debouncedQuery, suggestQuery);
   const suggestions = suggestionResult?.products ?? EMPTY_PRODUCT_SUGGESTIONS;
   const articleSuggestions = suggestionResult?.articles ?? EMPTY_ARTICLE_SUGGESTIONS;
-  const isDebouncing = trimmedQuery.length >= 1 && trimmedQuery !== debouncedQuery;
-  const isLoading = isDebouncing || suggestLoading;
+  // The debounce still controls when the request starts. Only show the spinner
+  // for an active request so typing does not make it flicker during the debounce
+  // window.
+  const isLoading = suggestLoading;
   const searchError = suggestionError instanceof SearchSuggestionsError ? suggestionError : null;
   const failureKind =
     queryTooLong || searchError?.status === 400
@@ -268,34 +270,27 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
               className={sInput}
             />
 
-            {trimmedQuery && (
-              <Button
-                type="button"
-                variant="ghost"
-                className={sClear}
-                aria-label={t("clearAriaLabel")}
-                onClick={() => {
-                  setQuery("");
-                  setActiveIndex(-1);
-                  inputRef.current?.focus();
-                }}
-              >
-                <X size={16} aria-hidden />
-              </Button>
-            )}
-
-            {isLoading && (
-              <Loader2 size={18} aria-hidden className={cn(sLoading, "animate-spin")} />
-            )}
+            <span data-search-loading-slot className={sLoading} aria-hidden="true">
+              {isLoading && <Loader2 size={18} aria-hidden className="animate-spin" />}
+            </span>
 
             <Button
               type="button"
               variant="ghost"
-              className={sClose}
-              aria-label={t("closeAriaLabel")}
-              onClick={handleClose}
+              className={trimmedQuery ? sClear : sClose}
+              aria-label={t(trimmedQuery ? "clearAriaLabel" : "closeAriaLabel")}
+              onClick={() => {
+                if (!trimmedQuery) {
+                  handleClose();
+                  return;
+                }
+
+                setQuery("");
+                setActiveIndex(-1);
+                inputRef.current?.focus();
+              }}
             >
-              <X size={20} aria-hidden />
+              <X size={trimmedQuery ? 16 : 20} aria-hidden />
             </Button>
           </form>
 

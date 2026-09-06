@@ -1,5 +1,5 @@
 // Class bundles + path constant for the search panel, lifted out of SearchToggle
-// to keep the component file focused on logic. Pure strings — no behaviour change.
+// to keep the component file focused on logic. Pure strings — behavior lives in SearchToggle.
 
 // Inline-Tailwind class bundles for the search-panel CONTENT (the overlay shell
 // — layer/overlay/panel/form/input + transitions/keyframe — stays in globals.css
@@ -68,18 +68,17 @@ export const sIcon =
   "max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
 export const sClose =
   // min-h-0 / p-0 ungated: the base `.bb-header-search-close` rule was !important,
-  // beating the ≤767 touch-target min-height, so the close stays min-height:0 everywhere.
+  // beating the ≤767 touch-target min-height, so the action stays min-height:0 everywhere.
+  // Clear and close share this fixed action slot now that only one X is rendered.
   "absolute top-1/2 right-0 [transform:translateY(-50%)] min-h-0 p-0 text-white " +
   "hover:bg-transparent hover:text-[color:var(--bb-brand-primary)] focus-visible:bg-transparent focus-visible:text-[color:var(--bb-brand-primary)] " +
   "max-md:static max-md:right-auto max-md:w-[var(--bb-touch-target)] max-md:h-[var(--bb-touch-target)] " +
   "max-md:min-w-[var(--bb-touch-target)] max-md:items-center max-md:justify-center max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
-export const sClear =
-  "absolute top-1/2 right-10 [transform:translateY(-50%)] min-h-0 p-0 text-white " +
-  "hover:bg-transparent hover:text-[color:var(--bb-brand-primary)] focus-visible:bg-transparent focus-visible:text-[color:var(--bb-brand-primary)] " +
-  "max-md:static max-md:right-auto max-md:w-[var(--bb-touch-target)] max-md:h-[var(--bb-touch-target)] " +
-  "max-md:min-w-[var(--bb-touch-target)] max-md:items-center max-md:justify-center max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
+export const sClear = sClose;
 export const sLoading =
-  "absolute top-1/2 right-20 [transform:translateY(-50%)] text-white max-md:static max-md:right-auto max-md:ml-auto max-md:text-[color:var(--bb-text-inverse)]";
+  "absolute top-1/2 right-20 flex h-[var(--bb-touch-target)] w-[var(--bb-touch-target)] shrink-0 " +
+  "items-center justify-center [transform:translateY(-50%)] text-white " +
+  "max-md:static max-md:right-auto max-md:ml-auto max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
 export const sInput =
   // `!` mirrors the legacy !important — guarantees these win over the shadcn Input
   // base regardless of twMerge grouping. A4 keeps search input at 16px on mobile

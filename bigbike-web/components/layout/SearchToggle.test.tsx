@@ -62,17 +62,87 @@ describe("SearchToggle", () => {
     mocks.recentSearches = [];
   });
 
-  it("keeps a previous suggestion visible while fetching and leaves close available", () => {
+  it("keeps a previous suggestion visible while fetching and leaves the search action available", () => {
     mocks.suggestionState.isFetching = true;
     render(<SearchToggle />);
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "mũ bảo" } });
 
     expect(screen.getByRole("option", { name: /mũ bảo hiểm/i })).toBeVisible();
+    expect(
+      within(screen.getByRole("search")).getByRole("button", { name: "clearAriaLabel" }),
+    ).toBeVisible();
+  });
+
+  it("renders one X action and changes it from close to clear as the query changes", () => {
+    render(<SearchToggle />);
+    const search = screen.getByRole("search");
+    const input = screen.getByRole("combobox");
+
+    expect(within(search).getAllByRole("button")).toHaveLength(1);
+    expect(within(search).getByRole("button", { name: "closeAriaLabel" })).toBeVisible();
+
+    fireEvent.change(input, { target: { value: "mũ" } });
+
+    expect(within(search).getAllByRole("button")).toHaveLength(1);
+    expect(within(search).getByRole("button", { name: "clearAriaLabel" })).toBeVisible();
+    expect(within(search).queryByRole("button", { name: "closeAriaLabel" })).toBeNull();
+  });
+
+  it("clears a non-empty query, keeps focus, and does not close the overlay", () => {
+    render(<SearchToggle />);
+    const input = screen.getByRole("combobox");
+    fireEvent.change(input, { target: { value: "mũ" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "clearAriaLabel" }));
+
+    expect(input).toHaveValue("");
+    expect(input).toHaveFocus();
+    expect(mocks.closePanel).not.toHaveBeenCalled();
+    expect(
+      within(screen.getByRole("search")).getByRole("button", { name: "closeAriaLabel" }),
+    ).toBeVisible();
+  });
+
+  it("closes the overlay from the single X when the query is empty", () => {
+    render(<SearchToggle />);
+
     fireEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", { name: "closeAriaLabel" }),
+      within(screen.getByRole("search")).getByRole("button", { name: "closeAriaLabel" }),
     );
+
     expect(mocks.closePanel).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the loading slot fixed and spins only the SVG", () => {
+    const { rerender } = render(<SearchToggle />);
+    const initialSlot = screen
+      .getByRole("search")
+      .querySelector<HTMLElement>("[data-search-loading-slot]");
+
+    expect(initialSlot).not.toBeNull();
+    if (!initialSlot) throw new Error("Search loading slot was not rendered");
+
+    expect(initialSlot).toHaveClass(
+      "flex",
+      "h-[var(--bb-touch-target)]",
+      "w-[var(--bb-touch-target)]",
+      "items-center",
+      "justify-center",
+    );
+    expect(initialSlot).not.toHaveClass("animate-spin");
+    expect(initialSlot.querySelector("svg")).toBeNull();
+
+    mocks.suggestionState.isFetching = true;
+    rerender(<SearchToggle />);
+    const loadingSlot = screen
+      .getByRole("search")
+      .querySelector<HTMLElement>("[data-search-loading-slot]");
+
+    expect(loadingSlot).toBe(initialSlot);
+    expect(loadingSlot).not.toBeNull();
+    if (!loadingSlot) throw new Error("Search loading slot was not rendered");
+    expect(loadingSlot.querySelector("svg")).toHaveClass("animate-spin");
   });
 
   it("opens the highlighted suggestion with ArrowDown then Enter", () => {
@@ -123,6 +193,18 @@ describe("SearchToggle", () => {
     render(<SearchToggle />);
 
     fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
+    expect(mocks.closePanel).toHaveBeenCalledOnce();
+  });
+
+  it("closes the overlay when the backdrop is clicked", () => {
+    render(<SearchToggle />);
+    const dialog = screen.getByRole("dialog");
+    const overlay = dialog.parentElement?.querySelector<HTMLButtonElement>("button");
+
+    expect(overlay).not.toBeNull();
+    if (!overlay) throw new Error("Search overlay backdrop was not rendered");
+
+    fireEvent.click(overlay);
     expect(mocks.closePanel).toHaveBeenCalledOnce();
   });
 });
