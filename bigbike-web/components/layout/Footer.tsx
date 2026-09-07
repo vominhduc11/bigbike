@@ -146,7 +146,11 @@ export async function Footer({ locale }: { locale: Locale }) {
     <footer
       data-bb-full-bleed
       data-bb-focus="general_brand"
-      className="relative z-0 w-full font-body text-white"
+      className={cn(
+        "relative z-0 w-full font-body text-white",
+        // Reserve space for the fixed mobile nav even inside FooterMobileGate.
+        "max-md:[body:has(.bb-bottom-nav)_&]:pb-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))]",
+      )}
     >
       <div data-footer-top className="bg-footer-top pt-15 md:pb-[85px]">
         <Container variant="blog" className="px-[15px]!">

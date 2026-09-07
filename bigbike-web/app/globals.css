@@ -513,6 +513,14 @@ body {
   }
 }
 
+@media (max-width: 767px) {
+  /* Resolve both floating-action offsets at the root so chat and scroll-to-top
+     clear the cart's two-row action bar together, including the safe area. */
+  :root:has([data-cart-mobile-checkout]) {
+    --bb-floating-chat-bottom: calc(9rem + env(safe-area-inset-bottom));
+  }
+}
+
 .bb-floating-chat-anchor,
 .bb-scroll-top-anchor {
   right: var(--bb-floating-action-right);
@@ -3016,14 +3024,6 @@ body .banner-ads > .container > .row {
      nên :has đóng vai marker; media query đã giới hạn ≤767px. */
   body:has(.bb-pdp-sticky-cta) .bb-main {
     padding-bottom: calc(69px + max(8px, env(safe-area-inset-bottom)) + 12px);
-  }
-
-  body > footer {
-    padding-bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom));
-  }
-
-  body:has(.bb-checkout-page) > footer {
-    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .bb-site-header {

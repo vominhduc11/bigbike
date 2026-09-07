@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import type { VideoAsset } from "@/lib/contracts/public";
 import { resolveMediaUrl } from "@/lib/utils/format";
+import { loadYouTubeApi, type YouTubePlayer } from "@/lib/youtube-player";
 import {
   facebookEmbedUrl,
   getTikTokId,
@@ -12,40 +13,6 @@ import {
   tiktokEmbedUrl,
   videoThumbUrl,
 } from "./media";
-
-type YTPlayer = { destroy?: () => void; pauseVideo?: () => void; getPlayerState?: () => number };
-type YTPlayerOptions = {
-  width?: string | number;
-  height?: string | number;
-  videoId?: string;
-  host?: string;
-  playerVars?: Record<string, string | number>;
-  events?: { onStateChange?: (e: { data: number }) => void };
-};
-type YTNamespace = {
-  Player: new (el: HTMLElement | string, opts: YTPlayerOptions) => YTPlayer;
-  PlayerState: { PLAYING: number; PAUSED: number; ENDED: number };
-};
-type YTWindow = { YT?: YTNamespace; onYouTubeIframeAPIReady?: () => void };
-
-let ytApiPromise: Promise<void> | null = null;
-function loadYouTubeApi(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  const windowWithYt = window as unknown as YTWindow;
-  if (windowWithYt.YT?.Player) return Promise.resolve();
-  if (ytApiPromise) return ytApiPromise;
-  ytApiPromise = new Promise<void>((resolve) => {
-    const previous = windowWithYt.onYouTubeIframeAPIReady;
-    windowWithYt.onYouTubeIframeAPIReady = () => {
-      previous?.();
-      resolve();
-    };
-    const script = document.createElement("script");
-    script.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(script);
-  });
-  return ytApiPromise;
-}
 
 type VideoSlideProps = {
   video: VideoAsset;
@@ -71,7 +38,7 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
   const [activated, setActivated] = useState(false);
   const [ytFallback, setYtFallback] = useState(false);
   const ytHostRef = useRef<HTMLDivElement | null>(null);
-  const ytPlayerRef = useRef<YTPlayer | null>(null);
+  const ytPlayerRef = useRef<YouTubePlayer | null>(null);
   const nativeVideoRef = useRef<HTMLVideoElement | null>(null);
   const ytFrameId = `yt-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
@@ -86,35 +53,38 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
   useEffect(() => {
     if (!activated || !ytId) return;
     let cancelled = false;
-    let player: YTPlayer | null = null;
+    let player: YouTubePlayer | null = null;
     const fallbackTimer = window.setTimeout(() => {
       if (!cancelled) setYtFallback(true);
     }, 8000);
 
-    loadYouTubeApi().then(() => {
-      if (cancelled) return;
-      const yt = (window as unknown as YTWindow).YT;
-      if (!yt?.Player || !ytHostRef.current) {
-        setYtFallback(true);
-        return;
-      }
-      window.clearTimeout(fallbackTimer);
-      player = new yt.Player(ytHostRef.current, {
-        width: "100%",
-        height: "100%",
-        videoId: ytId,
-        host: "https://www.youtube-nocookie.com",
-        playerVars: { autoplay: 1, playsinline: 1, rel: 0 },
-        events: {
-          onStateChange: (event) => {
-            if (event.data === yt.PlayerState.PLAYING) onPlay?.();
-            else if (event.data === yt.PlayerState.PAUSED) onPause?.();
-            else if (event.data === yt.PlayerState.ENDED) onEnded?.();
+    loadYouTubeApi()
+      .then((yt) => {
+        if (cancelled) return;
+        if (!yt?.Player || !ytHostRef.current) {
+          setYtFallback(true);
+          return;
+        }
+        window.clearTimeout(fallbackTimer);
+        player = new yt.Player(ytHostRef.current, {
+          width: "100%",
+          height: "100%",
+          videoId: ytId,
+          host: "https://www.youtube-nocookie.com",
+          playerVars: { autoplay: 1, playsinline: 1, rel: 0 },
+          events: {
+            onStateChange: (event) => {
+              if (event.data === yt.PlayerState.PLAYING) onPlay?.();
+              else if (event.data === yt.PlayerState.PAUSED) onPause?.();
+              else if (event.data === yt.PlayerState.ENDED) onEnded?.();
+            },
           },
-        },
+        });
+        ytPlayerRef.current = player;
+      })
+      .catch(() => {
+        if (!cancelled) setYtFallback(true);
       });
-      ytPlayerRef.current = player;
-    });
 
     return () => {
       cancelled = true;
@@ -174,7 +144,10 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
         ) : (
           <span className="block h-full w-full bg-black" aria-hidden="true" />
         )}
-        <span className="absolute inset-0 flex items-center justify-center bg-black/25" aria-hidden="true">
+        <span
+          className="absolute inset-0 flex items-center justify-center bg-black/25"
+          aria-hidden="true"
+        >
           <svg viewBox="0 0 48 48" className="h-14 w-14 fill-white drop-shadow" focusable="false">
             <path d="M15 10.6v26.8L37 24 15 10.6Z" />
           </svg>
@@ -185,7 +158,10 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
 
   if (ytId && !ytFallback) {
     return (
-      <div className="relative block h-full w-full bg-black [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0" data-product-gallery-video-player>
+      <div
+        className="relative block h-full w-full bg-black [&_iframe]:absolute [&_iframe]:inset-0 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0"
+        data-product-gallery-video-player
+      >
         <div ref={ytHostRef} id={ytFrameId} />
       </div>
     );

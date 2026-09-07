@@ -64,6 +64,13 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
   const swiperRef = useRef<SwiperType | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  useEffect(() => {
+    const autoplay = swiperRef.current?.autoplay;
+    if (compact || !autoplay) return;
+    if (activeIndex !== null) autoplay.stop();
+    else autoplay.start();
+  }, [activeIndex, compact]);
+
   // Mũi tên chỉ phụ thuộc desktop width, không liên quan layout slide.
   const syncViewportState = useCallback(() => {
     const width = typeof window === "undefined" ? 0 : window.innerWidth;
@@ -92,23 +99,28 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
     return () => window.removeEventListener("resize", handleResize);
   }, [syncViewportState, updateSnap]);
 
-  const handleOpen = useCallback((idx: number) => {
-    triggerRef.current = document.activeElement as HTMLElement;
+  const handleOpen = useCallback((idx: number, trigger: HTMLElement) => {
+    triggerRef.current = trigger;
     setActiveIndex(idx);
   }, []);
 
   const handleClose = useCallback(() => {
     setActiveIndex(null);
-    triggerRef.current?.focus();
+  }, []);
+
+  const handleAfterClose = useCallback(() => {
+    triggerRef.current?.focus({ preventScroll: true });
     triggerRef.current = null;
   }, []);
 
-  const handlePrev = useCallback(() =>
-    setActiveIndex((i) => (i !== null ? (i - 1 + videos.length) % videos.length : null)),
-  [videos.length]);
-  const handleNext = useCallback(() =>
-    setActiveIndex((i) => (i !== null ? (i + 1) % videos.length : null)),
-  [videos.length]);
+  const handlePrev = useCallback(
+    () => setActiveIndex((i) => (i !== null ? (i - 1 + videos.length) % videos.length : null)),
+    [videos.length],
+  );
+  const handleNext = useCallback(
+    () => setActiveIndex((i) => (i !== null ? (i + 1) % videos.length : null)),
+    [videos.length],
+  );
 
   if (videos.length === 0) return null;
 
@@ -128,7 +140,15 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
       <div data-responsive-overflow-ignore="carousel" style={{ position: "relative" }}>
         {/* Prev arrow — desktop; khung gọn ẩn khi không cuộn được, khung full hiện mờ */}
         {showArrows && (
-          <div style={{ position: "absolute", top: "50%", left: -72, transform: "translateY(-50%)", zIndex: 2 }}>
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: -72,
+              transform: "translateY(-50%)",
+              zIndex: 2,
+            }}
+          >
             <ArrowButton
               direction="prev"
               onClick={() => swiperRef.current?.slidePrev()}
@@ -167,12 +187,20 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
             speed={1000}
             slidesPerView={1}
             spaceBetween={12}
-            autoplay={compact ? undefined : { delay: 3000, disableOnInteraction: false, pauseOnMouseEnter: true }}
+            autoplay={
+              compact
+                ? undefined
+                : { delay: 3000, disableOnInteraction: false, pauseOnMouseEnter: true }
+            }
             breakpoints={cols.breakpoints}
           >
             {videos.map((video, idx) => (
               <SwiperSlide key={video.id} className="h-auto" suppressHydrationWarning>
-                <VideoCard video={video} onPlay={() => handleOpen(idx)} compact={compact} />
+                <VideoCard
+                  video={video}
+                  onPlay={(event) => handleOpen(idx, event.currentTarget)}
+                  compact={compact}
+                />
               </SwiperSlide>
             ))}
           </Swiper>
@@ -180,7 +208,15 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
 
         {/* Next arrow — desktop; khung gọn ẩn khi không cuộn được, khung full hiện mờ */}
         {showArrows && (
-          <div style={{ position: "absolute", top: "50%", right: -72, transform: "translateY(-50%)", zIndex: 2 }}>
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              right: -72,
+              transform: "translateY(-50%)",
+              zIndex: 2,
+            }}
+          >
             <ArrowButton
               direction="next"
               onClick={() => swiperRef.current?.slideNext()}
@@ -238,6 +274,7 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
           videos={videos}
           activeIndex={activeIndex}
           onClose={handleClose}
+          onAfterClose={handleAfterClose}
           onPrev={handlePrev}
           onNext={handleNext}
         />

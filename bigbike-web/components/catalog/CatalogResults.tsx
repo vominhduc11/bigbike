@@ -58,6 +58,7 @@ export function CatalogResults({
   analyticsList,
 }: CatalogResultsProps) {
   const t = useTranslations("Catalog");
+  const showFiltersInNotice = !isLoading && notice != null && activeFilterCount > 0 && !error;
 
   // Report the list once per result set. Filtering, sorting and paging all produce a new set of
   // ids, which is exactly when GA4 should hear about a new impression; a quantity tweak or a
@@ -86,7 +87,7 @@ export function CatalogResults({
           </div>
         </div>
 
-        {activeFilterCount > 0 ? (
+        {activeFilterCount > 0 && !showFiltersInNotice ? (
           <div className="mb-4" aria-label={t("activeFilters")}>
             {activeFilters}
           </div>
@@ -105,8 +106,10 @@ export function CatalogResults({
               <p className="m-0 font-semibold">
                 {activeFilterCount > 0 && !error ? t("noMatchingProducts") : notice}
               </p>
-              {activeFilterCount > 0 && !error ? <div className="mt-4">{activeFilters}</div> : null}
-              {emptyActionHref && emptyActionLabel ? (
+              {showFiltersInNotice ? (
+                <div className="mt-4" aria-label={t("activeFilters")}>{activeFilters}</div>
+              ) : null}
+              {emptyActionHref && emptyActionLabel && !(showFiltersInNotice && activeFilters) ? (
                 <Link
                   href={emptyActionHref}
                   className="mt-4 inline-flex min-h-11 items-center border border-brand bg-brand px-5 py-3 font-semibold text-primary-foreground no-underline!"

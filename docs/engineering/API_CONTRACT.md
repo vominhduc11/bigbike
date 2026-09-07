@@ -710,6 +710,16 @@ Status: `CONFIRMED_FROM_CODE` — `AdminMediaController.java`, `AdminMediaFolder
 
 Ảnh slider tiếp tục đi qua `SafeMediaAssetUrlPolicy`. `POST` và bản `PATCH` toàn phần (payload có `location`) bắt buộc có `productId` hợp lệ; không còn nhận hoặc validate `externalLink` trong luồng ghi mới. Cột và field response `externalLink` vẫn được giữ để bảo toàn dữ liệu lịch sử, nhưng chỉ mang tính tương thích và không được dùng làm `link` hiệu lực trên storefront; `link` hiệu lực chỉ là `productLink`. Patch một phần chỉ đổi trạng thái/thứ tự không yêu cầu `productId`. Mọi create/update/delete/reorder tiếp tục phát revalidation tag `sliders`. Quyết định 2026-07-30 chỉ khôi phục ảnh mobile cho `home`, không khôi phục `category`, `category_sidebar` hoặc `promotion`.
 
+## Cart/order analytics metadata
+
+Every existing cart response (`GET /api/v1/cart`, add/update/remove items and clear cart) and
+order-detail response (guest lookup, own-order detail and admin detail) adds nullable strings
+`brandName` and `categoryName` to each line. These are read-time catalog metadata;
+the primary category is the first ordered category. Missing catalog records/relationships
+return `null`. Existing line `sku` remains the selling SKU snapshot, and `variantName` remains
+the purchased variant description. No request field, endpoint, permission, payment behavior
+or order state changes. See `DATA_CONTRACT.md` §"Cart/order analytics metadata".
+
 ## Commerce Mutation Contracts
 
 | Endpoint | Current contract | Status | Evidence |

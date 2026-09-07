@@ -8,13 +8,18 @@ import {
   trackAddPaymentInfo,
   trackAddShippingInfo,
   trackAddToCart,
+  trackBeginCheckout,
   trackPurchase,
+  trackRemoveFromCart,
   trackSelectItem,
+  trackViewCart,
   trackViewItem,
   trackViewItemList,
 } from "@/lib/analytics";
 import type { Cart, CartItem, OrderDetail, OrderLineItem } from "@/lib/contracts/commerce";
 import type { Product } from "@/lib/contracts/public";
+import { buildMerchantFeed } from "@/lib/merchant/feed";
+import { merchantVariants } from "@/__tests__/merchant/fixtures";
 
 /** Every event GA4 receives, as [eventName, params]. */
 function sentEvents(): Array<[string, Record<string, unknown>]> {
@@ -120,6 +125,96 @@ afterEach(() => {
 });
 
 describe("item mapping", () => {
+  it("matches the existing Merchant feed SKU and price, including a selected non-default variant", () => {
+    const catalog = merchantVariants();
+    const xml = new DOMParser().parseFromString(
+      buildMerchantFeed([catalog]).xml,
+      "application/xml",
+    );
+    const ids = Array.from(xml.getElementsByTagName("g:id")).map((node) => node.textContent);
+    for (const variant of catalog.variants!) {
+      const item = toGa4ItemFromProduct(catalog, { variant });
+      expect(ids).toContain(item.item_id);
+      expect(item.item_id).toBe(variant.sku);
+      expect(item.item_id).not.toBe(catalog.sku);
+      expect(item.item_variant).toBe(variant.name);
+    }
+    // The generic card displays the lowest price, which belongs to the red variant here.
+    expect(toGa4ItemFromProduct(catalog)).toMatchObject({
+      item_id: "E2E_GMC_RED_L",
+      price: 800000,
+    });
+    expect(toGa4ItemFromProduct(catalog, { variant: catalog.variants![0] })).toMatchObject({
+      item_id: "E2E_GMC_BLUE_M",
+      price: 1100000,
+    });
+  });
+
+  it.each(["vi", "en"])("keeps variant SKU and metadata through all ten events (%s)", (locale) => {
+    const catalog = merchantVariants();
+    const variant = catalog.variants![0];
+    catalog.price = variant.price!;
+    if (locale === "en") catalog.name = "Protective jacket";
+    const line = cartItem({
+      sku: variant.sku!,
+      productId: catalog.id,
+      productVariantId: variant.id,
+      productName: catalog.name,
+      variantName: variant.name,
+      unitPrice: 1100000,
+      brandName: catalog.brand!.name,
+      categoryName: catalog.category!.name,
+    });
+    const basket = cart({ items: [line] });
+    const list = { id: "jackets", name: "Áo bảo hộ" };
+    trackViewItemList([catalog], list);
+    trackSelectItem(catalog, list, 0);
+    trackViewItem(catalog, variant);
+    trackAddToCart(line, 1);
+    trackRemoveFromCart(line);
+    trackViewCart(basket);
+    trackBeginCheckout(basket);
+    trackAddShippingInfo(basket);
+    trackAddPaymentInfo(basket, "COD");
+    trackPurchase(order({ lineItems: [{ ...line, productThumbnailUrl: null }] }));
+    expect(sentEvents().map(([name]) => name)).toEqual([
+      "view_item_list",
+      "select_item",
+      "view_item",
+      "add_to_cart",
+      "remove_from_cart",
+      "view_cart",
+      "begin_checkout",
+      "add_shipping_info",
+      "add_payment_info",
+      "purchase",
+    ]);
+    for (const [, params] of sentEvents()) {
+      expect(params.items).toEqual([
+        expect.objectContaining({
+          item_id: variant.sku,
+          item_brand: catalog.brand!.name,
+          item_category: catalog.category!.name,
+          item_variant: variant.name,
+          price: 1100000,
+          currency: "VND",
+        }),
+      ]);
+    }
+  });
+
+  it("omits unknown catalog metadata without guessing or breaking older commerce responses", () => {
+    for (const item of [
+      toGa4ItemsFromCart([cartItem({ brandName: "  ", categoryName: null, variantName: " " })])[0],
+      toGa4ItemsFromOrder([orderLine()])[0],
+    ]) {
+      expect(item.item_brand).toBeUndefined();
+      expect(item.item_category).toBeUndefined();
+      expect(item.item_variant).toBeUndefined();
+      expect(item.item_id).toBe("AGV-K6-RED-L");
+    }
+  });
+
   it("sends the real SKU as item_id so Merchant Center and Ads can match the product", () => {
     expect(toGa4ItemFromProduct(product()).item_id).toBe("AGV-K6-RED-L");
     expect(toGa4ItemsFromCart([cartItem()])[0].item_id).toBe("AGV-K6-RED-L");

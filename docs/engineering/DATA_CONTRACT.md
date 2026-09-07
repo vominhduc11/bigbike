@@ -1122,7 +1122,9 @@ Shape: JSON array of `VideoAsset { id, url, title, titleEn, thumbnail: ImageAsse
 provider, description, descriptionEn, durationSeconds, uploadedOn }`. `id` is a
 server-managed stable UUID string; `titleEn`/`descriptionEn` are nullable and public English
 reads fall back to Vietnamese. The same locale-resolved `description` renders immediately below
-the player and is the only source for `VideoObject.description`. `durationSeconds` is nullable
+the player (in the adjacent information column on short landscape viewports, per the web
+Styleguide video viewer section, owner request 2026-09-07) and is the only source for
+`VideoObject.description`. `durationSeconds` is nullable
 and non-negative; `uploadedOn` is a nullable ISO local date supplied by the editor.
 
 Upsert DTO (`VideoRequest`) round-trips the optional server-managed `id`, and accepts
@@ -2032,6 +2034,23 @@ Removal (self-service `DELETE /api/v1/customer/me/avatar` — also refused with 
 `reviews.customer_id` (pre-existing, previously always `null`) is now populated when the submitter had a valid session at submit time — see `BUSINESS_RULES.md` review rules and `API_CONTRACT.md`'s Public Reviews Contract. `authorAvatarUrl` on the public reviews read path is resolved by joining this column back to `customers.avatar_url` live at read time (no denormalized snapshot column on `reviews`).
 
 Evidence: `V346__add_customer_avatar_url.sql`, `CustomerEntity.java`, `CustomerAvatarStorageService.java`, `CustomerOAuthService.java`, `next.config.ts`.
+
+### Cart/order analytics metadata (response-only, no DB columns)
+
+Cart item responses and customer/guest/admin order line-item responses expose two nullable
+strings: `brandName` (the current brand name), and
+`categoryName` (the current primary category name, the first ordered category). These fields
+are resolved in one catalog query per cart/order using the stored product reference, including
+legacy varchar product keys. They are current catalog metadata, not historical order snapshots.
+Missing products or relationships return `null`; clients must not invent names or derive the
+parent SKU by splitting a selling SKU.
+
+The existing `sku`, `productName`, `variantName`, quantities and monetary snapshots retain their
+meaning. `variantName` supplies GA4 `item_variant`; `brandName` and `categoryName` supply GA4
+`item_brand` and `item_category`. Metadata enrichment changes no checkout or inventory behavior
+and requires no schema migration. The owner confirmed the Merchant Center variant-level ID
+`VENTOLADY-NUXS`; GA4 uses the selling variant SKU (or the product SKU for a product without
+variants), not the product grouping SKU. See `INTEGRATION_GUIDE.md` for unselected catalog items.
 
 ### Order line-item thumbnail — `productThumbnailUrl` (response-only, no DB column)
 

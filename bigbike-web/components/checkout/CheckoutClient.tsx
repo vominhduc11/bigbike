@@ -14,6 +14,7 @@ import { type Locale } from "@/i18n/locale";
 import { trackAddPaymentInfo } from "@/lib/analytics";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { queryKeys } from "@/lib/query/keys";
+import { requestChatOpen } from "@/lib/chat/chat-launcher";
 import type { PublicSiteSetting } from "@/lib/contracts/public";
 import { pickSetting } from "@/lib/utils/settings";
 import { CheckoutConfirmRow, PaymentMethodSelector, ZaloSupportBlock } from "./parts/atoms";
@@ -254,6 +255,20 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
             >
               {submitting ? t("placingOrder") : t("placeOrderCallConfirm")}
             </Button>
+            <div className="mt-2 flex justify-center">
+              <Button
+                type="button"
+                variant="link"
+                className="min-h-11"
+                data-chat-support
+                aria-haspopup="dialog"
+                aria-controls="bigbike-assistant-panel"
+                disabled={submitting}
+                onClick={(event) => requestChatOpen(event.currentTarget)}
+              >
+                {t("needHelp")}
+              </Button>
+            </div>
             <p className="mb-0 mt-3 text-center text-a5-meta text-muted-foreground">
               {t("confirmationTiming")}
               {activeHotline ? (

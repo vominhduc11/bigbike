@@ -5,7 +5,6 @@ import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/Avatar";
 import { AccountLayoutSkeleton } from "@/components/ui/Skeletons";
@@ -138,24 +137,13 @@ export function AccountNav({
 
         <div className="grid gap-8 pb-10 md:grid-cols-4">
           <aside>
-            <div className="relative mb-8 pr-10">
+            <div className="mb-8">
               <Avatar url={profile.avatarUrl} name={displayName} size="md" variant="brand" className="mb-2" />
               <h2 className="font-body text-a4-content font-semibold text-foreground">{displayName}</h2>
               <p className="m-0 truncate text-a5-meta text-foreground">{t("emailLabel")}: {profile.email}</p>
               {profile.phone ? (
                 <p className="m-0 truncate text-a5-meta text-foreground">{t("phoneLabel")}: {profile.phone}</p>
               ) : null}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 text-brand hover:text-brand"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                aria-label={t("logout")}
-              >
-                <LogOut size={22} strokeWidth={1.5} />
-              </Button>
             </div>
 
             <nav className="bg-card px-8 shadow-sm" aria-label={t("breadcrumbAccount")}>

@@ -483,14 +483,9 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 {zaloPhone && contact.zaloUrl && (
                   <div className="text-a5-meta" style={{ marginTop: 4, color: COLORS.muted }}>
                     {vi ? "Zalo: " : "Zalo: "}
-                    <a
-                      href={contact.zaloUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontWeight: 600, color: COLORS.text, textDecoration: "none" }}
-                    >
+                    <span className="font-semibold text-foreground">
                       {zaloPhone} · Mrs. Thư
-                    </a>
+                    </span>
                   </div>
                 )}
               </InfoRow>

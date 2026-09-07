@@ -6,7 +6,9 @@ import com.bigbike.bigbike_backend.api.cart.dto.CartTotalsResponse;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
+import com.bigbike.bigbike_backend.service.catalog.ProductAnalyticsResolver.Metadata;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.mapstruct.Context;
@@ -17,9 +19,10 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface CartMapper {
 
-    default CartResponse toResponse(CartEntity cart, List<CartItemEntity> items, Set<UUID> unavailableIds) {
+    default CartResponse toResponse(CartEntity cart, List<CartItemEntity> items,
+            Set<UUID> unavailableIds, Map<UUID, Metadata> metadata) {
         List<CartItemResponse> itemResponses = items.stream()
-                .map(item -> toItemResponse(item, unavailableIds))
+                .map(item -> toItemResponse(item, unavailableIds, metadata.get(item.getId())))
                 .toList();
         return new CartResponse(
                 cart.getId(),
@@ -34,7 +37,9 @@ public interface CartMapper {
 
     @Mapping(target = "image", expression = "java(toImageAsset(item))")
     @Mapping(target = "available", expression = "java(!unavailableIds.contains(item.getId()))")
-    CartItemResponse toItemResponse(CartItemEntity item, @Context Set<UUID> unavailableIds);
+    @Mapping(target = "brandName", source = "metadata.brandName")
+    @Mapping(target = "categoryName", source = "metadata.categoryName")
+    CartItemResponse toItemResponse(CartItemEntity item, @Context Set<UUID> unavailableIds, Metadata metadata);
 
     default ImageAsset toImageAsset(CartItemEntity item) {
         if (item.getProductImageUrl() == null || item.getProductImageUrl().isBlank()) {

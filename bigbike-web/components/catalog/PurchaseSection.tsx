@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import type {
@@ -35,6 +35,7 @@ import { RatingBlock } from "./purchase/RatingBlock";
 import { BuyButtons } from "./purchase/BuyButtons";
 import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 import { resolveLinkedVariant, variantOptions } from "@/lib/utils/product-variant-link";
+import { getAnalyticsVariant, toGa4ItemFromProduct, trackViewItem } from "@/lib/analytics";
 
 type Props = {
   product: Product;
@@ -109,13 +110,17 @@ export function PurchaseSection({
         : v;
     });
   }, [snapshot, product.variants]);
-  const freshPrice: ProductPrice = snapshot
-    ? {
-        retailPrice: snapshot.pricing.retailPrice,
-        salePrice: snapshot.pricing.salePrice,
-        currency: "VND",
-      }
-    : product.price;
+  const freshPrice = useMemo<ProductPrice>(
+    () =>
+      snapshot
+        ? {
+            retailPrice: snapshot.pricing.retailPrice,
+            salePrice: snapshot.pricing.salePrice,
+            currency: "VND",
+          }
+        : product.price,
+    [snapshot, product.price],
+  );
   const freshStockState =
     (snapshot?.stock.stockState as ProductStockState | undefined) ?? product.stockState;
 
@@ -141,6 +146,23 @@ export function PurchaseSection({
           : null,
     [variants, hasVariants, selectedOptions, useLinkedVariant, initialVariantId],
   );
+
+  const initialAnalyticsVariant = useRef(
+    resolveLinkedVariant(product, initialVariantId) ?? getAnalyticsVariant(product),
+  );
+  const lastViewedItem = useRef<string | null>(null);
+  useEffect(() => {
+    if (previewMode) return;
+    // Clearing one option while changing sizes must not report a fictitious default selection.
+    if (hasVariants && !selectedVariant && lastViewedItem.current) return;
+    const variant = selectedVariant ?? initialAnalyticsVariant.current;
+    const analyticsProduct = { ...product, price: freshPrice };
+    const item = toGa4ItemFromProduct(analyticsProduct, { variant });
+    const identity = `${product.id}:${item.item_id}`;
+    if (lastViewedItem.current === identity) return;
+    lastViewedItem.current = identity;
+    trackViewItem(analyticsProduct, variant);
+  }, [previewMode, product, freshPrice, hasVariants, selectedVariant]);
 
   // Gallery color-scoped: chọn màu mới đổi gallery; chọn size không đổi.
   const colorVariant = useMemo(

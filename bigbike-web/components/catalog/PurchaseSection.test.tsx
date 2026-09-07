@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/contracts/public";
 import { PurchaseSection } from "./PurchaseSection";
@@ -51,7 +51,10 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
 
 function renderWithQueryClient(ui: React.ReactElement) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+  return {
+    ...render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>),
+    queryClient,
+  };
 }
 
 function renderSection(
@@ -72,7 +75,19 @@ function renderSection(
 
 beforeEach(() => {
   localeState.value = "vi";
+  window.gtag = vi.fn();
 });
+
+afterEach(() => {
+  delete window.gtag;
+});
+
+function viewedItems() {
+  return vi
+    .mocked(window.gtag!)
+    .mock.calls.filter((call) => call[1] === "view_item")
+    .map((call) => (call[2] as { items: Array<{ item_id: string }> }).items[0].item_id);
+}
 
 describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_003", () => {
   it("ratingCount >= 1 → hiển thị sao đúng trung bình + microdata aggregateRating", () => {
@@ -89,6 +104,7 @@ describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_
       "4.0",
     );
     expect(screen.queryByText("4.0")).toBeNull();
+    expect(window.gtag).not.toHaveBeenCalled();
     expect(screen.getByText("(3)")).toBeInTheDocument();
   });
 
@@ -153,7 +169,8 @@ describe("PurchaseSection — liên kết GMC chọn sẵn biến thể", () => 
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("shows the linked variant price immediately and lets the customer change selection", () => {
+  it.each(["vi", "en"])("tracks the GMC variant and completed selection changes (%s)", (locale) => {
+    localeState.value = locale;
     renderWithQueryClient(
       <PurchaseSection
         product={merchantVariants()}
@@ -166,10 +183,28 @@ describe("PurchaseSection — liên kết GMC chọn sẵn biến thể", () => 
     expect(screen.getByText("1.100.000 ₫")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Xanh" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: "M" })).toHaveAttribute("aria-checked", "true");
+    expect(viewedItems()).toEqual(["E2E_GMC_BLUE_M"]);
     fireEvent.click(screen.getByRole("radio", { name: "Đỏ" }));
+    expect(viewedItems()).toEqual(["E2E_GMC_BLUE_M"]);
     fireEvent.click(screen.getByRole("radio", { name: "L" }));
     expect(screen.getByText("800.000 ₫")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Xanh" })).toHaveAttribute("aria-checked", "false");
+    expect(viewedItems()).toEqual(["E2E_GMC_BLUE_M", "E2E_GMC_RED_L"]);
+  });
+
+  it("does not repeat the variant view when the price/stock snapshot refreshes", async () => {
+    const { queryClient } = renderWithQueryClient(
+      <PurchaseSection
+        product={merchantVariants()}
+        initialVariantId="variant-blue"
+        gallery={[]}
+        rating={null}
+        ratingCount={null}
+      />,
+    );
+    await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+    await queryClient.refetchQueries();
+    expect(viewedItems()).toEqual(["E2E_GMC_BLUE_M"]);
   });
 
   it("keeps an unavailable linked variant unavailable instead of selecting another SKU", () => {
@@ -186,6 +221,7 @@ describe("PurchaseSection — liên kết GMC chọn sẵn biến thể", () => 
     expect(screen.getByRole("radio", { name: "L" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByText("800.000 ₫")).toBeInTheDocument();
     expect(screen.getByText("stockOut")).toBeInTheDocument();
+    expect(viewedItems()).toEqual(["E2E_GMC_RED_L"]);
   });
 });
 

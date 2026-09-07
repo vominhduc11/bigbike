@@ -265,14 +265,7 @@ function HotlineBar({ hotline, zalo }: { hotline: string; zalo: ZaloContact | nu
       {hotline && zalo && <span>{t("hotlineOr")}</span>}
       {zalo && (
         <span>
-          <a
-            href={zaloHref(zalo.hrefValue)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white"
-          >
-            <strong className="text-brand">{formatZaloDisplay(zalo.label)}</strong>
-          </a>
+          <strong className="text-brand">{formatZaloDisplay(zalo.label)}</strong>
         </span>
       )}
     </div>

@@ -34,6 +34,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLi
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
+import com.bigbike.bigbike_backend.service.catalog.ProductAnalyticsResolver;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.order.OrderLineItemThumbnailResolver;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
@@ -104,6 +105,7 @@ public class AdminOrderService {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final OrderLineItemThumbnailResolver thumbnailResolver;
+    private final ProductAnalyticsResolver analyticsResolver;
     private final OrderAddressMapper orderAddressMapper;
     private final ShippingMapper shippingMapper;
     private final PaymentMapper paymentMapper;
@@ -400,8 +402,11 @@ public class AdminOrderService {
     private AdminOrderDetailResponse toDetail(OrderEntity order) {
         List<OrderLineItemEntity> lineItemEntities = lineItemRepo.findByOrderId(order.getId());
         Map<String, String> liveThumbnailByPk = thumbnailResolver.resolveLiveFallbacks(lineItemEntities);
+        var analyticsByLine = analyticsResolver.forOrderItems(lineItemEntities);
         List<OrderLineItemResponse> lineItems = lineItemEntities.stream()
-                .map(lineItem -> toLineItem(lineItem, liveThumbnailByPk))
+                .map(lineItem -> orderItemMapper.toResponse(lineItem,
+                        thumbnailResolver.resolveThumbnail(lineItem, liveThumbnailByPk),
+                        analyticsByLine.get(lineItem.getId())))
                 .toList();
 
         List<OrderAddressResponse> addresses = addressRepo.findByOrderId(order.getId())
@@ -428,16 +433,6 @@ public class AdminOrderService {
         return orderMapper.toAdminDetailResponse(order, customerName, lineItems, addresses,
                 shippingItems, payments, classification,
                 classification == null && BankTransferPolicy.canConfirm(order, paymentEntities));
-    }
-
-    private OrderLineItemResponse toLineItem(
-            OrderLineItemEntity lineItem,
-            Map<String, String> liveThumbnailByPk
-    ) {
-        return orderItemMapper.toResponse(
-                lineItem,
-                thumbnailResolver.resolveThumbnail(lineItem, liveThumbnailByPk)
-        );
     }
 
     private OrderAddressResponse toAddress(OrderAddressEntity e) {

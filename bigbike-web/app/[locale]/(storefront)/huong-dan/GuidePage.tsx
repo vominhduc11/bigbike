@@ -8,6 +8,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { getGuideLayout, getStaticPage, type StaticGuideEntry } from "@/lib/content/static-pages";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
+import { Container } from "@/components/layout/Container";
 import { StaticSidebarLayout } from "@/components/layout/StaticSidebarLayout";
 import type { PolicySidebarItem } from "@/components/layout/PolicySidebar";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
@@ -77,7 +78,6 @@ async function renderGuideForLocale(locale: Locale, subSegments?: string[]) {
   const heroTitle = safeText(layout.heroTitle, t("heroTitle"));
 
   if (isRoot) {
-    const sidebarItems = buildSidebar(entries, translatePath("/huong-dan/", locale), locale);
     return (
       <StaticPageShell
         title={heroTitle}
@@ -88,7 +88,7 @@ async function renderGuideForLocale(locale: Locale, subSegments?: string[]) {
           { label: t("breadcrumb") },
         ]}
       >
-        <StaticSidebarLayout sidebarItems={sidebarItems} sidebarEmptyLabel={t("emptyMenu")}>
+        <Container>
           {entries.length === 0 ? (
             <p className="text-a4-content text-muted-foreground">{t("emptyMenu")}</p>
           ) : (
@@ -110,7 +110,7 @@ async function renderGuideForLocale(locale: Locale, subSegments?: string[]) {
               ))}
             </div>
           )}
-        </StaticSidebarLayout>
+        </Container>
       </StaticPageShell>
     );
   }

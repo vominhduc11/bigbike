@@ -136,6 +136,27 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - Hover primary: `#E50A07`, lift nhẹ `translateY(-1px)` hoặc scale tối đa `1.02`.
 - Disabled: nền `#CECECE`, không transform.
 
+### Hành động không trùng lặp (owner request 2026-09-07)
+
+- Trong cùng một khối nội dung và cùng trạng thái hiển thị, mỗi thao tác chỉ có một nút hoặc liên kết hành động rõ ràng. Không đặt thêm bản icon bên cạnh bản có chữ cho cùng thao tác.
+- Khu tài khoản giữ “Đăng xuất” ở cuối menu; bỏ icon đăng xuất trong thông tin cá nhân. Menu tài khoản dùng chung ở đầu website vẫn có đăng xuất.
+- Danh sách sản phẩm/danh mục/thương hiệu/tìm kiếm chỉ hiện một bộ chip và nút bỏ lọc. Khi không có kết quả, bộ này nằm trong thông báo rỗng; khi có kết quả hoặc lỗi hệ thống, giữ ở đầu danh sách. Liên kết bỏ riêng size không hiện cạnh bộ chip đã có thao tác bỏ size.
+- Giỏ hàng trên điện thoại chỉ dùng nút đặt hàng ở thanh cố định dưới màn hình; máy tính dùng nút trong khối tổng tiền.
+- Trang tổng hợp hướng dẫn chỉ dùng các thẻ chọn bài. Menu bên được giữ ở các bài hướng dẫn chi tiết.
+- Trang liên hệ và trang xác nhận đơn giữ một nút mở Zalo trong mỗi khối liên hệ; số Zalo bổ sung chỉ là thông tin đọc được.
+- Khối sản phẩm ngừng bán chỉ có một đường dẫn nhóm hàng: khi có gợi ý, dùng liên kết nhóm trong thông tin sản phẩm; khi không có gợi ý, nút chính “Xem cả nhóm hàng” dẫn tới nhóm đó và nhãn nhóm chỉ là chữ.
+- Được lặp có mục đích: ảnh/tên/nút chọn của cùng thẻ sản phẩm; menu dùng chung và nội dung trang; nút viết đánh giá ở đầu và cuối trang sản phẩm dài; nút mua nổi chỉ xuất hiện khi cụm mua chính ra khỏi màn hình. Hai lựa chọn chuyển khoản “Tiếp tục” / “Chuyển khoản sau” giữ theo `docs/engineering/API_FLOW_MAP.md` mục Manual transfer receipt.
+
+### Giỏ hàng nhanh trên điện thoại (2026-09-07)
+
+- Giữ nền tối đồng bộ với menu điện thoại, phông Arial và góc vuông. Tiêu đề “Giỏ hàng” là nội dung chính; số lượng là thông tin phụ.
+- Mỗi dòng ưu tiên ảnh, tên sản phẩm, màu/cỡ; bỏ mã SKU khỏi khung xem nhanh. Bộ số lượng và thành tiền nằm trên một hàng riêng, có thể xuống dòng trên màn hình hẹp/phóng lớn chữ; nút chạm tối thiểu 44px.
+- Danh sách dùng đường phân cách nhẹ, cuộn riêng. Tổng tiền, thông tin miễn phí vận chuyển và nút chính cố định trong chân khung, có khoảng an toàn đáy màn hình.
+- Nút chính “Tiếp tục đặt hàng” chiếm toàn chiều rộng; “Xem giỏ hàng” là liên kết phụ ở dưới. Cùng nhãn chuyển bước trên trang giỏ hàng; “Đặt hàng” dành cho bước xác nhận đơn cuối cùng.
+- Lỗi cập nhật giữ nguyên danh sách và số lượng đã xác nhận; hiển thị thông báo dễ hiểu và nút thử lại. Không hiển thị thanh kéo trang trí khi chưa hỗ trợ kéo.
+- Thông báo lỗi trên nền tối dùng chữ sáng đủ tương phản; nút chính luôn giữ chữ trắng. Nút hỗ trợ nổi trên trang giỏ hàng điện thoại phải nằm phía trên thanh tổng tiền, không che tổng tiền hoặc nút chuyển bước.
+- Trang giỏ hàng dùng một cột đến dưới 1024px; chỉ chia danh sách và tổng tiền thành hai cột khi đủ rộng. Bảng trượt vẫn chỉ có dưới 768px, không mở rộng sang tablet/desktop.
+
 ### Product Cards
 
 - Nền trắng, chữ đen, padding 20px, border `1px solid #DDDDDD`, radius `0`.
@@ -181,6 +202,24 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - Khung logo dùng theo ngữ cảnh nhưng phải đồng nhất trong cùng component: Giới thiệu `128×128px`, dải thương hiệu trang chủ `120×120px`, lưới Thương hiệu cao `64px`, cột lọc `96×48px`. Logo luôn căn giữa hai chiều và giữ nguyên tỉ lệ.
 - Ảnh minh hoạ PageHero dùng khung desktop tối đa `451×400px`, không làm thay đổi chiều cao tổng banner.
 - Mọi `MediaImage` trong khung cố định phải khai báo `sizes` bằng kích thước CSS thực tế. Candidate tải về phải đạt tối thiểu `kích thước khung × DPR` nhưng không chọn candidate lớn hơn cần thiết.
+
+### Trợ lý BigBike — khung đọc mở rộng
+
+- Quyết định chủ shop 2026-09-07: trên máy tính (từ 768px), khung thường rộng 544px; nút “Mở rộng khung chat” mở khung rộng tối đa 928px, cao 90% màn hình. Cả hai kích thước phải nằm trong màn hình, chừa khoảng cách theo token ở các cạnh. Nút đổi thành “Thu gọn khung chat” khi mở rộng.
+- Đầu khung máy tính có bốn nút cùng kích thước: liên hệ, xoá, mở rộng/thu gọn, đóng. Điện thoại giữ toàn màn hình và ba nút liên hệ, xoá, đóng; không hiện nút đổi kích thước.
+- Khung thường và điện thoại hiển thị sản phẩm một cột. Khung mở rộng hiển thị hai cột, kể cả phụ kiện liên quan; tiêu đề nhóm và nút xem thêm chiếm trọn hàng. Giữ ba sản phẩm đầu và nút xem thêm cho danh sách dài.
+- Mở rộng/thu gọn không tạo hội thoại mới, không gửi lại câu hỏi, không làm mất câu đang nhập, ảnh chờ gửi hay lựa chọn sản phẩm. Giữ cơ chế bám đáy khi đang đọc tin mới; không kéo khách đang đọc tin cũ về cuối.
+- Tiếp tục dùng Arial, màu hỗ trợ cyan, các token khoảng cách/viền của web và nút thao tác tối thiểu 44px. Chỉ thay bố cục hiển thị, không cắt câu trả lời hay đổi quy tắc tư vấn.
+
+### Video viewer — mobile và desktop (owner request 2026-09-07)
+
+- Dùng chung viewer cho carousel trang chủ và video sản phẩm; giữ nguồn video, thứ tự và cách chuyển vòng hiện có. Tái sử dụng Dialog/Button shadcn, Arial, màu nền tối và góc vuông của web.
+- Tên video xuất hiện một lần trong thanh đầu cùng nút đóng; không thêm dải tiêu đề trùng bên dưới. Mô tả thật vẫn đọc được dưới player, hoặc trong cột thông tin khi xoay ngang; nội dung dài cuộn trong vùng riêng.
+- Mobile: vùng bấm 48×48px, nút trước / số thứ tự / nút tiếp thành một hàng dưới player. Desktop từ `lg`: hai nút nằm sát hai bên player, khoảng cách 16px; số thứ tự vẫn rõ ràng. Một video thì ẩn điều hướng và bộ đếm.
+- Bố cục theo chiều cao khả dụng `dvh`, chừa safe-area cả bốn cạnh. Player co theo phần còn lại sau tiêu đề, mô tả và điều hướng; các vùng không chồng nhau. Bề rộng player tối đa 420px, nội dung dọc giữ tỷ lệ, không crop hoặc kéo giãn.
+- Khi landscape và chiều cao ≤600px: player bên trái, tiêu đề / mô tả / điều hướng bên phải. Khung nhúng tối thiểu 200×200px; màn quá nhỏ cho toàn bộ nội dung được cuộn thay vì cắt nút. Chiều rộng khung có thể lớn hơn tỷ lệ 9:16 để giữ điều khiển đọc được; nội dung video vẫn giữ tỷ lệ gốc.
+- Có trạng thái tải, tải chậm, lỗi nguồn / thiếu nguồn, thử lại; nguồn hợp lệ có đường mở video gốc. YouTube dùng sự kiện player để phân biệt đã sẵn sàng với iframe chỉ vừa tải; không che điều khiển/branding khi player sẵn sàng. TikTok/Facebook cũ giữ khả năng nhúng; lỗi bên trong iframe do nền tảng hiển thị, có lối mở nguồn gốc.
+- Giữ focus trong Dialog, đóng bằng Escape/nút đóng, trả focus về video vừa mở và trả lại trạng thái cuộn của trang. Phím trái/phải chuyển video khi focus ở phần điều khiển BigBike, không cướp phím của player. Không tự chuyển carousel phía sau khi viewer đang mở.
 
 ### Inputs
 

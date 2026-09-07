@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   cancelMyOrder,
   createAddress,
@@ -27,6 +27,7 @@ export function useCartQuery() {
   return useQuery({
     queryKey: queryKeys.cart(),
     queryFn: fetchCart,
+    networkMode: "always",
     staleTime: 30 * 1000,
     // Giỏ hàng nhạy thời gian (đổi tab/thiết bị, tồn kho thay đổi) → làm mới khi user
     // quay lại tab. Override global refetchOnWindowFocus:false cho riêng query này.
@@ -37,8 +38,11 @@ export function useCartQuery() {
 export function useUpdateCartItem() {
   const qc = useQueryClient();
   return useMutation({
+    mutationKey: queryKeys.cart(),
+    networkMode: "always",
     mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) =>
       updateCartItem(itemId, quantity),
+    onMutate: () => qc.cancelQueries({ queryKey: queryKeys.cart() }),
     onSuccess: (cart) => qc.setQueryData(queryKeys.cart(), cart),
   });
 }
@@ -46,9 +50,16 @@ export function useUpdateCartItem() {
 export function useRemoveCartItem() {
   const qc = useQueryClient();
   return useMutation({
+    mutationKey: queryKeys.cart(),
+    networkMode: "always",
     mutationFn: (itemId: string) => removeCartItem(itemId),
+    onMutate: () => qc.cancelQueries({ queryKey: queryKeys.cart() }),
     onSuccess: (cart) => qc.setQueryData(queryKeys.cart(), cart),
   });
+}
+
+export function useCartMutationPending() {
+  return useIsMutating({ mutationKey: queryKeys.cart() }) > 0;
 }
 
 // ── Customer ────────────────────────────────────────────────────────────────
@@ -81,7 +92,9 @@ function writeAddress(qc: ReturnType<typeof useQueryClient>, address: CustomerAd
   qc.setQueryData<CustomerAddress[]>(queryKeys.addresses(), (current = []) => {
     const withoutCurrent = current.filter((item) => item.id !== address.id);
     const normalized = address.isDefault
-      ? withoutCurrent.map((item) => item.type === address.type ? { ...item, isDefault: false } : item)
+      ? withoutCurrent.map((item) =>
+          item.type === address.type ? { ...item, isDefault: false } : item,
+        )
       : withoutCurrent;
     return [...normalized, address];
   });
@@ -98,7 +111,8 @@ export function useCreateAddress() {
 export function useUpdateAddress() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: SaveAddressPayload }) => updateAddress(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: SaveAddressPayload }) =>
+      updateAddress(id, payload),
     onSuccess: (address) => writeAddress(qc, address),
   });
 }
@@ -107,7 +121,10 @@ export function useDeleteAddress() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteAddress(id),
-    onSuccess: (_, id) => qc.setQueryData<CustomerAddress[]>(queryKeys.addresses(), (current = []) => current.filter((item) => item.id !== id)),
+    onSuccess: (_, id) =>
+      qc.setQueryData<CustomerAddress[]>(queryKeys.addresses(), (current = []) =>
+        current.filter((item) => item.id !== id),
+      ),
   });
 }
 

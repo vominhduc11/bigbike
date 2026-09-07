@@ -149,14 +149,13 @@ export function ProductView({
   const tProduct = useTranslations("Product");
   const tA11y = useTranslations("A11y");
 
-  // `view_item`, once per product. Skipped in the admin live-preview iframe: a staff member
-  // checking a draft is not a customer viewing a product, and counting them would inflate the
-  // shop's own reports.
+  // Active products are tracked by PurchaseSection, which knows the selected GMC variant.
+  // Discontinued pages have no buy box, so their initial view remains here.
   useEffect(() => {
-    if (previewMode) return;
+    if (previewMode || !product.discontinued) return;
     trackViewItem(product);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.id, previewMode]);
+  }, [product.id, product.discontinued, previewMode]);
 
   // Fetch site settings client-side using the active locale to ensure we get English translations of
   // static fields (hours, address, zalo) when locale = "en". `initialData` chỉ gán cho key `vi`

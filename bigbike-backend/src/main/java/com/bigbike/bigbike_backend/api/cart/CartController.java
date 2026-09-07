@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.mapper.CartMapper;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.cart.CartItemEntity;
 import com.bigbike.bigbike_backend.service.cart.CartService;
+import com.bigbike.bigbike_backend.service.catalog.ProductAnalyticsResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -40,6 +41,7 @@ public class CartController {
     private final CartService cartService;
     private final ApiResponseFactory apiResponseFactory;
     private final CartMapper cartMapper;
+    private final ProductAnalyticsResolver analyticsResolver;
     // Guest cookies go through the shared builder so they carry the same Domain/Secure/SameSite
     // attributes as the session cookies — a host-only bb_csrf breaks the storefront's CSRF header.
     private final CustomerAuthCookies cookies;
@@ -49,7 +51,7 @@ public class CartController {
         CartEntity cart = resolveCart(request, response);
         List<CartItemEntity> items = cartService.getItems(cart);
         return apiResponseFactory.data(
-                cartMapper.toResponse(cart, items, cartService.findUnavailableItemIds(items)), request);
+                toCartResponse(cart, items), request);
     }
 
     @PostMapping("/items")
@@ -62,7 +64,7 @@ public class CartController {
         CartEntity updated = cartService.addItem(cart, req);
         List<CartItemEntity> items = cartService.getItems(updated);
         return apiResponseFactory.data(
-                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
+                toCartResponse(updated, items), request);
     }
 
     @PatchMapping("/items/{itemId}")
@@ -76,7 +78,7 @@ public class CartController {
         CartEntity updated = cartService.updateItemQuantity(cart, itemId, req.quantity());
         List<CartItemEntity> items = cartService.getItems(updated);
         return apiResponseFactory.data(
-                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
+                toCartResponse(updated, items), request);
     }
 
     @DeleteMapping("/items/{itemId}")
@@ -89,7 +91,7 @@ public class CartController {
         CartEntity updated = cartService.removeItem(cart, itemId);
         List<CartItemEntity> items = cartService.getItems(updated);
         return apiResponseFactory.data(
-                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
+                toCartResponse(updated, items), request);
     }
 
     // Both DELETE /cart and DELETE /cart/clear empty the cart — frontends use the latter.
@@ -99,7 +101,7 @@ public class CartController {
         CartEntity updated = cartService.clearCart(cart);
         List<CartItemEntity> items = cartService.getItems(updated);
         return apiResponseFactory.data(
-                cartMapper.toResponse(updated, items, cartService.findUnavailableItemIds(items)), request);
+                toCartResponse(updated, items), request);
     }
 
     // ── cart resolution ───────────────────────────────────────────────────────
@@ -144,5 +146,10 @@ public class CartController {
     }
 
     // ── mapping helpers ───────────────────────────────────────────────────────
+
+    private CartResponse toCartResponse(CartEntity cart, List<CartItemEntity> items) {
+        return cartMapper.toResponse(cart, items, cartService.findUnavailableItemIds(items),
+                analyticsResolver.forCartItems(items));
+    }
 
 }

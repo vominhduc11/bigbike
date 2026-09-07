@@ -1,6 +1,9 @@
 import type { ImageAsset } from "@/lib/contracts/public";
 
 export type CartItem = {
+  /** Current catalog metadata; optional while an older backend is being replaced. */
+  brandName?: string | null;
+  categoryName?: string | null;
   id: string;
   productId: string | null;
   productVariantId: string | null;
@@ -78,6 +81,9 @@ export type OrderSummary = {
 };
 
 export type OrderLineItem = {
+  /** Current catalog metadata, not historical checkout snapshots. */
+  brandName?: string | null;
+  categoryName?: string | null;
   id: string;
   productId: string | null;
   productVariantId: string | null;

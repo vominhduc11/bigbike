@@ -65,7 +65,7 @@ export function DiscontinuedStatusPanel({
         ) : categorySlug ? (
           <Button asChild variant="primary" className="min-h-11 rounded-none px-5 py-3 font-cta text-b4-action font-bold uppercase">
             <LocalizedLink kind="category" viSlug={categorySlug} enSlug={categorySlugEn}>
-              {t("discontinuedEquivalentLink")}
+              {t("discontinuedCategoryLink")}
             </LocalizedLink>
           </Button>
         ) : null}
@@ -93,16 +93,13 @@ export function DiscontinuedStatusPanel({
         ) : null}
         {categorySlug ? (
           <span>
-            {t("category")}: <LocalizedLink kind="category" viSlug={categorySlug} enSlug={categorySlugEn} className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">{categoryName || categorySlug}</LocalizedLink>
+            {t("category")}: {hasSuggestions ? (
+              <LocalizedLink kind="category" viSlug={categorySlug} enSlug={categorySlugEn} className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">{categoryName || categorySlug}</LocalizedLink>
+            ) : (categoryName || categorySlug)}
           </span>
         ) : null}
       </div>
 
-      {categorySlug ? (
-        <LocalizedLink data-discontinued-category-link kind="category" viSlug={categorySlug} enSlug={categorySlugEn} className="mt-5 inline-flex min-h-11 items-center text-a4-content font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">
-          {t("discontinuedCategoryLink")}
-        </LocalizedLink>
-      ) : null}
     </section>
   );
 }

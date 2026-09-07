@@ -162,6 +162,17 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Strin
     @Query("SELECT p.id, p.imageUrl FROM ProductEntity p WHERE p.id IN :ids")
     List<Object[]> findImageUrlsByIds(@Param("ids") List<String> ids);
 
+    /** One row per product, using only the first ordered category. */
+    @Query(value = """
+            SELECT p.id AS productId, b.name AS brandName, c.name AS categoryName
+            FROM products p
+            LEFT JOIN brands b ON b.id = p.brand_id
+            LEFT JOIN product_category_map pcm ON pcm.product_id = p.id AND pcm.sort_order = 0
+            LEFT JOIN categories c ON c.id = pcm.category_id
+            WHERE p.id IN (:ids)
+            """, nativeQuery = true)
+    List<ProductAnalyticsProjection> findAnalyticsMetadataByIds(@Param("ids") List<String> ids);
+
     @Modifying(flushAutomatically = true)
     @Query(value = "DELETE FROM home_category_highlights WHERE product_id = :productId", nativeQuery = true)
     void deleteHomeHighlightsByProductId(@Param("productId") String productId);

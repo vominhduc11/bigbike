@@ -539,6 +539,111 @@ async function conversationGeometry(page: Page) {
   });
 }
 
+test.describe("expands the reading area without losing the conversation", () => {
+  for (const locale of LOCALES) {
+    test(locale.name, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await stubAvailability(page, locale.code);
+      let sentMessages = 0;
+      await page.route("**/api/v1/chat/messages/stream", (route) => {
+        sentMessages += 1;
+        return fulfillChatStream(
+          route,
+          messageResponse({
+            ...CATALOG_ANSWER,
+            answer:
+              locale.code === "vi"
+                ? CATALOG_ANSWER.answer
+                : "Here are some helmets available at the shop. Choose a model to check its available sizes.",
+            crossSellProducts: CATALOG_ANSWER.products.slice(0, 2),
+          }),
+        );
+      });
+      await page.goto(locale.path, { waitUntil: "load" });
+      await openBigBike(page);
+      await expect.poll(async () => (await panel(page).boundingBox())?.width).toBe(544);
+      await sendMessage(page, "Mũ fullface dưới 5 triệu");
+      const cards = page.locator("[data-bigbike-product-list] [data-bigbike-product-card]");
+      await expect(cards).toHaveCount(3);
+      await conversation(page)
+        .getByRole("button", { name: /Xem thêm \d+ sản phẩm|View \d+ more products/i })
+        .click();
+      await expect(cards).toHaveCount(5);
+
+      const input = composer(page).getByRole("textbox");
+      const draft =
+        locale.code === "vi" ? "Mẫu thứ hai có size M không?" : "Does the second helmet come in M?";
+      await input.fill(draft);
+      await composer(page)
+        .locator('input[type="file"]')
+        .setInputFiles({
+          name: "helmet.png",
+          mimeType: "image/png",
+          buffer: Buffer.from(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4z8AAAAASUVORK5CYII=",
+            "base64",
+          ),
+        });
+      const pendingImage = composer(page).locator('img[src^="blob:"]');
+      await expect(pendingImage).toBeVisible();
+      const previewSource = await pendingImage.getAttribute("src");
+      await header(page)
+        .getByRole("button", { name: /Mở rộng khung chat|Expand chat/i })
+        .click();
+      await expect.poll(async () => (await panel(page).boundingBox())?.width).toBe(928);
+
+      const checkColumns = async (columns: number) => {
+        await expect
+          .poll(() =>
+            page
+              .locator("[data-bigbike-product-list]")
+              .evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(" ").length),
+          )
+          .toBe(columns);
+        // Capture both positions in one frame: typing/resize can move the scroll between awaits.
+        const [first, second] = await cards.evaluateAll((nodes) =>
+          nodes.slice(0, 2).map((node) => node.getBoundingClientRect().toJSON()),
+        );
+        if (columns === 2) expect(Math.abs(first!.y - second!.y)).toBeLessThanOrEqual(1);
+        else expect(second!.y).toBeGreaterThan(first!.y);
+        expect((await conversationGeometry(page)).horizontalOverflow).toBeFalsy();
+        await expect(input).toHaveValue(draft);
+        await expect(pendingImage).toHaveAttribute("src", previewSource!);
+        await expect(cards).toHaveCount(5);
+        expect(sentMessages).toBe(1);
+      };
+      await checkColumns(2);
+      await conversation(page).evaluate((node) => node.scrollTo({ top: 0 }));
+      await panel(page).screenshot({ path: testInfo.outputPath("chat-expanded.png") });
+      // Exercise the narrowest desktop, a short screen and a phone without remounting the chat.
+      for (const viewport of [
+        { width: 768, height: 1024 },
+        { width: 844, height: 390 },
+        { width: 390, height: 844 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await checkColumns(viewport.width >= 768 ? 2 : 1);
+        const box = await panel(page).boundingBox();
+        expect(box!.x).toBeGreaterThanOrEqual(0);
+        expect(box!.y).toBeGreaterThanOrEqual(0);
+        expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width);
+        expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+        if (viewport.width < 768) {
+          await expect(header(page).getByRole("button")).toHaveCount(3);
+          expect(box!.width).toBe(viewport.width);
+          expect(box!.height).toBe(viewport.height);
+        }
+      }
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await header(page)
+        .getByRole("button", { name: /Thu gọn khung chat|Collapse chat/i })
+        .click();
+      await expect.poll(async () => (await panel(page).boundingBox())?.width).toBe(544);
+      await checkColumns(1);
+    });
+  }
+});
+
 test.describe("keeps the answer, the cards and the buttons aligned after a reply", () => {
   for (const viewport of LAYOUT_VIEWPORTS) {
     test(viewport.name, async ({ page }) => {
@@ -647,11 +752,16 @@ test.describe("keeps the assistant composer visible across required viewport siz
           ),
         ).toBeVisible();
         // Owner decision 2026-09-06: the contact button moved to the header so the input row
-        // gets its width back — three equal icon buttons up top, none of them in the composer.
+        // gets its width back. Desktop also has a size toggle (2026-09-07); mobile keeps three buttons.
         await expect(
           composer(page).getByRole("button", { name: /Mở thẻ liên hệ|Open contact card/i }),
         ).toHaveCount(0);
-        await expect(header(page).getByRole("button")).toHaveCount(3);
+        await expect(header(page).getByRole("button")).toHaveCount(viewport.width >= 768 ? 4 : 3);
+        const sizeToggle = header(page).getByRole("button", {
+          name: /Mở rộng khung chat|Expand chat/i,
+        });
+        if (viewport.width >= 768) await expect(sizeToggle).toBeVisible();
+        else await expect(sizeToggle).toHaveCount(0);
         await expect(header(page).getByRole("button", { name: /Thu nhỏ|Minimize/i })).toHaveCount(
           0,
         );

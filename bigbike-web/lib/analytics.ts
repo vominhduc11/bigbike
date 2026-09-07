@@ -1,5 +1,5 @@
 import type { Cart, CartItem, OrderDetail, OrderLineItem } from "@/lib/contracts/commerce";
-import type { Product } from "@/lib/contracts/public";
+import type { Product, ProductVariant } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
 
 declare global {
@@ -37,6 +37,7 @@ export type Ga4Item = {
   item_name: string;
   item_brand?: string;
   item_category?: string;
+  item_variant?: string;
   item_list_id?: string;
   item_list_name?: string;
   index?: number;
@@ -62,38 +63,81 @@ function sendEvent(name: string, params: Record<string, unknown>): void {
   window.gtag?.("event", name, params);
 }
 
-/**
- * `item_id` must be the real merchant SKU so Google Merchant Center and Google Ads can match the
- * product. The internal id is only a last resort for a line that genuinely has no SKU.
- */
-export function toGa4ItemFromProduct(
-  product: Product,
-  options?: { index?: number; list?: Ga4List },
-): Ga4Item {
+/** Catalog cards have no selected size. Use one deterministic selling variant, not the parent SKU. */
+export function getAnalyticsVariant(product: Product): ProductVariant | undefined {
+  const variants = product.variants ?? [];
+  const available = variants.filter((variant) => variant.isAvailable);
   const { current } = derivePricing(product.price);
+  return (
+    available.find(
+      (variant) => derivePricing(variant.price ?? product.price).current === current,
+    ) ??
+    variants.find((variant) => derivePricing(variant.price ?? product.price).current === current) ??
+    available[0] ??
+    variants[0]
+  );
+}
+
+type ItemInput = {
+  id: string;
+  name: string;
+  brand?: string | null;
+  category?: string | null;
+  variant?: string | null;
+  price: number;
+  quantity: number;
+  index?: number;
+  list?: Ga4List;
+};
+
+/** Single payload builder for all ten events; never spread cart/order/customer objects into GA4. */
+function toGa4Item(input: ItemInput): Ga4Item {
   return {
-    item_id: product.sku ?? product.slug,
-    item_name: product.name,
-    item_brand: product.brand?.name,
-    item_category: product.category?.name,
-    item_list_id: options?.list?.id,
-    item_list_name: options?.list?.name,
-    index: options?.index,
-    price: toVndAmount(current),
+    item_id: input.id,
+    item_name: input.name,
+    item_brand: input.brand?.trim() || undefined,
+    item_category: input.category?.trim() || undefined,
+    item_variant: input.variant?.trim() || undefined,
+    item_list_id: input.list?.id,
+    item_list_name: input.list?.name,
+    index: input.index,
+    price: toVndAmount(input.price),
     currency: GA_CURRENCY,
-    quantity: 1,
+    quantity: input.quantity,
   };
 }
 
-/** Cart lines carry no brand/category, so those two fields stay empty by design. */
-export function toGa4ItemFromCart(item: CartItem): Ga4Item {
-  return {
-    item_id: item.sku ?? item.productId ?? item.id,
-    item_name: item.productName,
-    price: toVndAmount(item.unitPrice),
+/** GMC_RULE_003: variant SKU for a variant, product SKU only for a simple product. */
+export function toGa4ItemFromProduct(
+  product: Product,
+  options?: { index?: number; list?: Ga4List; variant?: ProductVariant },
+): Ga4Item {
+  const variant = options?.variant ?? getAnalyticsVariant(product);
+  const { current } = derivePricing(variant?.price ?? product.price);
+  return toGa4Item({
+    id: variant ? variant.sku?.trim() || variant.id : product.sku?.trim() || product.slug,
+    name: product.name,
+    brand: product.brand?.name,
+    category: product.category?.name,
+    variant: variant?.name,
+    list: options?.list,
+    index: options?.index,
+    price: current,
+    quantity: 1,
+  });
+}
+
+/** Both commerce responses retain the selling SKU and the purchased variant description. */
+export function toGa4ItemFromCart(item: CartItem | OrderLineItem): Ga4Item {
+  return toGa4Item({
+    id: item.sku?.trim() || item.productId || item.id,
+    name: item.productName,
+    brand: item.brandName,
+    category: item.categoryName,
+    variant: item.variantName,
+    price: item.unitPrice,
     quantity: item.quantity,
-    currency: GA_CURRENCY,
-  };
+  });
 }
 
 export function toGa4ItemsFromCart(items: CartItem[]): Ga4Item[] {
@@ -101,13 +145,7 @@ export function toGa4ItemsFromCart(items: CartItem[]): Ga4Item[] {
 }
 
 export function toGa4ItemsFromOrder(lineItems: OrderLineItem[]): Ga4Item[] {
-  return lineItems.map((item) => ({
-    item_id: item.sku ?? item.productId ?? item.id,
-    item_name: item.productName,
-    price: toVndAmount(item.unitPrice),
-    quantity: item.quantity,
-    currency: GA_CURRENCY,
-  }));
+  return lineItems.map(toGa4ItemFromCart);
 }
 
 export function trackViewItemList(products: Product[], list: Ga4List): void {
@@ -127,12 +165,12 @@ export function trackSelectItem(product: Product, list: Ga4List, index?: number)
   });
 }
 
-export function trackViewItem(product: Product): void {
-  const { current } = derivePricing(product.price);
+export function trackViewItem(product: Product, variant?: ProductVariant): void {
+  const item = toGa4ItemFromProduct(product, { variant });
   sendEvent("view_item", {
     currency: GA_CURRENCY,
-    value: toVndAmount(current),
-    items: [toGa4ItemFromProduct(product)],
+    value: item.price,
+    items: [item],
   });
 }
 

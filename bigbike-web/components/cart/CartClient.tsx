@@ -2,12 +2,18 @@
 
 import Link from "@/i18n/StorefrontLink";
 import { ChevronLeft, ShoppingCart } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useCartQuery, useRemoveCartItem, useUpdateCartItem } from "@/lib/query/hooks";
+import {
+  useCartQuery,
+  useCartMutationPending,
+  useRemoveCartItem,
+  useUpdateCartItem,
+} from "@/lib/query/hooks";
 import { trackRemoveFromCart, trackViewCart } from "@/lib/analytics";
 import { toProductListPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
+import type { Cart } from "@/lib/contracts/commerce";
 import { Button } from "@/components/ui/button";
 import { cartToDrafts } from "./parts/helpers";
 import { CartItemRow } from "./parts/CartItemRow";
@@ -29,19 +35,21 @@ export function CartClient() {
   const locale = useLocale() as Locale;
   const cartQuery = useCartQuery();
   const updateItem = useUpdateCartItem();
+  const cartMutationPending = useCartMutationPending();
   const removeItem = useRemoveCartItem();
   const cart = cartQuery.data ?? null;
   const [quantityDrafts, setQuantityDrafts] = useState<Record<string, number>>({});
-  const [syncedCartId, setSyncedCartId] = useState<string | null>(null);
+  const [syncedCart, setSyncedCart] = useState<Cart | null>(null);
   const [error, setError] = useState("");
   const [mutating, setMutating] = useState<Record<string, boolean>>({});
+  const mutationLock = useRef(false);
+  const busy = Object.values(mutating).some(Boolean) || cartMutationPending;
+  const displayError = error || (cartQuery.error ? t("loadFailed") : "");
 
-  // Seed drafts from the server once per cart load (React's "adjusting state during
-  // render" pattern — not an effect, so this can't cascade or clobber an in-progress
-  // edit on a refetch triggered by this component's own mutations). Per-item mutations
-  // below correct their own draft from the mutation's resolved cart on success.
-  if (cart && cart.id !== syncedCartId) {
-    setSyncedCartId(cart.id);
+  // A refreshed cart can keep its ID while quantities change in another view.
+  // Synchronize drafts only when the server-confirmed snapshot changes.
+  if (cart && cart !== syncedCart) {
+    setSyncedCart(cart);
     setQuantityDrafts(cartToDrafts(cart));
   }
 
@@ -63,8 +71,11 @@ export function CartClient() {
 
   const handleQuantityStep = useCallback(
     async (itemId: string, direction: 1 | -1) => {
+      if (mutationLock.current || cartMutationPending) return;
+      const confirmedQty = cart?.items.find((item) => item.id === itemId)?.quantity ?? 1;
       const current = quantityDrafts[itemId] ?? 1;
       const nextQty = Math.max(1, current + direction);
+      mutationLock.current = true;
       setQuantityDrafts((p) => ({ ...p, [itemId]: nextQty }));
       setItemMutating(itemId, true);
       setError("");
@@ -76,18 +87,22 @@ export function CartClient() {
         }
       } catch (error) {
         reportStorefrontFailure("add_to_cart", error);
+        setQuantityDrafts((p) => ({ ...p, [itemId]: confirmedQty }));
         setError(t("updateFailed"));
       } finally {
+        mutationLock.current = false;
         setItemMutating(itemId, false);
       }
     },
-    [quantityDrafts, setItemMutating, t, updateItem],
+    [cart, cartMutationPending, quantityDrafts, setItemMutating, t, updateItem],
   );
 
   const handleQuantityBlur = useCallback(
     async (itemId: string, currentServerQty: number) => {
+      if (mutationLock.current || cartMutationPending) return;
       const nextQty = quantityDrafts[itemId] ?? currentServerQty;
       if (nextQty === currentServerQty) return;
+      mutationLock.current = true;
       setItemMutating(itemId, true);
       setError("");
       try {
@@ -98,16 +113,20 @@ export function CartClient() {
         }
       } catch (error) {
         reportStorefrontFailure("add_to_cart", error);
+        setQuantityDrafts((p) => ({ ...p, [itemId]: currentServerQty }));
         setError(t("updateFailed"));
       } finally {
+        mutationLock.current = false;
         setItemMutating(itemId, false);
       }
     },
-    [quantityDrafts, setItemMutating, t, updateItem],
+    [cartMutationPending, quantityDrafts, setItemMutating, t, updateItem],
   );
 
   const handleRemove = useCallback(
     async (itemId: string) => {
+      if (mutationLock.current || cartMutationPending) return;
+      mutationLock.current = true;
       // Read the line before the mutation: once it is gone from the cart there is nothing
       // left to describe to analytics.
       const removed = cart?.items.find((i) => i.id === itemId);
@@ -119,13 +138,37 @@ export function CartClient() {
       } catch {
         setError(t("removeFailed"));
       } finally {
+        mutationLock.current = false;
         setItemMutating(itemId, false);
       }
     },
-    [cart, setItemMutating, removeItem, t],
+    [cart, cartMutationPending, setItemMutating, removeItem, t],
   );
 
   const continueHref = toProductListPath(locale);
+  const hasUnsavedQuantity =
+    cart?.items.some((item) => (quantityDrafts[item.id] ?? item.quantity) !== item.quantity) ??
+    false;
+  const checkoutBlocked =
+    busy || cartQuery.isFetching || hasUnsavedQuantity || Boolean(displayError);
+  const retryLoad = async () => {
+    const result = await cartQuery.refetch();
+    if (!result.error) setError("");
+  };
+  const errorNotice = displayError ? (
+    <div className="mb-6 border border-destructive bg-accent p-5 text-destructive" role="alert">
+      <p className="m-0">{displayError}</p>
+      <Button
+        type="button"
+        variant="outline"
+        className="mt-3 rounded-none"
+        onClick={() => void retryLoad()}
+        disabled={busy || cartQuery.isFetching}
+      >
+        {t("retry")}
+      </Button>
+    </div>
+  ) : null;
 
   if (cartQuery.isLoading) {
     return <CartSkeleton label={t("loadingAria")} />;
@@ -134,10 +177,8 @@ export function CartClient() {
   if (!cart) {
     return (
       <>
-        <div className="border border-destructive bg-accent p-5 text-destructive" role="alert">
-          {error || t("loadFailed")}
-        </div>
-        <Button asChild variant="primary" className="mt-6 rounded-none">
+        {errorNotice}
+        <Button asChild variant="primary" className="mt-6 rounded-none text-primary-foreground!">
           <Link href={continueHref}>{t("returnToShop")}</Link>
         </Button>
       </>
@@ -150,12 +191,11 @@ export function CartClient() {
   if (!hasItems) {
     return (
       <>
-        {error && (
-          <div className="border border-destructive bg-accent p-5 text-destructive" role="alert">
-            {error}
-          </div>
-        )}
-        <div className="grid justify-items-center border border-border bg-secondary px-6 py-14 text-center" role="status">
+        {errorNotice}
+        <div
+          className="grid justify-items-center border border-border bg-secondary px-6 py-14 text-center"
+          role="status"
+        >
           <span
             className="mb-5 inline-flex h-16 w-16 items-center justify-center border border-border bg-background text-muted-foreground"
             aria-hidden="true"
@@ -163,7 +203,7 @@ export function CartClient() {
             <ShoppingCart size={30} strokeWidth={1.5} />
           </span>
           <p className="m-0 font-body text-a2-page font-semibold">{t("emptyMessage")}</p>
-          <Button asChild variant="primary" className="mt-6 rounded-none">
+          <Button asChild variant="primary" className="mt-6 rounded-none text-primary-foreground!">
             <Link href={continueHref}>{t("returnToShop")}</Link>
           </Button>
         </div>
@@ -172,29 +212,22 @@ export function CartClient() {
   }
 
   return (
-    <div
-      data-cart-content
-      /* Mobile: footer ẩn (FooterMobileGate) + thanh tổng tiền dính đáy
-         (data-cart-mobile-checkout ≈ nút 52px + py-3 12px + border 1px +
-         max(12px,safe) ≈ 65px + safe). Chừa theo "vùng an toàn" đáy máy + 12px
-         thở để thanh không che nội dung trên iPhone tai thỏ. */
-      className="[padding-bottom:calc(64px+max(12px,env(safe-area-inset-bottom))+12px)] md:pb-0"
-    >
-      {error && (
-        <div className="mb-6 border border-destructive bg-accent p-5 text-destructive" role="alert">
-          {error}
-        </div>
-      )}
+    <div data-cart-content className="pb-[calc(144px+env(safe-area-inset-bottom))] md:pb-0">
+      {errorNotice}
 
-      <div className="grid gap-8 md:grid-cols-12">
-        <div className="min-w-0 md:col-span-8">
-          <div className="divide-y divide-border border-y border-border" role="list">
+      <div className="grid gap-8 lg:grid-cols-12">
+        <div className="min-w-0 lg:col-span-8">
+          <div
+            className="divide-y divide-border border-y border-border"
+            role="list"
+            aria-busy={busy}
+          >
             {cart.items.map((item) => (
               <CartItemRow
                 key={item.id}
                 item={item}
                 draftQuantity={quantityDrafts[item.id] ?? item.quantity}
-                isMutating={Boolean(mutating[item.id])}
+                isMutating={busy}
                 onStep={handleQuantityStep}
                 onDraft={handleQuantityDraft}
                 onBlur={handleQuantityBlur}
@@ -211,7 +244,12 @@ export function CartClient() {
           </Button>
         </div>
 
-        <CartSummary cart={cart} hasUnavailable={hasUnavailable} />
+        <CartSummary
+          cart={cart}
+          hasUnavailable={hasUnavailable}
+          checkoutBlocked={checkoutBlocked}
+          isUpdating={busy}
+        />
       </div>
     </div>
   );

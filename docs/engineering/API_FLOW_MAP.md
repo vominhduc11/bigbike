@@ -107,6 +107,14 @@ decisions do not change API shape, URL, catalog exclusion or redirect behavior.
 
 Status: `OWNER_CONFIRMED_2026-08-15`
 
+### Cart review — mobile quick view and full page (2026-09-07)
+
+- Mobile navigation opens the existing cart sheet for a quick review; “Xem giỏ hàng” opens the full cart page. Both read and update the same cart query. The primary action is “Tiếp tục đặt hàng” / “Continue to checkout”, navigating to the existing checkout form without creating an order.
+- Keep product name, selected variant, quantity and line total visible in the quick view; omit the secondary SKU. The item list scrolls independently while the total, free-shipping note (`SHIP_RULE_001`) and primary action remain visible. Keep the full page for reviewing longer carts.
+- Updating/removing a line locks further cart mutations and checkout across both views until the response settles. Use server-confirmed quantities/totals; restore the confirmed quantity when an edit fails. Keep existing items visible on an update/refetch failure, show a readable error and offer a retry. Never expose raw network/server messages. Cart reads/edits attempt the request even when the browser reports offline, so a failed request produces a recoverable error instead of silently queuing an edit to run later.
+- The sheet has a visible close button and backdrop dismissal, restores focus to its mobile trigger, and closes when navigating away or switching to desktop. Do not show a decorative drag handle without a working drag gesture.
+- Loading/empty/error/unavailable states use the same availability rules as the full cart. No changes to endpoints, cart persistence, pricing, shipping or checkout validation.
+
 ### Checkout
 
 `cart client -> CheckoutService -> order/payment/shipping tables -> email + /topic/admin/orders` (per-variant `isAvailable` gate; no stock movements written — V261)
@@ -142,6 +150,8 @@ The `stock_receipts` schema was **dropped in V120** — no receiving flow was ev
 Status: `REMOVED`
 
 ### Trợ lý BigBike
+
+`CHAT_RULE_001` (owner decision 2026-09-07): FloatingChat ẩn launcher ở checkout, edit-account và edit-address, gồm cả URL Việt/Anh và dấu `/` cuối; khi điều hướng vào các trang này thì đóng panel, giữ nguyên hội thoại. `CheckoutClient -> nút Cần hỗ trợ?/Need help? (type=button) -> sự kiện mở chat phía trình duyệt -> FloatingChat hiện có`. Nút nằm cạnh xác nhận đặt hàng, bị khóa trong lúc gửi đơn; không submit form, không tải lại trang và không thay đổi API checkout/chat. Đóng panel trả focus về nút đã mở nó. Giỏ hàng và các trang xác nhận/tra cứu/lịch sử đơn tiếp tục dùng launcher nổi.
 
 `widget + pageContext -> ownership/idempotency -> local safety + clarity/fast-path -> short transaction -> nếu cần AI: atomic reserve 1 slot daily -> Gemini 3.7 Flash -> verified tool calls/guard -> short transaction lưu final -> response/stream progress`
 

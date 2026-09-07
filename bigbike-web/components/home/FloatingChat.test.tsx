@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FloatingChat } from "./FloatingChat";
+import { requestChatOpen } from "@/lib/chat/chat-launcher";
+
+const navigation = vi.hoisted(() => ({ pathname: "/" }));
 
 const api = vi.hoisted(() => ({
   fetchChatAvailability: vi.fn(),
@@ -34,7 +37,7 @@ vi.mock("@tanstack/react-query", () => ({
 vi.mock("@/lib/api/client-api", () => api);
 vi.mock("@/lib/auth/auth-store", () => ({ useAuth: () => ({ status: "anonymous" }) }));
 vi.mock("@/lib/cart-context", () => ({ useCart: () => ({ addToCart: vi.fn() }) }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
+vi.mock("next/navigation", () => ({ usePathname: () => navigation.pathname }));
 vi.mock("@/components/ui/MediaImage", () => ({
   MediaImage: ({ altFallback }: { altFallback: string }) => <div aria-label={altFallback} />,
 }));
@@ -69,6 +72,7 @@ const defaultResult = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  navigation.pathname = "/";
   window.localStorage.clear();
   window.sessionStorage.clear();
   api.fetchChatAvailability.mockResolvedValue({
@@ -111,6 +115,74 @@ async function openReadyChat(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("FloatingChat", () => {
+  it.each([
+    "/dat-hang",
+    "/dat-hang/",
+    "/en/order/",
+    "/en/dat-hang/",
+    "/tai-khoan/edit-account/",
+    "/en/account/edit-account/",
+    "/tai-khoan/edit-address/billing/",
+    "/tai-khoan/edit-address/shipping/",
+    "/en/account/edit-address/billing/",
+    "/en/account/edit-address/shipping/",
+  ])("hides the floating launcher on the focused form %s", async (pathname) => {
+    navigation.pathname = pathname;
+    render(<FloatingChat />);
+    await waitFor(() => expect(api.fetchChatAvailability).toHaveBeenCalled());
+    expect(screen.queryByRole("button", { name: "open" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(api.openChatSession).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "/",
+    "/en/",
+    "/product/mu-bao-hiem/",
+    "/en/search/",
+    "/gio-hang/",
+    "/en/cart/",
+    "/don-hang/xac-nhan/",
+    "/en/orders/confirm/",
+    "/tai-khoan/don-hang/",
+    "/en/account/orders/123/",
+    "/en/policy/return-policy/",
+  ])("keeps the floating launcher on %s", async (pathname) => {
+    navigation.pathname = pathname;
+    render(<FloatingChat />);
+    await waitFor(() => expect(api.fetchChatAvailability).toHaveBeenCalled());
+    expect(screen.getByRole("button", { name: "open" })).toBeInTheDocument();
+  });
+
+  it("closes on entering checkout and reopens the same draft from inline support", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<FloatingChat />);
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await user.type(await screen.findByLabelText("messageLabel"), "Cần tư vấn thêm");
+
+    navigation.pathname = "/en/order/";
+    rerender(<FloatingChat />);
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "open" })).not.toBeInTheDocument();
+
+    const trigger = document.createElement("button");
+    document.body.append(trigger);
+    try {
+      act(() => requestChatOpen(trigger));
+      expect(await screen.findByLabelText("messageLabel")).toHaveValue("Cần tư vấn thêm");
+      expect(api.streamChatMessage).not.toHaveBeenCalled();
+      await user.keyboard("{Escape}");
+      await waitFor(() => expect(trigger).toHaveFocus());
+      expect(screen.queryByRole("button", { name: "open" })).not.toBeInTheDocument();
+    } finally {
+      trigger.remove();
+    }
+
+    navigation.pathname = "/gio-hang/";
+    rerender(<FloatingChat />);
+    expect(screen.getByRole("button", { name: "open" })).toBeInTheDocument();
+  });
+
   it("sends a consultation request and renders the returned product", async () => {
     const user = userEvent.setup();
     const input = await openReadyChat(user);
@@ -219,7 +291,7 @@ describe("FloatingChat", () => {
   });
 
   // Owner decision 2026-09-06 (CHAT_RULE_049 keeps the delete control): the header carries the
-  // three icon buttons; the separate strip that used to hold only the trash icon is gone, and the
+  // contact/delete/close buttons plus the desktop size toggle (2026-09-07); the old trash strip is gone, and the
   // delete confirmation takes no height until the customer asks for it.
   it("keeps the composer outside the scrolling conversation and puts contact, delete and close in the header", async () => {
     const user = userEvent.setup();
@@ -235,8 +307,8 @@ describe("FloatingChat", () => {
     expect(composer?.parentElement).toBe(panel);
 
     const headerButtons = within(header as HTMLElement).getAllByRole("button");
-    expect(headerButtons).toHaveLength(3);
-    for (const name of ["contactToggleOpen", "deleteConversation", "close"]) {
+    expect(headerButtons).toHaveLength(4);
+    for (const name of ["contactToggleOpen", "deleteConversation", "expandPanel", "close"]) {
       expect(within(header as HTMLElement).getByRole("button", { name })).toBeInTheDocument();
     }
     expect(
@@ -253,6 +325,43 @@ describe("FloatingChat", () => {
     expect(document.querySelector("[data-bigbike-delete-confirm]")).toBeInTheDocument();
     expect(screen.getByText("confirmDeleteHistory")).toBeInTheDocument();
     expect(api.deleteChatHistory).not.toHaveBeenCalled();
+  });
+
+  it("preserves the conversation, draft and revealed products when expanding and collapsing", async () => {
+    const products = Array.from({ length: 4 }, (_, index) => ({
+      ...defaultResult.products[0],
+      slug: `helmet-${index}`,
+      name: `Mũ bảo hiểm ${index + 1}`,
+    }));
+    api.streamChatMessage.mockResolvedValue({ ...defaultResult, products });
+    const user = userEvent.setup();
+    const input = await openReadyChat(user);
+    await user.click(input);
+    await user.paste("Tư vấn mũ đi phượt");
+    await user.click(screen.getByRole("button", { name: "send" }));
+    expect(await screen.findByText(products[0].name)).toBeInTheDocument();
+    expect(screen.queryByText(products[3].name)).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "viewMoreProducts:1" }));
+    await user.click(input);
+    await user.paste("Mẫu thứ hai có size M không?");
+
+    const panel = document.querySelector("[data-bigbike-assistant]");
+    const firstCard = document.querySelector("[data-bigbike-product-card]");
+    const sessionCalls = api.openChatSession.mock.calls.length;
+    for (const [button, size] of [
+      ["expandPanel", "wide"],
+      ["collapsePanel", "standard"],
+    ]) {
+      await user.click(screen.getByRole("button", { name: button }));
+      expect(panel).toHaveAttribute("data-bigbike-panel-size", size);
+      expect(screen.getByLabelText("messageLabel")).toBe(input);
+      expect(input).toHaveValue("Mẫu thứ hai có size M không?");
+      expect(document.querySelector("[data-bigbike-product-card]")).toBe(firstCard);
+      expect(screen.getByText(products[3].name)).toBeInTheDocument();
+      expect(screen.getAllByText(defaultResult.answer).length).toBeGreaterThan(0);
+    }
+    expect(api.streamChatMessage).toHaveBeenCalledTimes(1);
+    expect(api.openChatSession).toHaveBeenCalledTimes(sessionCalls);
   });
 
   it("keeps the conversation when the customer closes and reopens the panel", async () => {

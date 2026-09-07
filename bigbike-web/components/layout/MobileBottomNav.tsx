@@ -34,7 +34,9 @@ function tabClass(active: boolean) {
 }
 
 function ActiveBar() {
-  return <span className="absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2 bg-[color:var(--bb-brand-primary-on-dark)]" />;
+  return (
+    <span className="absolute left-1/2 top-0 h-0.5 w-6 -translate-x-1/2 bg-[color:var(--bb-brand-primary-on-dark)]" />
+  );
 }
 
 export function MobileBottomNav() {
@@ -47,7 +49,12 @@ export function MobileBottomNav() {
 
   // Transaction pages reserve this area for their primary action instead of
   // showing a second fixed bar underneath it.
-  if (viPathname.startsWith("/gio-hang") || viPathname.startsWith("/dat-hang") || viPathname.startsWith("/don-hang")) return null;
+  if (
+    viPathname.startsWith("/gio-hang") ||
+    viPathname.startsWith("/dat-hang") ||
+    viPathname.startsWith("/don-hang")
+  )
+    return null;
 
   const badge = cartCount != null && cartCount > 0 ? cartCount : null;
   // Tab Giỏ hàng mở khung xem nhanh (MobileCartSheet) thay vì sang thẳng trang —
@@ -80,7 +87,7 @@ export function MobileBottomNav() {
         >
           {homeActive && <ActiveBar />}
           <Home size={20} aria-hidden />
-          <span className={cn(labelCls,homeActive ? "font-semibold" : "font-medium")}>
+          <span className={cn(labelCls, homeActive ? "font-semibold" : "font-medium")}>
             {t("fallbackNav.home")}
           </span>
         </Link>
@@ -102,7 +109,7 @@ export function MobileBottomNav() {
 
         <button
           type="button"
-          onClick={() => openPanel("cart")}
+          onClick={(event) => openPanel("cart", event.currentTarget)}
           className={tabClass(cartActive || cartRouteActive)}
           aria-pressed={cartActive}
         >
@@ -115,7 +122,12 @@ export function MobileBottomNav() {
               </span>
             )}
           </div>
-          <span className={cn(labelCls, cartActive || cartRouteActive ? "font-semibold" : "font-medium")}>
+          <span
+            className={cn(
+              labelCls,
+              cartActive || cartRouteActive ? "font-semibold" : "font-medium",
+            )}
+          >
             {t("mobileCartLink")}
           </span>
         </button>
@@ -128,7 +140,7 @@ export function MobileBottomNav() {
         >
           {accountActive && <ActiveBar />}
           <User size={20} aria-hidden />
-          <span className={cn(labelCls,accountActive ? "font-semibold" : "font-medium")}>
+          <span className={cn(labelCls, accountActive ? "font-semibold" : "font-medium")}>
             {t("mobileAccountLink")}
           </span>
         </Link>

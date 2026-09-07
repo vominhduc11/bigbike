@@ -1,275 +1,307 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
-import { ShoppingCart, Trash2 } from "lucide-react";
+import { ArrowRight, LoaderCircle, ShoppingCart, Trash2, Truck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MediaImage } from "@/components/ui/MediaImage";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { QuantityStepper } from "@/components/ui/QuantityStepper";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { trackRemoveFromCart } from "@/lib/analytics";
-import { useCart } from "@/lib/cart-context";
-import type { CartItem } from "@/lib/contracts/commerce";
-import { useCartQuery, useRemoveCartItem, useUpdateCartItem } from "@/lib/query/hooks";
+import {
+  useCartQuery,
+  useCartMutationPending,
+  useRemoveCartItem,
+  useUpdateCartItem,
+} from "@/lib/query/hooks";
 import { cn } from "@/lib/utils";
 import { formatVnd } from "@/lib/utils/format";
 import { toCartPath, toCheckoutPath, toProductListPath } from "@/lib/utils/routes";
+import type { CartItem } from "@/lib/contracts/commerce";
 import type { Locale } from "@/i18n/locale";
 import { useHeaderUi } from "./HeaderUiContext";
 
-// Dark-shell micro label (GIỎ HÀNG / TỔNG TẠM TÍNH / line SKU)
-const microLabel =
-  "m-0 font-cta text-b5-label font-semibold uppercase tracking-normal text-[var(--bb-text-inverse-muted)]";
-// Shared CTA button chrome (empty link / primary / secondary)
-const ctaBtn =
-  "inline-flex min-h-11 items-center justify-center px-4 font-cta text-b4-action font-semibold uppercase tracking-normal no-underline";
-const ctaBtnFilled = "border border-[var(--bb-brand-primary)] bg-brand text-[var(--bb-text-inverse)]";
-const qtyBtn =
-  "inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-45";
-const lineMeta = "mt-1 font-cta text-b5-label uppercase leading-title";
-
-function CartSheetThumb({ item }: { item: CartItem }) {
-  return (
-    <div className="relative flex h-18 w-18 flex-none items-center justify-center overflow-hidden bg-[var(--bb-bg-surface)] text-[var(--bb-text-primary)] [&_img]:h-full [&_img]:w-full [&_img]:object-contain">
-      {item.image?.url ? (
-        <MediaImage image={item.image} altFallback={item.productName} width={96} height={96} />
-      ) : (
-        <span className="bb-thumb-initials">{item.productName.slice(0, 2)}</span>
-      )}
-    </div>
-  );
-}
+const secondaryAction =
+  "min-h-11 rounded-none px-4 py-2 text-[var(--bb-text-inverse)] hover:bg-[var(--bb-bg-surface-dark)] hover:not-disabled:scale-100";
 
 export function MobileCartSheet() {
   const t = useTranslations("CartMini");
+  const tCart = useTranslations("CartPage");
   const locale = useLocale() as Locale;
-  const { isPanelOpen, openPanel, closePanel } = useHeaderUi();
-  const { refreshCount } = useCart();
+  const pathname = usePathname();
+  const { isPanelOpen, closePanel } = useHeaderUi();
   const open = isPanelOpen("cart");
-  const {
-    data: cart,
-    error: cartError,
-    isFetching,
-    isLoading,
-    refetch,
-  } = useCartQuery();
+  const { data: cart, error: cartError, isFetching, isLoading, refetch } = useCartQuery();
   const updateItem = useUpdateCartItem();
+  const cartMutationPending = useCartMutationPending();
   const removeItem = useRemoveCartItem();
   const [errorMessage, setErrorMessage] = useState("");
+  const [busyItemId, setBusyItemId] = useState<string | null>(null);
+  const mutationLock = useRef(false);
+  const previousPathname = useRef(pathname);
+
+  useEffect(() => {
+    if (open) void refetch();
+  }, [open, refetch]);
+
+  useEffect(() => {
+    if (previousPathname.current === pathname) return;
+    previousPathname.current = pathname;
+    if (open) closePanel({ restoreFocus: false });
+  }, [pathname, open, closePanel]);
 
   useEffect(() => {
     if (!open) return;
-    void refetch();
-  }, [open, refetch]);
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) closePanel({ restoreFocus: false });
+    };
+    closeOnDesktop();
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, [open, closePanel]);
 
   async function setQuantity(item: CartItem, quantity: number) {
-    if (quantity < 1 || updateItem.isPending || removeItem.isPending) return;
+    if (quantity < 1 || mutationLock.current || cartMutationPending) return;
+    mutationLock.current = true;
+    setBusyItemId(item.id);
     setErrorMessage("");
-
     try {
       await updateItem.mutateAsync({ itemId: item.id, quantity });
-      refreshCount();
     } catch {
       setErrorMessage(t("updateFailed"));
+    } finally {
+      mutationLock.current = false;
+      setBusyItemId(null);
     }
   }
 
   async function removeLine(item: CartItem) {
-    if (updateItem.isPending || removeItem.isPending) return;
+    if (mutationLock.current || cartMutationPending) return;
+    mutationLock.current = true;
+    setBusyItemId(item.id);
     setErrorMessage("");
-
     try {
       await removeItem.mutateAsync(item.id);
       trackRemoveFromCart(item);
-      refreshCount();
     } catch {
       setErrorMessage(t("removeFailed"));
+    } finally {
+      mutationLock.current = false;
+      setBusyItemId(null);
     }
+  }
+
+  async function retryLoad() {
+    const result = await refetch();
+    if (!result.error) setErrorMessage("");
   }
 
   const items = cart?.items ?? [];
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const loading = isLoading || (open && isFetching && !cart);
-  const queryError = cartError instanceof Error ? cartError.message : "";
+  const loading = isLoading || (isFetching && !cart);
+  const busy = busyItemId !== null || cartMutationPending;
   const unavailable = items.some((item) => !item.available);
+  const error = errorMessage || (cartError ? t("loadFailed") : "");
+  const checkoutDisabled = busy || isFetching || unavailable || Boolean(error);
 
   return (
     <Sheet
       open={open}
       onOpenChange={(nextOpen) => {
-        if (nextOpen) {
-          setErrorMessage("");
-          openPanel("cart");
-        } else {
-          closePanel();
-        }
+        if (!nextOpen) closePanel();
       }}
     >
       <SheetContent
         side="bottom"
-        className="md:hidden flex flex-col gap-0 p-0 text-[var(--bb-text-inverse)] bg-[var(--bb-mobile-shell-bg)] border-[var(--bb-mobile-shell-border)] z-[var(--bb-mobile-panel-z)] max-h-[min(84dvh,calc(100dvh_-_max(24px,env(safe-area-inset-top))))] [&>button]:top-[11px] [&>button]:right-2.5 [&>button]:h-11 [&>button]:w-11 [&>button]:text-[var(--bb-text-inverse)]"
+        className="z-[var(--bb-mobile-panel-z)] flex max-h-[85dvh] flex-col gap-0 border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-bg)] p-0 text-[var(--bb-text-inverse)] md:hidden [&>button]:right-2 [&>button]:top-2 [&>button]:text-[var(--bb-text-inverse)]"
       >
-        <div className="mx-auto mt-2 h-1 w-9 flex-none bg-[var(--bb-mobile-shell-border-strong)]" aria-hidden="true" />
-        <div className="px-3.5 pt-3 pb-2 border-b border-[var(--bb-mobile-shell-border)]">
-          <div>
-            <p className={microLabel}>{t("heading")}</p>
-            <SheetTitle className="text-[var(--bb-text-inverse)]">
-              {itemCount > 0 ? t("itemCount", { count: itemCount }) : t("empty")}
-            </SheetTitle>
-            <SheetDescription className="sr-only">
-              {t("description")}
-            </SheetDescription>
-          </div>
+        <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-[var(--bb-mobile-shell-border)] px-4 py-4 pr-16">
+          <SheetTitle className="font-body text-a3-section uppercase text-[var(--bb-text-inverse)]">
+            {t("heading")}
+          </SheetTitle>
+          {!loading && cart ? (
+            <span className="font-body text-a5-meta text-[var(--bb-text-inverse-secondary)]">
+              {t("itemCount", { count: itemCount })}
+            </span>
+          ) : null}
+          <SheetDescription className="sr-only">{t("description")}</SheetDescription>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-4.5 py-3.5 [-webkit-overflow-scrolling:touch]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4">
+          {error ? (
+            <div
+              className="my-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] p-3 text-a4-content text-[var(--bb-text-inverse)]"
+              role="alert"
+            >
+              <p className="m-0">{error}</p>
+              <Button
+                type="button"
+                variant="ghost"
+                className="mt-2 min-h-11 rounded-none border-current px-3 py-2 text-inherit hover:bg-transparent"
+                disabled={isFetching || busy}
+                onClick={() => void retryLoad()}
+              >
+                {isFetching ? t("loading") : t("retry")}
+              </Button>
+            </div>
+          ) : null}
           {loading ? (
-            <div className="grid gap-2.5" role="status">
+            <div className="divide-y divide-[var(--bb-mobile-shell-border)]" role="status">
               <span className="sr-only">{t("loading")}</span>
               {[0, 1].map((i) => (
-                <div
-                  key={i}
-                  aria-hidden="true"
-                  className="flex gap-3 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] p-2.5"
-                >
-                  <div className="h-18 w-18 flex-none animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
+                <div key={i} aria-hidden="true" className="flex gap-3 py-4">
+                  <div className="h-18 w-18 shrink-0 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
                   <div className="min-w-0 flex-1 py-1">
-                    <div className="h-3 w-3/5 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
+                    <div className="h-4 w-4/5 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
                     <div className="mt-2 h-3 w-2/5 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
-                    <div className="mt-3 h-7 w-24 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
+                    <div className="mt-3 h-4 w-1/2 animate-pulse bg-[var(--bb-mobile-shell-border-strong)]" />
                   </div>
                 </div>
               ))}
             </div>
-          ) : queryError || errorMessage ? (
-            <div
-              className="py-11 px-4.5 text-center text-[var(--bb-text-inverse)] border border-[var(--bb-border-brand)] bg-[color-mix(in_srgb,var(--bb-brand-primary)_12%,transparent)]"
-              role="alert"
-            >
-              {errorMessage || queryError}
-            </div>
-          ) : items.length === 0 ? (
-            <div className="grid justify-items-center pt-9 px-3 pb-10.5 text-center text-[var(--bb-text-inverse-muted)]">
-              <span
-                className="inline-flex h-16 w-16 items-center justify-center mb-3.5 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] text-[var(--bb-text-inverse-muted)]"
-                aria-hidden="true"
-              >
-                <ShoppingCart size={28} />
-              </span>
-              <p className="mt-1.5 mb-4">{t("emptyCta")}</p>
-              <Link href={toProductListPath(locale)} onClick={closePanel} className={cn(ctaBtn, ctaBtnFilled, "mt-0.5")}>
-                {t("shopNow")}
-              </Link>
+          ) : cart && items.length === 0 ? (
+            <div className="grid justify-items-center gap-3 px-3 py-8 text-center">
+              <ShoppingCart size={32} className="text-[var(--bb-text-inverse-muted)]" aria-hidden />
+              <p className="m-0 font-body text-a3-section font-semibold">{t("empty")}</p>
+              <p className="m-0 text-a4-content text-[var(--bb-text-inverse-secondary)]">
+                {t("emptyCta")}
+              </p>
+              <Button asChild className="mt-1 rounded-none px-5 py-3">
+                <Link
+                  href={toProductListPath(locale)}
+                  onClick={() => closePanel({ restoreFocus: false })}
+                >
+                  {t("shopNow")}
+                </Link>
+              </Button>
             </div>
           ) : (
-            <div className="grid gap-2.5" role="list">
-              {items.map((item) => {
-                const mutating = updateItem.isPending || removeItem.isPending;
-                return (
-                  <article
-                    key={item.id}
-                    className="relative flex gap-3 border border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface)] p-2.5"
-                    role="listitem"
-                  >
-                    <CartSheetThumb item={item} />
-                    <div className="min-w-0 flex-1">
-                      <p className={microLabel}>{item.sku || "BIGBIKE"}</p>
-                      <h3 className="mt-0.5 mr-7 line-clamp-2 font-body text-a4-content font-semibold leading-title text-[var(--bb-text-inverse)]">
-                        {item.productName}
-                      </h3>
-                      {item.variantName ? (
-                        <p className={cn(lineMeta, "font-cta font-semibold uppercase text-[var(--bb-text-inverse-muted)]")}>{item.variantName}</p>
-                      ) : null}
-                      {!item.available ? (
-                        <p className="mt-1 font-body text-a5-meta leading-body text-brand-on-dark">{t("unavailableLine")}</p>
-                      ) : null}
-                      <div className="flex items-center justify-between gap-2.5 mt-2">
-                        <div className="inline-flex border border-[var(--bb-mobile-shell-border-strong)]" aria-label={t("quantityAria", { name: item.productName })}>
-                          <button
-                            type="button"
-                            className={cn(qtyBtn, "text-[var(--bb-text-inverse)]")}
-                            onClick={() => setQuantity(item, item.quantity - 1)}
-                            disabled={mutating || item.quantity <= 1 || !item.available}
-                            aria-label={t("decreaseAria", { name: item.productName })}
-                          >
-                            -
-                          </button>
-                          <span className="inline-flex min-w-7.5 items-center justify-center text-[var(--bb-text-inverse)] text-a5-meta">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            className={cn(qtyBtn, "text-[var(--bb-text-inverse)]")}
-                            onClick={() => setQuantity(item, item.quantity + 1)}
-                            disabled={mutating || !item.available}
-                            aria-label={t("increaseAria", { name: item.productName })}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <strong className="text-brand-on-dark font-body text-a4-content">{formatVnd(item.lineTotal)}</strong>
-                      </div>
-                    </div>
-                    <button
+            <div
+              className="divide-y divide-[var(--bb-mobile-shell-border)]"
+              role="list"
+              aria-busy={busy}
+            >
+              {items.map((item) => (
+                <article
+                  key={item.id}
+                  className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-3 py-4"
+                  role="listitem"
+                >
+                  <div className="flex h-18 w-18 items-center justify-center overflow-hidden bg-background text-foreground">
+                    {item.image?.url ? (
+                      <MediaImage
+                        image={item.image}
+                        altFallback={item.productName}
+                        width={96}
+                        height={96}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <span className="font-body text-a3-section font-semibold">
+                        {item.productName.slice(0, 2)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative min-w-0 pr-11">
+                    <h3 className="m-0 line-clamp-2 break-words font-body text-a4-content font-semibold leading-title">
+                      {item.productName}
+                    </h3>
+                    {item.variantName ? (
+                      <p className="mb-0 mt-1 break-words font-body text-a5-meta text-[var(--bb-text-inverse-secondary)]">
+                        {item.variantName}
+                      </p>
+                    ) : null}
+                    {!item.available ? (
+                      <p className="mb-0 mt-2 text-a4-content text-brand-on-dark">
+                        {t("unavailableLine")}
+                      </p>
+                    ) : null}
+                    <Button
                       type="button"
-                      className={cn(qtyBtn, "absolute top-1.5 right-1.5 text-[var(--bb-text-inverse-muted)]")}
-                      onClick={() => removeLine(item)}
-                      disabled={mutating}
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        secondaryAction,
+                        "absolute -right-2 -top-2 h-11 w-11 px-0 text-[var(--bb-text-inverse-muted)]",
+                      )}
+                      onClick={() => void removeLine(item)}
+                      disabled={busy}
                       aria-label={t("removeAria", { name: item.productName })}
                     >
-                      <Trash2 size={16} />
-                    </button>
-                  </article>
-                );
-              })}
+                      <Trash2 size={18} aria-hidden />
+                    </Button>
+                  </div>
+                  <div className="col-span-2 flex flex-wrap items-center justify-between gap-3">
+                    <QuantityStepper
+                      variant="mini"
+                      value={item.quantity}
+                      onDecrease={() => void setQuantity(item, item.quantity - 1)}
+                      onIncrease={() => void setQuantity(item, item.quantity + 1)}
+                      disabled={busy || !item.available}
+                      decreaseDisabled={item.quantity <= 1}
+                      decreaseLabel={t("decreaseAria", { name: item.productName })}
+                      increaseLabel={t("increaseAria", { name: item.productName })}
+                      inputLabel={t("quantityAria", { name: item.productName })}
+                    />
+                    <strong className="ml-auto whitespace-nowrap font-body text-a4-content tabular-nums text-brand-on-dark">
+                      {formatVnd(item.lineTotal)}
+                    </strong>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
         </div>
 
         {items.length > 0 ? (
-          <div className="flex-none pt-3 px-4.5 pb-[max(16px,env(safe-area-inset-bottom))] border-t border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface-2)]">
-            <div className="flex items-baseline justify-between gap-3 mb-3">
-              <span className={microLabel}>{t("subtotal")}</span>
-              <strong className="text-[var(--bb-text-inverse)] font-body text-a2-page">
+          <div className="shrink-0 border-t border-[var(--bb-mobile-shell-border)] bg-[var(--bb-mobile-shell-surface-2)] px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <span className="font-body text-a4-content">{tCart("total")}</span>
+              <strong className="ml-auto whitespace-nowrap font-body text-a2-page tabular-nums">
                 {formatVnd(cart?.totals.totalAmount ?? 0)}
               </strong>
             </div>
+            <p className="mb-3 mt-1 flex items-center gap-2 font-body text-a5-meta text-[var(--bb-text-inverse-secondary)]">
+              <Truck size={16} className="shrink-0" aria-hidden />
+              {tCart("shippingPending")}
+            </p>
             {unavailable ? (
-              <p
-                className="mt-[-2px] mb-3 border border-[var(--bb-state-warning-border)] bg-[var(--bb-state-warning-bg)] px-3 py-2.5 text-[var(--bb-state-warning-text)] text-a5-meta leading-body"
-                role="alert"
-              >
+              <p className="mb-3 mt-0 text-a4-content text-brand-on-dark" role="alert">
                 {t("unavailableAlert")}
               </p>
             ) : null}
-            <div className={cn("grid gap-2", unavailable ? "grid-cols-2" : "grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)]")}>
-              <Link
-                href={toCartPath(locale)}
-                className={cn(ctaBtn, "border border-[var(--bb-mobile-shell-border-strong)] text-[var(--bb-text-inverse)]")}
-                onClick={closePanel}
-              >
-                {t("viewCart")}
-              </Link>
-              {unavailable ? (
-                <span
-                  className={cn(
-                    ctaBtn,
-                    "cursor-not-allowed border border-[var(--bb-mobile-shell-border-strong)] bg-[var(--bb-mobile-shell-surface)] text-[var(--bb-text-inverse-muted)]",
-                  )}
-                  aria-disabled="true"
+            {checkoutDisabled ? (
+              <Button className="min-h-13 w-full rounded-none px-3 py-3" disabled>
+                {busy || isFetching ? (
+                  <LoaderCircle size={18} className="shrink-0 animate-spin" aria-hidden />
+                ) : null}
+                <span role={busy || isFetching ? "status" : undefined}>
+                  {busy ? t("updating") : t("checkout")}
+                </span>
+              </Button>
+            ) : (
+              <Button asChild className="min-h-13 w-full rounded-none px-3 py-3">
+                <Link
+                  href={toCheckoutPath(locale)}
+                  onClick={() => closePanel({ restoreFocus: false })}
                 >
                   {t("checkout")}
-                </span>
-              ) : (
-                <Link href={toCheckoutPath(locale)} className={cn(ctaBtn, ctaBtnFilled)} onClick={closePanel}>
-                  {t("checkout")}
+                  <ArrowRight size={18} className="shrink-0" aria-hidden />
                 </Link>
-              )}
-            </div>
+              </Button>
+            )}
+            <Button
+              asChild
+              variant="ghost"
+              className={cn(secondaryAction, "mt-1 w-full underline underline-offset-4")}
+            >
+              <Link href={toCartPath(locale)} onClick={() => closePanel({ restoreFocus: false })}>
+                {t("viewCart")}
+              </Link>
+            </Button>
           </div>
         ) : null}
       </SheetContent>

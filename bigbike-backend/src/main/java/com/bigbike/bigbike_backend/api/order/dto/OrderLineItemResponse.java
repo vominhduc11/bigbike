@@ -17,5 +17,7 @@ public record OrderLineItemResponse(
         BigDecimal lineTotal,
         // Resolved read-time from the current product image (not snapshotted) —
         // null when the product no longer exists. See DATA_CONTRACT.md.
-        String productThumbnailUrl
+        String productThumbnailUrl,
+        String brandName,
+        String categoryName
 ) {}

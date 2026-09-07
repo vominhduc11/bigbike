@@ -1,13 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { resolveMediaUrl, safeText } from "@/lib/utils/format";
 import { PlayIcon } from "./PlayIcon";
 
-export function VideoCard({ video, onPlay, compact = false }: { video: HomeVideo; onPlay: () => void; compact?: boolean }) {
+export function VideoCard({
+  video,
+  onPlay,
+  compact = false,
+}: {
+  video: HomeVideo;
+  onPlay: (event: MouseEvent<HTMLButtonElement>) => void;
+  compact?: boolean;
+}) {
   const tA = useTranslations("A11y");
   // title = tiêu đề THẬT (rỗng nếu video chưa nhập tiêu đề) → footer để trống nhưng
   // vẫn giữ chiều cao, không in chữ "Video" placeholder gây mất chuyên nghiệp.
@@ -57,10 +65,11 @@ export function VideoCard({ video, onPlay, compact = false }: { video: HomeVideo
             onError={() => setThumbIdx((prev) => prev + 1)}
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-brand" aria-hidden="true">
-            <span className="font-body text-a3-section font-bold text-white/80">
-              BIGBIKE
-            </span>
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-brand"
+            aria-hidden="true"
+          >
+            <span className="font-body text-a3-section font-bold text-white/80">BIGBIKE</span>
           </div>
         )}
         <PlayIcon />

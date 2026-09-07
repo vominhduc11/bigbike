@@ -22,6 +22,6 @@ export const chatSuggestionGrid = "grid auto-rows-fr gap-2";
 export const chatSuggestionButton =
   "h-full min-h-12 w-full justify-start whitespace-normal px-4 py-3 text-left";
 
-/** Ba nút biểu tượng ở đầu khung — cùng kích thước, cùng kiểu. */
+/** Các nút biểu tượng ở đầu khung — cùng kích thước, cùng kiểu. */
 export const chatHeaderIconButton =
   "size-11 min-h-11 shrink-0 border border-primary-foreground/60 p-0 text-primary-foreground hover:scale-100 hover:bg-primary-foreground/10";

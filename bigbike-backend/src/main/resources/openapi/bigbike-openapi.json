@@ -10393,6 +10393,16 @@
           },
           "lineTotal": {
             "type": "number"
+          },
+          "brandName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Current catalog brand name; null when unavailable."
+          },
+          "categoryName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Current primary category name; null when unavailable."
           }
         }
       },
@@ -10985,6 +10995,16 @@
           "productThumbnailUrl": {
             "type": "string",
             "nullable": true
+          },
+          "brandName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Current catalog brand name; not an order snapshot."
+          },
+          "categoryName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Current primary category name; not an order snapshot."
           }
         }
       },

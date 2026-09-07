@@ -17,5 +17,7 @@ public record CartItemResponse(
         BigDecimal lineSubtotal,
         BigDecimal lineDiscount,
         BigDecimal lineTotal,
-        boolean available
+        boolean available,
+        String brandName,
+        String categoryName
 ) {}

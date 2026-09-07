@@ -113,6 +113,10 @@
   --bb-chat-title-text: var(--bb-color-white);  /* FAB icon — white for contrast on both FAB states */
   --bb-chat-close-text: var(--bb-color-black);  /* Close/X icon — black on the open gray FAB */
   --bb-chat-close-bg: #d6d6d6;       /* FAB background while the popup is open (.b24-widget-button-bottom) */
+  /* CHAT_RULE_061: khung máy tính thường/mở rộng; điện thoại luôn toàn màn hình. */
+  --bb-floating-chat-panel-width: 34rem;
+  --bb-floating-chat-panel-expanded-width: 58rem;
+  --bb-floating-chat-panel-expanded-height: 90dvh;
   --bb-chat-text: #333333;           /* contact-row label + value text (.sudovn-btn-social-item) */
   /* Cart discount line color — WP parity (.summary--items .discount) */
   --bb-discount: var(--bb-color-purple);
@@ -191,6 +195,8 @@
   --bb-promo-strip-height: 0px;
   --bb-header-stack: calc(var(--bb-header-height) + var(--bb-promo-strip-height));
   --bb-touch-target: 44px;
+  --bb-video-player-max-width: 26.25rem; /* 420px — vertical home/PDP viewer */
+  --bb-video-player-min-size: 12.5rem; /* 200px — minimum embedded player viewport */
   /* 58px — bề rộng chung của mọi nút icon trên header (tìm kiếm / giỏ hàng /
      tài khoản / mở menu). Cố định để cả 4 nút có vùng hover bằng nhau, kể cả khi
      nút tài khoản đổi từ icon 18px sang ảnh đại diện 32px lúc đã đăng nhập. */

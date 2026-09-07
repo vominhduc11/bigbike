@@ -20,6 +20,7 @@ import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJp
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderShippingItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
+import com.bigbike.bigbike_backend.service.catalog.ProductAnalyticsResolver;
 import com.bigbike.bigbike_backend.service.common.PageResult;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ public class OrderReadService {
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderLineItemThumbnailResolver thumbnailResolver;
+    private final ProductAnalyticsResolver analyticsResolver;
     private final OrderAddressJpaRepository addressRepo;
     private final OrderShippingItemJpaRepository shippingItemRepo;
     private final PaymentJpaRepository paymentRepo;
@@ -223,9 +225,10 @@ public class OrderReadService {
         // Prefer the image snapshotted on the line at checkout (AUD-038); fall back to the
         // live catalog thumbnail only for legacy rows placed before V340 (null image_url).
         Map<String, String> liveThumbnailByPk = thumbnailResolver.resolveLiveFallbacks(lineItemEntities);
+        var analyticsByLine = analyticsResolver.forOrderItems(lineItemEntities);
         List<OrderLineItemResponse> lineItems = lineItemEntities.stream()
                 .map(e -> orderItemMapper.toResponse(
-                        e, thumbnailResolver.resolveThumbnail(e, liveThumbnailByPk)))
+                        e, thumbnailResolver.resolveThumbnail(e, liveThumbnailByPk), analyticsByLine.get(e.getId())))
                 .toList();
 
         List<OrderAddressResponse> addresses = addressRepo.findByOrderId(order.getId())

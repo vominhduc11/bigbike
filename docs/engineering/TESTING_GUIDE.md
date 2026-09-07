@@ -147,7 +147,7 @@ GitHub Actions currently runs:
 | Media hardening | `AdminMediaP0Test.java` | `CONFIRMED_FROM_TEST` |
 | Redirect target integrity | `AdminRedirectApiTest.java` + web proxy redirect tests | `REQUIRED_FOR_REDIRECT_RULE_011_012` |
 | Review invitation | Eligibility/cutoff/idempotency/opt-out/quota/token/API/template suites plus web direct-link/unsubscribe tests; no admin invitation surface | `REQUIRED_FOR_REVIEW_RULE_014_016` |
-| Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, nhớ trong phiên, cart và ảnh riêng tư VI/EN. Web phải có bài kiểm khung chat: nhãn AI ngắn, ba nút ở đầu khung, màn mở đầu lời chào + bốn gợi ý, tỉ lệ đầu+đáy ≤40% và đáy đoạn chat bám sát đáy khung sau khi trả lời xong (`CHAT_RULE_061`). **Bắt buộc có bài kiểm thử Testcontainers + PostgreSQL (`spring.flyway.enabled=true`, hồ sơ `tc`) chèn mọi giá trị `chat_messages.source` mà backend có thể sinh** — bộ test H2 mặc định tắt Flyway nên không bao giờ thấy ràng buộc CHECK, và đó là lý do lỗi mất câu trả lời sống được nhiều ngày. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059_061` |
+| Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, nhớ trong phiên, cart và ảnh riêng tư VI/EN. Web phải có bài kiểm khung chat: nhãn AI ngắn, ba nút ở đầu khung điện thoại và thêm nút mở rộng/thu gọn trên máy tính (2026-09-07), khung 544px/mở rộng tối đa 928px vừa màn hình, thẻ hai cột chỉ khi mở rộng, giữ hội thoại/câu đang nhập/ảnh chờ/lựa chọn khi đổi kích thước, màn mở đầu lời chào + bốn gợi ý, tỉ lệ đầu+đáy ≤40% và đáy đoạn chat bám sát đáy khung sau khi trả lời xong (`CHAT_RULE_061`). **Bắt buộc có bài kiểm thử Testcontainers + PostgreSQL (`spring.flyway.enabled=true`, hồ sơ `tc`) chèn mọi giá trị `chat_messages.source` mà backend có thể sinh** — bộ test H2 mặc định tắt Flyway nên không bao giờ thấy ràng buộc CHECK, và đó là lý do lỗi mất câu trả lời sống được nhiều ngày. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059_061` |
 
 ## Trợ lý BigBike — ma trận kiểm thử (owner decision 2026-08-29)
 
@@ -169,6 +169,18 @@ GitHub Actions currently runs:
 - E2E: dùng REST/SSE/STOMP mock hoặc fixture, dữ liệu tiền tố `E2E_`; không gọi AI thật và không chạm dữ liệu khách.
 
 Các context PostgreSQL profile `tc` chạy toàn bộ migration từ kho trống. Migration production có thể dùng snapshot hợp lệ nhưng không sửa version đã áp dụng. Nếu server local không chạy do migration đã áp dụng không có trong source, ghi `Not run` và tiếp tục unit/build/static checks.
+## Public video viewer regression — 2026-09-07
+
+- `components/home/video-carousel/VideoModal.test.tsx`: preserve legacy providers and descriptions; loading/slow/error/retry, valid source links, YouTube readiness/error callbacks, stale callback cleanup, keyboard controls, empty data and single-video controls. Shared YouTube loader and gallery facade tests cover lazy loading and recovery after script failures.
+- Real read-only browser checks on existing home/PDP video data: 360×640, 375×667, 390×844, 568×320, 844×390, 768×1024, 1440×900 and 1920×1080. Verify controls ≥44px, no overlaps, short landscape player ≥200×200, nearby desktop arrows, long content remains reachable, VI/EN, next/previous/close and restored scroll/focus. Browser emulation does not replace a physical Safari/Android check of browser chrome/safe areas.
+- Loading/failure fixtures belong in component tests only; do not write fake videos into the running shop. Player-side errors for legacy TikTok/Facebook embeds remain provider-owned; the viewer offers a source link.
+
+## Cart quick view and full-page regression — 2026-09-07
+
+- `components/cart/CartExperience.test.tsx` exercises the real shared query hooks and both cart views with controlled API responses: pending mutations, same-ID snapshot refresh, failed edits and quantity rollback, initial/refetch errors, retry, offline failure without queued edits, unavailable items, empty state, focus restoration, desktop dismissal, and Vietnamese/English destinations. `CartParts`, `QuantityStepper`, `MobileBottomNav` and `HeaderUiContext` tests cover the reused controls.
+- Browser verification uses an isolated build against the running local backend and real published catalog variants in a fresh guest session. Cover 320/375/430px mobile, touch emulation, 768/1024/1440px full page, a six-line cart, fixed sheet footer, 44px touch targets, free shipping, matching quantities/totals, offline edits and recovery, delete-to-empty, and checkout navigation in both languages. Check that only one checkout action is visible, that the chat launcher clears the mobile cart action bar, and that resizing to desktop closes the sheet and releases scroll lock. Do not submit a real order; remove the guest-session test lines afterward.
+- References: `API_FLOW_MAP.md` § Cart review; `BUSINESS_RULES.md` `SHIP_RULE_001`; `bigbike-web/STYLEGUIDE.md` § Giỏ hàng nhanh trên điện thoại.
+
 ## Current Testing Gaps
 
 | Gap | Status | Evidence |

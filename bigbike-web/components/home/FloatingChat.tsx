@@ -14,7 +14,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ImagePlus, Loader2, MessageCircle, Phone, RefreshCw, Send, Trash2, X } from "lucide-react";
+import {
+  ImagePlus,
+  Loader2,
+  Maximize2,
+  MessageCircle,
+  Minimize2,
+  Phone,
+  RefreshCw,
+  Send,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -54,6 +65,7 @@ import {
 } from "@/lib/api/client-api";
 import { useAuth } from "@/lib/auth/auth-store";
 import { queryKeys } from "@/lib/query/keys";
+import { CHAT_OPEN_EVENT, hideFloatingChatLauncher } from "@/lib/chat/chat-launcher";
 import {
   CHAT_STORAGE_KEY,
   CHAT_STORAGE_TTL_MS,
@@ -69,6 +81,7 @@ import {
   type ChatIdentity,
 } from "@/lib/chat/chat-identity";
 import { toLoginPath, toOrderHistoryPath, toOrderLookupPath } from "@/lib/utils/routes";
+import { cn } from "@/lib/utils";
 import type { Locale } from "@/i18n/locale";
 import { BigBikeContactPanel } from "./floating-chat/BigBikeContactPanel";
 import { BigBikeProductCard } from "./floating-chat/BigBikeProductCard";
@@ -402,6 +415,14 @@ export function FloatingChat({
   );
 
   const [panelState, setPanelState] = useState<PanelState>("closed");
+  const hideLauncher = hideFloatingChatLauncher(pathname);
+  const [previousPathname, setPreviousPathname] = useState(pathname);
+  // Close before rendering a focused form; keep the mounted conversation and draft intact.
+  if (previousPathname !== pathname) {
+    setPreviousPathname(pathname);
+    if (hideLauncher) setPanelState("closed");
+  }
+  const [widePanel, setWidePanel] = useState(false);
   const [serviceMode, setServiceMode] = useState<"AI" | "CONTACT">("AI");
   const [availabilityState, setAvailabilityState] = useState<AvailabilityState>("idle");
   const [contacts, setContacts] = useState<ChatContact>(fallbackContacts);
@@ -442,6 +463,7 @@ export function FloatingChat({
   const [imageError, setImageError] = useState("");
 
   const fabLauncherRef = useRef<HTMLButtonElement>(null);
+  const externalLauncherRef = useRef<HTMLElement | null>(null);
   const launcherContainerRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -768,7 +790,7 @@ export function FloatingChat({
   useEffect(() => {
     if (panelState !== "expanded") return;
     pinToBottom();
-  }, [contactOpen, messages, panelState, pinToBottom, sending]);
+  }, [contactOpen, messages, panelState, pinToBottom, sending, widePanel]);
 
   useEffect(
     () => () => {
@@ -852,19 +874,33 @@ export function FloatingChat({
 
   function focusLauncherSoon() {
     requestAnimationFrame(() => {
-      fabLauncherRef.current?.focus();
+      const externalLauncher = externalLauncherRef.current;
+      if (externalLauncher?.isConnected) externalLauncher.focus();
+      else fabLauncherRef.current?.focus();
     });
   }
 
-  function openPanel() {
-    setPanelState("expanded");
-    setHasInteracted(true);
-    if (!sessionStartedRef.current) {
-      sessionStartedRef.current = true;
-      void initializeVisitorSession();
-    }
-    if (availabilityLocaleRef.current !== activeLocale) void requestAvailability();
-  }
+  const openPanel = useCallback(
+    (trigger?: HTMLElement) => {
+      externalLauncherRef.current = trigger ?? null;
+      setPanelState("expanded");
+      setHasInteracted(true);
+      if (!sessionStartedRef.current) {
+        sessionStartedRef.current = true;
+        void initializeVisitorSession();
+      }
+      if (availabilityLocaleRef.current !== activeLocale) void requestAvailability();
+    },
+    [activeLocale, initializeVisitorSession, requestAvailability],
+  );
+
+  useEffect(() => {
+    const handleOpen = (event: Event) => {
+      openPanel((event as CustomEvent<HTMLElement>).detail);
+    };
+    window.addEventListener(CHAT_OPEN_EVENT, handleOpen);
+    return () => window.removeEventListener(CHAT_OPEN_EVENT, handleOpen);
+  }, [openPanel]);
 
   function closePanel() {
     setPanelState("closed");
@@ -1289,7 +1325,7 @@ export function FloatingChat({
           className="relative size-14 overflow-visible rounded-full! border-chat bg-chat p-0 text-primary-foreground shadow-none hover:border-chat hover:bg-chat focus-visible:outline-offset-4 md:size-16"
           aria-label={t("open")}
           aria-describedby={tooltipId}
-          onClick={openPanel}
+          onClick={() => openPanel()}
         >
           {!hasInteracted ? (
             <span
@@ -1310,23 +1346,30 @@ export function FloatingChat({
 
   return (
     <>
-      {panelState === "closed" ? renderFab() : null}
+      {panelState === "closed" && !hideLauncher ? renderFab() : null}
 
       <Dialog modal={false} open={panelState === "expanded"} onOpenChange={handleDialogOpenChange}>
         <DialogContent
+          id="bigbike-assistant-panel"
           data-bigbike-assistant
+          data-bigbike-panel-size={widePanel ? "wide" : "standard"}
           overlayClassName="md:hidden"
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             focusLauncherSoon();
           }}
-          className="left-0! right-0! top-0! bottom-0! flex h-dvh max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! flex-col overflow-hidden! rounded-none! border-0 bg-background p-0 max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100 [&>button]:hidden md:left-auto! md:right-[var(--bb-floating-action-right)]! md:top-auto! md:bottom-[var(--bb-floating-chat-bottom)]! md:h-[var(--bb-floating-chat-panel-height)]! md:max-h-[calc(100dvh-var(--bb-floating-chat-bottom))]! md:w-106! md:border md:shadow-[var(--bb-shadow-md)]"
+          className={cn(
+            "left-0! right-0! top-0! bottom-0! flex h-dvh max-h-none! w-screen! max-w-none! translate-x-0! translate-y-0! flex-col overflow-hidden! rounded-none! border-0 bg-background p-0 transition-none max-md:data-[state=open]:zoom-in-100 max-md:data-[state=closed]:zoom-out-100 [&>button]:hidden md:left-auto! md:right-[var(--bb-floating-action-right)]! md:top-auto! md:bottom-[var(--bb-floating-chat-bottom)]! md:max-h-[calc(100dvh_-_var(--bb-floating-chat-bottom)_-_var(--bb-space-6))]! md:max-w-[calc(100vw_-_var(--bb-floating-action-right)_-_var(--bb-floating-action-right))]! md:border md:shadow-[var(--bb-shadow-md)]",
+            widePanel
+              ? "md:h-[var(--bb-floating-chat-panel-expanded-height)]! md:w-[var(--bb-floating-chat-panel-expanded-width)]!"
+              : "md:h-[var(--bb-floating-chat-panel-height)]! md:w-[var(--bb-floating-chat-panel-width)]!",
+          )}
         >
           {/*
             Owner decision 2026-09-06 (CHAT_RULE_001, CHAT_RULE_049): đầu khung chỉ còn MỘT dòng
-            phụ — nhãn ngắn "TRỢ LÝ AI · HỖ TRỢ 24/7" gộp luôn vai trò dòng trạng thái cũ. Ba nút
-            biểu tượng (liên hệ · xoá · đóng) nằm cùng một hàng, cùng kích thước; dải ngang riêng
-            cho nút xoá đã bị gỡ để trả chỗ đọc tin lại cho khách.
+            phụ — nhãn ngắn "TRỢ LÝ AI · HỖ TRỢ 24/7" gộp luôn vai trò dòng trạng thái cũ.
+            CHAT_RULE_061 (2026-09-07): máy tính thêm nút mở rộng/thu gọn bên cạnh ba nút
+            liên hệ · xoá · đóng; điện thoại luôn toàn màn hình nên ẩn nút đổi kích thước.
           */}
           <DialogHeader
             data-bigbike-chat-header
@@ -1366,6 +1409,23 @@ export function FloatingChat({
                   onClick={() => setConfirmDelete((current) => !current)}
                 >
                   <Trash2 className="size-5" aria-hidden="true" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(chatHeaderIconButton, "hidden md:inline-flex")}
+                  aria-label={widePanel ? t("collapsePanel") : t("expandPanel")}
+                  title={widePanel ? t("collapsePanel") : t("expandPanel")}
+                  aria-expanded={widePanel}
+                  aria-controls="bigbike-assistant-panel"
+                  onClick={() => setWidePanel((current) => !current)}
+                >
+                  {widePanel ? (
+                    <Minimize2 className="size-5" aria-hidden="true" />
+                  ) : (
+                    <Maximize2 className="size-5" aria-hidden="true" />
+                  )}
                 </Button>
                 <Button
                   type="button"
@@ -1546,7 +1606,10 @@ export function FloatingChat({
                           />
                         ) : null}
                         {products.length > 0 ? (
-                          <div data-bigbike-product-list className="grid min-w-0 gap-3">
+                          <div
+                            data-bigbike-product-list
+                            className={cn("grid min-w-0 gap-3", widePanel && "md:grid-cols-2")}
+                          >
                             {visibleProducts.map((product) => (
                               <BigBikeProductCard
                                 key={product.slug}
@@ -1559,7 +1622,7 @@ export function FloatingChat({
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="min-h-11 w-full"
+                                className="col-span-full min-h-11 w-full"
                                 onClick={() =>
                                   setExpandedProductMessages((current) =>
                                     expanded
@@ -1576,8 +1639,13 @@ export function FloatingChat({
                           </div>
                         ) : null}
                         {crossSellProducts.length > 0 ? (
-                          <section className="grid min-w-0 gap-3 border-l-4 border-chat bg-background p-3">
-                            <h3 className="font-cta text-b5-label font-semibold uppercase tracking-wide text-foreground">
+                          <section
+                            className={cn(
+                              "grid min-w-0 gap-3 border-l-4 border-chat bg-background p-3",
+                              widePanel && "md:grid-cols-2",
+                            )}
+                          >
+                            <h3 className="col-span-full font-cta text-b5-label font-semibold uppercase tracking-wide text-foreground">
                               {t("relatedAccessories")}
                             </h3>
                             {crossSellProducts.map((product) => (
