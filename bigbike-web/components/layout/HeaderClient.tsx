@@ -1,8 +1,8 @@
 "use client";
 
-import { Clock, MapPin, Phone } from "lucide-react";
+import { Clock, MapPin, Menu, Phone, X } from "lucide-react";
 import Link from "@/i18n/StorefrontLink";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { SITE_CANVAS_CLASS } from "@/components/layout/Container";
@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { MediaImage } from "@/components/ui/MediaImage";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetTitle,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { iconBtn } from "@/lib/ui-classes";
+import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 import { toHomePath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 
@@ -68,35 +70,6 @@ type HeaderClientProps = {
   menuNodesEn: HeaderNavNode[];
   contact: HeaderContact;
 };
-
-function HamburgerIcon({ open }: { open: boolean }) {
-  return (
-    <span className="relative block h-6 w-8.5" aria-hidden>
-      <span
-        className={cn(
-          "absolute block h-0.5 bg-white transition-transform duration-300",
-          open
-            ? "left-1/2 top-1/2 w-8.5 -translate-x-1/2 -translate-y-1/2 rotate-45"
-            : "left-2.5 top-[5px] w-[15px]",
-        )}
-      />
-      <span
-        className={cn(
-          "absolute block h-0.5 bg-white transition-transform duration-300",
-          open
-            ? "left-1/2 top-1/2 w-8.5 -translate-x-1/2 -translate-y-1/2 -rotate-45"
-            : "left-2.5 top-[11px] w-6",
-        )}
-      />
-      <span
-        className={cn(
-          "absolute bottom-[5px] right-0 block h-0.5 w-[15px] bg-white transition-opacity duration-300",
-          open && "opacity-0",
-        )}
-      />
-    </span>
-  );
-}
 
 function ContactDetails({ contact, dark = false }: { contact: HeaderContact; dark?: boolean }) {
   const t = useTranslations("Header");
@@ -174,6 +147,11 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
   const { closePanel, isPanelOpen, openPanel } = useHeaderUi();
   const [scrolled, setScrolled] = useState(false);
   const mobileMenuOpen = isPanelOpen("mobile-menu");
+  const closeMenuOnDesktop = useCallback(() => {
+    if (mobileMenuOpen) closePanel({ restoreFocus: false });
+  }, [closePanel, mobileMenuOpen]);
+
+  useMediaQueryChange("(min-width: 1280px)", closeMenuOnDesktop);
 
   useEffect(() => {
     function onScroll() {
@@ -211,12 +189,16 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
         >
           <div
             data-bb-canvas
-            className={cn(SITE_CANVAS_CLASS, "flex h-full items-center px-4 md:px-6")}
+            className={cn(
+              SITE_CANVAS_CLASS,
+              "flex h-full items-center gap-4 px-4 md:gap-0 md:px-6",
+            )}
           >
-            <div className="flex h-full min-w-0 flex-1 items-start min-[1261px]:w-52.5 min-[1261px]:flex-none">
+            <div className="flex h-full shrink-0 items-start md:min-w-0 md:flex-1 min-[1261px]:w-52.5 min-[1261px]:flex-none">
               <Link
                 href={toHomePath(locale as Locale)}
                 data-header-logo
+                aria-label={t("homeAriaLabel")}
                 onClick={() => {
                   if (mobileMenuOpen) closePanel();
                 }}
@@ -240,8 +222,8 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
                   image={{ url: "/brand/header-mark.png", width: 120, height: 44 }}
                   altFallback="BigBike"
                   fetchPriority="high"
-                  sizes="(min-width: 501px) 150px, 64px"
-                  className="my-auto w-16 min-[501px]:w-37.5 min-[1261px]:hidden"
+                  sizes="(min-width: 768px) 150px, 112px"
+                  className="my-auto h-auto w-28 md:w-37.5 min-[1261px]:hidden"
                 />
               </Link>
             </div>
@@ -268,18 +250,14 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
                     variant="ghost"
                     size="icon"
                     data-header-mobile-trigger
-                    aria-label={
-                      mobileMenuOpen
-                        ? t("mobileMenuCollapseAriaLabel", { label: t("menu") })
-                        : t("mobileMenuOpenAriaLabel")
-                    }
+                    aria-label={t("mobileMenuOpenAriaLabel")}
                     aria-expanded={mobileMenuOpen}
                     className={cn(
                       iconBtn,
                       "h-full! min-h-0! hover:not-disabled:scale-100 xl:hidden!",
                     )}
                   >
-                    <HamburgerIcon open={mobileMenuOpen} />
+                    <Menu className="size-6 md:size-4.5" strokeWidth={1.75} aria-hidden />
                   </Button>
                 </SheetTrigger>
               </div>
@@ -289,12 +267,27 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
         <SheetContent
           side="right"
           showClose={false}
-          overlayClassName="top-15! md:top-20!"
           data-header-mobile-menu
           onClickCapture={(event) => closeMobileMenuOnNavigation(event, closePanel)}
-          className="bottom-0! top-15! h-[calc(100dvh-60px)]! w-full! max-w-125! gap-0 overflow-y-auto border-none! bg-black! p-0! text-white md:top-20! md:h-[calc(100dvh-80px)]!"
+          className="h-dvh! w-full! max-w-125! gap-0 overflow-y-auto overscroll-contain border-none! bg-black! p-0! pb-[env(safe-area-inset-bottom)]! text-white"
         >
-          <SheetTitle className="sr-only">{t("menu")}</SheetTitle>
+          <div className="sticky top-0 z-10 flex h-15 items-center justify-between border-b border-white/20 bg-black px-4 md:h-20 md:px-6">
+            <SheetTitle className="font-cta text-b4-action font-bold uppercase text-primary-foreground">
+              {t("menu")}
+            </SheetTitle>
+            <SheetClose asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                data-header-menu-close
+                aria-label={t("mobileMenuCloseAriaLabel")}
+                className={cn(iconBtn, "min-h-11! hover:not-disabled:scale-100")}
+              >
+                <X className="size-6 md:size-4.5" strokeWidth={1.75} aria-hidden />
+              </Button>
+            </SheetClose>
+          </div>
           <SheetDescription className="sr-only">
             {t("shopInfoDescription", { siteName: "BigBike" })}
           </SheetDescription>

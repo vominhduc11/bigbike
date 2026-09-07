@@ -230,9 +230,23 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 ### Navigation
 
 - Header nền đen, cao 80px (5rem desktop / 60px mobile), chữ trắng.
+- Logo lớn tràn xuống dưới header là chủ ý của chủ shop (xác nhận 2026-09-07): giữ nguyên ảnh 210×190px, vị trí đầu trang và ngưỡng hiển thị hiện có từ 1261px. Không cắt, thu nhỏ hoặc ép logo vào chiều cao header; khi cuộn vẫn chuyển sang logo ngang 150px như hiện tại.
+- Trên điện thoại, logo ngang rộng 112px, giữ nguyên tỉ lệ và căn giữa theo chiều cao; từ 768px dùng logo ngang 150px trước ngưỡng chuyển sang logo lớn hiện có. Chừa khoảng cách giữa logo và cụm thao tác, kể cả màn hình 320px.
+- Bộ đổi ngôn ngữ trên điện thoại dùng nút gọn `VI`/`EN` kèm mũi tên, mở lựa chọn “Tiếng Việt” và “English”; từ 768px giữ hai nút trực tiếp `VI / EN`. Mọi nút và lựa chọn có vùng bấm tối thiểu 44px; nút trên header cao bằng header, có tên truy cập “Ngôn ngữ”/“Language”, trạng thái đang chọn và đang chuyển. Giữ nguyên đích chuyển ngôn ngữ, bộ lọc và vị trí liên kết của trang hiện tại.
 - Nav hover/active: đỏ `#FF0C09`; trạng thái trang hiện tại chỉ đổi màu chữ, không thêm gạch chân, vạch hay nền.
 - **Nút icon header** (tìm kiếm, giỏ hàng, tài khoản, mở menu): tất cả cùng bề rộng `--bb-header-action-width` — 58px từ 768px trở lên, 44px trên điện thoại (bằng `--bb-touch-target`). Bề rộng cố định, nội dung căn giữa, không đệm ngang riêng: vùng hover của 4 nút phải bằng nhau, kể cả khi nút tài khoản đổi từ icon 18px sang ảnh đại diện 32px lúc đã đăng nhập. Không ép `w-*`/`px-*` riêng cho từng nút.
+- Biểu tượng tìm kiếm và mở/đóng menu cùng khung 24px trên điện thoại, 18px từ 768px; dùng cùng độ dày nét, căn giữa vùng bấm và cùng màu trạng thái.
+- Menu điện thoại/máy tính bảng là khung toàn chiều cao màn hình. Thanh tiêu đề và nút “Đóng menu” nằm bên trong khung, luôn thấy khi cuộn; hỗ trợ chạm, bàn phím và Escape, trả tiêu điểm về nút mở khi đóng. Lớp nền phủ cả header phía sau để không hiển thị nút tưởng bấm được nhưng đang bị khoá. Khi chuyển sang bố cục menu máy tính từ 1280px, đóng khung và mở lại cuộn trang.
+- Menu tài khoản trên máy tính căn theo mép phải nút mở, luôn nằm trọn trong màn hình. Escape đóng menu cả khi tiêu điểm ở một mục bên trong và trả tiêu điểm về nút tài khoản.
 - Cart badge: đỏ, chữ trắng, tròn.
+
+### Thanh điều hướng dưới trên điện thoại
+
+- Giữ bốn mục Trang chủ / Tìm kiếm / Giỏ hàng / Tài khoản trên nền tối, chia đều bốn cột ở cỡ chữ thông thường. Khi tăng cỡ chữ khiến thanh hẹp hơn 24 lần cỡ chữ nhãn, chuyển thành hai cột, hai hàng để đọc được trọn từ. Biểu tượng cùng khung 24px theo token, căn thẳng hàng trong mỗi hàng; vùng bấm tối thiểu 48px, không phóng nút khi hover.
+- Nhãn dùng Arial, nhóm B5, chữ hoa và căn giữa. Hiện đủ tên trên một dòng ở màn hình 320px trở lên với cỡ chữ thông thường; cho phép xuống dòng giữa các từ khi tăng cỡ chữ, không dùng dấu ba chấm hoặc giảm cỡ chữ để ép vừa. Chiều cao các ô đồng đều và tự giãn theo nhãn dài nhất.
+- Chiều cao thực của thanh được đồng bộ vào `--bb-mobile-nav-height`, tách riêng khoảng an toàn đáy màn hình. Nội dung cuối trang và các nút nổi phải chừa đủ chỗ khi nhãn xuống dòng, khi đổi ngôn ngữ hoặc xoay màn hình.
+- Mục Trang chủ phải có cùng dấu chọn trên HTML đầu tiên và sau khi trình duyệt khởi tạo, kể cả khi server dùng đường dẫn rewrite nội bộ `/vi/internal/home/`. Quy về trang công khai cùng locale khi xác định mục đang chọn; không chờ khởi tạo xong mới thêm dấu chọn (theo `docs/engineering/ARCHITECTURE.md`, mục i18n & rendering).
+- Mục Tìm kiếm sáng đỏ và có vạch đánh dấu khi đang mở khung tìm kiếm hoặc ở trang kết quả `/tim-kiem/` / `/en/search/`. Trạng thái trang hiện tại tách biệt với trạng thái khung đang mở; bấm mục này vẫn mở khung tìm kiếm sẵn có, đóng bằng Escape trả tiêu điểm về nút vừa bấm.
 
 ### Footer
 
@@ -241,6 +255,7 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - Heading trắng, link `#CECECE`, hover đỏ.
 - Divider `#333333`.
 - Nội dung pháp lý trên nền xám dùng token `--bb-text-footer-legal`.
+- Các nhóm “Thông tin” và “Mạng xã hội” khi xếp dọc (`<992px`) dùng đệm dưới 16px và khoảng cách giữa nhóm 16px. Tiêu đề giữ vùng bấm tối thiểu 44px; chỉ chừa khoảng cách 16px trước nội dung khi nhóm đang mở, bỏ khoảng cách này khi thu gọn.
 
 ### Hero / Impact Sections
 

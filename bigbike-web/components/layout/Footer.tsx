@@ -105,16 +105,10 @@ function AccordionPanel({
     <AccordionItem
       value={value}
       data-footer-section={value}
-      className={cn(
-        "border-b border-white/10 min-[992px]:mb-0 min-[992px]:border-none min-[992px]:pb-0",
-        value === "social" ? "mb-10 pb-15" : "mb-8.5 pb-[49px]",
-      )}
+      className="mb-4 border-b border-white/10 pb-4 min-[992px]:mb-0 min-[992px]:border-none min-[992px]:pb-0"
     >
       <AccordionTrigger
-        className={cn(
-          "group min-h-11 w-full gap-2 py-0 pr-7.5 text-left font-cta text-b4-action font-semibold uppercase! text-brand-on-dark hover:text-brand-inverse min-[992px]:mb-[15px]! min-[992px]:pointer-events-none",
-          value === "social" ? "mb-5.5!" : "mb-[19px]!",
-        )}
+        className="group mb-4! min-h-11 w-full gap-2 py-0 pr-7.5 text-left font-cta text-b4-action font-semibold uppercase! text-brand-on-dark hover:text-brand-inverse max-[992px]:data-[state=closed]:mb-0! min-[992px]:mb-[15px]! min-[992px]:pointer-events-none"
         indicator={
           <span className="shrink-0 min-[992px]:hidden" aria-hidden>
             <Plus className="icon-plus h-4 w-4 group-data-[state=open]:hidden" />

@@ -27,7 +27,7 @@ export function HeaderSearchButton() {
         open && "!text-brand-on-dark hover:!text-brand-on-dark",
       )}
     >
-      <Search size={18} strokeWidth={1.75} aria-hidden />
+      <Search className="size-6 md:size-4.5" strokeWidth={1.75} aria-hidden />
     </Button>
   );
 }

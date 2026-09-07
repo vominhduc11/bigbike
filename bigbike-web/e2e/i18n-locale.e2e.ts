@@ -7,15 +7,28 @@ test.describe("VI/EN URL locale contract", () => {
     await expect(page).toHaveURL(/\/en\/$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/en\/$/);
-    await expect(page.locator('link[rel="alternate"][hreflang="vi"]')).toHaveAttribute("href", /\/$/);
-    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute("href", /\/en\/$/);
-    await expect(page.locator('link[rel="alternate"][hreflang="x-default"]')).toHaveAttribute("href", /\/$/);
-    await expect.poll(async () => (await page.request.get("/brand/header-logo.png")).status()).toBe(200);
+    await expect(page.locator('link[rel="alternate"][hreflang="vi"]')).toHaveAttribute(
+      "href",
+      /\/$/,
+    );
+    await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute(
+      "href",
+      /\/en\/$/,
+    );
+    await expect(page.locator('link[rel="alternate"][hreflang="x-default"]')).toHaveAttribute(
+      "href",
+      /\/$/,
+    );
+    await expect
+      .poll(async () => (await page.request.get("/brand/header-logo.png")).status())
+      .toBe(200);
   });
 
-  test("language switching preserves query and hash and participates in history", async ({ page }) => {
+  test("language switching preserves query and hash and participates in history", async ({
+    page,
+  }) => {
     await page.goto("/sp/?page=1#products");
-    await page.getByRole("button", { name: "EN", exact: true }).first().click();
+    await page.getByRole("button", { name: "English", exact: true }).click();
     await expect(page).toHaveURL(/\/en\/products\/?\?page=1#products$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
@@ -33,8 +46,8 @@ test.describe("VI/EN URL locale contract", () => {
     test.skip(!productHref, "The connected catalog has no public product.");
 
     await page.goto(productHref!);
-    await page.getByRole("button", { name: "EN", exact: true }).first().click();
-    await expect(page).toHaveURL(/\/en\/products\/[a-z0-9-]+\/$/);
+    await page.getByRole("button", { name: "English", exact: true }).click();
+    await expect(page).toHaveURL(/\/en\/product\/[a-z0-9-]+\/$/);
     await expect(page.locator('link[rel="canonical"][href*="/en/product/"]')).toHaveCount(1);
 
     await page.reload();
@@ -48,7 +61,9 @@ test.describe("VI/EN URL locale contract", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
 
-  test("serves the complete bilingual Warranty and Returns policies with live contact blocks", async ({ page }) => {
+  test("serves the complete bilingual Warranty and Returns policies with live contact blocks", async ({
+    page,
+  }) => {
     const policies = [
       {
         path: "/chinh-sach/chinh-sach-bao-hanh/",
@@ -93,11 +108,16 @@ test.describe("VI/EN URL locale contract", () => {
     await expect(page.getByRole("heading", { name: "Returns and Exchanges Policy" })).toBeVisible();
     await expect(page.getByText("7 days", { exact: true })).toBeVisible();
     await expect(page.getByText("1 day", { exact: true })).toBeVisible();
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/en\/policy\/return-policy\/$/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      /\/en\/policy\/return-policy\/$/,
+    );
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(page.getByRole("heading", { name: "Returns and exchanges support", exact: true }).last()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Returns and exchanges support", exact: true }).last(),
+    ).toBeVisible();
   });
 });

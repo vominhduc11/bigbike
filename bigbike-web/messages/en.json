@@ -66,6 +66,7 @@
     "loggedInTagline": "Unlimited shopping experience with Bigbike.vn",
     "loggingOut": "Signing out…",
     "mobileMenuOpenAriaLabel": "Open menu",
+    "mobileMenuCloseAriaLabel": "Close menu",
     "mobileMenuExpandAriaLabel": "Expand {label}",
     "mobileMenuCollapseAriaLabel": "Collapse {label}",
     "mobileLoggedIn": "Signed in",

@@ -132,6 +132,7 @@ GitHub Actions currently runs:
 
 | Job | What CI actually does | Status | Evidence |
 |---|---|---|---|
+| secret-artifact-guard | Blocks tracked environment files and credential artifacts; allows only public `.env.example` templates and the root `.env.vps.example`. Real `.env` / `.env.vps` files remain forbidden; template contents are still subject to the gitleaks scan. | `CONFIRMED_FROM_CONFIG` | `.github/workflows/secret-artifact-guard.yml`, `.github/workflows/ci.yml`, `.gitignore` |
 | backend | `./mvnw -B clean verify` and Docker build | `CONFIRMED_FROM_CONFIG` | `.github/workflows/ci.yml` |
 | web | `npm ci`, `npm run lint`, `npm run build`, Docker build | `CONFIRMED_FROM_CONFIG` | `.github/workflows/ci.yml` |
 | admin | `npm ci`, `npm run lint`, `npm run build`, Docker build; lint/build include the bilingual source-call guard | `CONFIRMED_FROM_CONFIG` | `.github/workflows/ci.yml`, `bigbike-admin/package.json` |

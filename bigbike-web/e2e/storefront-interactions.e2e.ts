@@ -17,19 +17,19 @@ test.describe("Shell interactions — header scroll + footer scroll @desktop", (
     await expect(header).toHaveAttribute("data-scrolled", "false");
     await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute(
       "src",
-      "/brand/header-logo.png",
+      /header-logo\.png/,
     );
     await page.evaluate(() => window.scrollTo(0, 600));
     await expect(header).toHaveAttribute("data-scrolled", "true");
     await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute(
       "src",
-      "/brand/header-mark.png",
+      /header-mark\.png/,
     );
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(header).toHaveAttribute("data-scrolled", "false");
     await expect(page.locator("[data-header-logo] img:visible")).toHaveAttribute(
       "src",
-      "/brand/header-logo.png",
+      /header-logo\.png/,
     );
   });
 
@@ -106,7 +106,8 @@ test.describe("Mobile menu @mobile", () => {
     await expect(trigger).toBeFocused();
   });
 
-  test("clicking outside the drawer closes it", async ({ page }) => {
+  test("clicking the tablet backdrop closes the drawer", async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
     await settle(page, "/");
     await openMenu(page);
     await page.locator("[data-bb-sheet-overlay]").click({ position: { x: 8, y: 8 } });
@@ -154,8 +155,8 @@ test.describe("Mobile menu @mobile", () => {
     for (const path of ["/dang-ky/", "/dang-nhap/"] as const) {
       await settle(page, "/");
       await openMenu(page);
-      await page.locator(`[data-header-mobile-menu] a[href="${path}"]`).click();
-      await expect(page).toHaveURL(new RegExp(`${path.replaceAll("/", "\\/")}$`));
+      await page.locator(`[data-header-mobile-menu] a[href^="${path}"]`).click();
+      await expectPath(page, path);
       await expectMenuClosedAndUnlocked(page);
     }
   });
@@ -169,19 +170,22 @@ test.describe("Mobile menu @mobile", () => {
     await expectMenuClosedAndUnlocked(page);
 
     await openMenu(page);
+    await page.getByRole("button", { name: "Đóng menu", exact: true }).click();
     await page.locator("[data-header-logo]").click();
     await expectPath(page, "/");
     await expectMenuClosedAndUnlocked(page);
 
     await openMenu(page);
-    await page.getByRole("button", { name: "EN", exact: true }).first().click();
+    await page.getByRole("button", { name: "Đóng menu", exact: true }).click();
+    await page.getByRole("combobox", { name: "Ngôn ngữ", exact: true }).click();
+    await page.getByRole("option", { name: "English", exact: true }).click();
     await expect(page).toHaveURL(/\/en\/$/);
     await expectMenuClosedAndUnlocked(page);
 
     await settle(page, "/");
     await openMenu(page);
-    await page.locator('[data-header-mobile-menu] a[href="/dang-nhap/"]').click();
-    await expect(page).toHaveURL(/\/dang-nhap\/$/);
+    await page.locator('[data-header-mobile-menu] a[href^="/dang-nhap/"]').click();
+    await expectPath(page, "/dang-nhap/");
     await expectMenuClosedAndUnlocked(page);
     await page.goBack();
     await expectPath(page, "/");

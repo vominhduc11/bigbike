@@ -1,6 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { expectNoHorizontalOverflow, gotoAndSettle } from "./helpers/ui-quality";
+import {
+  expectNoHorizontalOverflow,
+  expectNoSeriousIssues,
+  gotoAndSettle,
+  installPageGuards,
+  type PageGuards,
+} from "./helpers/ui-quality";
+import { DESKTOP, MOBILE, VIEWPORTS } from "./helpers/viewports";
 
 const PHONE_WIDTHS = [320, 360, 375, 414];
 const DESKTOP_WIDTHS = [1280, 1366, 1440, 1600, 1920];
@@ -123,9 +130,134 @@ test.describe("Header acceptance — compact phones", () => {
         expect(control.height, `${control.label} height @ ${width}px`).toBeCloseTo(60, 0);
       }
 
+      const touchTargets = await header(page)
+        .locator("button:visible, a:visible")
+        .evaluateAll((elements) =>
+          elements.map((element) => {
+            const rect = element.getBoundingClientRect();
+            return { width: rect.width, height: rect.height };
+          }),
+        );
+      for (const target of touchTargets) {
+        expect(target.width).toBeGreaterThanOrEqual(44);
+        expect(target.height).toBeGreaterThanOrEqual(44);
+      }
+
+      const logoImage = await page.locator("[data-header-logo] img:visible").boundingBox();
+      expect(logoImage!.width, "the mobile wordmark should remain readable").toBeGreaterThanOrEqual(
+        96,
+      );
+      const searchIcon = await searchTrigger(page).locator("svg").boundingBox();
+      const menuIcon = await mobileMenuTrigger(page).locator("svg").boundingBox();
+      expect(searchIcon!.width).toBe(menuIcon!.width);
+      expect(searchIcon!.height).toBe(menuIcon!.height);
+
       await expectNoHorizontalOverflow(page, `header compact phone @ ${width}px`);
     });
   }
+});
+
+test.describe("Header acceptance — mobile control interactions", () => {
+  let guards: PageGuards;
+
+  test.use({ isMobile: true, hasTouch: true });
+
+  test.beforeEach(async ({ page }) => {
+    guards = installPageGuards(page);
+    await page.setViewportSize(MOBILE);
+  });
+
+  test.afterEach(() => {
+    expectNoSeriousIssues(guards, "header mobile controls");
+  });
+
+  test("the menu close button stays reachable after scrolling and restores focus", async ({
+    page,
+  }) => {
+    await gotoAndSettle(page, "/", { scroll: false });
+    const trigger = mobileMenuTrigger(page);
+    await trigger.tap();
+    const drawer = page.locator("[data-header-mobile-menu]");
+    const close = drawer.getByRole("button", { name: "Đóng menu", exact: true });
+    await expect(close).toBeVisible();
+    await drawer.locator("[data-header-submenu-trigger]").first().click();
+    await drawer.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    const closeBox = await close.boundingBox();
+    expect(closeBox!.y).toBeGreaterThanOrEqual(0);
+    expect(closeBox!.y + closeBox!.height).toBeLessThanOrEqual(60);
+    await close.tap();
+    await expect(drawer).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await expect(page.locator("html")).not.toHaveAttribute("data-bb-header-panel");
+
+    await trigger.click();
+    await expect(drawer).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(drawer).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
+  test("switching to desktop dismisses the mobile menu and releases page scrolling", async ({
+    page,
+  }) => {
+    await page.setViewportSize(VIEWPORTS.find((viewport) => viewport.width === 768)!);
+    await gotoAndSettle(page, "/en/", { scroll: false });
+    await mobileMenuTrigger(page).click();
+    const drawer = page.locator("[data-header-mobile-menu]");
+    await expect(drawer.getByRole("button", { name: "Close menu", exact: true })).toBeVisible();
+    await page.setViewportSize(DESKTOP);
+    await expect(drawer).toBeHidden();
+    await expect(page.locator("html")).not.toHaveAttribute("data-bb-header-panel");
+    await expect(page.locator("body")).not.toHaveCSS("pointer-events", "none");
+    await expect(desktopMenu(page)).toBeVisible();
+  });
+
+  test("the compact language picker supports keyboard use and preserves the current URL suffix", async ({
+    page,
+  }) => {
+    await gotoAndSettle(page, "/sp/?page=1#products", { scroll: false });
+    const language = page.getByRole("combobox", { name: "Ngôn ngữ", exact: true });
+    await language.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("option", { name: "Tiếng Việt", exact: true })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await page.keyboard.press("End");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/en\/products\/?\?page=1#products$/);
+    const englishLanguage = page.getByRole("combobox", { name: "Language", exact: true });
+    await expect(englishLanguage).toHaveText("EN");
+    await englishLanguage.click();
+    const vietnamese = page.getByRole("option", { name: "Tiếng Việt", exact: true });
+    const optionBox = await vietnamese.boundingBox();
+    expect(optionBox!.height).toBeGreaterThanOrEqual(44);
+    await vietnamese.click();
+    await expect(page).toHaveURL(/\/sp\/?\?page=1#products$/);
+    await expect(language).toHaveText("VI");
+  });
+
+  test("resizing closes the compact picker without leaving an invisible modal over desktop controls", async ({
+    page,
+  }) => {
+    await gotoAndSettle(page, "/", { scroll: false });
+    await page.getByRole("combobox", { name: "Ngôn ngữ", exact: true }).click();
+    await expect(page.getByRole("listbox", { name: "Ngôn ngữ", exact: true })).toBeVisible();
+    await page.setViewportSize(DESKTOP);
+    await expect(page.getByRole("listbox", { name: "Ngôn ngữ", exact: true })).toBeHidden();
+    await expect(page.locator("body")).not.toHaveCSS("pointer-events", "none");
+    const languageButtons = page.locator("[data-language-switch] button:visible");
+    await expect(languageButtons).toHaveCount(2);
+    for (const button of await languageButtons.all()) {
+      const box = await button.boundingBox();
+      expect(box!.width).toBeGreaterThanOrEqual(44);
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
+    await searchTrigger(page).click();
+    await expect(searchDialog(page)).toBeVisible();
+  });
 });
 
 test.describe("Header acceptance — desktop navigation", () => {
@@ -142,6 +274,70 @@ test.describe("Header acceptance — desktop navigation", () => {
       await expect(mobileMenuTrigger(page)).toBeHidden();
       await expect(page.locator("[data-header-info-trigger]")).toHaveCount(0);
       await expectNoHorizontalOverflow(page, `header desktop navigation @ ${width}px`);
+    });
+  }
+});
+
+test.describe("Header acceptance — intentional logo overhang", () => {
+  for (const viewport of VIEWPORTS.filter(({ width }) => [1280, 1440, 1920].includes(width))) {
+    test(`${viewport.width}px preserves the full hanging logo and its existing scrolled variant`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await gotoAndSettle(page, "/", { scroll: false });
+      const visibleLogo = page.locator("[data-header-logo] img:visible");
+      await expect(visibleLogo).toHaveAttribute("src", /header-logo\.png/);
+      const initial = await visibleLogo.boundingBox();
+      const headerBox = await header(page).boundingBox();
+      expect(initial!.y).toBe(0);
+      expect(initial!.width).toBe(210);
+      expect(initial!.height).toBe(190);
+      expect(initial!.y + initial!.height).toBeGreaterThan(headerBox!.y + headerBox!.height);
+
+      await page.evaluate(() => window.scrollTo(0, 500));
+      await expect(header(page)).toHaveAttribute("data-scrolled", "true");
+      await expect(visibleLogo).toHaveAttribute("src", /header-mark\.png/);
+      await expect
+        .poll(() =>
+          visibleLogo.evaluate(
+            (image: HTMLImageElement) => image.complete && image.naturalWidth > 0,
+          ),
+        )
+        .toBe(true);
+      const scrolled = await visibleLogo.boundingBox();
+      expect(scrolled!.width).toBe(150);
+      expect(scrolled!.y).toBeGreaterThanOrEqual(0);
+      expect(scrolled!.y + scrolled!.height).toBeLessThanOrEqual(headerBox!.height);
+
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(header(page)).toHaveAttribute("data-scrolled", "false");
+      await expect(visibleLogo).toHaveAttribute("src", /header-logo\.png/);
+      await expect.poll(() => visibleLogo.boundingBox()).toEqual(initial);
+    });
+  }
+});
+
+test.describe("Header acceptance — account menu", () => {
+  for (const viewport of VIEWPORTS.filter(({ width }) => width === 1440 || width === 1920)) {
+    test(`${viewport.width}px keeps the account menu onscreen and closes it with Escape from a menu item`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      const guards = installPageGuards(page);
+      await gotoAndSettle(page, "/", { scroll: false });
+      const trigger = page.locator('[data-header-actions] button[aria-haspopup="menu"]');
+      await trigger.click();
+      const menu = page.locator('[data-header-actions] [role="menu"]');
+      await expect(menu).toBeVisible();
+      const box = await menu.boundingBox();
+      const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewportWidth);
+      await menu.getByRole("menuitem").first().focus();
+      await page.keyboard.press("Escape");
+      await expect(menu).toBeHidden();
+      await expect(trigger).toBeFocused();
+      expectNoSeriousIssues(guards, "header account menu");
     });
   }
 });
@@ -777,16 +973,12 @@ test.describe("Header acceptance — search empty state", () => {
   test("desktop keeps the keyboard legend, mobile hides it", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     const desktopDialog = await openSearchWithHistory(page, SEARCH_HISTORY_FIXTURES[1].items);
-    const desktopLegend = desktopDialog
-      .locator("[data-search-keyboard-hints] span")
-      .first();
+    const desktopLegend = desktopDialog.locator("[data-search-keyboard-hints] span").first();
     await expect(desktopLegend).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 844 });
     const mobileDialog = await openSearchWithHistory(page, SEARCH_HISTORY_FIXTURES[1].items);
-    await expect(
-      mobileDialog.locator("[data-search-keyboard-hints] span").first(),
-    ).toBeHidden();
+    await expect(mobileDialog.locator("[data-search-keyboard-hints] span").first()).toBeHidden();
   });
 
   test("mobile bottom nav opens the search panel", async ({ page }) => {

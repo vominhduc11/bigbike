@@ -22,6 +22,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
   const pathname = usePathname();
   const [loggingOut, setLoggingOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAuthed = auth.status === "authenticated";
   const displayName = isAuthed ? (auth.profile.displayName ?? "") : "";
@@ -130,6 +131,13 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
       onMouseEnter={openMenu}
       onMouseLeave={scheduleCloseMenu}
       onFocus={openMenu}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        triggerRef.current?.focus();
+        closeMenu();
+      }}
       onBlur={(event) => {
         const nextTarget = event.relatedTarget;
         if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
@@ -138,6 +146,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
       }}
     >
       <Button
+        ref={triggerRef}
         type="button"
         variant="ghost"
         size="icon"
@@ -145,11 +154,6 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
         aria-expanded={menuOpen}
         aria-haspopup="menu"
         onClick={openMenu}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            closeMenu();
-          }
-        }}
         className={cn(iconBtn, "h-20! min-h-20! hover:not-disabled:scale-100")}
       >
         {isAuthed ? (
@@ -161,12 +165,12 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
       <div
         role="menu"
         className={cn(
-          "pointer-events-none invisible absolute right-[-50px] top-20 z-[var(--bb-z-dropdown)] w-[275px] bg-white p-7.5 opacity-0 shadow-[0_0_6px_rgba(0,0,0,0.64)] transition-[opacity,visibility] duration-300",
+          "pointer-events-none invisible absolute right-0 top-20 z-[var(--bb-z-dropdown)] w-[275px] bg-white p-7.5 opacity-0 shadow-[0_0_6px_rgba(0,0,0,0.64)] transition-[opacity,visibility] duration-300",
           menuOpen && "pointer-events-auto visible opacity-100",
         )}
       >
         <span
-          className="absolute right-15 top-[-18px] h-0 w-0 border-x-[18px] border-b-[18px] border-x-transparent border-b-white"
+          className="absolute right-3 top-[-18px] h-0 w-0 border-x-[18px] border-b-[18px] border-x-transparent border-b-white"
           aria-hidden
         />
         <div className="flex flex-col gap-5">

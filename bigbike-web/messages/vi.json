@@ -66,6 +66,7 @@
     "loggedInTagline": "Trải nghiệm mua sắm không giới hạn cùng Bigbike.vn",
     "loggingOut": "Đang đăng xuất…",
     "mobileMenuOpenAriaLabel": "Mở menu",
+    "mobileMenuCloseAriaLabel": "Đóng menu",
     "mobileMenuExpandAriaLabel": "Mở rộng {label}",
     "mobileMenuCollapseAriaLabel": "Thu gọn {label}",
     "mobileLoggedIn": "Đang đăng nhập",
