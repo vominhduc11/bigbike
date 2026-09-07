@@ -14,13 +14,12 @@ import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
 import {
   getCatalogFacets,
   getPublicMenu,
-  listCategories,
   listProducts,
 } from "@/lib/api/public-api";
 import type { Locale } from "@/i18n/locale";
 import { isLocale } from "@/i18n/locale";
 import { buildPublicMenuTree } from "@/lib/utils/public-menu";
-import { toBrandPath, toCategoryPath, toProductPath } from "@/lib/utils/routes";
+import { toBrandPath, toProductPath } from "@/lib/utils/routes";
 import type { SearchShortcuts } from "@/components/layout/search/types";
 
 export default async function StorefrontLayout({
@@ -33,19 +32,18 @@ export default async function StorefrontLayout({
   const { locale: localeParam } = await params;
   if (!isLocale(localeParam)) notFound();
   const locale: Locale = localeParam;
-  const [primaryMenuResult, facetResult, categoryResult, suggestedProductResult] =
-    await Promise.all([
-      getPublicMenu("primary", locale),
-      getCatalogFacets({ inStock: true, lang: locale }),
-      listCategories({ page: 1, size: 100, lang: locale }),
-      listProducts({ page: 1, size: 5, sort: "popularity", inStock: true, lang: locale }),
-    ]);
+  // listCategories(size:100) used to be fetched here on EVERY storefront page purely to build a
+  // "popular categories" shortcut group that no screen ever rendered (SEARCH_RULE_003 keeps the
+  // opening panel to recent / brands / suggested products). Removed 2026-09-07 along with the
+  // group itself, so every page now makes one server call fewer.
+  const [primaryMenuResult, facetResult, suggestedProductResult] = await Promise.all([
+    getPublicMenu("primary", locale),
+    getCatalogFacets({ inStock: true, lang: locale }),
+    listProducts({ page: 1, size: 5, sort: "popularity", inStock: true, lang: locale }),
+  ]);
   const primaryNodes: HeaderNavNode[] = primaryMenuResult.data?.items?.length
     ? buildPublicMenuTree(primaryMenuResult.data.items)
     : [];
-  const categoriesBySlug = new Map(
-    categoryResult.data.map((category) => [category.slug, category]),
-  );
   const facets = facetResult.data;
   const sortByCount = <T extends { count: number; name: string }>(items: T[]) =>
     [...items].sort(
@@ -75,23 +73,6 @@ export default async function StorefrontLayout({
         price: product.price,
       }))
       .slice(0, 5),
-    popularCategories: sortByCount(
-      (facets?.categories ?? []).flatMap((categoryFacet) => {
-        const category = categoriesBySlug.get(categoryFacet.key);
-        if (!category || categoryFacet.count <= 0) return [];
-        return [
-          {
-            id: `category-${category.id}`,
-            name: category.name,
-            href: toCategoryPath(
-              locale === "en" ? category.slugEn || category.slug : category.slug,
-              locale,
-            ),
-            count: categoryFacet.count,
-          },
-        ];
-      }),
-    ).slice(0, 6),
   };
 
   return (
@@ -104,7 +85,7 @@ export default async function StorefrontLayout({
         <MobileBottomNav />
       </div>
       {/* Gắn panel tìm kiếm React như "panel host" ở mọi breakpoint để cả header
-          desktop/tablet lẫn nút Tìm kiếm ở bottom nav (mobile) mở được panel.
+          desktop/tablet lẫn nút Tìm kiếm ở thanh dưới (mobile) mở được panel.
           Bọc Suspense vì SearchToggle dùng useSearchParams — bắt buộc khi trang
           render tĩnh (ISR/SSG), nếu không build sẽ bail CSR toàn trang. */}
       <Suspense fallback={null}>

@@ -92,6 +92,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private final CategoryJpaRepository categoryJpaRepository;
     private final BrandJpaRepository brandJpaRepository;
     private final BrandLogoValidationService brandLogoValidationService;
+    private final PublishedProductListingCache publishedProductListingCache;
 
     @Override
     public List<Product> findAllProducts() {
@@ -109,9 +110,13 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
 
     @Override
     public List<Product> findAllPublishedProductsForListing(String locale) {
-        return productJpaRepository.findByPublishStatusAndDiscontinuedFalse(PublishStatus.PUBLISHED).stream()
-                .map(entity -> toDomainListing(entity, locale))
-                .toList();
+        // Storefront search, catalog listing and facets all rank in Java over this projection, so
+        // it is reloaded on every keystroke without the snapshot cache. See
+        // PublishedProductListingCache for why it is in process rather than in Redis.
+        return publishedProductListingCache.get(locale, () ->
+                productJpaRepository.findByPublishStatusAndDiscontinuedFalse(PublishStatus.PUBLISHED).stream()
+                        .map(entity -> toDomainListing(entity, locale))
+                        .toList());
     }
 
     @Override

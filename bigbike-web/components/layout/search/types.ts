@@ -12,7 +12,6 @@ export type SearchShortcut = {
 export type SearchShortcuts = {
   trendingBrands: SearchShortcut[];
   suggestedProducts: SearchShortcut[];
-  popularCategories: SearchShortcut[];
 };
 
 export type SearchSuggestion = {

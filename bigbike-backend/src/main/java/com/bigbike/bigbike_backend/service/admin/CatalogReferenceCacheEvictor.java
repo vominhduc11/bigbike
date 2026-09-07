@@ -1,5 +1,6 @@
 package com.bigbike.bigbike_backend.service.admin;
 
+import com.bigbike.bigbike_backend.repository.catalog.PublishedProductListingCache;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ public class CatalogReferenceCacheEvictor {
     public static final String ATTRIBUTES = "catalog-reference-attributes";
 
     private final CacheManager cacheManager;
+    private final PublishedProductListingCache publishedProductListingCache;
 
     public void evictAllAfterCommit() {
         Runnable eviction = this::evictAll;
@@ -37,6 +39,10 @@ public class CatalogReferenceCacheEvictor {
     }
 
     private void evictAll() {
+        // The storefront listing snapshot is in process, so it is dropped directly rather than
+        // through the Redis cache manager. Doing it first means an admin edit is visible to
+        // customers even if Redis is unreachable.
+        publishedProductListingCache.invalidate();
         for (String name : List.of(CATEGORIES, BRANDS, ATTRIBUTES)) {
             Cache cache = cacheManager.getCache(name);
             if (cache == null) {

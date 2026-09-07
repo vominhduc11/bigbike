@@ -176,6 +176,16 @@
 			<version>0.4.20</version>
 		</dependency>
 
+		<!-- TwelveMonkeys WebP reader: the JRE ships no WebP ImageIO plugin, so every WebP
+		     catalog image and every WebP customer photo decoded to null. That silently removed
+		     51 products from chat image matching and made large WebP uploads unresizable.
+		     Pure Java, read-only; nothing here writes WebP. -->
+		<dependency>
+			<groupId>com.twelvemonkeys.imageio</groupId>
+			<artifactId>imageio-webp</artifactId>
+			<version>3.15.0</version>
+		</dependency>
+
 		<!-- Bucket4j: local fallback plus Redis-backed distributed rate limiting. -->
 		<dependency>
 			<groupId>com.bucket4j</groupId>

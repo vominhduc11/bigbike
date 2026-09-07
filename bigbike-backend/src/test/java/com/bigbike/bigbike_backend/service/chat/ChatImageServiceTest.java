@@ -96,23 +96,81 @@ class ChatImageServiceTest {
     }
 
     @Test
-    void damageCaptionOverridesModelAndNeverDecidesWarranty() {
+    void damageReportedInWordsOverridesModelAndNeverDecidesWarranty() {
         assertHighRiskCopy(
-                "vi", "Mũ này bị nứt, có chắc chắn được bảo hành không?",
+                "vi", "PRODUCT_SEARCH", "Mũ này bị nứt, có chắc chắn được bảo hành không?",
                 "bị lỗi/hỏng", "không tự kết luận bảo hành");
         assertHighRiskCopy(
-                "en", "This helmet is broken. Is warranty guaranteed?",
+                "en", "PRODUCT_SEARCH", "This helmet is broken. Is warranty guaranteed?",
                 "damaged-product image", "cannot decide warranty eligibility");
     }
 
     @Test
     void headOrPersonPhotoNeverGuessesSizeInEitherLanguage() {
         assertHighRiskCopy(
-                "vi", "Nhìn đầu tôi thì size nào vừa?",
+                "vi", "SIZE_FROM_PERSON", "Nhìn đầu tôi thì size nào vừa?",
                 "không đoán size", "dùng thước dây");
         assertHighRiskCopy(
-                "en", "What size fits me from this head photo?",
+                "en", "SIZE_FROM_PERSON", "What size fits me from this head photo?",
                 "cannot estimate a helmet size", "measuring tape");
+    }
+
+    /**
+     * Owner decision 2026-09-07. Measured on the live shop 2026-09-07: each of these captions over
+     * a plain product photo dropped the customer into an unrelated refusal and took the product
+     * card and its buy button away with it.
+     */
+    @Test
+    void wordsAloneNeverRedirectAProductPhotoToOrderLookupOrHeadMeasuring() {
+        for (String caption : List.of(
+                "Em muốn đặt đơn hàng mẫu này ạ",
+                "Mũ này có size nào ạ?",
+                "Mũ này bảo hành bao lâu ạ?",
+                "Shop có giao hàng về Đà Nẵng không ạ?")) {
+            Fixture fixture = fixture("vi");
+            fixture.visualMatch("mu-tanami");
+            fixture.analysis(new ChatImageAnalysisClient.ImageAnalysis(
+                    "PRODUCT_SEARCH", "Mũ bảo hiểm", "HIGH", List.of("mu-tanami"), false));
+
+            ChatImageService.ImageTurnResult result = fixture.process(caption);
+
+            assertThat(result.products()).extracting(item -> item.slug())
+                    .as("caption: %s", caption)
+                    .containsExactly("mu-tanami");
+            assertThat(result.answer()).as("caption: %s", caption)
+                    .contains("trông giống mẫu Mũ Tanami")
+                    .doesNotContain("Lịch sử đơn hàng", "không đoán size");
+            assertThat(result.continuesToText()).as("caption: %s", caption).isTrue();
+        }
+    }
+
+    @Test
+    void receiptAndPersonPhotosStillStopTheTurnWhateverTheCustomerTyped() {
+        Fixture order = fixture("vi");
+        order.analysis(new ChatImageAnalysisClient.ImageAnalysis(
+                "ORDER_DOCUMENT", "UNKNOWN", "HIGH", List.of(), false));
+        ChatImageService.ImageTurnResult orderResult = order.process("Mẫu này giá bao nhiêu?");
+        assertThat(orderResult.answer()).contains("Lịch sử đơn hàng");
+        assertThat(orderResult.continuesToText()).isFalse();
+
+        Fixture person = fixture("vi");
+        person.analysis(new ChatImageAnalysisClient.ImageAnalysis(
+                "SIZE_FROM_PERSON", "UNKNOWN", "HIGH", List.of(), false));
+        ChatImageService.ImageTurnResult personResult = person.process("Mẫu này giá bao nhiêu?");
+        assertThat(personResult.answer()).contains("không đoán size");
+        assertThat(personResult.continuesToText()).isFalse();
+    }
+
+    @Test
+    void unrecognizedImageAndUsedUpDailyAllowanceStillLetTheTypedQuestionThrough() {
+        Fixture unknown = fixture("vi");
+        unknown.analysis(new ChatImageAnalysisClient.ImageAnalysis(
+                "UNKNOWN", "UNKNOWN", "LOW", List.of(), false));
+        assertThat(unknown.process("Mẫu này giá bao nhiêu?").continuesToText()).isTrue();
+
+        Fixture exhausted = fixture("vi");
+        when(exhausted.quotaService.tryReserve(20)).thenReturn(false);
+        assertThat(exhausted.process("Mẫu này giá bao nhiêu?").continuesToText()).isTrue();
     }
 
     @Test
@@ -228,16 +286,17 @@ class ChatImageServiceTest {
     }
 
     private static void assertHighRiskCopy(
-            String lang, String caption, String expectedOne, String expectedTwo) {
+            String lang, String detectedIntent, String caption,
+            String expectedOne, String expectedTwo) {
         Fixture fixture = fixture(lang);
         fixture.analysis(new ChatImageAnalysisClient.ImageAnalysis(
-                "PRODUCT_SEARCH", "Mũ bảo hiểm", "HIGH",
-                List.of("mu-tanami"), false));
+                detectedIntent, "Mũ bảo hiểm", "HIGH", List.of("mu-tanami"), false));
 
         ChatImageService.ImageTurnResult result = fixture.process(caption);
 
         assertThat(result.answer()).contains(expectedOne, expectedTwo);
         assertThat(result.products()).isEmpty();
+        assertThat(result.continuesToText()).isFalse();
         if (caption.toLowerCase().contains("nứt") || caption.toLowerCase().contains("broken")) {
             assertThat(result.answer()).doesNotContain(
                     "chắc chắn được bảo hành", "warranty is guaranteed");
@@ -245,6 +304,10 @@ class ChatImageServiceTest {
     }
 
     private static Fixture fixture(String lang) {
+        return fixture(lang, List.of(product()));
+    }
+
+    private static Fixture fixture(String lang, List<Product> catalogProducts) {
         ChatImageJpaRepository imageRepo = mock(ChatImageJpaRepository.class);
         ChatConversationJpaRepository conversationRepo = mock(ChatConversationJpaRepository.class);
         ChatAssistantSettings assistantSettings = mock(ChatAssistantSettings.class);
@@ -290,14 +353,73 @@ class ChatImageServiceTest {
         when(quotaService.tryReserve(20)).thenReturn(true);
         when(storageService.read("private", "chat/object.jpg", "image/jpeg"))
                 .thenReturn(new ChatImageStorageService.StoredContent(new byte[] {1, 2, 3}, "image/jpeg"));
-        when(catalog.listAssistantDecisionProducts(lang)).thenReturn(List.of(product()));
-        when(fingerprints.findStrictMatch(any(), anyString(), any()))
-                .thenReturn(Optional.empty());
+        when(catalog.listAssistantDecisionProducts(lang)).thenReturn(catalogProducts);
+        when(fingerprints.compare(any(), anyString(), any()))
+                .thenReturn(ChatProductImageFingerprintService.VisualComparison.empty());
 
         return new Fixture(
                 service, imageRepo, conversationRepo, assistantSettings, storageService,
                 quotaService, analysisClient, fingerprints,
                 conversation, image, messageId, lang);
+    }
+
+    /**
+     * Owner decision 2026-09-07. Measured 2026-09-07: three different full-face helmet photos came
+     * back with the identical three models, because the group list was simply the first three
+     * products of the category in slug order.
+     */
+    @Test
+    void groupSuggestionsFollowThePhotoFirstAndTheShopsOwnPriorityAfterwards() {
+        Fixture fixture = fixture("vi", helmetGroup());
+        fixture.visualRanking("mu-omega", "mu-gamma");
+        fixture.analysis(new ChatImageAnalysisClient.ImageAnalysis(
+                "PRODUCT_SEARCH", "Mũ bảo hiểm", "MEDIUM", List.of(), false));
+
+        ChatImageService.ImageTurnResult result = fixture.process("Đây là loại gì?");
+
+        assertThat(result.products()).extracting(item -> item.slug())
+                .startsWith("mu-omega", "mu-gamma")
+                .hasSize(3)
+                .doesNotHaveDuplicates();
+    }
+
+    @Test
+    void withNothingToCompareTheShopsPinnedModelLeadsInsteadOfTheAlphabeticalFirst() {
+        Fixture fixture = fixture("vi", helmetGroup());
+        fixture.visualRanking();
+        fixture.analysis(new ChatImageAnalysisClient.ImageAnalysis(
+                "PRODUCT_SEARCH", "Mũ bảo hiểm", "MEDIUM", List.of(), false));
+
+        ChatImageService.ImageTurnResult result = fixture.process("Đây là loại gì?");
+
+        assertThat(result.products()).extracting(item -> item.slug())
+                .first().isEqualTo("mu-omega");
+    }
+
+    /** Alphabetically the group runs alpha, beta, gamma, omega; "mu-omega" is the pinned model. */
+    private static List<Product> helmetGroup() {
+        return List.of(
+                helmet("mu-alpha", 1_000_000, HomepageBlock.NONE, null),
+                helmet("mu-beta", 2_000_000, HomepageBlock.NONE, null),
+                helmet("mu-gamma", 3_000_000, HomepageBlock.NONE, null),
+                helmet("mu-omega", 12_000_000, HomepageBlock.FEATURED_GRID, 1));
+    }
+
+    private static Product helmet(
+            String slug, long price, HomepageBlock block, Integer homepageOrder) {
+        CategorySummary category = new CategorySummary(
+                "category-helmet", "mu-bao-hiem", null, "Mũ bảo hiểm", true, false);
+        return new Product(
+                "product-" + slug, "SKU-" + slug, slug, null, "Mũ " + slug,
+                null, null,
+                new BrandSummary("brand-tanami", "tanami", "Tanami"),
+                category, List.of(category), null, List.of(), List.of(),
+                new ProductPrice(BigDecimal.valueOf(price), null, "VND"),
+                List.of(), ProductStockState.IN_STOCK, Boolean.TRUE, PublishStatus.PUBLISHED,
+                false, null, block, homepageOrder, null, null, List.of(), List.of(),
+                ProductHighlights.EMPTY, null, null, null, null, null, null, null,
+                List.of(), List.of(), List.of(), null, null, null, null, null,
+                Instant.now(), Instant.now());
     }
 
     private static Product product() {
@@ -331,9 +453,18 @@ class ChatImageServiceTest {
             String lang
     ) {
         void visualMatch(String slug) {
-            when(fingerprints.findStrictMatch(any(), anyString(), any())).thenReturn(Optional.of(
-                    new ChatProductImageFingerprintService.VisualMatch(
-                            "product-tanami", slug, BigDecimal.ONE, "CONTENT_SHA256")));
+            when(fingerprints.compare(any(), anyString(), any())).thenReturn(
+                    new ChatProductImageFingerprintService.VisualComparison(
+                            Optional.of(new ChatProductImageFingerprintService.VisualMatch(
+                                    "product-tanami", slug, BigDecimal.ONE, "CONTENT_SHA256")),
+                            List.of(slug)));
+        }
+
+        /** No product clears the evidence bar, but the photo still ranks the group's models. */
+        void visualRanking(String... slugs) {
+            when(fingerprints.compare(any(), anyString(), any())).thenReturn(
+                    new ChatProductImageFingerprintService.VisualComparison(
+                            Optional.empty(), List.of(slugs)));
         }
 
         void analysis(ChatImageAnalysisClient.ImageAnalysis analysis) {

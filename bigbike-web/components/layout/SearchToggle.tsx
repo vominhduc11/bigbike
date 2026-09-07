@@ -16,14 +16,12 @@ import { toArticlePath, toProductPath, toSearchPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import type { ArticleSuggestion, SearchShortcuts, SearchSuggestion } from "./search/types";
 import {
-  sClear,
-  sClose,
+  sAction,
   sForm,
   sIcon,
   sInput,
   sLayer,
   sLayerOpen,
-  sLoading,
   sOverlay,
   sOverlayOpen,
   sPanel,
@@ -39,7 +37,6 @@ type SearchToggleProps = {
 const EMPTY_SHORTCUTS: SearchShortcuts = {
   trendingBrands: [],
   suggestedProducts: [],
-  popularCategories: [],
 };
 const EMPTY_PRODUCT_SUGGESTIONS: SearchSuggestion[] = [];
 const EMPTY_ARTICLE_SUGGESTIONS: ArticleSuggestion[] = [];
@@ -60,7 +57,9 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
   const wasOpenRef = useRef(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
-  const debouncedQuery = useDebounce(query.trim(), 300);
+  // 200ms keeps the whole round trip inside the 0.3s the owner asked for now that the
+  // backend answers a suggest call in tens of milliseconds instead of 0.5-1.0s.
+  const debouncedQuery = useDebounce(query.trim(), 200);
   const { isPanelOpen, closePanel } = useHeaderUi();
   const open = isPanelOpen("search");
   const currentSearchQuery = searchParams.get("s") ?? searchParams.get("q") ?? "";
@@ -78,10 +77,12 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
   } = useSearchSuggestions(locale, debouncedQuery, suggestQuery);
   const suggestions = suggestionResult?.products ?? EMPTY_PRODUCT_SUGGESTIONS;
   const articleSuggestions = suggestionResult?.articles ?? EMPTY_ARTICLE_SUGGESTIONS;
-  // The debounce still controls when the request starts. Only show the spinner
-  // for an active request so typing does not make it flicker during the debounce
-  // window.
-  const isLoading = suggestLoading;
+  // The busy state must cover the debounce window too, otherwise the panel sits blank and
+  // silent for the first 200ms after every keystroke. keepPreviousData keeps the previous
+  // rows on screen underneath, so this only swaps the trailing icon.
+  const typingAhead =
+    open && trimmedQuery.length >= 1 && !queryTooLong && debouncedQuery !== trimmedQuery;
+  const isLoading = suggestLoading || typingAhead;
   const searchError = suggestionError instanceof SearchSuggestionsError ? suggestionError : null;
   const failureKind =
     queryTooLong || searchError?.status === 400
@@ -270,15 +271,20 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
               className={sInput}
             />
 
-            <span data-search-loading-slot className={sLoading} aria-hidden="true">
-              {isLoading && <Loader2 size={18} aria-hidden className="animate-spin" />}
-            </span>
-
+            {/* One action slot: the spinner replaces the X while a lookup is in flight instead of
+                sitting in a second slot further left. Owner decision 2026-09-07 accepts that the X
+                is not clickable during a lookup — Escape and the keyboard still clear and close.
+                The icon size is fixed so the control never shrinks as the customer types. */}
             <Button
               type="button"
               variant="ghost"
-              className={trimmedQuery ? sClear : sClose}
-              aria-label={t(trimmedQuery ? "clearAriaLabel" : "closeAriaLabel")}
+              className={sAction}
+              data-search-action-slot
+              data-search-busy={isLoading ? "true" : undefined}
+              disabled={isLoading}
+              aria-label={t(
+                isLoading ? "loadingSuggestions" : trimmedQuery ? "clearAriaLabel" : "closeAriaLabel",
+              )}
               onClick={() => {
                 if (!trimmedQuery) {
                   handleClose();
@@ -290,7 +296,11 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
                 inputRef.current?.focus();
               }}
             >
-              <X size={trimmedQuery ? 16 : 20} aria-hidden />
+              {isLoading ? (
+                <Loader2 size={20} aria-hidden className="animate-spin" />
+              ) : (
+                <X size={20} aria-hidden />
+              )}
             </Button>
           </form>
 

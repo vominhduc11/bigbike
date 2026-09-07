@@ -6,6 +6,7 @@ This file captures measurable acceptance criteria that can be verified from curr
 
 | Module | Acceptance criteria | Current evidence | Verdict |
 |---|---|---|---|
+| Search | Gõ dở từ khóa vẫn ra hàng và kết quả chỉ thu hẹp dần (`kom` ⊇ `komi` ⊇ `komine`, không về trắng); 1–2 ký tự ra hàng khớp đầu tên hoặc đúng thương hiệu, không ra hàng vì trùng cỡ; bài viết chạy cùng quy tắc với sản phẩm; trang kết quả có ô nhập riêng và tiêu đề nêu từ khóa + số kết quả. | `StorefrontSearchRulesTest.java`, `PublicSearchApiTest.java`, `SearchToggle.test.tsx` | `REQUIRED_FOR_2026-09-07` |
 | Cart | Guest/customer carts work, CSRF blocks unsafe mutations, totals are recalculated. | `Phase1ECartApiTest.java` | `PASS` |
 | Checkout | Checkout validates payload, shipping, per-variant availability (`isAvailable`), idempotency, and creates orders. (No quantity decrement — boolean availability, V261.) | `Phase1FCheckoutApiTest.java`, `CheckoutService.java` | `PASS` |
 | ~~POS~~ | Removed platform-wide (owner decision 2026-06-23, online-only). The POS search/sale endpoints, service, tests, and `pos.*` permissions no longer exist. | — | `REMOVED` |

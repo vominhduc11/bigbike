@@ -276,7 +276,7 @@ export function HeaderClient({ menuNodesVi, menuNodesEn, contact }: HeaderClient
                     aria-expanded={mobileMenuOpen}
                     className={cn(
                       iconBtn,
-                      "h-full! min-h-0! w-11! px-0! hover:not-disabled:scale-100 xl:hidden!",
+                      "h-full! min-h-0! hover:not-disabled:scale-100 xl:hidden!",
                     )}
                   >
                     <HamburgerIcon open={mobileMenuOpen} />

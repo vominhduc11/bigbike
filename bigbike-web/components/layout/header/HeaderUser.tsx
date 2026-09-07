@@ -150,7 +150,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
             closeMenu();
           }
         }}
-        className={cn(iconBtn, "h-20! min-h-20! px-5! hover:not-disabled:scale-100")}
+        className={cn(iconBtn, "h-20! min-h-20! hover:not-disabled:scale-100")}
       >
         {isAuthed ? (
           <Avatar url={auth.profile.avatarUrl} name={displayName} size="sm" variant="brand" />

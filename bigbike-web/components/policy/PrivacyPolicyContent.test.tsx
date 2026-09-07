@@ -16,7 +16,17 @@ describe("PrivacyPolicyContent customer-image disclosure", () => {
     expect(screen.getByText(/hết hạn lưu 90 ngày/i)).toBeInTheDocument();
     expect(screen.getByText(/quyền xem ảnh đã lưu/i)).toBeInTheDocument();
     expect(screen.getByText(/xoá lịch sử trò chuyện/i)).toBeInTheDocument();
+    expect(screen.getByText(/nút xoá cuộc trò chuyện ngay trong khung chat/i)).toBeInTheDocument();
     expect(screen.getByText(/nên che tên, số điện thoại, địa chỉ, mã đơn/i)).toBeInTheDocument();
+  });
+
+  it("no longer claims the chat panel shows an image disclosure before you attach one", () => {
+    // The in-chat disclosure line was removed on 06/09/2026 and this page became the only place
+    // the disclosure lives, so promising a chat-side notice here would be untrue.
+    const { container } = render(<PrivacyPolicyContent locale="vi" />);
+
+    expect(container.textContent).not.toMatch(/khung chat sẽ nhắc/i);
+    expect(screen.getByText(/nơi công bố đầy đủ cách ảnh khách gửi được xử lý/i)).toBeInTheDocument();
   });
 
   it("provides the same mandatory disclosure in English", () => {
@@ -29,6 +39,7 @@ describe("PrivacyPolicyContent customer-image disclosure", () => {
     expect(screen.getByText(/only staff permitted to view conversations/i)).toBeInTheDocument();
     expect(screen.getByText(/90-day retention period/i)).toBeInTheDocument();
     expect(screen.getByText(/view images saved in your own history/i)).toBeInTheDocument();
+    expect(screen.getByText(/clear-conversation button in the chat panel/i)).toBeInTheDocument();
     expect(screen.getByText(/Deleting chat history also deletes images/i)).toBeInTheDocument();
     expect(
       screen.getByText(/cover names, phone numbers, addresses, order codes/i),

@@ -101,6 +101,16 @@ public class ImageVariantService {
             try {
                 CompressionProfile profile = new CompressionProfile(targetWidth, targetWidth, JPEG_QUALITY, false);
                 byte[] resized = imageCompressionService.compress(sourceBytes, mimeType, profile);
+                if (resized == sourceBytes && !outputMime.equalsIgnoreCase(mimeType)) {
+                    // compress() keeps the original whenever re-encoding would not be smaller, and
+                    // returns those very bytes. Storing them under a .png key with an image/png
+                    // content type would hand browsers a file whose name and header disagree with
+                    // its contents. This only became reachable once a WebP reader was installed —
+                    // WebP re-encoded as PNG is routinely larger, so the original wins — and such a
+                    // "variant" is the untouched full-size image anyway, which is nothing worth
+                    // storing a second copy of.
+                    continue;
+                }
                 uploadToMinio(bucket, variantKey, resized, outputMime);
                 result.put(name, MEDIA_PATH_PREFIX + variantKey);
             } catch (Exception e) {

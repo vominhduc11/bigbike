@@ -56,8 +56,16 @@ final class ChatActionCatalog {
         } else if (containsAny(normalized, "bai viet", "tin tuc", "huong dan")) {
             add(types, "FIND_PRODUCTS", "RELATED_ARTICLE_QUESTION");
             addConfiguredContacts(types, contacts);
+        } else if (containsAny(normalized, "don hang", "hoa don", "ma don", "tra cuu",
+                "don cua", "order", "invoice", "tracking")) {
+            // Someone asking about an order was being offered "change your needs" and "change your
+            // budget", because an order question matched none of the branches above and fell into
+            // the shopping default.
+            add(types, "ORDER_HISTORY", "ORDER_LOOKUP", "LOGIN");
         } else {
-            add(types, "CHANGE_NEEDS", "CHANGE_BUDGET");
+            // Only reached with no cards at all, where "change your needs" and "change your budget"
+            // refer to a choice the customer has not started making yet.
+            add(types, "FIND_PRODUCTS");
             addConfiguredContacts(types, contacts);
         }
         return responses(types, 3);

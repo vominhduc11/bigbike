@@ -197,6 +197,14 @@ Evidence:
 - `CheckoutService.java` (line 723)
 - `V1__create_catalog_content_tables.sql` (lines 65, 166)
 
+### Public search-suggest response (`SearchPayload`)
+
+`GET /api/v1/search-suggest` returns `ApiDataResponse<SearchPayload>` where `SearchPayload` carries exactly three fields: `query` (the trimmed term echoed back), `products[]` and `articles[]`. Both lists are the ordinary public list projections — products are the catalog list view (variant option detail is stripped before serialisation, so option values are a matching input, never part of the response) and articles are the public article projection. Both lists are capped by the request `limit` (default `8`, maximum `50`) and are returned empty, not null, for a blank query. There is no total-count field: the payload is a typeahead preview, and exact totals come from `GET /api/v1/products?q=...`.
+
+Status: `OWNER_CONFIRMED_2026-09-07`
+
+Evidence: `PublicSearchController.SearchPayload`, `GlobalSearchService.SearchResults`, `CatalogReadSupport.toListView`.
+
 ### Admin quick-search response
 
 The admin topbar quick-search response is a compact read model and does not change the existing product list payload. A product result contains the product-level `sku` plus `matchedVariants[]` when a product variant matched the query. Each matched variant carries its stable `id`, selling `sku`, derived `name` and ordered `options[]` (`name`, `value`, and `attributeValueId` when available). The count is the number of distinct products, not the number of matching variants.

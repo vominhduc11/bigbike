@@ -95,8 +95,12 @@ public class ImageCompressionService {
             return null;
         }
         if (decoded == null || decoded.getWidth() <= 0 || decoded.getHeight() <= 0) return null;
+        // WebP is judged by what actually decoded, not by its declared type. Before a WebP reader
+        // existed the type alone had to stand in for "might have transparency", and forcing PNG
+        // was harmless because this branch was never reached. Now a plain WebP photo does decode,
+        // and re-encoding it as PNG can inflate it past the caller's size limit and get a valid
+        // customer photo rejected. A WebP that really carries alpha still goes out as PNG.
         boolean preserveAlpha = "image/png".equalsIgnoreCase(mimeType)
-                || "image/webp".equalsIgnoreCase(mimeType)
                 || decoded.getColorModel().hasAlpha();
         String outputFormat = preserveAlpha ? "png" : "jpg";
         try {

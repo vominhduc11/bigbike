@@ -19,9 +19,12 @@ export const preSection = "max-md:mb-5";
 export const preRemove =
   "inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-muted-foreground transition-colors duration-fast hover:text-foreground focus-visible:text-foreground focus-visible:outline-none";
 export const resultItem =
-  "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none max-md:px-0";
+  // max-md padding mirrors preContent so the results screen has the same side gutter as the
+  // opening screen; without it the product image hugged the phone edge and long article titles
+  // were clipped.
+  "flex cursor-pointer items-center gap-3 border-b border-border px-4 py-2.5 text-foreground no-underline transition-colors duration-fast hover:bg-card focus-visible:bg-card focus-visible:outline-none max-md:px-6";
 export const resultsLabel =
-  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground";
+  "m-0 border-b border-border bg-card px-4 pt-2 pb-1 font-cta text-b5-label font-bold uppercase tracking-normal text-muted-foreground max-md:px-6";
 
 // ── Search SHELL bundles (were the `.bb-header-search*` overlay rules in
 // globals.css). Dual layout: desktop centered-bar dropdown ↔ mobile (≤767 =
@@ -66,24 +69,22 @@ export const sIcon =
   "max-md:static max-md:inline-flex max-md:w-[var(--bb-touch-target)] max-md:h-[var(--bb-touch-target)] " +
   "max-md:min-w-[var(--bb-touch-target)] max-md:min-h-[var(--bb-touch-target)] max-md:items-center max-md:justify-center " +
   "max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
-export const sClose =
+export const sAction =
   // min-h-0 / p-0 ungated: the base `.bb-header-search-close` rule was !important,
   // beating the ≤767 touch-target min-height, so the action stays min-height:0 everywhere.
-  // Clear and close share this fixed action slot now that only one X is rendered.
+  // Clear, close AND the busy spinner all share this one fixed slot (owner decision
+  // 2026-09-07). Collapsing the old separate spinner slot gives the mobile input back a full
+  // 44px touch target of width — it was only 53% of a 390px screen with two slots.
   "absolute top-1/2 right-0 [transform:translateY(-50%)] min-h-0 p-0 text-white " +
   "hover:bg-transparent hover:text-[color:var(--bb-brand-primary)] focus-visible:bg-transparent focus-visible:text-[color:var(--bb-brand-primary)] " +
+  "disabled:opacity-100 disabled:pointer-events-none " +
   "max-md:static max-md:right-auto max-md:w-[var(--bb-touch-target)] max-md:h-[var(--bb-touch-target)] " +
   "max-md:min-w-[var(--bb-touch-target)] max-md:items-center max-md:justify-center max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
-export const sClear = sClose;
-export const sLoading =
-  "absolute top-1/2 right-20 flex h-[var(--bb-touch-target)] w-[var(--bb-touch-target)] shrink-0 " +
-  "items-center justify-center [transform:translateY(-50%)] text-white " +
-  "max-md:static max-md:right-auto max-md:ml-auto max-md:[transform:none] max-md:text-[color:var(--bb-text-inverse)]";
 export const sInput =
   // `!` mirrors the legacy !important — guarantees these win over the shadcn Input
   // base regardless of twMerge grouping. A4 keeps search input at 16px on mobile
   // (preventing iOS zoom) and 18px on desktop, including ultra-wide screens.
-  "h-full [border:none]! bg-transparent! [padding:0_88px_0_34px]! [box-shadow:none]! [color:var(--bb-text-inverse)]! text-a4-content! " +
+  "h-full [border:none]! bg-transparent! [padding:0_44px_0_34px]! [box-shadow:none]! [color:var(--bb-text-inverse)]! text-a4-content! " +
   "placeholder:text-white placeholder:opacity-100 placeholder:font-normal focus-visible:outline-none " +
   "max-md:h-[var(--bb-touch-target)]! max-md:[border:1px_solid_rgba(255,255,255,0.18)]! max-md:bg-[var(--bb-bg-surface)]! " +
   "max-md:[padding:0_12px]! max-md:text-[color:var(--bb-text-primary)]! max-md:leading-none! " +

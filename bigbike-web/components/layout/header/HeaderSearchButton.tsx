@@ -23,11 +23,11 @@ export function HeaderSearchButton() {
       aria-expanded={open}
       className={cn(
         iconBtn,
-        "bb-header-search-trigger h-full! min-h-0! w-11! px-0! hover:not-disabled:scale-100",
+        "bb-header-search-trigger h-full! min-h-0! hover:not-disabled:scale-100",
         open && "!text-brand-on-dark hover:!text-brand-on-dark",
       )}
     >
-      <Search className="-translate-x-0.5" size={18} strokeWidth={1.75} aria-hidden />
+      <Search size={18} strokeWidth={1.75} aria-hidden />
     </Button>
   );
 }

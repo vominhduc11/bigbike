@@ -3,7 +3,7 @@
 import Link from "@/i18n/StorefrontLink";
 import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Home, ShoppingCart, User } from "lucide-react";
+import { Home, Search, ShoppingCart, User } from "lucide-react";
 import { useHeaderUi } from "@/components/layout/HeaderUiContext";
 import { useCart } from "@/lib/cart-context";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,7 @@ export function MobileBottomNav() {
   // sáng đèn khi khung đang mở HOẶC khách đã ở thẳng trang Giỏ hàng (vd bấm "Xem
   // giỏ hàng" trong khung, hoặc vào thẳng URL /gio-hang).
   const cartActive = isPanelOpen("cart");
+  const searchActive = isPanelOpen("search");
   const cartRouteActive = viPathname.startsWith("/gio-hang");
   const homeActive = isHomePath(pathname);
   // Khi chưa đăng nhập, bấm Tài khoản sẽ bị đẩy sang /dang-nhap (AccountNav). Từ thanh
@@ -83,6 +84,21 @@ export function MobileBottomNav() {
             {t("fallbackNav.home")}
           </span>
         </Link>
+
+        {/* Tìm kiếm chỉ có ở kính lúp trên đầu trang, không có lối vào nào ở thanh dưới —
+            thêm tab thứ tư mở đúng panel sẵn có (chốt với chủ shop 2026-09-07). */}
+        <button
+          type="button"
+          onClick={() => openPanel("search")}
+          className={tabClass(searchActive)}
+          aria-pressed={searchActive}
+        >
+          {searchActive && <ActiveBar />}
+          <Search size={20} aria-hidden />
+          <span className={cn(labelCls, searchActive ? "font-semibold" : "font-medium")}>
+            {t("mobileSearchLink")}
+          </span>
+        </button>
 
         <button
           type="button"

@@ -82,10 +82,10 @@ public class JpaContentReadRepository implements ContentReadRepository {
         List<String> ids = articleJpaRepository
                 .findAll(
                         storefrontArticleSpecification(literalTerms, null, null, locale),
-                        org.springframework.data.domain.PageRequest.of(
-                                0, limit, Sort.by(Sort.Direction.DESC, "publishedAt")))
-                .getContent()
+                        Sort.by(Sort.Direction.DESC, "publishedAt"))
                 .stream()
+                .filter(entity -> matchesArticleWords(entity, literalTerms, locale))
+                .limit(limit)
                 .map(ArticleEntity::getId)
                 .toList();
         if (ids.isEmpty()) return List.of();
@@ -139,6 +139,18 @@ public class JpaContentReadRepository implements ContentReadRepository {
     public org.springframework.data.domain.Page<Article> listPublishedArticles(
             String q, Boolean featured, Boolean homeExperience, Pageable pageable, String locale) {
         List<String> literalTerms = q == null ? List.of() : StorefrontSearchRules.literalTerms(q);
+        if (!literalTerms.isEmpty()) {
+            // The SQL LIKE above is only a cheap superset prefilter; the word-boundary rule of
+            // SEARCH_RULE_002/004 is applied in Java so products and articles behave identically
+            // on both PostgreSQL and the H2 test profile. The public article corpus is small.
+            List<ArticleEntity> matched = articleJpaRepository
+                    .findAll(storefrontArticleSpecification(literalTerms, featured, homeExperience, locale),
+                            pageable.getSort())
+                    .stream()
+                    .filter(entity -> matchesArticleWords(entity, literalTerms, locale))
+                    .toList();
+            return fetchAndOrderArticles(pageSlice(matched, pageable), pageable, locale);
+        }
         org.springframework.data.domain.Page<ArticleEntity> entityPage = articleJpaRepository.findAll(
                 storefrontArticleSpecification(literalTerms, featured, homeExperience, locale), pageable);
         return fetchAndOrderArticles(entityPage, pageable, locale);
@@ -249,6 +261,29 @@ public class JpaContentReadRepository implements ContentReadRepository {
         List<Article> ordered = orderByIds(entities, ids, ArticleEntity::getId)
                 .stream().map(e -> toDomain(e, locale, false)).toList();
         return new PageImpl<>(ordered, pageable, entityPage.getTotalElements());
+    }
+
+    /**
+     * Applies the storefront word rule ({@code SEARCH_RULE_004}) to the localized title/excerpt:
+     * every term but the last must match a whole word, the trailing term matches by word prefix.
+     */
+    private static boolean matchesArticleWords(ArticleEntity entity, List<String> literalTerms, String locale) {
+        boolean english = "en".equalsIgnoreCase(locale);
+        String title = english && isPresent(entity.getTitleEn()) ? entity.getTitleEn() : entity.getTitle();
+        String excerpt = english && isPresent(entity.getExcerptEn()) ? entity.getExcerptEn() : entity.getExcerpt();
+        return StorefrontSearchRules.matchesLiteralTerms(
+                List.of(title == null ? "" : title, excerpt == null ? "" : excerpt), literalTerms);
+    }
+
+    /** In-memory pagination for the already word-filtered article set. */
+    private static org.springframework.data.domain.Page<ArticleEntity> pageSlice(
+            List<ArticleEntity> matched, Pageable pageable) {
+        if (pageable.isUnpaged()) {
+            return new PageImpl<>(matched, pageable, matched.size());
+        }
+        int from = (int) Math.min(pageable.getOffset(), matched.size());
+        int to = Math.min(from + pageable.getPageSize(), matched.size());
+        return new PageImpl<>(matched.subList(from, to), pageable, matched.size());
     }
 
     private static <E> List<E> orderByIds(List<E> entities, List<String> ids, java.util.function.Function<E, String> idExtractor) {

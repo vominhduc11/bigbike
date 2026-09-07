@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.service.media.CompressionProfile;
 import com.bigbike.bigbike_backend.service.media.ImageCompressionService;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -198,8 +199,58 @@ class ChatImageStorageServiceTest {
         assertThat(clean[20] & 0x0c).isZero();
     }
 
+    /**
+     * The shop's own catalog is full of WebP, and so are the photos customers save off Facebook or
+     * a product page. Before the reader was added every one of them decoded to null: a large WebP
+     * was refused outright while the identical picture as a JPEG was quietly resized and accepted.
+     */
     @Test
-    void webpWithoutRuntimeDecoderCannotBypassTheStored1600PixelLimit() throws Exception {
+    void realWebpWiderThan1600PixelsIsResizedAndStoredInsteadOfRefused() throws Exception {
+        MinioClient minio = mock(MinioClient.class);
+        ChatImageStorageService service = new ChatImageStorageService(
+                minio, new ImageCompressionService());
+        byte[] webp = fixture("customer-photo-wide.webp");
+
+        ChatImageStorageService.StoredImage stored = service.store(
+                UUID.randomUUID(), UUID.randomUUID(),
+                new MockMultipartFile("file", "wide.webp", "image/webp", webp));
+
+        assertThat(stored.width()).isLessThanOrEqualTo(1_600);
+        assertThat(stored.height()).isPositive();
+        assertThat(stored.sizeBytes()).isPositive();
+        assertThat(ImageIO.read(new java.io.ByteArrayInputStream(webp))).isNotNull();
+    }
+
+    @Test
+    void everyAcceptedWebpEncodingCanActuallyBeDecoded() throws Exception {
+        for (String name : java.util.List.of(
+                "customer-photo-lossy.webp",
+                "customer-photo-lossless.webp",
+                "customer-photo-alpha.webp")) {
+            java.awt.image.BufferedImage decoded = ImageIO.read(
+                    new java.io.ByteArrayInputStream(fixture(name)));
+            assertThat(decoded).as(name).isNotNull();
+            assertThat(decoded.getWidth()).as(name).isPositive();
+        }
+    }
+
+    @Test
+    void transparentWebpKeepsItsAlphaInsteadOfBeingFlattenedOntoWhite() throws Exception {
+        byte[] alpha = fixture("customer-photo-alpha.webp");
+
+        byte[] reencoded = new ImageCompressionService().reencodeWithoutMetadata(
+                alpha, "image/webp", new CompressionProfile(1600, 1600, 0.85f, false));
+
+        assertThat(reencoded).isNotNull();
+        java.awt.image.BufferedImage result = ImageIO.read(
+                new java.io.ByteArrayInputStream(reencoded));
+        assertThat(result).isNotNull();
+        assertThat(result.getColorModel().hasAlpha()).isTrue();
+    }
+
+    /** A WebP the reader cannot decode still must not slip past the stored size limit. */
+    @Test
+    void undecodableWebpCannotBypassTheStored1600PixelLimit() throws Exception {
         MinioClient minio = mock(MinioClient.class);
         ImageCompressionService compression = mock(ImageCompressionService.class);
         when(compression.reencodeWithoutMetadata(any(), any(), any())).thenReturn(null);
@@ -242,6 +293,14 @@ class ChatImageStorageServiceTest {
         writePngChunk(output, "IHDR", headerBytes.toByteArray());
         writePngChunk(output, "IEND", new byte[0]);
         return bytes.toByteArray();
+    }
+
+    private static byte[] fixture(String name) throws Exception {
+        try (java.io.InputStream input = ChatImageStorageServiceTest.class
+                .getResourceAsStream("/chat/" + name)) {
+            if (input == null) throw new IllegalStateException("Missing test fixture " + name);
+            return input.readAllBytes();
+        }
     }
 
     private static byte[] extendedWebpHeader(int width, int height) throws Exception {

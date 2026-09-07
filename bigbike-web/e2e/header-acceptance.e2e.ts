@@ -209,10 +209,16 @@ test.describe("Header acceptance — desktop spacing and category panels", () =>
         logoBox.right - 1,
       );
       if (width === 1280) {
+        // Owner call 2026-09-07: every header action button is now one width
+        // (`--bb-header-action-width`, 58px ≥768px) so the hover wash matches across
+        // search / cart / account / menu. That grew the search trigger by 14px and
+        // spends the same 14px of this reserve at 1280px only (84.8px → 70.8px);
+        // 1366px and up are untouched. Nothing overlaps or overflows — the floor was
+        // lowered to keep the reserve meaningful, not to retire it.
         expect(
           firstLinkBox.left - logoBox.right,
           "1280px should retain the future-menu reserve",
-        ).toBeGreaterThanOrEqual(80);
+        ).toBeGreaterThanOrEqual(70);
       }
 
       await expectNoHorizontalOverflow(page, `widened header @ ${width}px`);
@@ -754,13 +760,42 @@ test.describe("Header acceptance — search empty state", () => {
         clientHeight: scrollRegion.clientHeight,
         scrollTop: scrollRegion.scrollTop,
         hintsBottom: hints.bottom,
+        hintsVisible: keyboardHints.offsetParent !== null,
       };
     });
     expect(metrics.panelBottom).toBeLessThanOrEqual(845);
     expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
     expect(metrics.scrollTop).toBeGreaterThan(0);
     expect(metrics.hintsBottom).toBeLessThanOrEqual(845);
+    // Chốt với chủ shop 2026-09-07: màn cảm ứng không có phím ↑↓/↵/Esc nên dòng nhắc phím
+    // bị ẩn; ở trạng thái mở đầu (không có link "xem tất cả") cả thanh bị ẩn luôn để không
+    // để lại một dải viền rỗng.
+    expect(metrics.hintsVisible).toBe(false);
     await expectNoHorizontalOverflow(page, "mobile empty search state @ 390x844");
+  });
+
+  test("desktop keeps the keyboard legend, mobile hides it", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const desktopDialog = await openSearchWithHistory(page, SEARCH_HISTORY_FIXTURES[1].items);
+    const desktopLegend = desktopDialog
+      .locator("[data-search-keyboard-hints] span")
+      .first();
+    await expect(desktopLegend).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileDialog = await openSearchWithHistory(page, SEARCH_HISTORY_FIXTURES[1].items);
+    await expect(
+      mobileDialog.locator("[data-search-keyboard-hints] span").first(),
+    ).toBeHidden();
+  });
+
+  test("mobile bottom nav opens the search panel", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await gotoAndSettle(page, "/", { scroll: false });
+    const searchTab = page.locator(".bb-bottom-nav button", { hasText: /tìm kiếm/i });
+    await expect(searchTab).toBeVisible();
+    await searchTab.click();
+    await expect(page.locator("#bb-search-suggestions, [role='search'] input")).toBeVisible();
   });
 });
 

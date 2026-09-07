@@ -44,8 +44,8 @@ class ChatProductImageFingerprintServiceTest {
         byte[] catalogBytes = patternedPng(Color.RED, Color.WHITE, 240);
         Fixture fixture = fixture(catalogBytes, sha256(catalogBytes));
 
-        var result = fixture.service.findStrictMatch(
-                catalogBytes, sha256(catalogBytes), List.of(fixture.product));
+        var result = fixture.service.compare(
+                catalogBytes, sha256(catalogBytes), List.of(fixture.product)).strictMatch();
 
         assertThat(result).isPresent();
         assertThat(result.orElseThrow().slug()).isEqualTo("mu-tanami");
@@ -60,16 +60,17 @@ class ChatProductImageFingerprintServiceTest {
         Fixture similarFixture = fixture(catalogBytes, sha256(catalogBytes));
         byte[] resized = patternedPng(Color.RED, Color.WHITE, 120);
 
-        var similar = similarFixture.service.findStrictMatch(
-                resized, sha256(resized), List.of(similarFixture.product));
+        var similar = similarFixture.service.compare(
+                resized, sha256(resized), List.of(similarFixture.product)).strictMatch();
 
         assertThat(similar).isPresent();
         assertThat(similar.orElseThrow().evidence()).isEqualTo("LOCAL_VISUAL_FINGERPRINT");
 
         Fixture differentFixture = fixture(catalogBytes, sha256(catalogBytes));
         byte[] different = patternedPng(Color.BLUE, Color.BLACK, 120);
-        assertThat(differentFixture.service.findStrictMatch(
-                different, sha256(different), List.of(differentFixture.product))).isEmpty();
+        assertThat(differentFixture.service.compare(
+                different, sha256(different), List.of(differentFixture.product)).strictMatch())
+                .isEmpty();
     }
 
     @Test
@@ -79,8 +80,73 @@ class ChatProductImageFingerprintServiceTest {
         Product second = product(
                 "product-other", "mu-khac", fixture.media.getId().toString(), "/media/products/helmet.png");
 
-        assertThat(fixture.service.findStrictMatch(
-                bytes, sha256(bytes), List.of(fixture.product, second))).isEmpty();
+        assertThat(fixture.service.compare(
+                bytes, sha256(bytes), List.of(fixture.product, second)).strictMatch()).isEmpty();
+    }
+
+    /**
+     * 51 of the shop's 172 products carry a WebP main image. With no WebP reader installed every
+     * one of them fingerprinted to nothing and dropped out of matching silently — no exception, no
+     * counter, so the index simply under-reported instead of reporting a problem.
+     */
+    @Test
+    void webpCatalogImagesAreIndexedInsteadOfSilentlyDroppedFromMatching() throws Exception {
+        for (String name : List.of("customer-photo-lossy.webp", "customer-photo-lossless.webp",
+                "customer-photo-alpha.webp")) {
+            byte[] webp = fixture(name);
+            Fixture fixture = fixture(webp, sha256(webp));
+
+            var comparison = fixture.service.compare(webp, sha256(webp), List.of(fixture.product));
+
+            assertThat(comparison.strictMatch()).as(name).isPresent();
+            assertThat(comparison.rankedSlugs()).as(name).contains("mu-tanami");
+            assertThat(fixture.saved.getDHashHex()).as(name).isNotBlank();
+        }
+    }
+
+    @Test
+    void theSamePictureFingerprintsAlikeWhetherItArrivesAsWebpOrPng() throws Exception {
+        byte[] webp = fixture("customer-photo-lossy.webp");
+        byte[] asPng = reencodeAsPng(webp);
+        Fixture fixture = fixture(webp, sha256(webp));
+
+        // Different bytes, so the content-hash shortcut cannot be what matches them.
+        assertThat(sha256(asPng)).isNotEqualTo(sha256(webp));
+        var comparison = fixture.service.compare(asPng, sha256(asPng), List.of(fixture.product));
+
+        assertThat(comparison.strictMatch()).isPresent();
+        assertThat(comparison.strictMatch().orElseThrow().evidence())
+                .isEqualTo("LOCAL_VISUAL_FINGERPRINT");
+    }
+
+    /** Ranking is handed back even when nothing clears the bar; it is what orders the suggestions. */
+    @Test
+    void everyComparedProductIsRankedEvenWhenNoneClearsTheEvidenceBar() throws Exception {
+        byte[] catalogBytes = patternedPng(Color.RED, Color.WHITE, 240);
+        Fixture fixture = fixture(catalogBytes, sha256(catalogBytes));
+        byte[] different = patternedPng(Color.BLUE, Color.BLACK, 120);
+
+        var comparison = fixture.service.compare(
+                different, sha256(different), List.of(fixture.product));
+
+        assertThat(comparison.strictMatch()).isEmpty();
+        assertThat(comparison.rankedSlugs()).containsExactly("mu-tanami");
+    }
+
+    private static byte[] fixture(String name) throws Exception {
+        try (java.io.InputStream input = ChatProductImageFingerprintServiceTest.class
+                .getResourceAsStream("/chat/" + name)) {
+            if (input == null) throw new IllegalStateException("Missing test fixture " + name);
+            return input.readAllBytes();
+        }
+    }
+
+    private static byte[] reencodeAsPng(byte[] source) throws Exception {
+        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(source));
+        if (decoded == null) throw new IllegalStateException("No reader decoded the fixture");
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ImageIO.write(decoded, "png", output);
+        return output.toByteArray();
     }
 
     private static Fixture fixture(byte[] catalogBytes, String contentSha) throws Exception {

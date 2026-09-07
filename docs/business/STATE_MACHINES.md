@@ -881,7 +881,14 @@ Status: `OWNER_CONFIRMED_2026-08-30`; `CHAT_RULE_008`, `009`, `011`, `040`, `045
 
 Forbidden: public bucket/URL; token trong query; reuse ảnh làm history provider ở lượt sau; lưu raw filename/EXIF/embedding khách; `UNRECOGNIZED → READY` không có customer upload mới hoặc calibration/evidence mới.
 
-Status: `OWNER_CONFIRMED_2026-08-30`; disclosure guard gỡ theo `owner decision 2026-09-06`; `CHAT_RULE_057`–`059`.
+Trạng thái ảnh không quyết định việc lượt có kết thúc hay không (owner decision 2026-09-07). Khi
+khách gõ câu hỏi kèm ảnh, `READY` (nhận ra mẫu hoặc nhận ra nhóm), `UNRECOGNIZED` và
+`LIMIT_SKIPPED` đều **chạy tiếp** sang phần tư vấn bằng chữ và trả về một tin nhắn ghép. Chỉ các
+nhánh chốt chặn mới dừng lượt: ảnh đúng là hoá đơn, ảnh đúng là đầu/người, hàng hỏng, ảnh ngoài
+phạm vi và `REJECTED_UNSAFE`. Không có trạng thái mới và không có chuyển tiếp mới trong bảng trên.
+
+Status: `OWNER_CONFIRMED_2026-08-30`; disclosure guard gỡ theo `owner decision 2026-09-06`;
+nối tiếp tư vấn chữ theo `owner decision 2026-09-07`; `CHAT_RULE_057`–`059`.
 
 ## 15D. Review Invitation Delivery State Machine
 

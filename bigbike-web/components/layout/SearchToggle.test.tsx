@@ -62,16 +62,22 @@ describe("SearchToggle", () => {
     mocks.recentSearches = [];
   });
 
-  it("keeps a previous suggestion visible while fetching and leaves the search action available", () => {
+  it("keeps a previous suggestion visible while fetching and shows the busy state in the one action slot", () => {
     mocks.suggestionState.isFetching = true;
     render(<SearchToggle />);
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "mũ bảo" } });
 
     expect(screen.getByRole("option", { name: /mũ bảo hiểm/i })).toBeVisible();
-    expect(
-      within(screen.getByRole("search")).getByRole("button", { name: "clearAriaLabel" }),
-    ).toBeVisible();
+    // Owner decision 2026-09-07: the spinner replaces the X in the SAME slot instead of sitting
+    // in a second one, so while a lookup is in flight the action reads as busy and is not
+    // clickable. Escape and the keyboard still clear and close.
+    const action = within(screen.getByRole("search")).getByRole("button", {
+      name: "loadingSuggestions",
+    });
+    expect(action).toBeVisible();
+    expect(action).toBeDisabled();
+    expect(action).toHaveAttribute("data-search-busy", "true");
   });
 
   it("renders one X action and changes it from close to clear as the query changes", () => {
@@ -114,35 +120,33 @@ describe("SearchToggle", () => {
     expect(mocks.closePanel).toHaveBeenCalledOnce();
   });
 
-  it("keeps the loading slot fixed and spins only the SVG", () => {
+  it("uses one fixed-size action slot for close, clear and busy", () => {
     const { rerender } = render(<SearchToggle />);
-    const initialSlot = screen
-      .getByRole("search")
-      .querySelector<HTMLElement>("[data-search-loading-slot]");
+    const search = screen.getByRole("search");
+    const slot = search.querySelector<HTMLElement>("[data-search-action-slot]");
 
-    expect(initialSlot).not.toBeNull();
-    if (!initialSlot) throw new Error("Search loading slot was not rendered");
+    expect(slot).not.toBeNull();
+    if (!slot) throw new Error("Search action slot was not rendered");
+    // Exactly one control in the form — the separate spinner slot is gone, which is what gives
+    // the mobile input its width back.
+    expect(within(search).getAllByRole("button")).toHaveLength(1);
+    expect(slot.querySelector("svg")).not.toHaveClass("animate-spin");
 
-    expect(initialSlot).toHaveClass(
-      "flex",
-      "h-[var(--bb-touch-target)]",
-      "w-[var(--bb-touch-target)]",
-      "items-center",
-      "justify-center",
-    );
-    expect(initialSlot).not.toHaveClass("animate-spin");
-    expect(initialSlot.querySelector("svg")).toBeNull();
+    // The icon must not shrink once the customer starts typing (it used to go 20px -> 16px and
+    // read as a different control).
+    const idleIconSize = slot.querySelector("svg")?.getAttribute("width");
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "mũ" } });
+    expect(slot.querySelector("svg")?.getAttribute("width")).toBe(idleIconSize);
 
     mocks.suggestionState.isFetching = true;
     rerender(<SearchToggle />);
-    const loadingSlot = screen
+    const busySlot = screen
       .getByRole("search")
-      .querySelector<HTMLElement>("[data-search-loading-slot]");
+      .querySelector<HTMLElement>("[data-search-action-slot]");
 
-    expect(loadingSlot).toBe(initialSlot);
-    expect(loadingSlot).not.toBeNull();
-    if (!loadingSlot) throw new Error("Search loading slot was not rendered");
-    expect(loadingSlot.querySelector("svg")).toHaveClass("animate-spin");
+    expect(busySlot).toBe(slot);
+    expect(busySlot?.querySelector("svg")).toHaveClass("animate-spin");
+    expect(busySlot?.querySelector("svg")?.getAttribute("width")).toBe(idleIconSize);
   });
 
   it("opens the highlighted suggestion with ArrowDown then Enter", () => {
@@ -167,7 +171,6 @@ describe("SearchToggle", () => {
         shortcuts={{
           trendingBrands: [{ id: "brand-1", name: "TAICHI", href: "/brands/taichi/" }],
           suggestedProducts: [],
-          popularCategories: [],
         }}
       />,
     );

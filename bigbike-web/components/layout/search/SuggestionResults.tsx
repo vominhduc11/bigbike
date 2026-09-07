@@ -29,8 +29,11 @@ export function SuggestionResults({
 }) {
   const t = useTranslations("Search");
   const locale = useLocale() as Locale;
-  const visibleProducts = suggestions.slice(0, 5);
   const visibleArticles = articleSuggestions.slice(0, 3);
+  // The desktop dropdown is height-capped, so 5 product rows plus two section headings pushed the
+  // "Bài viết" group below the fold — the customer saw the heading but no articles. Give the
+  // article group room by showing one product less whenever there is an article to show.
+  const visibleProducts = suggestions.slice(0, visibleArticles.length > 0 ? 4 : 5);
   const searchHref = `${toSearchPath(locale)}?s=${encodeURIComponent(trimmedQuery)}`;
   return (
     <div
@@ -103,13 +106,18 @@ export function SuggestionResults({
             >
               {t("viewAllResultsBtn", { query: trimmedQuery })}
             </Link>
-            <SearchKeyboardHints browseHref={searchHref} handleClose={handleClose} />
+            {/* Không lặp đường dẫn: nút "xem tất cả kết quả" ngay trên đã trỏ đúng chỗ, nên
+                thanh dưới chỉ còn phần nhắc phím (và tự ẩn trên điện thoại). */}
+            <SearchKeyboardHints />
           </div>
         </>
       ) : (
         <>
           <div className="px-4 py-5 text-center text-a5-meta text-muted-foreground">
             <p className="m-0 mb-2">{t("noMatchText", { query: trimmedQuery })}</p>
+            {/* One way out, not two: this used to sit a line above an identical footer link to the
+                same href (owner decision 2026-09-07). The contextual one is kept because it stays
+                visible on phones, where the keyboard-hint bar is hidden. */}
             <Link
               href={searchHref}
               className="font-semibold text-brand-on-dark no-underline"
@@ -118,7 +126,7 @@ export function SuggestionResults({
               {t("noMatchBrowse")}
             </Link>
           </div>
-          <SearchKeyboardHints browseHref={searchHref} handleClose={handleClose} />
+          <SearchKeyboardHints />
         </>
       )}
     </div>

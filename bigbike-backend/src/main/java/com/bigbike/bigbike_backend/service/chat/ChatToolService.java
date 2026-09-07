@@ -1443,7 +1443,12 @@ public class ChatToolService {
         return english ? "at " + money : "giá " + money;
     }
 
-    private static List<Product> representativeProducts(List<Product> products) {
+    /**
+     * Shop-chosen ordering for a short preview: pinned to the homepage first, then closest to the
+     * group's median price. Package-private because the chat image flow fills its "same group"
+     * suggestions from the same list instead of inventing a second ranking.
+     */
+    static List<Product> representativeProducts(List<Product> products) {
         if (products == null || products.isEmpty()) return List.of();
         BigDecimal median = medianPrice(products);
         return products.stream()

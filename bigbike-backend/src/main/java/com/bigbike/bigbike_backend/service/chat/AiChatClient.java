@@ -42,6 +42,7 @@ public class AiChatClient {
     private static final int MAX_PROVIDER_CALLS = 4;
     private static final int MAX_TOOL_EXECUTIONS = 3;
     private static final long LOGICAL_TURN_DEADLINE_NANOS = Duration.ofSeconds(65).toNanos();
+    private static final Duration DEFAULT_MODEL_BUDGET = Duration.ofSeconds(65);
     private static final long TRANSIENT_RETRY_DELAY_MILLIS = 2_000L;
 
     private static final String SYSTEM_PROMPT = """
@@ -261,7 +262,30 @@ public class AiChatClient {
             List<ChatHistorySanitizer.RecentTurn> recentTurns
     ) {
         return answer(question, lang, registry, toolRequired, executor, vocabulary,
-                recentVerifiedProducts, recentTurns, "");
+                recentVerifiedProducts, recentTurns, DEFAULT_MODEL_BUDGET);
+    }
+
+    /**
+     * Runs the turn inside a caller-supplied slice of time instead of the full model deadline.
+     *
+     * <p>Needed once an image turn goes on to answer the question typed with the photo: the two
+     * provider calls belong to one customer request, and if each helps itself to the whole 65s the
+     * pair can outlive the connection the reply has to travel back on.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public Optional<HybridAnswer> answer(
+            String question,
+            String lang,
+            ChatToolRegistry registry,
+            boolean toolRequired,
+            ToolExecutor executor,
+            ChatToolService.AssistantCatalogVocabulary vocabulary,
+            List<String> recentVerifiedProducts,
+            List<ChatHistorySanitizer.RecentTurn> recentTurns,
+            Duration modelBudget
+    ) {
+        return answer(question, lang, registry, toolRequired, executor, vocabulary,
+                recentVerifiedProducts, recentTurns, "", modelBudget);
     }
 
     private Optional<HybridAnswer> answer(
@@ -275,8 +299,24 @@ public class AiChatClient {
             List<ChatHistorySanitizer.RecentTurn> recentTurns,
             String responseInstruction
     ) {
+        return answer(question, lang, registry, toolRequired, executor, vocabulary,
+                recentVerifiedProducts, recentTurns, responseInstruction, DEFAULT_MODEL_BUDGET);
+    }
+
+    private Optional<HybridAnswer> answer(
+            String question,
+            String lang,
+            ChatToolRegistry registry,
+            boolean toolRequired,
+            ToolExecutor executor,
+            ChatToolService.AssistantCatalogVocabulary vocabulary,
+            List<String> recentVerifiedProducts,
+            List<ChatHistorySanitizer.RecentTurn> recentTurns,
+            String responseInstruction,
+            Duration modelBudget
+    ) {
         ProviderBudget budget = new ProviderBudget();
-        budget.beginModel(Duration.ofSeconds(65));
+        budget.beginModel(modelBudget == null ? DEFAULT_MODEL_BUDGET : modelBudget);
         return answerForModel(
                 question, lang, registry, toolRequired, executor, vocabulary,
                 recentVerifiedProducts, recentTurns, responseInstruction, budget);

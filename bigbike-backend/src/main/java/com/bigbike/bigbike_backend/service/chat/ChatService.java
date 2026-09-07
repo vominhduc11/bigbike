@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +42,17 @@ public class ChatService {
     public static final int PRODUCT_PAGE_MAX_TURNS = 40;
     /** Compatibility alias for availability and older tests. */
     public static final int MAX_TURNS = STANDARD_MAX_TURNS;
+    /** CHAT_RULE_020: at most eight verified cards accompany one reply. */
+    private static final int MAX_PRODUCT_CARDS = 8;
+    /**
+     * Wall-clock budget for one logical turn, kept under the 75s SSE timeout in
+     * {@code ChatController.stream}. An image turn that goes on to answer the typed question makes
+     * two provider calls, and each one would otherwise claim the full 65s deadline for itself, so
+     * a slow pair could run past the point where the customer's connection is already closed.
+     */
+    private static final long TURN_BUDGET_MILLIS = 70_000L;
+    /** Below this there is no point starting the text half; the photo answer goes out alone. */
+    private static final long MIN_CHAINED_TEXT_MILLIS = 8_000L;
     private final ChatConversationJpaRepository conversationRepo;
     private final ChatMessageJpaRepository messageRepo;
     private final ChatAssistantSettings assistantSettings;
@@ -116,47 +128,44 @@ public class ChatService {
             return contactResponse(
                     conversation, settings,
                     endedConversationText(request.getLang(), conversation.getEndedReason(), maxTurns),
-                    List.of(), maxTurns);
+                    List.of(), maxTurns, null);
         }
 
         boolean countCustomerTurn = !isClarificationReply(conversation, request);
+        ImageTurnPrelude prelude = null;
         if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
             if (chatImageService == null) {
                 throw ValidationException.fromField(
                         "imageIds", "CHAT_IMAGE_UNAVAILABLE", "Tính năng đọc ảnh hiện chưa sẵn sàng.");
             }
-            String customerContent = request.getMessage() == null || request.getMessage().isBlank()
-                    ? ("en".equals(request.getLang()) ? "Sent an image." : "Đã gửi một ảnh.")
-                    : request.getMessage();
+            boolean customerAsked = request.getMessage() != null && !request.getMessage().isBlank();
+            String customerContent = customerAsked
+                    ? request.getMessage()
+                    : ("en".equals(request.getLang()) ? "Sent an image." : "Đã gửi một ảnh.");
             ChatMessageEntity customerMessage = saveCustomerMessage(
                     conversation, customerContent, request.getRequestId(),
                     countCustomerTurn);
             ChatImageService.ImageTurnResult imageResult = chatImageService.processTurn(
                     conversation, customerMessage.getId(), request.getImageIds(),
                     customerContent, request.getLang());
-            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> imageActions =
-                    ChatActionCatalog.choose(
-                            customerContent, imageResult.resultKind(), imageResult.products(),
-                            List.of(), settings.contacts());
-            saveAssistantMessage(
-                    conversation, imageResult.answer(), imageResult.source(), false,
-                    imageResult.products(), 0, request.getRequestId(), "PLAIN_TEXT",
-                    imageResult.resultKind(), imageActions,
-                    null, null);
-            finishTurnIfNeeded(conversation, maxTurns);
-            conversationRepo.save(conversation);
-            return aiResponse(
-                    conversation, settings, imageResult.answer(), imageResult.products(),
-                    imageResult.resultKind(), imageActions, maxTurns,
-                    null, null);
+            // Owner decision 2026-09-07: a question typed with the photo gets answered in the same
+            // reply. Recognising the photo and then stopping is what made "cái mũ này giá bao
+            // nhiêu?" come back with no price at all, while the very same question asked one turn
+            // later was answered correctly.
+            boolean chain = customerAsked
+                    && imageResult.continuesToText()
+                    && remainingTurnMillis(startedNanos) >= MIN_CHAINED_TEXT_MILLIS;
+            if (!chain) {
+                return imageOnlyResponse(
+                        conversation, settings, request, customerContent, imageResult, maxTurns);
+            }
+            prelude = ImageTurnPrelude.of(imageResult);
         }
         Optional<ChatInputGuard.Decision> inputDecision = inputGuard.evaluate(
                 request.getMessage(), request.getLang());
         if (inputDecision.isPresent()) {
             ChatInputGuard.Decision decision = inputDecision.get();
-            saveCustomerMessage(
-                    conversation, request.getMessage(), request.getRequestId(),
-                    countCustomerTurn);
+            saveCustomerTurnIfNeeded(conversation, request, countCustomerTurn, prelude);
             if (ChatMessageSource.CONTACT_FALLBACK.equals(decision.source())) {
                 List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> contactActions =
                         ChatActionCatalog.choose(
@@ -168,11 +177,11 @@ public class ChatService {
                 saveAssistantMessage(
                         conversation, advice.answer(), ChatMessageSource.CONTACT_FALLBACK, false, List.of(), 0,
                         request.getRequestId(), "PLAIN_TEXT", "CONTACT", advice.actions(),
-                        null, advice);
+                        null, advice, prelude);
                 conversationRepo.save(conversation);
                 return aiResponse(
                         conversation, settings, advice.answer(), List.of(), "CONTACT",
-                        advice.actions(), maxTurns, null, advice);
+                        advice.actions(), maxTurns, null, advice, prelude);
             }
             finishTurnIfNeeded(conversation, maxTurns);
             boolean ended = conversation.getEndedReason() != null;
@@ -184,43 +193,43 @@ public class ChatService {
             saveAssistantMessage(
                     conversation, decision.answer(), decision.source(), false, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", refusalKind, refusalActions,
-                    null, null);
+                    null, null, prelude);
             conversationRepo.save(conversation);
             return refusalResponse(
-                    conversation, settings, decision.answer(), refusalKind, refusalActions, maxTurns);
+                    conversation, settings, decision.answer(), refusalKind, refusalActions,
+                    maxTurns, prelude);
         }
 
         Availability availability = resolveAvailability(settings);
         if (!"AI".equals(availability.mode())) {
             conversation.setEndedReason(endedReason(availability.reason()));
-            saveCustomerMessage(
-                    conversation, request.getMessage(), request.getRequestId(),
-                    countCustomerTurn);
+            saveCustomerTurnIfNeeded(conversation, request, countCustomerTurn, prelude);
             String fallback = contactFallbackText(request.getLang(), fallbackCause(availability.reason()));
             logFallback(availabilityFallbackReason(availability.reason()), FallbackFlow.CONTACT_GATE,
                     "NONE", 0, false);
             saveAssistantMessage(conversation, fallback,
                     ChatMessageSource.CONTACT_FALLBACK, false, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "CONTACT", List.of(),
-                    null, null);
+                    null, null, prelude);
+            // Every other branch persists the conversation; this one never did, so the turn count,
+            // last-message time and the ended reason it just set were all dropped on the floor.
+            conversationRepo.save(conversation);
             return contactResponse(
                     conversation, settings, fallback,
                     ChatActionCatalog.choose(
                             request.getMessage(), "CONTACT", List.of(), List.of(), settings.contacts()),
-                    maxTurns);
+                    maxTurns, prelude);
         }
 
         ChatToolService.ConversationContext conversationContext = readConversationContext(conversation);
         List<ChatMessageEntity> existingMessages = messageRepo
                 .findByConversationIdOrderByCreatedAtAsc(conversation.getId());
-        ChatToolService.ConversationContext referenceContext = contextForImmediatePreviousCards(
-                conversationContext, existingMessages);
+        ChatToolService.ConversationContext referenceContext = withImagePrelude(
+                contextForImmediatePreviousCards(conversationContext, existingMessages), prelude);
         List<ChatHistorySanitizer.RecentTurn> recentTurns = settings.recentTurnPairs() == 0
                 ? List.of()
                 : ChatHistorySanitizer.recentTurns(existingMessages, settings.recentTurnPairs());
-        saveCustomerMessage(
-                conversation, request.getMessage(), request.getRequestId(),
-                countCustomerTurn);
+        saveCustomerTurnIfNeeded(conversation, request, countCustomerTurn, prelude);
         Optional<ToolOutcome> fastPath;
         try {
             fastPath = request.getClarificationSelection() == null
@@ -235,7 +244,7 @@ public class ChatService {
                     conversation, settings, request.getLang(), false,
                     request.getRequestId(), startedNanos, maxTurns,
                     ChatFallbackReason.FAST_PATH_EXCEPTION, "NONE", 0,
-                    countCustomerTurn);
+                    countCustomerTurn, prelude);
         }
 
         if (fastPath.isPresent()) {
@@ -252,7 +261,7 @@ public class ChatService {
                         conversation, settings, request.getLang(), false,
                         request.getRequestId(), startedNanos, maxTurns,
                         ChatFallbackReason.FAST_PATH_GUARD_REJECTED, reason, tool.products().size(),
-                        countCustomerTurn);
+                        countCustomerTurn, prelude);
             }
             ChatResponseGuard.CheckedAnswer safe = checked.get();
             if (tool.clarification() != null && countCustomerTurn) {
@@ -283,7 +292,7 @@ public class ChatService {
             saveAssistantMessage(conversation, advice.answer(), responseSource,
                     false, advice.products(), 0,
                     request.getRequestId(), answerFormat(advice.answer()), responseKind,
-                    advice.actions(), tool.clarification(), advice);
+                    advice.actions(), tool.clarification(), advice, prelude);
             saveConversationContext(conversation, toolService.recordConversationContext(
                     conversationContext,
                     request.getMessage(),
@@ -303,7 +312,8 @@ public class ChatService {
                     advice.actions(),
                     maxTurns,
                     tool.clarification(),
-                    advice);
+                    advice,
+                    prelude);
         }
 
         if (!chatAiQuotaService.tryReserve(settings.dailyLimit())) {
@@ -311,7 +321,7 @@ public class ChatService {
             String fallback = contactFallbackText(request.getLang(), FallbackCause.DAILY_LIMIT);
             saveAssistantMessage(conversation, fallback, ChatMessageSource.CONTACT_FALLBACK, false, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "CONTACT", List.of(),
-                    null, null);
+                    null, null, prelude);
             logFallback(ChatFallbackReason.DAILY_LIMIT_REACHED, FallbackFlow.QUOTA_GATE,
                     "NONE", 0, false);
             conversationRepo.save(conversation);
@@ -319,7 +329,7 @@ public class ChatService {
                     conversation, settings, fallback,
                     ChatActionCatalog.choose(
                             request.getMessage(), "CONTACT", List.of(), List.of(), settings.contacts()),
-                    maxTurns);
+                    maxTurns, prelude);
         }
         conversation.setAiCallCount(conversation.getAiCallCount() + 1);
 
@@ -329,15 +339,30 @@ public class ChatService {
         if (vocabulary == null) vocabulary = ChatToolService.AssistantCatalogVocabulary.empty();
         Optional<AiChatClient.HybridAnswer> ai;
         try {
-            ai = aiClient.answer(
-                    request.getMessage(),
-                    request.getLang(),
-                    toolRegistry,
-                    true,
-                    (call, session) -> toolService.execute(call, toolContext, session),
-                    vocabulary,
-                    referenceContext.productSlugs(),
-                    recentTurns);
+            // A chained image turn has already spent part of the turn on the vision call, so the
+            // text half gets what is left rather than a fresh full deadline — otherwise the pair
+            // can outlive the 75s stream the reply travels back on. A plain text turn is the only
+            // provider call of its turn and keeps the untouched deadline.
+            ai = prelude == null
+                    ? aiClient.answer(
+                            request.getMessage(),
+                            request.getLang(),
+                            toolRegistry,
+                            true,
+                            (call, session) -> toolService.execute(call, toolContext, session),
+                            vocabulary,
+                            referenceContext.productSlugs(),
+                            recentTurns)
+                    : aiClient.answer(
+                            request.getMessage(),
+                            request.getLang(),
+                            toolRegistry,
+                            true,
+                            (call, session) -> toolService.execute(call, toolContext, session),
+                            vocabulary,
+                            referenceContext.productSlugs(),
+                            recentTurns,
+                            java.time.Duration.ofMillis(remainingTurnMillis(startedNanos)));
         } catch (AiChatClient.SafetyBlockedException exception) {
             String refusal = safetyRefusalText(request.getLang());
             finishTurnIfNeeded(conversation, maxTurns);
@@ -348,10 +373,10 @@ public class ChatService {
             saveAssistantMessage(
                     conversation, refusal, ChatMessageSource.CONTENT_REFUSAL, true, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "REFUSAL", safetyActions,
-                    null, null);
+                    null, null, prelude);
             conversationRepo.save(conversation);
             return refusalResponse(
-                    conversation, settings, refusal, "REFUSAL", safetyActions, maxTurns);
+                    conversation, settings, refusal, "REFUSAL", safetyActions, maxTurns, prelude);
         } catch (RuntimeException exception) {
             log.warn("chat_assistant_provider_failed reason=UNEXPECTED_PROVIDER_ERROR type={}",
                     exception.getClass().getSimpleName());
@@ -365,11 +390,12 @@ public class ChatService {
             saveAssistantMessage(
                     conversation, apology, ChatMessageSource.PROVIDER_UNAVAILABLE, true, List.of(), 0,
                     request.getRequestId(), "PLAIN_TEXT", "CONTACT", actions,
-                    null, null);
+                    null, null, prelude);
             logFallback(ChatFallbackReason.AI_NO_SAFE_RESULT, FallbackFlow.AI, "NONE", 0, false);
             conversationRepo.save(conversation);
             return aiResponse(
-                    conversation, settings, apology, List.of(), "CONTACT", actions, maxTurns);
+                    conversation, settings, apology, List.of(), "CONTACT", actions,
+                    maxTurns, prelude);
         }
 
         AiChatClient.HybridAnswer hybridAnswer = ai.get();
@@ -430,7 +456,7 @@ public class ChatService {
                             : ChatFallbackReason.AI_GUARD_REJECTED,
                     guardReason,
                     guardDiagnostic == null ? 0 : guardDiagnostic.productCount(),
-                    countCustomerTurn);
+                    countCustomerTurn, prelude);
         }
         ChatResponseGuard.CheckedAnswer safe = checked.get();
         Optional<ChatResponseGuard.CheckedAnswer> duplicateClarification = clarifyNearDuplicate(
@@ -459,7 +485,7 @@ public class ChatService {
                 conversation, advice.answer(), responseSource,
                 true, advice.products(), 0,
                 request.getRequestId(), answerFormat(advice.answer()), responseKind,
-                advice.actions(), null, advice);
+                advice.actions(), null, advice, prelude);
         saveConversationContext(conversation, toolService.recordConversationContext(
                 conversationContext,
                 request.getMessage(),
@@ -478,7 +504,39 @@ public class ChatService {
                 advice.actions(),
                 maxTurns,
                 null,
-                advice);
+                advice,
+                prelude);
+    }
+
+    private static long remainingTurnMillis(long startedNanos) {
+        long elapsed = java.time.Duration.ofNanos(System.nanoTime() - startedNanos).toMillis();
+        return Math.max(0L, TURN_BUDGET_MILLIS - elapsed);
+    }
+
+    /** Today's image-only reply, for the outcomes that deliberately end the turn. */
+    private ChatMessageResponse imageOnlyResponse(
+            ChatConversationEntity conversation,
+            ChatAssistantSettings.Snapshot settings,
+            ChatMessageRequest request,
+            String customerContent,
+            ChatImageService.ImageTurnResult imageResult,
+            int maxTurns
+    ) {
+        List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> imageActions =
+                ChatActionCatalog.choose(
+                        customerContent, imageResult.resultKind(), imageResult.products(),
+                        List.of(), settings.contacts());
+        saveAssistantMessage(
+                conversation, imageResult.answer(), imageResult.source(), false,
+                imageResult.products(), 0, request.getRequestId(), "PLAIN_TEXT",
+                imageResult.resultKind(), imageActions,
+                null, null, null);
+        finishTurnIfNeeded(conversation, maxTurns);
+        conversationRepo.save(conversation);
+        return aiResponse(
+                conversation, settings, imageResult.answer(), imageResult.products(),
+                imageResult.resultKind(), imageActions, maxTurns,
+                null, null, null);
     }
 
     private ChatConversationEntity loadOrCreate(
@@ -867,12 +925,18 @@ public class ChatService {
                 ? ChatToolService.ConversationContext.empty() : persisted;
         List<String> slugs = context.productSlugs();
         if (messages != null && !messages.isEmpty()) {
-            ChatMessageEntity latest = messages.get(messages.size() - 1);
-            if ("ASSISTANT".equals(latest.getRole())
-                    && latest.getProductsJson() != null
-                    && !latest.getProductsJson().isBlank()) {
-                List<String> latestSlugs = cardSlugs(latest);
-                if (!latestSlugs.isEmpty()) slugs = latestSlugs;
+            // Scan back to the last assistant reply rather than only looking at the final row. On
+            // an image turn the customer's message is already stored by the time we get here, so
+            // checking just the tail would find a CUSTOMER row and silently forget the models
+            // shown a moment ago. On a plain text turn the tail is that assistant reply anyway.
+            for (int index = messages.size() - 1; index >= 0; index--) {
+                ChatMessageEntity message = messages.get(index);
+                if (!"ASSISTANT".equals(message.getRole())) continue;
+                if (message.getProductsJson() != null && !message.getProductsJson().isBlank()) {
+                    List<String> latestSlugs = cardSlugs(message);
+                    if (!latestSlugs.isEmpty()) slugs = latestSlugs;
+                }
+                break;
             }
         }
         return new ChatToolService.ConversationContext(
@@ -975,7 +1039,8 @@ public class ChatService {
             ChatFallbackReason reason,
             String guardReason,
             int productCount,
-            boolean countedAsSubstantiveTurn
+            boolean countedAsSubstantiveTurn,
+            ImageTurnPrelude prelude
     ) {
         conversation.setTurnCount(Math.max(0, conversation.getTurnCount() - 1));
         if (countedAsSubstantiveTurn) {
@@ -997,11 +1062,11 @@ public class ChatService {
                 ChatActionCatalog.choose("", "CLARIFICATION", List.of(), List.of(), settings.contacts());
         saveAssistantMessage(conversation, answer, ChatMessageSource.CONTACT_FALLBACK, aiCalled, List.of(), 0,
                 requestId, "PLAIN_TEXT", "CLARIFICATION", actions,
-                null, null);
+                null, null, prelude);
         conversationRepo.save(conversation);
         return aiResponse(
                 conversation, settings, answer, List.of(), "CLARIFICATION",
-                actions, maxTurns);
+                actions, maxTurns, prelude);
     }
 
     private static boolean isRecoverableClarificationText(String value) {
@@ -1049,18 +1114,112 @@ public class ChatService {
                 : "Lần tra vẫn đang bận. Anh/chị vui lòng thử lại sau ít phút, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ trực tiếp nhé.";
     }
 
-    private void saveAssistantMessage(
-            ChatConversationEntity conversation,
-            String content,
-            String source,
-            boolean aiCalled,
+    /**
+     * The recognition sentence an image turn produced, carried into the text advisory so both
+     * halves come back as one reply.
+     *
+     * <p>Passed explicitly rather than held in a field: {@code ChatService} is a singleton and
+     * two conversations run through {@code sendUnlocked} concurrently, so shared state would leak
+     * one customer's photo into another's answer. It is a required parameter on every response
+     * chokepoint so the compiler, not review, guarantees no branch forgets it.
+     */
+    private record ImageTurnPrelude(String answer, List<ChatProductCardResponse> products) {
+
+        ImageTurnPrelude {
+            products = products == null ? List.of() : List.copyOf(products);
+        }
+
+        static ImageTurnPrelude of(ChatImageService.ImageTurnResult result) {
+            return new ImageTurnPrelude(result.answer(), result.products());
+        }
+
+        List<String> productSlugs() {
+            return products.stream()
+                    .map(ChatProductCardResponse::slug)
+                    .filter(slug -> slug != null && !slug.isBlank())
+                    .distinct()
+                    .toList();
+        }
+    }
+
+    /** Kinds that may carry product cards; see the cards-imply-PRODUCT_RESULTS invariant below. */
+    private static final Set<String> PRELUDE_CARD_KINDS = Set.of("ANSWER", "PRODUCT_RESULTS");
+
+    private static String preludeAnswer(ImageTurnPrelude prelude, String answer) {
+        if (prelude == null || prelude.answer() == null || prelude.answer().isBlank()) return answer;
+        if (answer == null || answer.isBlank()) return prelude.answer();
+        // Separate paragraph, matching how ChatSalesAdvisorService joins its next-step sentence.
+        return prelude.answer() + "\n\n" + answer;
+    }
+
+    /**
+     * A refusal or a contact hand-off must not turn into a product pitch, so the photo's cards are
+     * carried only into kinds that legitimately show cards. Image cards come first: they are what
+     * the customer is looking at.
+     */
+    private static List<ChatProductCardResponse> preludeProducts(
+            ImageTurnPrelude prelude,
             List<ChatProductCardResponse> products,
-            int aiRetryCount
+            String resultKind
     ) {
-        saveAssistantMessage(
-                conversation, content, source, aiCalled, products, aiRetryCount,
-                null, answerFormat(content), resultKind(products, false), List.of(),
-                null, null);
+        List<ChatProductCardResponse> base = products == null ? List.of() : products;
+        if (prelude == null || prelude.products().isEmpty()
+                || !PRELUDE_CARD_KINDS.contains(resultKind)) {
+            return base;
+        }
+        LinkedHashMap<String, ChatProductCardResponse> merged = new LinkedHashMap<>();
+        for (ChatProductCardResponse card : prelude.products()) {
+            if (card != null && card.slug() != null) merged.putIfAbsent(card.slug(), card);
+        }
+        for (ChatProductCardResponse card : base) {
+            if (card != null && card.slug() != null) merged.putIfAbsent(card.slug(), card);
+        }
+        return merged.values().stream().limit(MAX_PRODUCT_CARDS).toList();
+    }
+
+    /**
+     * Every stored reply carrying cards is a PRODUCT_RESULTS row (V1051 back-filled exactly that),
+     * so adding the photo's card to a plain ANSWER has to promote the kind with it. Nothing else is
+     * ever rewritten — a refusal stays a refusal.
+     */
+    private static String preludeResultKind(
+            ImageTurnPrelude prelude, String resultKind, List<ChatProductCardResponse> merged) {
+        if (prelude == null || merged.isEmpty() || !"ANSWER".equals(resultKind)) return resultKind;
+        return "PRODUCT_RESULTS";
+    }
+
+    /**
+     * The image branch already inserted this turn's customer row before calling the vision service.
+     * saveCustomerMessage only de-duplicates when a requestId is present, and legacy clients omit
+     * it, so the chained path must skip the insert rather than rely on that.
+     */
+    private void saveCustomerTurnIfNeeded(
+            ChatConversationEntity conversation,
+            ChatMessageRequest request,
+            boolean countCustomerTurn,
+            ImageTurnPrelude prelude
+    ) {
+        if (prelude != null) return;
+        saveCustomerMessage(
+                conversation, request.getMessage(), request.getRequestId(), countCustomerTurn);
+    }
+
+    /**
+     * Makes "cái mũ này" resolve to the model in the photo within the same turn. Without this the
+     * text half has no idea a photo was just recognised, because the mechanism that normally
+     * carries it — reading the previous assistant reply's cards — has nothing to read yet.
+     */
+    private static ChatToolService.ConversationContext withImagePrelude(
+            ChatToolService.ConversationContext base, ImageTurnPrelude prelude) {
+        if (prelude == null || prelude.productSlugs().isEmpty()) return base;
+        LinkedHashSet<String> slugs = new LinkedHashSet<>(prelude.productSlugs());
+        slugs.addAll(base.productSlugs());
+        LinkedHashSet<String> remembered = new LinkedHashSet<>(prelude.productSlugs());
+        remembered.addAll(base.rememberedProductSlugs());
+        return new ChatToolService.ConversationContext(
+                base.category(), base.brand(), base.minPrice(), base.maxPrice(),
+                List.copyOf(slugs), base.awaitingOrderLogin(), base.productDecision(),
+                List.copyOf(remembered));
     }
 
     private static String providerUnavailableText(String lang) {
@@ -1081,19 +1240,24 @@ public class ChatService {
             String resultKind,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
             ChatClarificationResponse clarification,
-            ChatSalesAdvisorService.Advice salesAdvice
+            ChatSalesAdvisorService.Advice salesAdvice,
+            ImageTurnPrelude prelude
     ) {
+        List<ChatProductCardResponse> storedProducts = preludeProducts(prelude, products, resultKind);
+        String storedContent = preludeAnswer(prelude, content);
         ChatMessageEntity message = new ChatMessageEntity();
         message.setConversationId(conversation.getId());
         message.setSequenceNo(nextMessageSequence(conversation.getId()));
         message.setRole("ASSISTANT");
-        message.setContent(content);
+        message.setContent(storedContent);
         // Fail loudly here instead of letting an unknown value become a database rejection that
         // silently loses a reply the assistant already composed (DATA_CONTRACT.md chat_messages).
         message.setSource(ChatMessageSource.require(source));
         message.setRequestId(requestId);
-        message.setAnswerFormat(answerFormat);
-        message.setResultKind(resultKind);
+        // Several callers pass the literal "PLAIN_TEXT"; only recompute when a prelude actually
+        // changed the text, so the non-image path stays byte-identical.
+        message.setAnswerFormat(prelude == null ? answerFormat : answerFormat(storedContent));
+        message.setResultKind(preludeResultKind(prelude, resultKind, storedProducts));
         String mode = conversation.getEndedReason() == null ? "AI" : "CONTACT";
         message.setActionMetadata(writeJson(new StoredResponseMetadata(
                 mode,
@@ -1105,7 +1269,7 @@ public class ChatService {
                 salesAdvice == null ? null : salesAdvice.nextStep())));
         message.setAiCalled(aiCalled);
         message.setAiRetryCount(Math.max(0, aiRetryCount));
-        message.setProductsJson(products.isEmpty() ? null : writeJson(products));
+        message.setProductsJson(storedProducts.isEmpty() ? null : writeJson(storedProducts));
         if (salesAdvice != null) {
             message.setSalesStage(salesAdvice.salesStage());
             message.setOutcomeCode(salesAdvice.outcomeCode());
@@ -1205,26 +1369,12 @@ public class ChatService {
             List<ChatProductCardResponse> products,
             String responseKind,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
-            int maxTurns
-    ) {
-        return aiResponse(
-                conversation, settings, answer, products, responseKind,
-                actions, maxTurns, null);
-    }
-
-    private ChatMessageResponse aiResponse(
-            ChatConversationEntity conversation,
-            ChatAssistantSettings.Snapshot settings,
-            String answer,
-            List<ChatProductCardResponse> products,
-            String responseKind,
-            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
             int maxTurns,
-            ChatClarificationResponse clarification
+            ImageTurnPrelude prelude
     ) {
         return aiResponse(
                 conversation, settings, answer, products, responseKind,
-                actions, maxTurns, clarification, null);
+                actions, maxTurns, null, prelude);
     }
 
     private ChatMessageResponse aiResponse(
@@ -1236,20 +1386,39 @@ public class ChatService {
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
             int maxTurns,
             ChatClarificationResponse clarification,
-            ChatSalesAdvisorService.Advice salesAdvice
+            ImageTurnPrelude prelude
     ) {
+        return aiResponse(
+                conversation, settings, answer, products, responseKind,
+                actions, maxTurns, clarification, null, prelude);
+    }
+
+    private ChatMessageResponse aiResponse(
+            ChatConversationEntity conversation,
+            ChatAssistantSettings.Snapshot settings,
+            String answer,
+            List<ChatProductCardResponse> products,
+            String responseKind,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
+            int maxTurns,
+            ChatClarificationResponse clarification,
+            ChatSalesAdvisorService.Advice salesAdvice,
+            ImageTurnPrelude prelude
+    ) {
+        List<ChatProductCardResponse> shownProducts = preludeProducts(prelude, products, responseKind);
+        String shownAnswer = preludeAnswer(prelude, answer);
         return new ChatMessageResponse(
                 conversation.getId(),
                 latestAssistantMessageId(conversation.getId()),
                 conversation.getEndedReason() != null ? "CONTACT" : "AI",
                 conversation.getEndedReason() != null ? "CONTACT" : "AI",
-                answer,
-                answerFormat(answer),
-                responseKind,
+                shownAnswer,
+                answerFormat(shownAnswer),
+                preludeResultKind(prelude, responseKind, shownProducts),
                 conversation.getTurnCount(),
                 maxTurns,
                 remainingTurns(conversation, maxTurns),
-                List.copyOf(products),
+                List.copyOf(shownProducts),
                 clarification,
                 List.copyOf(actions),
                 settings.contacts(),
@@ -1265,14 +1434,15 @@ public class ChatService {
             ChatAssistantSettings.Snapshot settings,
             String answer,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
-            int maxTurns
+            int maxTurns,
+            ImageTurnPrelude prelude
     ) {
         return new ChatMessageResponse(
                 conversation.getId(),
                 latestAssistantMessageId(conversation.getId()),
                 "CONTACT",
                 "CONTACT",
-                answer,
+                preludeAnswer(prelude, answer),
                 "PLAIN_TEXT",
                 "CONTACT",
                 conversation.getTurnCount(),
@@ -1292,13 +1462,14 @@ public class ChatService {
             String answer,
             String responseKind,
             List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> actions,
-            int maxTurns
+            int maxTurns,
+            ImageTurnPrelude prelude
     ) {
         boolean ended = conversation.getEndedReason() != null;
         return new ChatMessageResponse(
                 conversation.getId(), latestAssistantMessageId(conversation.getId()),
                 ended ? "CONTACT" : "AI", ended ? "CONTACT" : "AI",
-                answer, "PLAIN_TEXT", responseKind,
+                preludeAnswer(prelude, answer), "PLAIN_TEXT", responseKind,
                 conversation.getTurnCount(), maxTurns,
                 remainingTurns(conversation, maxTurns),
                 List.of(), null, List.copyOf(actions), settings.contacts(),

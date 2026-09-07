@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
+import { SearchPageForm } from "@/components/catalog/SearchPageForm";
 import { ArticleCard } from "@/components/content/ArticleCard";
 import {
   getCatalogFacets,
@@ -93,7 +94,17 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
     articlePromise,
   ]);
 
-  const heroTitle = tSearch("title");
+  // Tiêu đề phải cho khách biết đang xem kết quả của từ nào và có bao nhiêu kết quả
+  // (SEARCH_RULE_006) — trước đây luôn là chữ "Tìm kiếm" trơ trọi. Tổng số lấy từ lượt gọi
+  // server đã có ở trên, không gọi thêm.
+  const tCatalog = await getTranslations("Catalog");
+  const resultCount = productsResult.pagination?.totalItems ?? productsResult.data.length;
+  const heroTitle =
+    catalog.filters.q && !productsResult.error
+      ? `${tCatalog("searchResultQuoted", { query: catalog.filters.q })} — ${tCatalog("productCountLabel", { count: resultCount })}`
+      : catalog.filters.q
+        ? tCatalog("searchResultQuoted", { query: catalog.filters.q })
+        : tSearch("title");
   // Tái dùng đúng hero của trang sản phẩm để trang tìm kiếm trông cùng một archive.
   const heroSettings = readHeroSettings(settingsResult.data ?? [], "hero_products");
   const defaultHero = readDefaultHeroAssets(settingsResult.data ?? []);
@@ -105,7 +116,7 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
   );
   const heroBreadcrumb: PageHeroCrumb[] = [
     { label: "Bigbike.vn", href: toHomePath(locale) },
-    { label: heroTitle },
+    { label: tSearch("title") },
   ];
 
   return (
@@ -116,11 +127,12 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
         breadcrumb={heroBreadcrumb}
         bgUrl={heroBgUrl}
         illustrationUrl={heroIllustrationUrl}
-        illustrationAlt={heroSettings.imageAlt ?? heroTitle}
+        illustrationAlt={heroSettings.imageAlt ?? tSearch("title")}
       />
 
       <div id="main-content">
         <Container>
+          <SearchPageForm key={catalog.filters.q ?? ""} initialQuery={catalog.filters.q ?? ""} />
           {/* canonicalPath phải dịch theo locale: CatalogClient dùng nó làm gốc cho
                 link phân trang (buildPaginationHref) và nút xoá lọc. Truyền thẳng
                 SEARCH_PATH thì trang /en/search/ phát toàn bộ link về /tim-kiem/, kéo

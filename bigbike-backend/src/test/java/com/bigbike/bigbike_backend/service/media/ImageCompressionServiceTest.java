@@ -67,20 +67,44 @@ class ImageCompressionServiceTest {
     }
 
     /**
-     * Documents CODE_GAP_WEBP_2026-07-28 without silently changing the accepted format.
-     * The fixture is a valid 2000x10 lossless WebP. Once a shared reader + MIME-safe
-     * encoder is introduced, this test must be replaced by an assertion that the stored
-     * result is at most 1600px wide.
+     * Replaces the old CODE_GAP_WEBP_2026-07-28 placeholder: WebP now decodes, so the fixture is no
+     * longer skipped for want of a reader. {@link ImageCompressionService#compress} still hands the
+     * original back, but for the ordinary reason — nothing can write WebP here, and this picture
+     * re-encoded as PNG is bigger than the WebP it came from, so the smaller file wins.
+     * {@code ImageVariantService} therefore skips such a variant instead of storing WebP bytes
+     * under a .png name.
      */
     @Test
-    void webpCurrentlyFallsBackUnchangedWithoutAnImageIoReader() throws IOException {
+    void webpNowDecodesAndIsKeptOnlyBecauseReencodingItWouldBeLarger() throws IOException {
         byte[] wideWebp = Base64.getDecoder().decode(
                 "UklGRiIAAABXRUJQVlA4TBUAAAAvz0cCAAcQ9Y/+BwAU6f9/ieh/KhwA");
 
-        assertThat(ImageIO.read(new ByteArrayInputStream(wideWebp))).isNull();
+        assertThat(ImageIO.read(new ByteArrayInputStream(wideWebp))).isNotNull();
         byte[] result = service.compress(
                 wideWebp, "image/webp", new CompressionProfile(1600, 1600, 0.85f, false));
         assertThat(result).isSameAs(wideWebp);
+    }
+
+    /**
+     * The path the chat image upload uses. Unlike {@code compress} it never falls back to the
+     * original, so a WebP wider than the profile really is resized instead of being refused —
+     * which is what used to happen while a JPEG of the same size was quietly accepted.
+     */
+    @Test
+    void reencodeResizesAWideWebpInsteadOfRefusingIt() throws IOException {
+        byte[] wideWebp;
+        try (java.io.InputStream input = getClass().getResourceAsStream("/chat/customer-photo-wide.webp")) {
+            assertThat(input).isNotNull();
+            wideWebp = input.readAllBytes();
+        }
+
+        byte[] result = service.reencodeWithoutMetadata(
+                wideWebp, "image/webp", new CompressionProfile(1600, 1600, 0.85f, false));
+
+        assertThat(result).isNotNull();
+        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(result));
+        assertThat(decoded).isNotNull();
+        assertThat(decoded.getWidth()).isLessThanOrEqualTo(1600);
     }
 
     private static BufferedImage noisyImage(int width, int height, boolean alpha) {

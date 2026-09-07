@@ -27,9 +27,6 @@ describe("PreSuggestions", () => {
       image: { url: `/product-${index}.jpg` },
       price: { retailPrice: (index + 1) * 100000, salePrice: null, currency: "VND" as const },
     })),
-    popularCategories: [
-      { id: "category-1", name: "Mũ bảo hiểm", href: "/danh-muc/mu-bao-hiem/", count: 4 },
-    ],
   };
 
   it("uses direct routes supplied by inventory-backed shortcuts", () => {
@@ -53,6 +50,8 @@ describe("PreSuggestions", () => {
       "href",
       "/product/product-0",
     );
+    // Nhóm "danh mục phổ biến" đã bị gỡ hẳn khỏi hợp đồng shortcut (chốt 2026-09-07) —
+    // trước đây nó được tính trên mọi trang khách mở mà không màn nào hiển thị.
     expect(screen.queryByRole("link", { name: "Mũ bảo hiểm" })).not.toBeInTheDocument();
   });
 
@@ -85,7 +84,7 @@ describe("PreSuggestions", () => {
     render(
       <PreSuggestions
         recentSearches={["tai nghe"]}
-        shortcuts={{ trendingBrands: [], suggestedProducts: [], popularCategories: [] }}
+        shortcuts={{ trendingBrands: [], suggestedProducts: [] }}
         runSearch={vi.fn()}
         removeSearch={vi.fn()}
         clearAll={clearAll}

@@ -65,23 +65,24 @@ export const categoryBadge =
   "m-0 font-cta text-b5-label font-bold uppercase tracking-display text-brand";
 
 /** Header action icon button (was `.bb-user-control .bb-icon-btn` /
- * `.bb-site-header .bb-cart-icon-link`): full-height transparent square button,
- * white icon, brand-red on hover with a faint white wash, focus ring; WCAG
- * touch-target (44px) on coarse pointers and at the <=768 edge. Shared by the
- * search / shop-info / mobile-menu triggers and the cart link. Compose with the
- * per-button visibility classes (e.g. `hidden md:inline-flex`). */
+ * `.bb-site-header .bb-cart-icon-link`): full-height transparent button,
+ * white icon, brand-red on hover with a faint white wash, focus ring. Shared by
+ * the search / mobile-menu triggers, the cart link and the account trigger, and
+ * every one of them is exactly `--bb-header-action-width` wide so the hover wash
+ * is identical across the row — the token also carries the WCAG touch target
+ * (it resolves to `--bb-touch-target` on phones), so no extra min-width is
+ * needed. Content is centred, so the width holds whether the button shows an
+ * 18px icon or the 32px avatar. Compose with the per-button visibility classes
+ * (e.g. `hidden md:inline-flex`). */
 export const iconBtn =
-  "inline-flex items-center justify-center h-full min-h-[var(--bb-header-height)] w-auto py-0 px-[clamp(10px,0.9vw,16px)] 4xl:px-5 " +
+  "inline-flex items-center justify-center h-full min-h-[var(--bb-header-height)] w-[var(--bb-header-action-width)] px-0 py-0 " +
   "!text-white bg-transparent border-none rounded-none font-cta text-b4-action uppercase leading-none cursor-pointer no-underline " +
   "transition-[color,background] duration-fast ease-[var(--bb-ease-standard)] " +
   // `!` on hover color: the cart link is an <a>, so the unlayered global `a:hover`
   // (brand red #cc0906) would otherwise beat this; rgba (not the /opacity form) to
   // match the legacy literal rgba rather than v4's oklab mix.
   "hover:!text-[var(--bb-brand-primary)] hover:bg-[rgba(255,255,255,0.05)] " +
-  "focus-visible:outline-none focus-visible:[outline:2px_solid_var(--bb-brand-primary)] focus-visible:[outline-offset:-2px] " +
-  // Touch-target only widens (min-width 44px) — the base min-height (header height)
-  // out-specified the old touch-target min-height, so that stays at the header height.
-  "pointer-coarse:min-w-[var(--bb-touch-target)] max-[769px]:min-w-[var(--bb-touch-target)]";
+  "focus-visible:outline-none focus-visible:[outline:2px_solid_var(--bb-brand-primary)] focus-visible:[outline-offset:-2px]";
 
 /** Header-menu category icon (was `.bb-submenu-icon`): a 24×24 mask-image glyph that
  * paints with currentColor, so it follows the parent link's text color (white →

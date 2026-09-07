@@ -62,6 +62,16 @@ public class ChatProductImageFingerprintService {
     private static final double MIN_ASPECT_SIMILARITY = 0.92d;
     private static final double MIN_TOTAL_SIMILARITY = 0.91d;
     private static final double MIN_RUNNER_UP_MARGIN = 0.035d;
+    /**
+     * How many catalog images may be downloaded and fingerprinted inside one customer turn.
+     * The index is warmed lazily on the customer's own request thread, so an empty index (a fresh
+     * deployment, or the day a decoder starts working for a format that used to fail) would
+     * otherwise dump the whole backlog onto whoever sends the first photo. The rest is picked up
+     * by the next turns and every later turn reads the stored rows.
+     */
+    private static final int MAX_NEW_FINGERPRINTS_PER_TURN = 15;
+    /** Ranked neighbours handed back for the "same group" suggestions; never a claimed match. */
+    private static final int MAX_RANKED_SLUGS = 20;
 
     private final ChatProductImageFingerprintJpaRepository fingerprintRepo;
     private final MediaJpaRepository mediaRepo;
@@ -72,13 +82,13 @@ public class ChatProductImageFingerprintService {
      * Synchronized because the current deployment is one backend instance and concurrent first
      * image turns must not race the unique product/version row while warming the catalog index.
      */
-    public synchronized Optional<VisualMatch> findStrictMatch(
+    public synchronized VisualComparison compare(
             byte[] customerBytes,
             String customerSha256,
             List<Product> products
     ) {
         Optional<Fingerprint> customer = fingerprint(customerBytes);
-        if (customer.isEmpty()) return Optional.empty();
+        if (customer.isEmpty()) return VisualComparison.empty();
         List<Product> sellable = products == null ? List.of() : products.stream()
                 .filter(product -> product != null && product.id() != null
                         && product.slug() != null && product.image() != null)
@@ -86,10 +96,10 @@ public class ChatProductImageFingerprintService {
                 .sorted(Comparator.comparing(Product::id))
                 .limit(500)
                 .toList();
-        if (sellable.isEmpty()) return Optional.empty();
+        if (sellable.isEmpty()) return VisualComparison.empty();
 
         Map<String, ResolvedImage> resolved = resolveCatalogImages(sellable);
-        if (resolved.isEmpty()) return Optional.empty();
+        if (resolved.isEmpty()) return VisualComparison.empty();
         Map<String, ChatProductImageFingerprintEntity> existing = fingerprintRepo
                 .findByProductIdInAndFingerprintVersion(resolved.keySet(), FINGERPRINT_VERSION)
                 .stream()
@@ -101,6 +111,9 @@ public class ChatProductImageFingerprintService {
 
         List<CatalogFingerprint> catalog = new ArrayList<>();
         int refreshFailures = 0;
+        int undecodable = 0;
+        int computed = 0;
+        int deferred = 0;
         for (Product product : sellable) {
             ResolvedImage source = resolved.get(product.id());
             if (source == null) continue;
@@ -109,10 +122,20 @@ public class ChatProductImageFingerprintService {
                     ? decode(row)
                     : Optional.empty();
             if (value.isEmpty()) {
+                if (computed >= MAX_NEW_FINGERPRINTS_PER_TURN) {
+                    deferred++;
+                    continue;
+                }
+                computed++;
                 try {
                     value = readAndFingerprint(source);
                     if (value.isPresent()) {
                         row = saveFingerprint(row, product.id(), source, value.get());
+                    } else {
+                        // The object was readable but no installed reader could decode it, so this
+                        // product stays invisible to matching. Counted separately from a storage
+                        // failure because the fix is a decoder, not a retry.
+                        undecodable++;
                     }
                 } catch (RuntimeException exception) {
                     refreshFailures++;
@@ -123,11 +146,23 @@ public class ChatProductImageFingerprintService {
                         product.id(), product.slug(), source.contentSha256(), value.get()));
             }
         }
-        if (refreshFailures > 0) {
-            log.warn("chat_product_fingerprint_refresh_partial failures={} indexed={}",
-                    refreshFailures, catalog.size());
+        if (refreshFailures > 0 || undecodable > 0 || deferred > 0) {
+            log.warn("chat_product_fingerprint_refresh_partial failures={} undecodable={} "
+                            + "deferred={} indexed={}",
+                    refreshFailures, undecodable, deferred, catalog.size());
         }
-        if (catalog.isEmpty()) return Optional.empty();
+        if (catalog.isEmpty()) return VisualComparison.empty();
+
+        List<Scored> scored = catalog.stream()
+                .map(item -> score(customer.get(), item))
+                .sorted(Comparator.comparingDouble(Scored::total).reversed())
+                .toList();
+        // Ranked neighbours are useful even when nothing clears the match threshold: they are what
+        // makes "models in the same group" reflect this photo instead of alphabetical order.
+        List<String> ranked = scored.stream()
+                .map(item -> item.item().slug())
+                .limit(MAX_RANKED_SLUGS)
+                .toList();
 
         String normalizedCustomerSha = normalizedSha(customerSha256);
         if (normalizedCustomerSha != null) {
@@ -136,17 +171,13 @@ public class ChatProductImageFingerprintService {
                     .toList();
             if (exact.size() == 1) {
                 CatalogFingerprint item = exact.get(0);
-                return Optional.of(new VisualMatch(
-                        item.productId(), item.slug(), BigDecimal.ONE, "CONTENT_SHA256"));
+                return new VisualComparison(Optional.of(new VisualMatch(
+                        item.productId(), item.slug(), BigDecimal.ONE, "CONTENT_SHA256")), ranked);
             }
             // One public image assigned to multiple products is ambiguous; never pick one.
-            if (exact.size() > 1) return Optional.empty();
+            if (exact.size() > 1) return new VisualComparison(Optional.empty(), ranked);
         }
 
-        List<Scored> scored = catalog.stream()
-                .map(item -> score(customer.get(), item))
-                .sorted(Comparator.comparingDouble(Scored::total).reversed())
-                .toList();
         Scored best = scored.get(0);
         double runnerUp = scored.size() > 1 ? scored.get(1).total() : 0d;
         if (best.shape() < MIN_SHAPE_SIMILARITY
@@ -154,12 +185,12 @@ public class ChatProductImageFingerprintService {
                 || best.aspect() < MIN_ASPECT_SIMILARITY
                 || best.total() < MIN_TOTAL_SIMILARITY
                 || best.total() - runnerUp < MIN_RUNNER_UP_MARGIN) {
-            return Optional.empty();
+            return new VisualComparison(Optional.empty(), ranked);
         }
-        return Optional.of(new VisualMatch(
+        return new VisualComparison(Optional.of(new VisualMatch(
                 best.item().productId(), best.item().slug(),
                 BigDecimal.valueOf(best.total()).setScale(4, RoundingMode.HALF_UP),
-                "LOCAL_VISUAL_FINGERPRINT"));
+                "LOCAL_VISUAL_FINGERPRINT")), ranked);
     }
 
     private Map<String, ResolvedImage> resolveCatalogImages(List<Product> products) {
@@ -433,6 +464,27 @@ public class ChatProductImageFingerprintService {
             BigDecimal score,
             String evidence
     ) {}
+
+    /**
+     * One comparison of a customer photo against the local catalog index.
+     *
+     * @param strictMatch the single product that cleared the evidence bar, if any
+     * @param rankedSlugs every compared product, most visually similar first. Similarity ordering
+     *                    only; carrying a slug here is never evidence that it is the same product.
+     */
+    public record VisualComparison(
+            Optional<VisualMatch> strictMatch,
+            List<String> rankedSlugs
+    ) {
+        public VisualComparison {
+            strictMatch = strictMatch == null ? Optional.empty() : strictMatch;
+            rankedSlugs = rankedSlugs == null ? List.of() : List.copyOf(rankedSlugs);
+        }
+
+        static VisualComparison empty() {
+            return new VisualComparison(Optional.empty(), List.of());
+        }
+    }
 
     record Fingerprint(long dHash, double[] histogram, double aspectRatio) {}
 

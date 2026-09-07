@@ -43,6 +43,7 @@
 | 3 | System | Nếu Gemini lỗi/quá tải, hệ thống thử lại chính model trong deadline 65 giây và tối đa bốn lần gọi. Vẫn lỗi thì trả lời xin lỗi kèm các kênh liên hệ trực tiếp; không đổi model và không tạo yêu cầu người thật. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_011`, `019` |
 | 4 | Guest/Customer | Khách gặp giới hạn, thiếu dữ liệu hoặc cần trao đổi ngoài phạm vi được mời tự liên hệ qua Hotline, Zalo hoặc Messenger. Bấm liên hệ chỉ mở thẻ/kênh shop, không tạo hàng chờ. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_008`, `011`, `034`–`039` |
 | 5 | Guest/Customer | Khách có thể gửi tối đa một ảnh/lượt, ba ảnh/hội thoại, 20 ảnh/ngày, tối đa 8MB và chỉ JPG/PNG/WebP. Khi dịch vụ AI chưa khai báo, nút ảnh tự ẩn. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_057`–`059` |
+| 5a | Guest/Customer | Gõ câu hỏi kèm ảnh thì được trả lời cả hai trong một tin nhắn: câu nhận diện ảnh rồi câu trả lời như chat chữ. Ảnh hoá đơn, ảnh đầu/người, hàng hỏng và ảnh ngoài phạm vi vẫn dừng ở câu hướng dẫn của mình. | `OWNER_CONFIRMED_2026-09-07` | `CHAT_RULE_058` |
 | 6 | Guest/Customer | Khách bấm thẻ sản phẩm, chọn biến thể còn hàng và thêm vào giỏ; backend hậu kiểm giá, tồn và biến thể trước khi thêm. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_014`, `052` |
 | 7 | Guest/Customer | Ngữ cảnh chỉ được nối trong phiên trình duyệt đang mở; tải lại trang vẫn thấy đoạn chat, đóng trình duyệt là hết. Khách vẫn xoá được cuộc trò chuyện. | `OWNER_CONFIRMED_2026-09-05` | `CHAT_RULE_049` |
 

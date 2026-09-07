@@ -40,6 +40,7 @@ public class ChatImageService {
 
     private static final Set<String> TERMINAL_WITHOUT_CONTENT =
             Set.of("REJECTED_UNSAFE", "DELETING", "DELETED");
+    private static final int GROUP_SUGGESTION_LIMIT = 3;
 
     private final ChatImageJpaRepository imageRepo;
     private final ChatConversationJpaRepository conversationRepo;
@@ -133,17 +134,19 @@ public class ChatImageService {
                 image.getStorageBucket(), image.getStorageObjectKey(), image.getMimeType());
         List<Product> catalog = catalogReadService.listAssistantDecisionProducts(lang);
         CatalogContext catalogContext = catalogContext(catalog);
-        Optional<ChatProductImageFingerprintService.VisualMatch> visualMatch;
+        ChatProductImageFingerprintService.VisualComparison comparison;
         try {
-            visualMatch = fingerprintService.findStrictMatch(
+            comparison = fingerprintService.compare(
                     content.bytes(), image.getSha256(), catalogContext.products());
         } catch (RuntimeException exception) {
             // A missing/stale catalog thumbnail must degrade to group-only recognition, never to
             // a guessed model and never to a failed customer conversation.
             log.warn("chat_product_fingerprint_match_failed type={}",
                     exception.getClass().getSimpleName());
-            visualMatch = Optional.empty();
+            comparison = ChatProductImageFingerprintService.VisualComparison.empty();
         }
+        Optional<ChatProductImageFingerprintService.VisualMatch> visualMatch =
+                comparison.strictMatch();
         ChatImageAnalysisClient.AnalysisCall call = analysisClient.analyze(
                 content.bytes(), content.mimeType(), caption,
                 catalogContext.candidates(), catalogContext.groups());
@@ -175,13 +178,12 @@ public class ChatImageService {
             return unsafeResult(lang);
         }
 
-        String intent = overrideHighRiskIntent(analysis.intent(), caption);
-        if (visualMatch.isPresent() && "UNKNOWN".equals(intent)) intent = "PRODUCT_SEARCH";
+        String intent = resolveIntent(analysis.intent(), caption, visualMatch.isPresent());
         analysis = evidenceBoundAnalysis(analysis, visualMatch, catalogContext);
         image.setIntentCode(intent);
         image.setStatus("UNKNOWN".equals(intent) ? "UNRECOGNIZED" : "READY");
         imageRepo.save(image);
-        return resultFor(intent, analysis, catalogContext, lang);
+        return resultFor(intent, analysis, catalogContext, comparison.rankedSlugs(), lang);
     }
 
     private ChatImageEntity requireTurnImage(
@@ -336,6 +338,7 @@ public class ChatImageService {
             String intent,
             ChatImageAnalysisClient.ImageAnalysis analysis,
             CatalogContext context,
+            List<String> rankedSlugs,
             String lang
     ) {
         boolean english = "en".equals(lang);
@@ -344,23 +347,23 @@ public class ChatImageService {
                     english
                             ? "I’ve recorded the damaged-product image. I cannot decide warranty eligibility from an image; please contact BigBike through Hotline, Zalo or Messenger for help."
                             : "Em đã ghi nhận ảnh sản phẩm bị lỗi/hỏng. Em không tự kết luận bảo hành chỉ từ ảnh; anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.",
-                    ChatMessageSource.CONTACT_FALLBACK, "CONTACT", List.of(), true);
+                    ChatMessageSource.CONTACT_FALLBACK, "CONTACT", List.of(), true, false);
             case "ORDER_DOCUMENT" -> new ImageTurnResult(
                     english
                             ? "I cannot use numbers or text in this image to confirm an order. Please sign in and open your order history, or use BigBike’s order lookup with the original order details."
                             : "Em không dùng số hoặc chữ trên ảnh để khẳng định thông tin đơn. Anh/chị vui lòng đăng nhập xem Lịch sử đơn hàng, hoặc tra đơn bằng thông tin gốc đã nhận từ BigBike.",
-                    ChatMessageSource.TOOL, "ANSWER", List.of(), true);
+                    ChatMessageSource.TOOL, "ANSWER", List.of(), true, false);
             case "SIZE_FROM_PERSON" -> new ImageTurnResult(
                     english
                             ? "I cannot estimate a helmet size from a head or body photo. Please use a measuring tape around the widest part of your head, then compare that measurement with the product’s saved size chart. You can also contact BigBike through Hotline, Zalo or Messenger."
                             : "Em không đoán size mũ từ ảnh đầu hoặc ảnh người. Anh/chị cần dùng thước dây đo vòng qua phần rộng nhất của đầu, rồi đối chiếu bảng size đã lưu của từng mẫu. Anh/chị cũng có thể liên hệ BigBike qua Hotline, Zalo hoặc Messenger.",
-                    ChatMessageSource.TOOL, "ANSWER", List.of(), true);
+                    ChatMessageSource.TOOL, "ANSWER", List.of(), true, false);
             case "UNRELATED" -> new ImageTurnResult(
                     english
                             ? "I cannot help analyze this image. I can assist with BigBike products, protective gear, orders and published shop policies."
                             : "Em chưa thể hỗ trợ phân tích ảnh này. Em có thể giúp về sản phẩm, đồ bảo hộ, đơn hàng và chính sách đã công bố của BigBike.",
-                    ChatMessageSource.OUT_OF_SCOPE, "REFUSAL", List.of(), true);
-            case "PRODUCT_SEARCH" -> productResult(analysis, context, lang);
+                    ChatMessageSource.OUT_OF_SCOPE, "REFUSAL", List.of(), true, false);
+            case "PRODUCT_SEARCH" -> productResult(analysis, context, rankedSlugs, lang);
             default -> unknownResult(lang, true);
         };
     }
@@ -368,6 +371,7 @@ public class ChatImageService {
     private ImageTurnResult productResult(
             ChatImageAnalysisClient.ImageAnalysis analysis,
             CatalogContext context,
+            List<String> rankedSlugs,
             String lang
     ) {
         boolean english = "en".equals(lang);
@@ -392,17 +396,11 @@ public class ChatImageService {
                             + ", which BigBike currently sells. This is visual similarity only, not confirmation that it is the same product; please open the model below to compare it yourself."
                     : "Ảnh này trông giống mẫu " + card.name()
                             + " bên em đang bán. Đây chỉ là mức độ giống qua hình, không phải khẳng định cùng một sản phẩm; anh/chị vui lòng mở mẫu bên dưới để tự đối chiếu.";
-            return new ImageTurnResult(answer, ChatMessageSource.TOOL, "PRODUCT_RESULTS", List.of(card), true);
+            return new ImageTurnResult(
+                    answer, ChatMessageSource.TOOL, "PRODUCT_RESULTS", List.of(card), true, true);
         }
         String resolvedGroup = group;
-        List<ChatProductCardResponse> groupCards = resolvedGroup == null ? List.of() : context.products().stream()
-                .filter(product -> product.categories() != null && product.categories().stream()
-                        .filter(java.util.Objects::nonNull)
-                        .anyMatch(category -> resolvedGroup.equalsIgnoreCase(category.name())))
-                .map(ChatToolService::toCard)
-                .filter(card -> "IN_STOCK".equals(card.stockState()))
-                .limit(3)
-                .toList();
+        List<ChatProductCardResponse> groupCards = groupSuggestions(context, resolvedGroup, rankedSlugs);
         if (resolvedGroup != null) {
             String answer = english
                     ? "I can recognize this as likely belonging to the " + resolvedGroup
@@ -411,9 +409,52 @@ public class ChatImageService {
                             + " nhưng chưa xác định đáng tin cậy được mẫu cụ thể. Các mẫu cùng nhóm đang bán bên dưới để anh/chị tự đối chiếu; em không khẳng định mẫu nào là cùng sản phẩm.";
             return new ImageTurnResult(
                     answer, ChatMessageSource.TOOL, groupCards.isEmpty() ? "ANSWER" : "PRODUCT_RESULTS",
-                    groupCards, true);
+                    groupCards, true, true);
         }
         return unknownResult(lang, true);
+    }
+
+    /**
+     * Owner decision 2026-09-07: the three "same group" models must mean something to the customer.
+     * They used to be the first three in-stock products of the category in slug order, so every
+     * full-face helmet photo produced the same three cards. Now the models this photo actually
+     * looks most like come first — the scores are already computed while searching for a match —
+     * and any remaining slot is filled from what the shop itself puts forward
+     * ({@link ChatToolService#representativeProducts}: pinned to the homepage first, then closest
+     * to the group's median price). Similarity ordering only; nothing here claims a match.
+     */
+    private static List<ChatProductCardResponse> groupSuggestions(
+            CatalogContext context,
+            String group,
+            List<String> rankedSlugs
+    ) {
+        if (group == null) return List.of();
+        List<Product> inGroup = context.products().stream()
+                .filter(product -> product.categories() != null && product.categories().stream()
+                        .filter(java.util.Objects::nonNull)
+                        .anyMatch(category -> group.equalsIgnoreCase(category.name())))
+                .filter(product -> "IN_STOCK".equals(ChatToolService.toCard(product).stockState()))
+                .toList();
+        if (inGroup.isEmpty()) return List.of();
+
+        Map<String, Product> bySlug = inGroup.stream().collect(Collectors.toMap(
+                Product::slug, Function.identity(), (first, ignored) -> first, LinkedHashMap::new));
+        Set<String> taken = new LinkedHashSet<>();
+        List<Product> chosen = new ArrayList<>();
+        for (String slug : rankedSlugs == null ? List.<String>of() : rankedSlugs) {
+            Product product = bySlug.get(slug);
+            if (product == null || !taken.add(slug)) continue;
+            chosen.add(product);
+            if (chosen.size() == GROUP_SUGGESTION_LIMIT) break;
+        }
+        if (chosen.size() < GROUP_SUGGESTION_LIMIT) {
+            for (Product product : ChatToolService.representativeProducts(inGroup)) {
+                if (!taken.add(product.slug())) continue;
+                chosen.add(product);
+                if (chosen.size() == GROUP_SUGGESTION_LIMIT) break;
+            }
+        }
+        return chosen.stream().map(ChatToolService::toCard).toList();
     }
 
     private static ImageTurnResult limitResult(String lang, String reason) {
@@ -421,7 +462,8 @@ public class ChatImageService {
         String answer = english
                 ? "The shop’s image-analysis allowance has been reached for today. You can still describe the item in text and continue chatting normally, or contact BigBike through Hotline, Zalo or Messenger."
                 : "Hôm nay shop đã dùng hết lượt đọc ảnh. Anh/chị vẫn có thể mô tả sản phẩm bằng chữ và tiếp tục trò chuyện bình thường, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger.";
-        return new ImageTurnResult(answer, ChatMessageSource.TOOL, "CLARIFICATION", List.of(), false);
+        return new ImageTurnResult(
+                answer, ChatMessageSource.TOOL, "CLARIFICATION", List.of(), false, true);
     }
 
     private static ImageTurnResult unsafeResult(String lang) {
@@ -429,7 +471,7 @@ public class ChatImageService {
                 "en".equals(lang)
                         ? "I cannot process this image. I can still help with BigBike products, protective gear and shop policies."
                         : "Em không thể xử lý ảnh này. Em vẫn có thể hỗ trợ sản phẩm, đồ bảo hộ và chính sách của BigBike.",
-                ChatMessageSource.CONTENT_REFUSAL, "REFUSAL", List.of(), true);
+                ChatMessageSource.CONTENT_REFUSAL, "REFUSAL", List.of(), true, false);
     }
 
     private static ImageTurnResult unknownResult(String lang, boolean analyzed) {
@@ -437,7 +479,7 @@ public class ChatImageService {
                 "en".equals(lang)
                         ? "I cannot recognize a specific product reliably from this image. Please describe the item in text, or contact BigBike through Hotline, Zalo or Messenger for help."
                         : "Em chưa nhận ra đáng tin cậy được sản phẩm cụ thể trong ảnh. Anh/chị vui lòng mô tả thêm bằng chữ, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.",
-                ChatMessageSource.TOOL, "CLARIFICATION", List.of(), analyzed);
+                ChatMessageSource.TOOL, "CLARIFICATION", List.of(), analyzed, true);
     }
 
     private CatalogContext catalogContext(List<Product> products) {
@@ -467,15 +509,30 @@ public class ChatImageService {
         return new CatalogContext(safeProducts, candidates, groups, bySlug);
     }
 
-    private static String overrideHighRiskIntent(String detected, String caption) {
+    /**
+     * Owner decision 2026-09-07: the picture decides what the turn is about, not the words typed
+     * with it.
+     *
+     * <p>The previous version rewrote the intent from caption substrings alone, so "em muốn đặt
+     * đơn hàng mẫu này" pushed a customer who wanted to buy into order-lookup guidance, and "mũ
+     * này có size nào ạ?" over a product photo was answered as if it were a photo of someone's
+     * head — losing the product cards and the buy button in both cases. Those two redirections are
+     * now reachable only when the vision result itself says the image is a receipt or a person.
+     *
+     * <p>A caption still escalates to {@code DAMAGED_PRODUCT}, because a customer reporting
+     * breakage must reach a human whatever the picture looks like. It no longer escalates on the
+     * bare word "bảo hành": asking how long the warranty lasts is a policy question the text
+     * advisory answers from the published policy. Concluding a specific warranty case from an
+     * image stays forbidden either way (CHAT_RULE_058).
+     */
+    private static String resolveIntent(String detected, String caption, boolean hasVisualMatch) {
+        String intent = detected == null || detected.isBlank() ? "UNKNOWN" : detected;
         String normalized = ChatToolService.normalize(caption == null ? "" : caption);
-        if (containsAny(normalized, "bi hong", "bi loi", "bi vo", "bi nut", "bao hanh",
-                "damaged", "broken", "defect", "warranty")) return "DAMAGED_PRODUCT";
-        if (containsAny(normalized, "hoa don", "don hang", "ma don", "bill", "invoice",
-                "order screenshot", "tracking")) return "ORDER_DOCUMENT";
-        if (containsAny(normalized, "size nao", "co vua", "vong dau", "kich co",
-                "what size", "fit me", "head size")) return "SIZE_FROM_PERSON";
-        return detected == null ? "UNKNOWN" : detected;
+        boolean reportsDamage = containsAny(normalized, "bi hong", "bi loi", "bi vo", "bi nut",
+                "bi gay", "bi be", "damaged", "broken", "cracked", "defect");
+        if (reportsDamage && !"UNRELATED".equals(intent)) return "DAMAGED_PRODUCT";
+        if ("UNKNOWN".equals(intent) && hasVisualMatch) return "PRODUCT_SEARCH";
+        return intent;
     }
 
     private static boolean containsAny(String value, String... needles) {
@@ -536,12 +593,21 @@ public class ChatImageService {
                 image.getStatus(), image.getCreatedAt());
     }
 
+    /**
+     * @param continuesToText whether the assistant should go on to answer the words the customer
+     *     typed with the photo. Only this class can say so: a receipt image, a head photo and a
+     *     recognised group with nothing in stock all come out as {@code TOOL / "ANSWER"} with no
+     *     cards, so the caller cannot tell them apart from the other fields. The refusals stop the
+     *     turn; recognition, "I could not identify this" and "the daily image allowance is used up"
+     *     all continue, because the typed question deserves an answer in each of those cases.
+     */
     public record ImageTurnResult(
             String answer,
             String source,
             String resultKind,
             List<ChatProductCardResponse> products,
-            boolean analyzed
+            boolean analyzed,
+            boolean continuesToText
     ) {
         public ImageTurnResult {
             products = products == null ? List.of() : List.copyOf(products);

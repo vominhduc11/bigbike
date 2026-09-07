@@ -191,6 +191,10 @@
   --bb-promo-strip-height: 0px;
   --bb-header-stack: calc(var(--bb-header-height) + var(--bb-promo-strip-height));
   --bb-touch-target: 44px;
+  /* 58px — bề rộng chung của mọi nút icon trên header (tìm kiếm / giỏ hàng /
+     tài khoản / mở menu). Cố định để cả 4 nút có vùng hover bằng nhau, kể cả khi
+     nút tài khoản đổi từ icon 18px sang ảnh đại diện 32px lúc đã đăng nhập. */
+  --bb-header-action-width: 3.625rem;
 
   /* Radius: sharp industrial design */
   --bb-radius-none: 0;
@@ -234,6 +238,8 @@
 @media (max-width: 767px) {
   :root {
     --bb-header-height: 3.75rem; /* 60px — mobile */
+    /* Điện thoại giữ nút gọn: bằng đúng touch target 44px, khớp nút mở menu. */
+    --bb-header-action-width: var(--bb-touch-target);
   }
 }
 

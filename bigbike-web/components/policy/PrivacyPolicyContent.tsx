@@ -64,9 +64,12 @@ const COPY = {
     vi: "7. Ảnh gửi trong Trợ lý BigBike",
     en: "7. Images sent to BigBike Assistant",
   },
+  // Câu cuối trước đây nói khung chat sẽ nhắc cách xử lý ảnh trước khi khách chọn ảnh. Dòng công
+  // bố đó đã gỡ khỏi khung chat ngày 06/09/2026 (CHAT_RULE_059) và nội dung công bố chuyển hẳn về
+  // đúng mục này, nên câu cũ đang mô tả một thứ không còn tồn tại.
   s7Intro: {
-    vi: "Tính năng gửi ảnh luôn sẵn sàng khi dịch vụ AI Google đã được BigBike cấu hình; tính năng này không có công tắc bật/tắt trong Cài đặt. Trước khi chọn ảnh, khung chat sẽ nhắc rõ cách ảnh được xử lý.",
-    en: "Image upload is always available when BigBike has configured Google's AI service; there is no image on/off switch in Settings. Before you select an image, chat clearly explains how it will be handled.",
+    vi: "Tính năng gửi ảnh luôn sẵn sàng khi dịch vụ AI Google đã được BigBike cấu hình; tính năng này không có công tắc bật/tắt trong Cài đặt. Mục này là nơi công bố đầy đủ cách ảnh khách gửi được xử lý.",
+    en: "Image upload is always available when BigBike has configured Google's AI service; there is no image on/off switch in Settings. This section is the full disclosure of how images you send are handled.",
   },
   footerNote: {
     vi: "Chính sách này có thể được cập nhật theo thời gian. Phiên bản mới nhất luôn được đăng tại bigbike.vn.",
@@ -153,8 +156,8 @@ const CHAT_IMAGES: Bi[] = [
     en: "Images are automatically deleted after the 90-day retention period. Deleting chat history also deletes images attached to that history.",
   },
   {
-    vi: "Khách có quyền xem ảnh đã lưu trong lịch sử của mình và yêu cầu BigBike xoá ảnh hoặc xoá toàn bộ lịch sử trò chuyện.",
-    en: "You can view images saved in your own history and ask BigBike to delete an image or your entire chat history.",
+    vi: "Khách có quyền xem ảnh đã lưu trong lịch sử của mình. Khách tự xoá được bất cứ lúc nào bằng nút xoá cuộc trò chuyện ngay trong khung chat; ảnh kèm theo bị xoá cùng lúc. Khách cũng có thể yêu cầu BigBike xoá giúp.",
+    en: "You can view images saved in your own history. You can delete them yourself at any time with the clear-conversation button in the chat panel, which removes the attached images with it. You may also ask BigBike to delete them for you.",
   },
   {
     vi: "Ảnh không phù hợp có thể bị chặn và không được xử lý tiếp. Khách luôn có thể không gửi ảnh và mô tả nhu cầu bằng chữ.",

@@ -192,6 +192,7 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 
 - Header nền đen, cao 80px (5rem desktop / 60px mobile), chữ trắng.
 - Nav hover/active: đỏ `#FF0C09`; trạng thái trang hiện tại chỉ đổi màu chữ, không thêm gạch chân, vạch hay nền.
+- **Nút icon header** (tìm kiếm, giỏ hàng, tài khoản, mở menu): tất cả cùng bề rộng `--bb-header-action-width` — 58px từ 768px trở lên, 44px trên điện thoại (bằng `--bb-touch-target`). Bề rộng cố định, nội dung căn giữa, không đệm ngang riêng: vùng hover của 4 nút phải bằng nhau, kể cả khi nút tài khoản đổi từ icon 18px sang ảnh đại diện 32px lúc đã đăng nhập. Không ép `w-*`/`px-*` riêng cho từng nút.
 - Cart badge: đỏ, chữ trắng, tròn.
 
 ### Footer
