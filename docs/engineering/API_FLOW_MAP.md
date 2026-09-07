@@ -39,6 +39,12 @@
 
 ## Flow Highlights
 
+### Google Merchant catalog sync
+
+`admin publishes/edits the existing product -> public catalog APIs -> GMC scheduled GET /google-merchant.xml -> complete uncached XML -> Google processing -> customer opens /product/{slug}/?variant={id}`
+
+The web feed reads every public catalog page and current product detail, then emits one real SKU per offer. It makes no Google API write and stores no Google credentials. Failed/incomplete reads return 503. A single exact variant query selects the matching price, stock and options in server HTML and Product JSON-LD; the canonical URL remains the parent product URL. Account registration and successful Google fetch must be verified separately using `GMC_SETUP.md`. Rules: `GMC_RULE_001`–`005`.
+
 ### Catalog size scale
 
 `admin product editor -> GET /admin/size-scales -> select sizeScaleId -> product upsert validation -> product.size_scale_id + existing variant options -> public facets/list filter`

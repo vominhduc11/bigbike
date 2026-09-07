@@ -1,5 +1,15 @@
 # Business Rules
 
+## Google Merchant Center — đồng bộ sản phẩm (2026-09-07)
+
+- `GMC_RULE_001`: Theo yêu cầu owner ngày 07/09/2026, admin quản lý và xuất bản sản phẩm tại BigBike; website cung cấp nguồn XML động `/google-merchant.xml` để GMC lấy định kỳ sau khi đăng ký nguồn một lần trong tài khoản Google. Xuất bản BigBike không đồng nghĩa Google đã nhận/duyệt; không hiển thị thành công GMC khi chưa có bằng chứng phía Google.
+- `GMC_RULE_002`: Nguồn dùng nội dung VI, VND và các điều kiện công khai hiện hữu: chỉ `PUBLISHED`, không `discontinued`, không `seo.noIndex` của bản VI. Hàng tạm hết vẫn gửi `out_of_stock`; hàng nháp/thùng rác/ngừng bán bị loại ở lần lấy kế tiếp. Không thêm trạng thái, quyền hoặc điều kiện xuất bản mới vào admin.
+- `GMC_RULE_003`: Sản phẩm không biến thể có một dòng, `id` là SKU thật; sản phẩm có biến thể có một dòng cho mỗi biến thể, `id` là SKU biến thể và `item_group_id` là ID ổn định của sản phẩm cha. Không dùng SKU cha làm mã nhóm vì SKU cấp sản phẩm không bị ràng buộc duy nhất (`PRODUCT_RULE_SKU_001`); dữ liệu VPS có hai sản phẩm khác nhau cùng SKU cha. Không gửi thêm dòng cha khi đã gửi các biến thể. Giá và tình trạng hàng tuân thủ `PRODUCT_RULE_012`/`013`, `STOCK_RULE_005`/`006`; ảnh dùng ảnh biến thể nếu có, nếu không dùng ảnh sản phẩm. Không suy diễn GTIN, MPN, mã danh mục Google, tuổi sử dụng hoặc phí giao hàng; không khai `identifier_exists=false` chỉ vì thiếu mã.
+- `GMC_RULE_004`: Link biến thể dùng `/product/{slug}/?variant={variantId}` và mở đúng lựa chọn ngay trong HTML đầu tiên, kể cả khi hết hàng. ID lạ/đã xóa không tự chọn một lựa chọn khác. Canonical SEO giữ URL sản phẩm gốc, không tạo trang index mới cho từng query. Khách có thể đổi lựa chọn và mua theo kiểm tra hiện hữu; link không tự thêm giỏ hoặc đặt hàng.
+- `GMC_RULE_005`: Lỗi nguồn dữ liệu, phân trang thiếu/trùng hoặc SKU không hợp lệ/trùng trong nguồn không được biến thành file XML thành công bị thiếu hàng. Khi chưa thể dựng đầy đủ dữ liệu hợp lệ, trả HTTP 503 để Google lấy lại sau; chỉ danh mục thật sự rỗng mới trả feed rỗng. Mô tả lấy từ nội dung đã lưu; khi mọi mô tả trống, dùng tên sản phẩm làm nội dung tối thiểu và không tự sáng tác tính năng.
+
+Các lựa chọn giao thức/XML là chi tiết triển khai cho yêu cầu đồng bộ; không sửa quy tắc giá, tồn kho, thanh toán hay vận chuyển của shop. Xem `docs/engineering/API_CONTRACT.md` §Google Merchant product feed và `docs/engineering/GMC_SETUP.md` để đăng ký nguồn và xác minh Google đã nhận.
+
 Only rules verified from current code, config, migration, or test are documented here.
 
 ## Product gender contract

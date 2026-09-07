@@ -9,7 +9,11 @@ import { queryKeys } from "@/lib/query/keys";
 import { toHomePath } from "@/lib/utils/routes";
 
 import { PurchaseSection } from "@/components/catalog/PurchaseSection";
-import { LText, LocalizedContentProvider, useLocalizedField } from "@/components/i18n/LocalizedContent";
+import {
+  LText,
+  LocalizedContentProvider,
+  useLocalizedField,
+} from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
 import {
   ProductContentBottom,
@@ -35,10 +39,18 @@ import { DiscontinuedProductOverview } from "@/components/catalog/DiscontinuedPr
 import { DiscontinuedSuggestions } from "@/components/catalog/DiscontinuedSuggestions";
 import { MobilePdpAnchorNav, type AnchorNavItem } from "@/components/catalog/MobilePdpAnchorNav";
 import { PdpSectionHeading, PDP_SECTION_SEP } from "@/components/catalog/product-view/PdpSection";
-import { buildTrustItems, ProductTrustCard } from "@/components/catalog/product-view/ProductTrustCard";
+import {
+  buildTrustItems,
+  ProductTrustCard,
+} from "@/components/catalog/product-view/ProductTrustCard";
 import { trackViewItem, type Ga4List } from "@/lib/analytics";
 import type { RecentProduct } from "@/lib/recently-viewed";
-import type { CategorySummary, DescriptionBlock, Product, PublicSiteSetting } from "@/lib/contracts/public";
+import type {
+  CategorySummary,
+  DescriptionBlock,
+  Product,
+  PublicSiteSetting,
+} from "@/lib/contracts/public";
 import type { Locale } from "@/i18n/locale";
 import { safeArray, safeText } from "@/lib/utils/format";
 import { pickSetting } from "@/lib/utils/settings";
@@ -47,6 +59,7 @@ import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 
 type ProductViewProps = {
   product: Product;
+  initialVariantId?: string;
   /** Site settings for the bottom contact band + trust block NAP. Public PDP passes
    *  server-fetched settings; live-preview fetches the same public endpoint client-side
    *  so Hotline/Địa chỉ match the live page. */
@@ -83,7 +96,7 @@ function LocalizedProductSwiper({
 }) {
   const locale = useLocale() as Locale;
   const enProducts = useLocalizedField<Product[]>(field);
-  const products = safeArray(locale === "en" ? enProducts ?? viProducts : viProducts).filter(
+  const products = safeArray(locale === "en" ? (enProducts ?? viProducts) : viProducts).filter(
     (p) => p.id !== currentProductId,
   );
   return <ProductSwiper products={products} autoHeight analyticsList={analyticsList} />;
@@ -106,9 +119,8 @@ function LocalizedProductSwiper({
 function MobileTrustLine({ product }: { product: Product }) {
   const locale = useLocale() as Locale;
   const enTrustHtml = useLocalizedField<string>("trustBadges");
-  const trustBadgesResolvedHtml = locale === "en"
-    ? enTrustHtml ?? product.trustBadges ?? ""
-    : product.trustBadges ?? "";
+  const trustBadgesResolvedHtml =
+    locale === "en" ? (enTrustHtml ?? product.trustBadges ?? "") : (product.trustBadges ?? "");
   const hasTrustBadges = trustBadgesResolvedHtml.trim().length > 0;
 
   return (
@@ -116,7 +128,9 @@ function MobileTrustLine({ product }: { product: Product }) {
       {hasTrustBadges ? (
         <div
           className="mb-4 leading-none [&_*]:leading-none [&_a]:text-inherit! [&_p]:mb-0"
-          dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(trustBadgesResolvedHtml, { allowInlineStyles: true }) }}
+          dangerouslySetInnerHTML={{
+            __html: sanitizeRichHtml(trustBadgesResolvedHtml, { allowInlineStyles: true }),
+          }}
         />
       ) : null}
     </div>
@@ -125,6 +139,7 @@ function MobileTrustLine({ product }: { product: Product }) {
 
 export function ProductView({
   product,
+  initialVariantId,
   settings,
   breadcrumbCategories = [],
   previewMode = false,
@@ -193,10 +208,16 @@ export function ProductView({
   const ratingCount = product.ratingCount ?? null;
 
   const descriptionHtml = product.description
-    ? sanitizeRichHtml(product.description, { rewriteMediaUrls: true, locale: locale as "vi" | "en" })
+    ? sanitizeRichHtml(product.description, {
+        rewriteMediaUrls: true,
+        locale: locale as "vi" | "en",
+      })
     : "";
   const contentBottomHtml = product.contentBottom
-    ? sanitizeRichHtml(product.contentBottom, { rewriteMediaUrls: true, locale: locale as "vi" | "en" })
+    ? sanitizeRichHtml(product.contentBottom, {
+        rewriteMediaUrls: true,
+        locale: locale as "vi" | "en",
+      })
     : "";
   // "Quick Answer" (trả lời nhanh, V300) — đoạn tóm tắt AIO, blockquote #3 ngay sau Specs Dashboard.
   const quickAnswer = safeText(product.quickAnswerSummary, "");
@@ -210,18 +231,16 @@ export function ProductView({
   const negativeNotes = safeArray(product.negativeNotes);
 
   const primaryCategory = product.category ?? product.categories?.[0] ?? null;
-  const category = primaryCategory &&
+  const category =
+    primaryCategory &&
     primaryCategory.slug !== "chua-phan-loai" &&
     primaryCategory.slug !== "uncategorized" &&
     primaryCategory.visible !== false &&
     primaryCategory.deleted !== true
-    ? primaryCategory
-    : null;
-  const visibleBreadcrumbCategories = breadcrumbCategories.length > 0
-    ? breadcrumbCategories
-    : category
-      ? [category]
-      : [];
+      ? primaryCategory
+      : null;
+  const visibleBreadcrumbCategories =
+    breadcrumbCategories.length > 0 ? breadcrumbCategories : category ? [category] : [];
 
   const recentRecord: RecentProduct = {
     id: product.id,
@@ -283,9 +302,16 @@ export function ProductView({
   // GIỐNG HỆT NHAU trên cả desktop lẫn mobile (đã bỏ widget tab gộp — anchor nav đầu trang đã đủ để nhảy
   // nhanh tới từng mục). "Sản phẩm đã xem gần đây" render riêng.
   const bodyOrder = [
-    "description", "prosConsRelated", "suitability", "sizeGuide",
-    "specifications", "faqs", "videos", "reviews",
-    "trust", "accessories",
+    "description",
+    "prosConsRelated",
+    "suitability",
+    "sizeGuide",
+    "specifications",
+    "faqs",
+    "videos",
+    "reviews",
+    "trust",
+    "accessories",
   ];
 
   // Các section body — render theo thứ tự cố định ở trên.
@@ -294,7 +320,11 @@ export function ProductView({
   // "Tính năng chi tiết" (#4) — khối flat hiển thị CẢ desktop lẫn mobile (đã tách khỏi widget tab).
   if (hasDescription) {
     bodyNodes.description = (
-      <div key="description" id="pdp-description" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
+      <div
+        key="description"
+        id="pdp-description"
+        className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
+      >
         <ProductDescriptionBlocks
           blocks={descBlocks}
           fallback={<ProductDescriptionTab viHtml={descriptionHtml} />}
@@ -309,7 +339,11 @@ export function ProductView({
   // mobile (không nằm trong widget tab). Carousel dùng chung nhịp section (tiêu đề căn trái) như mọi khối.
   if (showProsCons || showRelated) {
     bodyNodes.prosConsRelated = (
-      <div key="prosConsRelated" id="pdp-proscons" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
+      <div
+        key="prosConsRelated"
+        id="pdp-proscons"
+        className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
+      >
         <section>
           {showProsCons ? (
             <>
@@ -324,7 +358,9 @@ export function ProductView({
                 // chọn khác NGAY trong cùng khối (giữ ở lại site). Thay tiêu đề lớn "Sản phẩm tương tự"
                 // (vốn đọc thành chủ đề tách biệt). Khi KHÔNG có ưu/nhược điểm thì dùng tiêu đề thường.
                 <p className="!mb-0 flex items-start gap-2 text-a4-content font-medium text-foreground">
-                  <span aria-hidden className="font-bold text-brand">→</span>
+                  <span aria-hidden className="font-bold text-brand">
+                    →
+                  </span>
                   <Tr ns="Product" k="relatedBridge" />
                 </p>
               ) : (
@@ -347,7 +383,11 @@ export function ProductView({
   // mobile (NGOÀI widget tab, như prosConsRelated). Tiêu đề lấy từ chính khối (admin nhập).
   if (showSuitability) {
     bodyNodes.suitability = (
-      <div key="suitability" id="pdp-suitability" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
+      <div
+        key="suitability"
+        id="pdp-suitability"
+        className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
+      >
         <section>
           <ProductSuitabilitySection section={suitabilitySection} />
         </section>
@@ -358,7 +398,11 @@ export function ProductView({
   // "Bảng size" (#8) — SECTION riêng ngay sau "Phù hợp với ai".
   if (showSizeGuide) {
     bodyNodes.sizeGuide = (
-      <div key="sizeGuide" id="pdp-sizeguide" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
+      <div
+        key="sizeGuide"
+        id="pdp-sizeguide"
+        className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
+      >
         <section>
           <ProductSizeGuideSection section={sizeGuideSection} />
         </section>
@@ -370,7 +414,11 @@ export function ProductView({
   // widget tab gộp riêng mobile). `id` khớp với anchorItems ở trên để anchor nav mobile nhảy tới đúng chỗ.
   if (showSpecs) {
     bodyNodes.specifications = (
-      <div key="specifications" id="pdp-specifications" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
+      <div
+        key="specifications"
+        id="pdp-specifications"
+        className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
+      >
         <section>
           <PdpSectionHeading title={<Tr ns="Product" k="specifications" />} />
           <ProductSpecsTable viSpecsHtml={specsHtml} />
@@ -381,7 +429,11 @@ export function ProductView({
 
   if (showFaqs) {
     bodyNodes.faqs = (
-      <div key="faqs" id="pdp-faqs" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
+      <div
+        key="faqs"
+        id="pdp-faqs"
+        className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
+      >
         <section>
           <PdpSectionHeading title={<Tr ns="Product" k="faqs" />} />
           <ProductFaqs viFaqs={faqs} />
@@ -392,7 +444,11 @@ export function ProductView({
 
   if (showVideos) {
     bodyNodes.videos = (
-      <div key="videos" id="pdp-videos" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
+      <div
+        key="videos"
+        id="pdp-videos"
+        className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
+      >
         <section>
           <PdpSectionHeading title={<Tr ns="Product" k="videos" />} />
           <ProductVideosSection videos={videos} />
@@ -408,7 +464,11 @@ export function ProductView({
 
   if (trustCard) {
     bodyNodes.trust = (
-      <div key="trust" id="pdp-trust" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
+      <div
+        key="trust"
+        id="pdp-trust"
+        className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
+      >
         <section>{trustCard}</section>
       </div>
     );
@@ -417,7 +477,11 @@ export function ProductView({
   if (showAccessories) {
     // Cùng nhịp section như "Sản phẩm tương tự" — tiêu đề căn trái + vạch hairline, đồng đều toàn trang.
     bodyNodes.accessories = (
-      <div key="accessories" id="pdp-accessories" className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}>
+      <div
+        key="accessories"
+        id="pdp-accessories"
+        className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
+      >
         <section>
           <PdpSectionHeading title={<Tr ns="Product" k="crossSellTitle" />} />
           <LocalizedProductSwiper
@@ -440,7 +504,9 @@ export function ProductView({
     />
   ) : (
     <PurchaseSection
+      key={`${product.id}:${initialVariantId ?? "default"}`}
       product={product}
+      initialVariantId={initialVariantId}
       gallery={gallery}
       rating={rating}
       ratingCount={ratingCount}
@@ -455,10 +521,16 @@ export function ProductView({
           không ảnh hưởng; đặt đầu khối cho dễ thấy. */}
       <ReadingProgressBar />
       <div className="mx-auto w-full max-w-300 px-4">
-        <nav className="hidden py-8 text-a5-meta text-muted-foreground md:block" aria-label={tA11y("breadcrumbNav")}>
+        <nav
+          className="hidden py-8 text-a5-meta text-muted-foreground md:block"
+          aria-label={tA11y("breadcrumbNav")}
+        >
           <ol className="m-0 flex list-none flex-wrap items-center gap-1 p-0">
             <li>
-              <Link href={toHomePath(locale as "vi" | "en")} className="font-semibold hover:text-brand">
+              <Link
+                href={toHomePath(locale as "vi" | "en")}
+                className="font-semibold hover:text-brand"
+              >
                 <span property="name">{locale === "en" ? "Home" : "Trang chủ"}</span>
               </Link>
             </li>
@@ -488,14 +560,14 @@ export function ProductView({
 
         {!product.discontinued ? <MobileTrustLine product={product} /> : null}
 
-        <div id="pdp-overview">
-          {overview}
-        </div>
+        <div id="pdp-overview">{overview}</div>
 
         {product.discontinued ? (
           <div className="space-y-8 pt-8 md:space-y-10 md:pt-10">
             <DiscontinuedSuggestions products={discontinuedSuggestions} />
-            <p className="m-0 text-a5-meta leading-relaxed text-muted-foreground">{tProduct("safetyDisclaimer")}</p>
+            <p className="m-0 text-a5-meta leading-relaxed text-muted-foreground">
+              {tProduct("safetyDisclaimer")}
+            </p>
           </div>
         ) : null}
 

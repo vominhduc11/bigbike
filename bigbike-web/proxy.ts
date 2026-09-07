@@ -20,8 +20,9 @@ function handleI18nRequest(request: NextRequest): NextResponse {
     const requestedUrl = new URL(request.url);
     const locationUrl = new URL(location, request.url);
     if (
-      normalizeRedirectPath(locationUrl.pathname) !== normalizeRedirectPath(requestedUrl.pathname)
-      || locationUrl.search !== requestedUrl.search
+      normalizeRedirectPath(locationUrl.pathname) !==
+        normalizeRedirectPath(requestedUrl.pathname) ||
+      locationUrl.search !== requestedUrl.search
     ) {
       return response;
     }
@@ -32,10 +33,12 @@ function handleI18nRequest(request: NextRequest): NextResponse {
 }
 
 function hasExplicitLocalePrefix(pathname: string): boolean {
-  return pathname === "/vi"
-    || pathname.startsWith("/vi/")
-    || pathname === "/en"
-    || pathname.startsWith("/en/");
+  return (
+    pathname === "/vi" ||
+    pathname.startsWith("/vi/") ||
+    pathname === "/en" ||
+    pathname.startsWith("/en/")
+  );
 }
 
 function rewriteDefaultLocaleRequest(request: NextRequest): NextResponse {
@@ -49,6 +52,10 @@ function rewriteDefaultLocaleRequest(request: NextRequest): NextResponse {
     // `/sp/` is the Vietnamese canonical catalog URL, but it is also a
     // localized pathname in the next-intl registry. Use an internal alias so
     // the request remains a 200 instead of becoming a `/sp/` redirect loop.
+    destination.pathname = `/vi/internal${destination.pathname}`;
+  } else if (destination.pathname.startsWith("/product/")) {
+    // GMC variant queries render per request. Keep the internal Vietnamese
+    // rewrite away from next-intl's public pathname normalization, as for /sp/.
     destination.pathname = `/vi/internal${destination.pathname}`;
   } else {
     destination.pathname = `/vi${destination.pathname}`;
@@ -69,11 +76,11 @@ const configuredTtlSeconds = Number.parseInt(
   process.env.BIGBIKE_REDIRECT_CACHE_TTL_SECONDS ?? "30",
   10,
 );
-const TTL_SECONDS = Number.isFinite(configuredTtlSeconds) && configuredTtlSeconds > 0
-  ? configuredTtlSeconds
-  : 30;
+const TTL_SECONDS =
+  Number.isFinite(configuredTtlSeconds) && configuredTtlSeconds > 0 ? configuredTtlSeconds : 30;
 const REDIRECT_CACHE_CLEAR_PATH = "/_internal/redirect-cache/clear";
-const REDIRECT_CACHE_CLEAR_SECRET = process.env.REVALIDATE_SECRET ?? process.env.WEB_REVALIDATE_SECRET ?? "";
+const REDIRECT_CACHE_CLEAR_SECRET =
+  process.env.REVALIDATE_SECRET ?? process.env.WEB_REVALIDATE_SECRET ?? "";
 
 // Shared secret sent to backend internal endpoints.
 // Must match BIGBIKE_INTERNAL_TOKEN on the backend side.
@@ -85,9 +92,9 @@ const INTERNAL_TOKEN = process.env.INTERNAL_API_TOKEN ?? "";
 if (!INTERNAL_TOKEN && process.env.NODE_ENV === "production") {
   console.warn(
     "[proxy] INTERNAL_API_TOKEN is not set. Redirect lookups will silently fail because " +
-    "the backend requires authentication on /api/internal/** in production " +
-    "(bigbike.internal.allow-open defaults to false). " +
-    "Set INTERNAL_API_TOKEN to the same value as BIGBIKE_INTERNAL_TOKEN on the backend."
+      "the backend requires authentication on /api/internal/** in production " +
+      "(bigbike.internal.allow-open defaults to false). " +
+      "Set INTERNAL_API_TOKEN to the same value as BIGBIKE_INTERNAL_TOKEN on the backend.",
   );
 }
 
@@ -127,9 +134,7 @@ type RedirectLookup = {
 };
 
 type BackendLookupResult =
-  | { kind: "hit"; value: RedirectLookup }
-  | { kind: "miss" }
-  | { kind: "transient" };
+  { kind: "hit"; value: RedirectLookup } | { kind: "miss" } | { kind: "transient" };
 
 type ActiveRedirectItem = {
   id: string;
@@ -179,8 +184,8 @@ async function fetchFromBackend(path: string): Promise<BackendLookupResult> {
     if (response.status === 401 || response.status === 403) {
       console.error(
         `[proxy] Backend returned ${response.status} for redirect lookup on "${path}". ` +
-        "Verify INTERNAL_API_TOKEN matches BIGBIKE_INTERNAL_TOKEN on the backend. " +
-        "Redirects will not function until this is resolved."
+          "Verify INTERNAL_API_TOKEN matches BIGBIKE_INTERNAL_TOKEN on the backend. " +
+          "Redirects will not function until this is resolved.",
       );
       return { kind: "transient" };
     }
@@ -210,7 +215,7 @@ async function fetchActiveRedirectSnapshot(): Promise<ActiveRedirectSnapshot | n
       signal: AbortSignal.timeout(2_000),
     });
     if (!response.ok) return null;
-    const payload = await response.json() as unknown;
+    const payload = (await response.json()) as unknown;
     if (!Array.isArray(payload)) return null;
 
     const rules = new Map<string, RedirectLookup>();
@@ -277,13 +282,12 @@ async function lookupRedirect(path: string): Promise<RedirectLookup | null> {
   // WordPress source paths are stored without trailing slashes.
   // Next.js trailingSlash:true may normalize /old-path → /old-path/, so try
   // the de-trailed variant when the exact path yields no result.
-  const deslashed =
-    path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
+  const deslashed = path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
 
   const snapshot = await getActiveRedirectSnapshot();
   if (snapshot) {
-    const fresh = snapshot.rules.get(path) ??
-      (deslashed !== path ? snapshot.rules.get(deslashed) : undefined);
+    const fresh =
+      snapshot.rules.get(path) ?? (deslashed !== path ? snapshot.rules.get(deslashed) : undefined);
     if (fresh) l1Set(path, fresh);
     return fresh ?? null;
   }
@@ -310,8 +314,10 @@ function isLoop(currentPath: string, targetPath: string): boolean {
 }
 
 function isAllowedRedirectDestination(request: NextRequest, destination: URL): boolean {
-  return (destination.protocol === "http:" || destination.protocol === "https:")
-    && destination.hostname.toLowerCase() === request.nextUrl.hostname.toLowerCase();
+  return (
+    (destination.protocol === "http:" || destination.protocol === "https:") &&
+    destination.hostname.toLowerCase() === request.nextUrl.hostname.toLowerCase()
+  );
 }
 
 function legacyEnglishCanonicalPath(pathname: string): string | null {
@@ -332,9 +338,7 @@ function legacyHtmlLookupPath(pathname: string): string | null {
 }
 
 function legacyProductRewritePath(pathname: string, locale: "vi" | "en"): string | null {
-  const prefix = locale === "en"
-    ? "/en/sp/"
-    : pathname.startsWith("/vi/sp/") ? "/vi/sp/" : "/sp/";
+  const prefix = locale === "en" ? "/en/sp/" : pathname.startsWith("/vi/sp/") ? "/vi/sp/" : "/sp/";
   if (!pathname.startsWith(prefix) || !pathname.toLowerCase().endsWith(".html")) return null;
   const slug = pathname.slice(prefix.length, -".html".length);
   if (!slug || slug.includes("/")) return null;
@@ -390,7 +394,10 @@ function articleSlugFromPath(pathname: string): string | null {
   return slug.toLowerCase().endsWith(".html") ? slug.slice(0, -".html".length) : slug;
 }
 
-async function lookupPublicArticleExists(slug: string, locale: "vi" | "en"): Promise<boolean | null> {
+async function lookupPublicArticleExists(
+  slug: string,
+  locale: "vi" | "en",
+): Promise<boolean | null> {
   if (!slug) return null;
   const url = new URL(`/api/v1/articles/${encodeURIComponent(slug)}`, API_BASE_URL);
   url.searchParams.set("lang", locale);
@@ -456,8 +463,10 @@ function redirectResponse(
   // A managed target is either a root-relative path or an absolute http(s) URL
   // on this exact storefront host. Re-check here because legacy DB rows may not
   // have passed the current admin validator.
-  if (rule.target.startsWith("//")
-      || (!rule.target.startsWith("/") && !/^https?:\/\//i.test(rule.target))) {
+  if (
+    rule.target.startsWith("//") ||
+    (!rule.target.startsWith("/") && !/^https?:\/\//i.test(rule.target))
+  ) {
     return null;
   }
 
@@ -476,8 +485,10 @@ function redirectResponse(
   // Compare the final localized pathname with the real incoming pathname. This
   // catches query/fragment self-loops and locale aliases such as /en/product/…
   // that are not visible if only the stored Vietnamese lookup key is compared.
-  if (isLoop(request.nextUrl.pathname, destination.pathname)
-      || isLoop(currentPath, destination.pathname)) {
+  if (
+    isLoop(request.nextUrl.pathname, destination.pathname) ||
+    isLoop(currentPath, destination.pathname)
+  ) {
     return null;
   }
   if (!destination.search && request.nextUrl.search) {
@@ -507,26 +518,30 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   // Internal terminal SEO responses are rendered by an app route. Do not send
   // that rewrite back through locale routing or the redirect table.
   if (
-    pathname === "/seo/gone"
-    || pathname === "/seo/gone/"
-    || pathname === "/seo/not-found"
-    || pathname === "/seo/not-found/"
+    pathname === "/seo/gone" ||
+    pathname === "/seo/gone/" ||
+    pathname === "/seo/not-found" ||
+    pathname === "/seo/not-found/"
   ) {
     return NextResponse.next();
   }
   if (
-    pathname.startsWith("/legacy/")
-    || pathname.startsWith("/vi/legacy/")
-    || pathname.startsWith("/en/legacy/")
-    || pathname.startsWith("/vi/internal/")
-    || pathname.startsWith("/en/internal/")
+    pathname.startsWith("/legacy/") ||
+    pathname.startsWith("/vi/legacy/") ||
+    pathname.startsWith("/en/legacy/") ||
+    pathname.startsWith("/vi/internal/") ||
+    pathname.startsWith("/en/internal/")
   ) {
     return NextResponse.next();
   }
 
   const locale = pathname === "/en" || pathname.startsWith("/en/") ? "en" : "vi";
   const firstSegment = pathname.split("/").filter(Boolean)[0]?.toLowerCase();
-  if (firstSegment && /^[a-z]{2}$/.test(firstSegment) && !["vi", "en", "sp"].includes(firstSegment)) {
+  if (
+    firstSegment &&
+    /^[a-z]{2}$/.test(firstSegment) &&
+    !["vi", "en", "sp"].includes(firstSegment)
+  ) {
     return new NextResponse(null, {
       status: 404,
       headers: { "X-Robots-Tag": "noindex, nofollow" },
@@ -559,9 +574,22 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
   // Migrate the former unprefixed English URLs to the canonical /en namespace.
   const oldEnglishRoots = new Set([
-    "products", "categories", "news", "cart", "order", "orders", "account",
-    "login", "register", "forgot-password", "verify-email", "search", "contact",
-    "about", "policy", "guide",
+    "products",
+    "categories",
+    "news",
+    "cart",
+    "order",
+    "orders",
+    "account",
+    "login",
+    "register",
+    "forgot-password",
+    "verify-email",
+    "search",
+    "contact",
+    "about",
+    "policy",
+    "guide",
   ]);
   if (firstSegment && oldEnglishRoots.has(firstSegment) && locale === "vi") {
     const destination = request.nextUrl.clone();
@@ -569,11 +597,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(destination, 301);
   }
 
-  if (
-    pathname !== "/" &&
-    !pathname.endsWith("/") &&
-    !pathname.includes(".")
-  ) {
+  if (pathname !== "/" && !pathname.endsWith("/") && !pathname.includes(".")) {
     // Tra bảng redirect TRƯỚC khi chuẩn hoá dấu "/" cuối. 489 luật legacy lưu
     // sourcePattern không kèm "/" cuối; nếu 308 trước thì mỗi luật tốn 2 hop
     // (308 thêm "/" → 301 tới đích) thay vì 1. isLoop trong redirectResponse đã
@@ -582,9 +606,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     // translating to the neutral Vietnamese registry key. Otherwise an English
     // alias can inherit a Vietnamese intermediate and add a second hop.
     const localeRule = locale === "en" ? await lookupRedirect(pathname) : null;
-    const slashlessRule = localeRule ?? await lookupRedirect(
-      translatePath(pathname, "vi").split(/[?#]/)[0],
-    );
+    const slashlessRule =
+      localeRule ?? (await lookupRedirect(translatePath(pathname, "vi").split(/[?#]/)[0]));
     if (slashlessRule) {
       const response = redirectResponse(request, slashlessRule, pathname, locale);
       if (response) return response;
@@ -626,7 +649,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   // lets the redirect registry collapse English two-hop aliases directly to
   // their current English destination.
   const localeRule = locale === "en" ? await lookupRedirect(pathname) : null;
-  const rule = localeRule ?? await lookupRedirect(viPathname);
+  const rule = localeRule ?? (await lookupRedirect(viPathname));
   const isDefaultLocaleRoute = locale === "vi" && !hasExplicitLocalePrefix(pathname);
   if (!rule) {
     const brandSlug = brandSlugFromPath(pathname);
@@ -658,8 +681,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return handleI18nRequest(request);
   }
 
-  return redirectResponse(request, rule, viPathname, locale)
-    ?? (isDefaultLocaleRoute ? rewriteDefaultLocaleRequest(request) : handleI18nRequest(request));
+  return (
+    redirectResponse(request, rule, viPathname, locale) ??
+    (isDefaultLocaleRoute ? rewriteDefaultLocaleRequest(request) : handleI18nRequest(request))
+  );
 }
 
 export const config = {

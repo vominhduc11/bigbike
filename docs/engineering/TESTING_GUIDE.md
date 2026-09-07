@@ -10,6 +10,10 @@
 
 ## E2E test-data safety
 
+### Google Merchant source and landing pages
+
+The web unit suite covers complete pagination, upstream failures, eligibility, XML escaping, real SKU uniqueness, variant grouping, price/stock/image projection, exact variant links and fail-closed HTTP responses (`__tests__/merchant/`). Existing purchase/JSON-LD tests cover initial selection and customer changes. The read-only `e2e/google-merchant.e2e.ts` downloads the actual feed and checks variant landing pages at the canonical 375/768/1440 viewport sizes, including an unavailable variant. It checks server-rendered offers, selected options, visible price, canonical URL, runtime errors and horizontal overflow. It never edits shop products or creates carts/orders; Google account receipt/approval is a separate operational check.
+
 Các kịch bản Playwright chạy trên admin thật phải coi dữ liệu E2E là dữ liệu có vòng đời,
 không phải dữ liệu tạm chỉ được dọn ở bước cuối. Registry trong
 `scripts/ops/e2e-data-cleanup.mjs` chỉ nhận marker module cụ thể (`E2E_PRODUCT_*`,

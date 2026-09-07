@@ -18,11 +18,11 @@ import { toLegacyProductPath, toProductPath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 import type { Locale } from "@/i18n/locale";
 import { buildCategoryBreadcrumbCategories } from "@/lib/utils/product-breadcrumb";
+import { resolveLinkedVariant, withProductVariant } from "@/lib/utils/product-variant-link";
 
-// ISR on-demand: KHÔNG prebuild lúc build (sản phẩm là dữ liệu admin quản lý — không gọi
-// API lấy list khi build). Trả [] để mỗi trang sinh khi truy cập lần đầu rồi cache; tồn
-// kho/giá tươi qua revalidate theo tag product:{slug} (backend phát khi đổi giá/đặt đơn)
-// + lớp CSR (giỏ hàng, đánh giá). dynamicParams mặc định = true.
+// Không prebuild dữ liệu admin lúc build. HTML đọc query variant theo request;
+// dữ liệu sản phẩm giữ revalidation theo tag product:{slug}, còn buy-box có snapshot
+// cập nhật giá/tồn. Không dùng chung HTML đã chọn biến thể cho URL khác.
 export async function generateStaticParams() {
   return [];
 }
@@ -32,7 +32,10 @@ export async function generateStaticParams() {
 // Catalog API calls remain data-cached by their existing fetch tags.
 export const dynamic = "force-dynamic";
 
-type ProductDetailPageProps = { params: Promise<{ locale: string; slug: string }> };
+type ProductDetailPageProps = {
+  params: Promise<{ locale: string; slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
   const { slug, locale } = (await params) as Awaited<typeof params> & { locale: Locale };
@@ -75,7 +78,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   });
 }
 
-export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+export default async function ProductDetailPage({ params, searchParams }: ProductDetailPageProps) {
   const { slug, locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   if (!isValidSlug(slug)) notFound();
@@ -91,7 +94,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   if (product.discontinued) notFound();
   const preferredSlug = locale === "en" ? product.slugEn?.trim() || product.slug : product.slug;
   const canonicalPath = toProductPath(preferredSlug, locale);
-  if (slug !== preferredSlug) permanentRedirect(canonicalPath);
+  const selectedVariant = resolveLinkedVariant(product, (await searchParams)?.variant);
+  if (slug !== preferredSlug) {
+    permanentRedirect(
+      selectedVariant ? withProductVariant(canonicalPath, selectedVariant.id) : canonicalPath,
+    );
+  }
 
   const settings = settingsResult.data ?? [];
   const breadcrumbCategories = buildCategoryBreadcrumbCategories(
@@ -106,7 +114,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   // khai schema lỗi.
   // SEO sống ở server component; phần thân hiển thị do <ProductView> đảm nhiệm.
   const jsonLdBlocks: string[] = [
-    serializeJsonLd(buildProductJsonLd(product, canonicalPath)),
+    serializeJsonLd(buildProductJsonLd(product, canonicalPath, selectedVariant?.id)),
     serializeJsonLd(buildBreadcrumbJsonLd(product, canonicalPath, breadcrumbCategories)),
   ];
   if (faqs.length > 0) {
@@ -128,6 +136,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       <AltSlugRegistrar kind="product" viSlug={product.slug} enSlug={product.slugEn ?? null} />
       <ProductView
         product={product}
+        initialVariantId={selectedVariant?.id}
         settings={settings}
         breadcrumbCategories={breadcrumbCategories}
       />

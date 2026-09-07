@@ -1,4 +1,13 @@
-import type { Article, Brand, Category, CategorySummary, GalleryMedia, Product, ProductVariant, VideoAsset } from "@/lib/contracts/public";
+import type {
+  Article,
+  Brand,
+  Category,
+  CategorySummary,
+  GalleryMedia,
+  Product,
+  ProductVariant,
+  VideoAsset,
+} from "@/lib/contracts/public";
 import {
   normalizeStorefrontUrl,
   toArticleListPath,
@@ -12,13 +21,19 @@ import {
   toProductPath,
 } from "@/lib/utils/routes";
 import { stripHtmlToText } from "@/lib/utils/text";
+import { derivePricing } from "@/lib/pricing";
+import { resolveMediaUrl } from "@/lib/utils/format";
+import { resolveLinkedVariant, withProductVariant } from "@/lib/utils/product-variant-link";
 
 type JsonLdObject = Record<string, unknown>;
 type SeoLocale = "vi" | "en";
 
 const DEFAULT_ORG_LOGO_PATH = "/wp/logo.png";
 
-function buildPublisher(siteName?: string, logoPath = DEFAULT_ORG_LOGO_PATH): JsonLdObject | undefined {
+function buildPublisher(
+  siteName?: string,
+  logoPath = DEFAULT_ORG_LOGO_PATH,
+): JsonLdObject | undefined {
   if (!siteName) {
     return undefined;
   }
@@ -40,9 +55,15 @@ export function serializeJsonLd(data: JsonLdObject): string {
     .replace(/&/g, "\\u0026");
 }
 
-export function buildProductJsonLd(product: Product, canonicalPathOverride?: string): JsonLdObject {
+export function buildProductJsonLd(
+  product: Product,
+  canonicalPathOverride?: string,
+  selectedVariantId?: string,
+): JsonLdObject {
   const locale = localeFromPath(canonicalPathOverride);
-  const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? product.seo?.canonicalUrl ?? toProductPath(product.slug, locale));
+  const canonicalUrl = toCanonicalUrl(
+    canonicalPathOverride ?? product.seo?.canonicalUrl ?? toProductPath(product.slug, locale),
+  );
   const images = collectProductImages(product);
   const primaryCategory = product.category ?? product.categories?.[0];
   const common = {
@@ -64,7 +85,18 @@ export function buildProductJsonLd(product: Product, canonicalPathOverride?: str
 
   // Historical/discontinued pages remain a single historical product at their
   // current address. They must not be recast as a saleable ProductGroup.
-  const variants = (product.variants ?? []).filter((variant) => Boolean(variant.id) && Boolean(variant.name?.trim()));
+  const variants = (product.variants ?? []).filter(
+    (variant) => Boolean(variant.id) && Boolean(variant.name?.trim()),
+  );
+  const selectedVariant = resolveLinkedVariant(product, selectedVariantId);
+  if (selectedVariant) {
+    return {
+      ...common,
+      ...buildVariantProductJsonLd(selectedVariant, product, canonicalUrl),
+      inProductGroupWithID: product.id,
+      isVariantOf: { "@type": "ProductGroup", productGroupID: product.id, name: product.name },
+    };
+  }
   if (product.discontinued || variants.length === 0) {
     return {
       ...common,
@@ -77,9 +109,11 @@ export function buildProductJsonLd(product: Product, canonicalPathOverride?: str
   return {
     ...common,
     "@type": "ProductGroup",
-    productGroupID: product.sku ?? product.id,
+    productGroupID: product.id,
     variesBy: buildVariesBy(variants),
-    hasVariant: variants.map((variant) => buildVariantProductJsonLd(variant, product, canonicalUrl)),
+    hasVariant: variants.map((variant) =>
+      buildVariantProductJsonLd(variant, product, canonicalUrl),
+    ),
   };
 }
 
@@ -108,7 +142,9 @@ export function buildArticleJsonLd(
   canonicalPathOverride?: string,
 ): JsonLdObject {
   const locale = localeFromPath(canonicalPathOverride);
-  const canonicalUrl = toCanonicalUrl(canonicalPathOverride ?? article.seo?.canonicalUrl ?? toArticlePath(article.slug, locale));
+  const canonicalUrl = toCanonicalUrl(
+    canonicalPathOverride ?? article.seo?.canonicalUrl ?? toArticlePath(article.slug, locale),
+  );
   const images = article.coverImage?.url ? [toCanonicalUrl(article.coverImage.url)] : [];
   const authorName = article.authorName?.trim();
 
@@ -168,7 +204,14 @@ export function buildBreadcrumbJsonLd(
     items.push({
       position: items.length + 1,
       name: primaryCategory.name,
-      item: toCanonicalUrl(toCategoryPath(locale === "en" ? primaryCategory.slugEn?.trim() || primaryCategory.slug : primaryCategory.slug, locale)),
+      item: toCanonicalUrl(
+        toCategoryPath(
+          locale === "en"
+            ? primaryCategory.slugEn?.trim() || primaryCategory.slug
+            : primaryCategory.slug,
+          locale,
+        ),
+      ),
     });
   }
 
@@ -201,7 +244,10 @@ function isPublicProductCategory(
   );
 }
 
-export function buildArticleBreadcrumbJsonLd(article: Article, canonicalPathOverride?: string): JsonLdObject {
+export function buildArticleBreadcrumbJsonLd(
+  article: Article,
+  canonicalPathOverride?: string,
+): JsonLdObject {
   const locale = localeFromPath(canonicalPathOverride);
   const items: Array<{ position: number; name: string; item: string }> = [
     {
@@ -259,7 +305,10 @@ export function buildCategoryBreadcrumbJsonLd(
       position: 3,
       name: parent.name,
       item: toCanonicalUrl(
-        toCategoryPath(locale === "en" ? parent.slugEn?.trim() || parent.slug : parent.slug, locale),
+        toCategoryPath(
+          locale === "en" ? parent.slugEn?.trim() || parent.slug : parent.slug,
+          locale,
+        ),
       ),
     });
   }
@@ -270,7 +319,9 @@ export function buildCategoryBreadcrumbJsonLd(
     name: category.name,
     item: toCanonicalUrl(
       normalizeStorefrontUrl(
-        canonicalPathOverride ?? category.seo?.canonicalUrl ?? toCategoryPath(category.slug, locale),
+        canonicalPathOverride ??
+          category.seo?.canonicalUrl ??
+          toCategoryPath(category.slug, locale),
       ),
     ),
   });
@@ -282,7 +333,10 @@ export function buildCategoryBreadcrumbJsonLd(
   };
 }
 
-export function buildBrandBreadcrumbJsonLd(brand: Brand, canonicalPathOverride?: string): JsonLdObject {
+export function buildBrandBreadcrumbJsonLd(
+  brand: Brand,
+  canonicalPathOverride?: string,
+): JsonLdObject {
   const locale = localeFromPath(canonicalPathOverride);
   return {
     "@context": "https://schema.org",
@@ -310,7 +364,11 @@ export function buildBrandBreadcrumbJsonLd(brand: Brand, canonicalPathOverride?:
   };
 }
 
-export function buildWebSiteJsonLd(siteName: string, searchPath = "/tim-kiem/", locale: SeoLocale = "vi"): JsonLdObject {
+export function buildWebSiteJsonLd(
+  siteName: string,
+  searchPath = "/tim-kiem/",
+  locale: SeoLocale = "vi",
+): JsonLdObject {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -325,7 +383,11 @@ export function buildWebSiteJsonLd(siteName: string, searchPath = "/tim-kiem/", 
   };
 }
 
-export function buildOrganizationJsonLd(siteName: string, logoPath: string, locale: SeoLocale = "vi"): JsonLdObject {
+export function buildOrganizationJsonLd(
+  siteName: string,
+  logoPath: string,
+  locale: SeoLocale = "vi",
+): JsonLdObject {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -386,7 +448,10 @@ export function buildLocalBusinessJsonLd(
  * còn lại là số nhà + đường + phường. Không có dấu phẩy thì giữ nguyên làm streetAddress.
  */
 function toPostalAddress(address: string): JsonLdObject {
-  const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
+  const parts = address
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
   const result: JsonLdObject = { "@type": "PostalAddress", addressCountry: "VN" };
   if (parts.length >= 2) {
     result.streetAddress = parts.slice(0, -1).join(", ");
@@ -399,7 +464,13 @@ function toPostalAddress(address: string): JsonLdObject {
 
 // Chỉ số 0 = Thứ Hai … 6 = Chủ Nhật, khớp cách đánh số T2…T7/CN của tiếng Việt.
 const SCHEMA_DAY_NAMES = [
-  "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
 ];
 
 function vietnameseDayIndex(token: string): number | null {
@@ -426,9 +497,7 @@ function parseDayTokens(text: string): string[] {
 
 function parseOpenCloseTimes(text: string): { opens: string; closes: string } | null {
   // Bỏ phần ký hiệu ngày trước khi dò giờ, nếu không "T7:" sẽ bị đọc nhầm thành 07:00.
-  const timeText = text
-    .replace(/\b(T[2-7]|CN)\b\s*[-–—]?\s*/gi, "")
-    .replace(/^\s*:\s*/, "");
+  const timeText = text.replace(/\b(T[2-7]|CN)\b\s*[-–—]?\s*/gi, "").replace(/^\s*:\s*/, "");
   const matches = [...timeText.matchAll(/(\d{1,2})\s*(?:h|:|giờ)\s*(\d{2})?/gi)];
   if (matches.length < 2) return null;
   const format = (match: RegExpMatchArray): string | null => {
@@ -449,7 +518,9 @@ function parseOpenCloseTimes(text: string): { opens: string; closes: string } | 
  * OpeningHoursSpecification. Dòng nào thiếu ngày hoặc thiếu giờ (ví dụ
  * "Lễ / Tết: nghỉ có thông báo") thì bỏ qua thay vì đoán.
  */
-function buildOpeningHoursSpecification(lines: (string | null | undefined)[] | undefined): JsonLdObject[] {
+function buildOpeningHoursSpecification(
+  lines: (string | null | undefined)[] | undefined,
+): JsonLdObject[] {
   return (lines ?? [])
     .map((line): JsonLdObject | null => {
       const text = (line ?? "").trim();
@@ -504,16 +575,8 @@ function buildOffer(
   canonicalUrl: string,
   discontinued = false,
 ): JsonLdObject | undefined {
-  const sale = priceSource?.salePrice;
-  const retail = priceSource?.retailPrice;
-  const price =
-    typeof sale === "number" && Number.isFinite(sale)
-      ? sale
-      : typeof retail === "number" && Number.isFinite(retail)
-        ? retail
-        : null;
-
-  if (price === null) {
+  const price = derivePricing(priceSource).current;
+  if (!Number.isFinite(price) || price <= 0) {
     return undefined;
   }
 
@@ -529,23 +592,33 @@ function buildOffer(
   };
 }
 
-function buildVariantProductJsonLd(variant: ProductVariant, product: Product, canonicalUrl: string): JsonLdObject {
+function buildVariantProductJsonLd(
+  variant: ProductVariant,
+  product: Product,
+  canonicalUrl: string,
+): JsonLdObject {
   const price = variant.price ?? product.price;
   const stockState = variant.isAvailable ? "IN_STOCK" : "OUT_OF_STOCK";
+  const variantUrl = withProductVariant(canonicalUrl, variant.id);
+  const image = resolveMediaUrl(variant.image?.url ?? product.image?.url);
   return {
     "@type": "Product",
     "@id": `${canonicalUrl}#variant-${encodeURIComponent(variant.id)}`,
     name: `${product.name} - ${variant.name}`,
     sku: variant.sku ?? undefined,
-    image: variant.image?.url ? [toCanonicalUrl(variant.image.url)] : undefined,
-    offers: buildOffer(price, stockState, canonicalUrl),
+    url: variantUrl,
+    image: image ? [toCanonicalUrl(image)] : undefined,
+    offers: buildOffer(price, stockState, variantUrl),
   };
 }
 
 function buildVariesBy(variants: ProductVariant[]): string[] | undefined {
   const fields = new Set<string>();
   for (const option of variants.flatMap((variant) => variant.options ?? [])) {
-    const normalized = option.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const normalized = option.name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
     if (/(color|colour|mau)/.test(normalized)) fields.add("https://schema.org/color");
     if (/(size|kich co)/.test(normalized)) fields.add("https://schema.org/size");
   }
@@ -640,7 +713,9 @@ export function buildVideoObjectsJsonLd(
 ): JsonLdObject[] {
   const product = Array.isArray(productOrVideos) ? suppliedProduct : productOrVideos;
   if (!product) return [];
-  const videos = Array.isArray(productOrVideos) ? productOrVideos : collectDisplayedProductVideos(product);
+  const videos = Array.isArray(productOrVideos)
+    ? productOrVideos
+    : collectDisplayedProductVideos(product);
   const canonicalUrl = toCanonicalUrl(product.seo?.canonicalUrl ?? toProductPath(product.slug));
   const seenIds = new Set<string>();
   const objects: JsonLdObject[] = [];
@@ -653,7 +728,8 @@ export function buildVideoObjectsJsonLd(
     const uploadDate = video.uploadedOn?.trim() || product.createdAt?.trim();
     const embedUrl = url ? toVideoEmbedUrl(url) : undefined;
     const thumbnailUrl = video.thumbnail?.url?.trim() || youTubeThumbnailUrl(url);
-    if (!id || seenIds.has(id) || !url || !name || !description || !uploadDate || !thumbnailUrl) continue;
+    if (!id || seenIds.has(id) || !url || !name || !description || !uploadDate || !thumbnailUrl)
+      continue;
     seenIds.add(id);
 
     objects.push({
@@ -679,7 +755,9 @@ export function buildVideoObjectsJsonLd(
 
 function collectDisplayedProductVideos(product: Product): VideoAsset[] {
   const galleryVideos = (product.gallery ?? [])
-    .filter((media): media is GalleryMedia => media?.mediaType === "video" && Boolean(media.videoUrl))
+    .filter(
+      (media): media is GalleryMedia => media?.mediaType === "video" && Boolean(media.videoUrl),
+    )
     .map((media) => ({
       id: media.id,
       url: media.videoUrl ?? undefined,
@@ -696,7 +774,9 @@ function collectDisplayedProductVideos(product: Product): VideoAsset[] {
 }
 
 function youTubeThumbnailUrl(url: string | undefined): string | undefined {
-  const id = url?.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([\w-]{11})/)?.[1];
+  const id = url?.match(
+    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([\w-]{11})/,
+  )?.[1];
   return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : undefined;
 }
 
@@ -709,15 +789,18 @@ function toIsoDuration(seconds: number | null | undefined): string | undefined {
 }
 
 function toVideoEmbedUrl(url: string): string | undefined {
-  const yt = url.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
-  );
-  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?enablejsapi=1&playsinline=1&rel=0`;
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/);
+  if (yt)
+    return `https://www.youtube-nocookie.com/embed/${yt[1]}?enablejsapi=1&playsinline=1&rel=0`;
   const tt = url.match(
     /(?:www\.|m\.)?tiktok\.com\/(?:@[\w.-]+\/video\/|video\/|v\/|embed\/v2\/|embed\/)(\d{6,30})/,
   );
   if (tt) return `https://www.tiktok.com/embed/v2/${tt[1]}`;
-  if (/^https?:\/\/(?:www\.|m\.|web\.)?facebook\.com\/(?:[^?#]*\/videos\/|reel\/|watch\/?(?:\?|$)|[^?#]*video\.php)/i.test(url)) {
+  if (
+    /^https?:\/\/(?:www\.|m\.|web\.)?facebook\.com\/(?:[^?#]*\/videos\/|reel\/|watch\/?(?:\?|$)|[^?#]*video\.php)/i.test(
+      url,
+    )
+  ) {
     return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`;
   }
   return undefined;

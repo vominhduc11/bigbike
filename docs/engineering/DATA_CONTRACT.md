@@ -434,6 +434,27 @@ Evidence: `V2__create_admin_auth_tables.sql`, `V49__create_roles_permissions_tab
 
 > **Removed (2026-06-23).** The Return (RMA) and Refund data model — `returns` / `return_items` / `return_history` tables, the `refund_amount` / `refund_reason` / `refunded_at` columns on `orders` & `payments`, and the `REFUNDED` value on order status — was dropped. Old REFUNDED orders were migrated to CANCELLED.
 
+## Google Merchant feed projection (2026-09-07)
+
+Tên thuộc tính màu/kích cỡ trong `variant_option` được chuẩn hóa thành `Màu sắc`/`Kích cỡ` theo cùng nhận diện với `color`/`size`; giá trị lấy nguyên từ dữ liệu đã lưu. Cách viết `Size`/`Kích cỡ` hoặc `màu sắc`/`Màu sắc` không tạo hai thuộc tính Google khác nhau. Thuộc tính khác giữ tên dữ liệu. Không suy diễn thuộc tính còn thiếu từ SKU hoặc tên ảnh.
+
+Không thêm bảng/cột hoặc thay đổi Product DTO. `/google-merchant.xml` chiếu các trường Product/Variant công khai sang định dạng Google:
+
+| Google field | Dữ liệu BigBike |
+|---|---|
+| `id` | `product.sku` cho hàng không biến thể; `variant.sku` cho mỗi biến thể |
+| `item_group_id`, `item_group_title` | ID ổn định và tên sản phẩm cha, chỉ với biến thể; schema ProductGroup cũng dùng cùng ID này. SKU cha không duy nhất nên không làm khóa nhóm |
+| `title`, `description` | Tên sản phẩm + tên biến thể; mô tả văn bản từ nội dung đã lưu (fallback tên khi trống) |
+| `link` | URL canonical VI, thêm `?variant={id}` khi là biến thể |
+| `image_link`, `additional_image_link` | Ảnh biến thể/gallery hoặc ảnh sản phẩm/gallery; URL tuyệt đối, ảnh nội bộ hiện hữu |
+| `price`, `sale_price` | Giá niêm yết/sale hợp lệ, cùng `derivePricing` trên web; đơn vị VND |
+| `availability` | `isAvailable` của biến thể, hoặc `stockState` của sản phẩm không biến thể |
+| `brand`, `product_type` | Thương hiệu và danh mục shop đã lưu; không giả làm mã Google product category |
+| `variant_option`, `color`, `size` | Thuộc tính đã lưu, không suy đoán từ ảnh/tên hàng |
+| `gender` | Từ `genders` nếu có: chỉ Nam → male, chỉ Nữ → female, cả hai → unisex theo từ vựng Google; không thay đổi từ vựng admin |
+
+Nguồn không xuất dữ liệu tài khoản, khách hàng, đơn hàng, cấu hình nội bộ hoặc bí mật. Quy tắc loại hàng, SKU và lỗi nguồn: `GMC_RULE_002`–`005`.
+
 ## Inventory Model
 
 > **Serial-number tracking was REMOVED platform-wide (2026-06-23, V259).** `product_serials`, `order_line_item_serials`, `return_item_serials`, `stock_movement_serials`, the `track_serials` columns, the serial→quantity sync trigger (`fn_sync_qty_from_serial_lifecycle`), and the `serial_inventory_only` / `reservation_ttl_minutes` settings are all dropped.

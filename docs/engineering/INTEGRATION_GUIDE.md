@@ -165,6 +165,14 @@ sẽ kiểm tra trước khi cho nó nằm trong danh sách cuối.
 
 Status: `OWNER_CONFIRMED_2026-08-31; CONFIRMED_FROM_CODE_AND_TEST` — `HOME_VIDEO_RULE_001`–`003`.
 
+## Google Merchant Center — scheduled XML feed (2026-09-07)
+
+Nguồn public `GET /google-merchant.xml` được dựng bởi `bigbike-web` từ Catalog API hiện có. Các lần lấy danh mục/detail cho nguồn dùng dữ liệu mới, không dùng cache trang sản phẩm. Không có tài khoản Google, khóa service account hay Merchant API trong server; GMC được cấu hình một lần để lấy URL theo lịch của tài khoản. Biến môi trường API/site hiện hữu tiếp tục quyết định backend và domain, không thêm URL hoặc secret hardcode.
+
+Mỗi variant có link chọn sẵn đúng lựa chọn, SKU riêng và cùng nhóm với sản phẩm cha. Dữ liệu đáp ứng `GMC_RULE_001`–`005`; lỗi nguồn trả 503 để tránh xuất bản một danh mục thiếu. Hàng tạm hết vẫn được gửi với trạng thái hết; nháp/thùng rác/ngừng bán/VI noindex bị loại khỏi nguồn. Việc một mặt hàng đã được Google nhận/duyệt chỉ được kiểm chứng bên GMC.
+
+Xem `API_CONTRACT.md` §Google Merchant product feed, `DATA_CONTRACT.md` §Google Merchant feed projection và [GMC_SETUP.md](GMC_SETUP.md). Feed không thay thế cấu hình tài khoản Google về xác minh website, quốc gia bán, giao hàng/đổi trả hoặc xử lý sản phẩm bị từ chối.
+
 ## Web Revalidation (ISR on-demand)
 
 `WebRevalidationService` POSTs cache tags to the Next.js web app's `POST /api/revalidate`

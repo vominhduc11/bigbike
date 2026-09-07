@@ -71,7 +71,7 @@ describe("buildProductJsonLd", () => {
     expect(ld["@context"]).toBe("https://schema.org");
     expect(ld["@type"]).toBe("ProductGroup");
     expect(ld.name).toBe("Áo giáp mô tô ABC");
-    expect(ld.productGroupID).toBe("SKU-001");
+    expect(ld.productGroupID).toBe("p1");
     expect(ld.brand).toEqual({ "@type": "Brand", name: "ABC" });
     expect(ld.url).toContain("/product/ao-giap-moto-abc/");
 
@@ -89,11 +89,11 @@ describe("buildProductJsonLd", () => {
       "@type": "Product",
       sku: "SKU-RED",
       offers: {
-      "@type": "Offer",
-      price: 800_000,
-      priceCurrency: "VND",
-      availability: "https://schema.org/InStock",
-      itemCondition: "https://schema.org/NewCondition",
+        "@type": "Offer",
+        price: 800_000,
+        priceCurrency: "VND",
+        availability: "https://schema.org/InStock",
+        itemCondition: "https://schema.org/NewCondition",
       },
     });
 
@@ -122,31 +122,61 @@ describe("buildProductJsonLd", () => {
   });
 
   it("khai từng giá và trạng thái còn/hết hàng theo đúng mẫu khách chọn, không tạo trạng thái sắp hết", () => {
-    const ld = obj(buildProductJsonLd(makeProduct({
-      variants: [
-        {
-          id: "red", sku: "SKU-RED", name: "Đỏ", options: [{ name: "Màu", value: "Đỏ" }],
-          price: { retailPrice: 900_000, salePrice: 750_000, currency: "VND" }, stockState: "IN_STOCK", isAvailable: true,
-        },
-        {
-          id: "blue", sku: "SKU-BLUE", name: "Xanh", options: [{ name: "Màu", value: "Xanh" }],
-          price: { retailPrice: 1_100_000, currency: "VND" }, stockState: "OUT_OF_STOCK", isAvailable: false,
-        },
-      ],
-    })));
+    const ld = obj(
+      buildProductJsonLd(
+        makeProduct({
+          variants: [
+            {
+              id: "red",
+              sku: "SKU-RED",
+              name: "Đỏ",
+              options: [{ name: "Màu", value: "Đỏ" }],
+              price: { retailPrice: 900_000, salePrice: 750_000, currency: "VND" },
+              stockState: "IN_STOCK",
+              isAvailable: true,
+            },
+            {
+              id: "blue",
+              sku: "SKU-BLUE",
+              name: "Xanh",
+              options: [{ name: "Màu", value: "Xanh" }],
+              price: { retailPrice: 1_100_000, currency: "VND" },
+              stockState: "OUT_OF_STOCK",
+              isAvailable: false,
+            },
+          ],
+        }),
+      ),
+    );
     const variants = arr(ld.hasVariant);
 
-    expect(obj(variants[0].offers)).toMatchObject({ price: 750_000, availability: "https://schema.org/InStock" });
-    expect(obj(variants[1].offers)).toMatchObject({ price: 1_100_000, availability: "https://schema.org/OutOfStock" });
+    expect(obj(variants[0].offers)).toMatchObject({
+      price: 750_000,
+      availability: "https://schema.org/InStock",
+    });
+    expect(obj(variants[1].offers)).toMatchObject({
+      price: 1_100_000,
+      availability: "https://schema.org/OutOfStock",
+    });
     expect(JSON.stringify(ld)).not.toContain("LimitedAvailability");
   });
 
   it("KHÔNG khai aggregateRating khi chưa có review thật (chống khai khống #23)", () => {
-    expect(obj(buildProductJsonLd(makeProduct({ rating: 0, ratingCount: 0 }))).aggregateRating).toBeUndefined();
-    expect(obj(buildProductJsonLd(makeProduct({ rating: 4, ratingCount: 0 }))).aggregateRating).toBeUndefined();
-    expect(obj(buildProductJsonLd(makeProduct({ rating: null, ratingCount: 18 }))).aggregateRating).toBeUndefined();
-    expect(obj(buildProductJsonLd(makeProduct({ rating: 7, ratingCount: 18 }))).aggregateRating).toBeUndefined();
-    expect(obj(buildProductJsonLd(makeProduct({ ratingCount: null }))).aggregateRating).toBeUndefined();
+    expect(
+      obj(buildProductJsonLd(makeProduct({ rating: 0, ratingCount: 0 }))).aggregateRating,
+    ).toBeUndefined();
+    expect(
+      obj(buildProductJsonLd(makeProduct({ rating: 4, ratingCount: 0 }))).aggregateRating,
+    ).toBeUndefined();
+    expect(
+      obj(buildProductJsonLd(makeProduct({ rating: null, ratingCount: 18 }))).aggregateRating,
+    ).toBeUndefined();
+    expect(
+      obj(buildProductJsonLd(makeProduct({ rating: 7, ratingCount: 18 }))).aggregateRating,
+    ).toBeUndefined();
+    expect(
+      obj(buildProductJsonLd(makeProduct({ ratingCount: null }))).aggregateRating,
+    ).toBeUndefined();
   });
 
   // Chặn hồi quy: Google chỉ hỗ trợ rich result ưu/nhược điểm cho trang đánh giá
@@ -192,19 +222,26 @@ describe("buildBreadcrumbJsonLd", () => {
   });
 
   it("bỏ qua danh mục 'chua-phan-loai' khi không có danh mục hợp lệ", () => {
-    const ld = obj(buildBreadcrumbJsonLd(
-      makeProduct({ category: { id: "c0", slug: "chua-phan-loai", name: "Chưa phân loại" } }),
-    ));
+    const ld = obj(
+      buildBreadcrumbJsonLd(
+        makeProduct({ category: { id: "c0", slug: "chua-phan-loai", name: "Chưa phân loại" } }),
+      ),
+    );
     expect(arr(ld.itemListElement).map((i) => i.name)).toEqual(["Trang chủ", "Áo giáp mô tô ABC"]);
   });
 
   it("giữ đủ danh mục cha và con theo đúng thứ tự đang hiển thị", () => {
-    const ld = obj(buildBreadcrumbJsonLd(makeProduct(), "/product/ao-giap-moto-abc/", [
-      { id: "parent", slug: "bao-ho", name: "Đồ bảo hộ" },
-      { id: "child", slug: "ao-giap", name: "Áo giáp" },
-    ]));
+    const ld = obj(
+      buildBreadcrumbJsonLd(makeProduct(), "/product/ao-giap-moto-abc/", [
+        { id: "parent", slug: "bao-ho", name: "Đồ bảo hộ" },
+        { id: "child", slug: "ao-giap", name: "Áo giáp" },
+      ]),
+    );
     expect(arr(ld.itemListElement).map((i) => i.name)).toEqual([
-      "Trang chủ", "Đồ bảo hộ", "Áo giáp", "Áo giáp mô tô ABC",
+      "Trang chủ",
+      "Đồ bảo hộ",
+      "Áo giáp",
+      "Áo giáp mô tô ABC",
     ]);
   });
 });
@@ -226,18 +263,22 @@ describe("article and category structured data", () => {
     const withAuthor = obj(buildArticleJsonLd(article, "BigBike"));
     expect(withAuthor.author).toEqual({ "@type": "Person", name: "Nguyễn Văn A" });
     expect(withAuthor.image).toEqual([expect.stringMatching(/^https?:\/\//)]);
-    expect(obj(buildArticleJsonLd({ ...article, authorName: "  " }, "BigBike")).author).toBeUndefined();
+    expect(
+      obj(buildArticleJsonLd({ ...article, authorName: "  " }, "BigBike")).author,
+    ).toBeUndefined();
   });
 
   it("chỉ liệt kê sản phẩm của trang hiện tại và tiếp tục vị trí qua trang", () => {
-    const ld = obj(buildCategoryCollectionJsonLd(
-      { id: "c1", slug: "ao-giap", name: "Áo giáp" } as Category,
-      [makeProduct({ slug: "sp-1" }), makeProduct({ slug: "sp-2" })],
-      2,
-      12,
-      "/danh-muc/ao-giap/?page=2",
-      "<p>Áo giáp <strong>chính hãng</strong></p>",
-    ));
+    const ld = obj(
+      buildCategoryCollectionJsonLd(
+        { id: "c1", slug: "ao-giap", name: "Áo giáp" } as Category,
+        [makeProduct({ slug: "sp-1" }), makeProduct({ slug: "sp-2" })],
+        2,
+        12,
+        "/danh-muc/ao-giap/?page=2",
+        "<p>Áo giáp <strong>chính hãng</strong></p>",
+      ),
+    );
     expect(ld["@type"]).toBe("CollectionPage");
     expect(obj(ld.mainEntity).numberOfItems).toBe(2);
     expect(arr(obj(ld.mainEntity).itemListElement).map((item) => item.position)).toEqual([13, 14]);
@@ -266,10 +307,12 @@ describe("English JSON-LD locale", () => {
 
 describe("buildFaqPageJsonLd", () => {
   it("sinh FAQPage với Question/Answer", () => {
-    const ld = obj(buildFaqPageJsonLd([
-      { question: "Bảo hành bao lâu?", answer: "12 tháng." },
-      { question: "Có ship không?", answer: "Toàn quốc." },
-    ]));
+    const ld = obj(
+      buildFaqPageJsonLd([
+        { question: "Bảo hành bao lâu?", answer: "12 tháng." },
+        { question: "Có ship không?", answer: "Toàn quốc." },
+      ]),
+    );
     expect(ld["@type"]).toBe("FAQPage");
     expect(ld.mainEntity).toHaveLength(2);
     expect(arr(ld.mainEntity)[0]).toMatchObject({
@@ -302,7 +345,9 @@ describe("buildVideoObjectsJsonLd", () => {
     expect(ld["@id"]).toContain("#video-video-youtube-1");
     expect(ld.name).toBe("Đánh giá");
     expect(ld.description).toBe("Cận cảnh áo giáp.");
-    expect(ld.embedUrl).toBe("https://www.youtube-nocookie.com/embed/abcdefghijk?enablejsapi=1&playsinline=1&rel=0");
+    expect(ld.embedUrl).toBe(
+      "https://www.youtube-nocookie.com/embed/abcdefghijk?enablejsapi=1&playsinline=1&rel=0",
+    );
     expect(ld.contentUrl).toBeUndefined();
     expect(ld.thumbnailUrl).toEqual(["https://cdn/thumb.jpg"]);
     expect(ld.uploadDate).toBe("2026-06-01T00:00:00Z");
@@ -310,15 +355,22 @@ describe("buildVideoObjectsJsonLd", () => {
   });
 
   it("video tải lên → contentUrl, thời lượng ISO 8601 và ngày đăng thật", () => {
-    const ld = obj(buildVideoObjectsJsonLd([{
-      id: "video-upload-1",
-      url: "https://cdn/clip.mp4",
-      title: "Clip",
-      description: "Video quay cận cảnh sản phẩm.",
-      thumbnail: { url: "https://cdn/clip.jpg" },
-      durationSeconds: 125,
-      uploadedOn: "2026-08-20",
-    }], product)[0]);
+    const ld = obj(
+      buildVideoObjectsJsonLd(
+        [
+          {
+            id: "video-upload-1",
+            url: "https://cdn/clip.mp4",
+            title: "Clip",
+            description: "Video quay cận cảnh sản phẩm.",
+            thumbnail: { url: "https://cdn/clip.jpg" },
+            durationSeconds: 125,
+            uploadedOn: "2026-08-20",
+          },
+        ],
+        product,
+      )[0],
+    );
     expect(ld.embedUrl).toBeUndefined();
     expect(ld.contentUrl).toBe("https://cdn/clip.mp4");
     expect(ld.thumbnailUrl).toEqual(["https://cdn/clip.jpg"]);
@@ -329,42 +381,64 @@ describe("buildVideoObjectsJsonLd", () => {
   it("bỏ qua video thiếu mã, mô tả hoặc ảnh đại diện đúng thay vì mượn ảnh/mô tả sản phẩm", () => {
     const bare = makeProduct({ image: undefined, gallery: [] });
     expect(buildVideoObjectsJsonLd([{ title: "Không URL" }], bare)).toEqual([]);
-    expect(buildVideoObjectsJsonLd([{
-      id: "missing-description",
-      url: "https://cdn/x.mp4",
-      title: "Thiếu mô tả",
-      thumbnail: { url: "https://cdn/x.jpg" },
-    }], bare)).toEqual([]);
-    expect(buildVideoObjectsJsonLd([{
-      id: "missing-thumbnail",
-      url: "https://cdn/x.mp4",
-      title: "Thiếu ảnh",
-      description: "Có mô tả nhưng không có ảnh riêng.",
-    }], product)).toEqual([]);
+    expect(
+      buildVideoObjectsJsonLd(
+        [
+          {
+            id: "missing-description",
+            url: "https://cdn/x.mp4",
+            title: "Thiếu mô tả",
+            thumbnail: { url: "https://cdn/x.jpg" },
+          },
+        ],
+        bare,
+      ),
+    ).toEqual([]);
+    expect(
+      buildVideoObjectsJsonLd(
+        [
+          {
+            id: "missing-thumbnail",
+            url: "https://cdn/x.mp4",
+            title: "Thiếu ảnh",
+            description: "Có mô tả nhưng không có ảnh riêng.",
+          },
+        ],
+        product,
+      ),
+    ).toEqual([]);
   });
 
   it("gộp video thật sự hiển thị ở dải ảnh và khối Video sản phẩm với mã riêng", () => {
-    const ld = buildVideoObjectsJsonLd(makeProduct({
-      gallery: [{
-        id: "gallery-video-1",
-        mediaType: "video",
-        videoUrl: "https://www.youtube.com/watch?v=abcdefghijk",
-        title: "Video dải ảnh",
-        description: "Mô tả ngay dưới video dải ảnh.",
-      }],
-      videos: [{
-        id: "section-video-1",
-        url: "https://cdn/video.mp4",
-        title: "Video sản phẩm",
-        description: "Mô tả trong cửa sổ xem video.",
-        thumbnail: { url: "https://cdn/video.jpg" },
-      }],
-    }));
+    const ld = buildVideoObjectsJsonLd(
+      makeProduct({
+        gallery: [
+          {
+            id: "gallery-video-1",
+            mediaType: "video",
+            videoUrl: "https://www.youtube.com/watch?v=abcdefghijk",
+            title: "Video dải ảnh",
+            description: "Mô tả ngay dưới video dải ảnh.",
+          },
+        ],
+        videos: [
+          {
+            id: "section-video-1",
+            url: "https://cdn/video.mp4",
+            title: "Video sản phẩm",
+            description: "Mô tả trong cửa sổ xem video.",
+            thumbnail: { url: "https://cdn/video.jpg" },
+          },
+        ],
+      }),
+    );
     expect(ld).toHaveLength(2);
-    expect(ld.map((video) => video["@id"])).toEqual(expect.arrayContaining([
-      expect.stringContaining("#video-gallery-video-1"),
-      expect.stringContaining("#video-section-video-1"),
-    ]));
+    expect(ld.map((video) => video["@id"])).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("#video-gallery-video-1"),
+        expect.stringContaining("#video-section-video-1"),
+      ]),
+    );
   });
 });
 

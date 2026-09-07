@@ -106,7 +106,7 @@ function parseError(status: number, payload: unknown, query?: RequestQuery): Cli
       code: apiError.code ?? DEFAULT_META_ERROR.code,
       message: isEnglishQuery(query)
         ? englishErrorMessage(status)
-        : apiError.message ?? DEFAULT_META_ERROR.message,
+        : (apiError.message ?? DEFAULT_META_ERROR.message),
       details: apiError.details ?? [],
     };
   }
@@ -116,10 +116,16 @@ function parseError(status: number, payload: unknown, query?: RequestQuery): Cli
     status,
     message:
       status === 404
-        ? isEnglishQuery(query) ? englishErrorMessage(status) : "Không tìm thấy dữ liệu yêu cầu."
+        ? isEnglishQuery(query)
+          ? englishErrorMessage(status)
+          : "Không tìm thấy dữ liệu yêu cầu."
         : status >= 500
-          ? isEnglishQuery(query) ? englishErrorMessage(status) : "Hệ thống đang bận, vui lòng thử lại."
-          : isEnglishQuery(query) ? englishErrorMessage(status) : DEFAULT_META_ERROR.message,
+          ? isEnglishQuery(query)
+            ? englishErrorMessage(status)
+            : "Hệ thống đang bận, vui lòng thử lại."
+          : isEnglishQuery(query)
+            ? englishErrorMessage(status)
+            : DEFAULT_META_ERROR.message,
   };
 }
 
@@ -156,7 +162,10 @@ function paginationFrom(value: unknown): ListResult<unknown>["pagination"] {
       return (record.pagination as ListResult<unknown>["pagination"]) ?? null;
     }
     if (record.data && typeof record.data === "object" && "pagination" in record.data) {
-      return ((record.data as Record<string, unknown>).pagination as ListResult<unknown>["pagination"]) ?? null;
+      return (
+        ((record.data as Record<string, unknown>)
+          .pagination as ListResult<unknown>["pagination"]) ?? null
+      );
     }
   }
 
@@ -169,10 +178,12 @@ async function requestJson<T>(
   query?: RequestQuery,
   revalidate = 3600,
   tags?: string[],
+  signal?: AbortSignal,
 ): Promise<T> {
   const init: RequestInit = {
     method: "GET",
     headers: { Accept: "application/json" },
+    ...(signal ? { signal } : {}),
     ...(revalidate === 0
       ? { cache: "no-store" }
       : { next: { revalidate, ...(tags && tags.length > 0 ? { tags } : {}) } }),
@@ -194,7 +205,11 @@ function toClientError(error: unknown, query?: RequestQuery): ClientError {
   if (error instanceof Error) {
     return {
       ...DEFAULT_META_ERROR,
-      message: error.message || (isEnglishQuery(query) ? "Unable to load data from the service." : DEFAULT_META_ERROR.message),
+      message:
+        error.message ||
+        (isEnglishQuery(query)
+          ? "Unable to load data from the service."
+          : DEFAULT_META_ERROR.message),
     };
   }
   return DEFAULT_META_ERROR;
@@ -267,7 +282,7 @@ async function loadDataWithQuery<T>(
 // thẳng từ constants để KHÔNG kéo module server này vào client bundle.
 export { PRODUCT_SORT_VALUES } from "@/lib/constants/catalog";
 
- type ProductListQuery = {
+type ProductListQuery = {
   page?: number;
   size?: number;
   sort?: string;
@@ -314,13 +329,42 @@ export function listProducts(query: ProductListQuery): Promise<ListResult<Produc
 }
 
 export async function getProductBySlug(slug: string, lang?: string): Promise<DataResult<Product>> {
-  const result = await loadDataWithQuery<Product>(
-    `/api/v1/products/${slug}`,
-    { lang },
-    3600,
-    ["products", `product:${slug}`, `lang:${lang ?? "vi"}`],
-  );
+  const result = await loadDataWithQuery<Product>(`/api/v1/products/${slug}`, { lang }, 3600, [
+    "products",
+    `product:${slug}`,
+    `lang:${lang ?? "vi"}`,
+  ]);
   return result.data ? { ...result, data: withFlatHighlights(result.data) } : result;
+}
+
+/** GMC_RULE_005: preserve failures and pagination; a partial feed must never look successful. */
+export function getMerchantProductPage(
+  page: number,
+  signal?: AbortSignal,
+): Promise<ApiListResponse<Product>> {
+  return requestJson<ApiListResponse<Product>>(
+    "/api/v1/products",
+    { page, size: 100, sort: "createdAt:asc", lang: "vi" },
+    0,
+    undefined,
+    signal,
+  );
+}
+
+/** Feed reads bypass the storefront cache so each Google fetch sees current prices and stock. */
+export async function getMerchantProductDetail(
+  slug: string,
+  signal?: AbortSignal,
+): Promise<Product> {
+  const result = await requestJson<ApiDataResponse<Product>>(
+    `/api/v1/products/${encodeURIComponent(slug)}`,
+    { lang: "vi" },
+    0,
+    undefined,
+    signal,
+  );
+  if (!result?.data?.id) throw new Error("GMC_PRODUCT_RESPONSE_INVALID");
+  return result.data;
 }
 
 /** Exact lookup for an admin-managed historical product URL, never a catalog list item. */
@@ -328,14 +372,10 @@ export function getLegacyDiscontinuedProduct(
   slug: string,
   lang?: string,
 ): Promise<DataResult<LegacyDiscontinuedProduct>> {
-  return loadDataWithQuery(
-    `/api/v1/legacy-discontinued-products/${slug}`,
-    { lang },
-    0,
-  );
+  return loadDataWithQuery(`/api/v1/legacy-discontinued-products/${slug}`, { lang }, 0);
 }
 
- type CategoryListQuery = {
+type CategoryListQuery = {
   page?: number;
   size?: number;
   sort?: string;
@@ -362,15 +402,14 @@ export function listCategories(query: CategoryListQuery): Promise<ListResult<Cat
 }
 
 export function getCategoryBySlug(slug: string, lang?: string): Promise<DataResult<Category>> {
-  return loadDataWithQuery(
-    `/api/v1/categories/${slug}`,
-    { lang },
-    3600,
-    ["categories", `category:${slug}`, `lang:${lang ?? "vi"}`],
-  );
+  return loadDataWithQuery(`/api/v1/categories/${slug}`, { lang }, 3600, [
+    "categories",
+    `category:${slug}`,
+    `lang:${lang ?? "vi"}`,
+  ]);
 }
 
- type BrandListQuery = {
+type BrandListQuery = {
   page?: number;
   size?: number;
   sort?: string;
@@ -395,12 +434,11 @@ export function listBrands(query: BrandListQuery): Promise<ListResult<Brand>> {
 }
 
 export function getBrandBySlug(slug: string, lang?: string): Promise<DataResult<Brand>> {
-  return loadDataWithQuery(
-    `/api/v1/brands/${slug}`,
-    { lang },
-    3600,
-    ["brands", `brand:${slug}`, `lang:${lang ?? "vi"}`],
-  );
+  return loadDataWithQuery(`/api/v1/brands/${slug}`, { lang }, 3600, [
+    "brands",
+    `brand:${slug}`,
+    `lang:${lang ?? "vi"}`,
+  ]);
 }
 
 type CatalogFacetsQuery = {
@@ -440,7 +478,7 @@ export function getCatalogFacets(query: CatalogFacetsQuery): Promise<DataResult<
   );
 }
 
- type ArticleListQuery = {
+type ArticleListQuery = {
   page?: number;
   size?: number;
   sort?: string;
@@ -468,15 +506,25 @@ export function listArticles(query: ArticleListQuery): Promise<ListResult<Articl
 }
 
 export function getArticleBySlug(slug: string, lang?: string): Promise<DataResult<Article>> {
-  return loadDataWithQuery(`/api/v1/articles/${slug}`, { lang }, 3600, ["articles", `article:${slug}`, `lang:${lang ?? "vi"}`]);
+  return loadDataWithQuery(`/api/v1/articles/${slug}`, { lang }, 3600, [
+    "articles",
+    `article:${slug}`,
+    `lang:${lang ?? "vi"}`,
+  ]);
 }
 
 export function getPublicMenu(location: string, lang?: string): Promise<DataResult<PublicMenu>> {
-  return loadDataWithQuery(`/api/v1/menus/${location}`, { lang }, 3600, ["menus", `lang:${lang ?? "vi"}`]);
+  return loadDataWithQuery(`/api/v1/menus/${location}`, { lang }, 3600, [
+    "menus",
+    `lang:${lang ?? "vi"}`,
+  ]);
 }
 
 export function listPublicSettings(lang?: string): Promise<DataResult<PublicSiteSetting[]>> {
-  return loadArrayDataWithQuery("/api/v1/settings/public", { lang }, 3600, ["settings", `lang:${lang ?? "vi"}`]);
+  return loadArrayDataWithQuery("/api/v1/settings/public", { lang }, 3600, [
+    "settings",
+    `lang:${lang ?? "vi"}`,
+  ]);
 }
 
 export type PublicStorePolicy = {
@@ -489,16 +537,15 @@ export function getStorePolicy(
   topic: PublicStorePolicy["topic"],
   lang?: string,
 ): Promise<DataResult<PublicStorePolicy>> {
-  return loadDataWithQuery(
-    `/api/v1/policies/${topic}`,
-    { lang },
-    300,
-    ["store-policies", `policy:${topic}`, `lang:${lang ?? "vi"}`],
-  );
+  return loadDataWithQuery(`/api/v1/policies/${topic}`, { lang }, 300, [
+    "store-policies",
+    `policy:${topic}`,
+    `lang:${lang ?? "vi"}`,
+  ]);
 }
 
 /** Active sliders for a given placement location (e.g. "home", "category_sidebar"). */
- function listSliders(location: string): Promise<DataResult<HomeSlider[]>> {
+function listSliders(location: string): Promise<DataResult<HomeSlider[]>> {
   return loadArrayDataWithQuery<HomeSlider>("/api/v1/sliders", { location }, 3600, ["sliders"]);
 }
 
@@ -507,21 +554,34 @@ export function listHomeSliders(): Promise<DataResult<HomeSlider[]>> {
 }
 
 export function listHomeVideos(lang?: string): Promise<DataResult<HomeVideo[]>> {
-  return loadArrayDataWithQuery<HomeVideo>("/api/v1/home-videos", { lang }, 300, ["home-videos", `lang:${lang ?? "vi"}`]);
+  return loadArrayDataWithQuery<HomeVideo>("/api/v1/home-videos", { lang }, 300, [
+    "home-videos",
+    `lang:${lang ?? "vi"}`,
+  ]);
 }
 
 export function listHomeHighlights(lang?: string): Promise<DataResult<HomeHighlightItem[]>> {
-  return loadArrayDataWithQuery<HomeHighlightItem>("/api/v1/home/category-highlights", { lang }, 300, ["home-highlights", `lang:${lang ?? "vi"}`]);
+  return loadArrayDataWithQuery<HomeHighlightItem>(
+    "/api/v1/home/category-highlights",
+    { lang },
+    300,
+    ["home-highlights", `lang:${lang ?? "vi"}`],
+  );
 }
 
-export function getOrderLookup(orderNumber: string, orderKey: string, lang?: string): Promise<DataResult<OrderDetail>> {
+export function getOrderLookup(
+  orderNumber: string,
+  orderKey: string,
+  lang?: string,
+): Promise<DataResult<OrderDetail>> {
   if (!orderNumber || !orderKey) {
     return Promise.resolve({
       data: null,
       error: {
         status: 400,
         code: "VALIDATION_ERROR",
-        message: lang === "en" ? "The order details are invalid." : "Tham số đơn hàng không hợp lệ.",
+        message:
+          lang === "en" ? "The order details are invalid." : "Tham số đơn hàng không hợp lệ.",
         details: [],
       },
     });

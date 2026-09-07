@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Product } from "@/lib/contracts/public";
 import { PurchaseSection } from "./PurchaseSection";
+import { merchantVariants } from "@/__tests__/merchant/fixtures";
 
 const { localeState } = vi.hoisted(() => ({ localeState: { value: "vi" } }));
 
@@ -11,7 +12,8 @@ vi.mock("next-intl", () => ({
     if (key === "ratingStars") return `${values?.rating} sao`;
     if (key === "ratingAria") return `${values?.rating} sao, ${values?.count} đánh giá`;
     if (key === "emptyRatingAria") return "Chưa có đánh giá, 0 đánh giá";
-    if (key === "unavailableRatingAria") return `Chưa có điểm trung bình, ${values?.count} đánh giá`;
+    if (key === "unavailableRatingAria")
+      return `Chưa có điểm trung bình, ${values?.count} đánh giá`;
     if (key === "ratingCount") return `(${values?.count})`;
     return key;
   },
@@ -29,7 +31,6 @@ vi.mock("@/components/catalog/ProductGallery", () => ({
 vi.mock("@/components/catalog/MobileStickyPurchaseBar", () => ({
   MobileStickyPurchaseBar: () => <div data-testid="sticky-bar" />,
 }));
-
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -53,7 +54,11 @@ function renderWithQueryClient(ui: React.ReactElement) {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
-function renderSection(rating: number | null, ratingCount: number | null, productOverrides: Partial<Product> = {}) {
+function renderSection(
+  rating: number | null,
+  ratingCount: number | null,
+  productOverrides: Partial<Product> = {},
+) {
   return renderWithQueryClient(
     <PurchaseSection
       product={makeProduct(productOverrides)}
@@ -77,8 +82,12 @@ describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_
     const aggregate = container.querySelector('[itemtype="https://schema.org/AggregateRating"]');
     expect(aggregate).not.toBeNull();
     // reviewCount đi bằng <meta> để không in số lượt 2 lần cạnh nhãn "(3)".
-    expect(aggregate!.querySelector('meta[itemprop="reviewCount"]')!.getAttribute("content")).toBe("3");
-    expect(aggregate!.querySelector('meta[itemprop="ratingValue"]')!.getAttribute("content")).toBe("4.0");
+    expect(aggregate!.querySelector('meta[itemprop="reviewCount"]')!.getAttribute("content")).toBe(
+      "3",
+    );
+    expect(aggregate!.querySelector('meta[itemprop="ratingValue"]')!.getAttribute("content")).toBe(
+      "4.0",
+    );
     expect(screen.queryByText("4.0")).toBeNull();
     expect(screen.getByText("(3)")).toBeInTheDocument();
   });
@@ -86,9 +95,7 @@ describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_
   it("0 review → hiển thị sao trung tính và không xuất microdata", () => {
     const { container } = renderSection(null, null);
     expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
-    expect(
-      container.querySelector('[itemtype="https://schema.org/AggregateRating"]'),
-    ).toBeNull();
+    expect(container.querySelector('[itemtype="https://schema.org/AggregateRating"]')).toBeNull();
     expect(screen.getByText("(0)")).toBeInTheDocument();
     expect(screen.queryByText(/noReviews/)).toBeNull();
   });
@@ -102,7 +109,9 @@ describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_
 
   it("count dương nhưng rating lỗi → giữ count và không xuất aggregateRating", () => {
     const { container } = renderSection(null, 3);
-    expect(container.querySelector('[aria-label="Chưa có điểm trung bình, 3 đánh giá"]')).not.toBeNull();
+    expect(
+      container.querySelector('[aria-label="Chưa có điểm trung bình, 3 đánh giá"]'),
+    ).not.toBeNull();
     expect(screen.getByText("(3)")).toBeInTheDocument();
     expect(screen.queryByText("Chưa có điểm trung bình")).toBeNull();
     expect(container.querySelector('[itemtype="https://schema.org/AggregateRating"]')).toBeNull();
@@ -111,16 +120,72 @@ describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_
 
 describe("PurchaseSection — mô hình giá 2 trường (PRODUCT_RULE_012)", () => {
   it("có salePrice hợp lệ → hiện giá sale + giá niêm yết gạch ngang", () => {
-    renderSection(null, null, { price: { retailPrice: 2000000, salePrice: 1500000, currency: "VND" } });
+    renderSection(null, null, {
+      price: { retailPrice: 2000000, salePrice: 1500000, currency: "VND" },
+    });
     expect(screen.getByText("1.500.000 ₫")).toBeInTheDocument();
     const old = screen.getByText("2.000.000 ₫");
     expect(old.tagName).toBe("DEL");
   });
 
   it("chỉ có retailPrice (salePrice trống) → hiện giá niêm yết, KHÔNG gạch ngang", () => {
-    const { container } = renderSection(null, null, { price: { retailPrice: 2000000, currency: "VND" } });
+    const { container } = renderSection(null, null, {
+      price: { retailPrice: 2000000, currency: "VND" },
+    });
     expect(screen.getByText("2.000.000 ₫")).toBeInTheDocument();
     expect(container.querySelector("del")).toBeNull();
+  });
+});
+
+describe("PurchaseSection — liên kết GMC chọn sẵn biến thể", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          pricing: { retailPrice: 900000, salePrice: 800000, currency: "VND", discountPercent: 11 },
+          stock: { stockState: "IN_STOCK" },
+          variants: merchantVariants().variants,
+        }),
+      }),
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("shows the linked variant price immediately and lets the customer change selection", () => {
+    renderWithQueryClient(
+      <PurchaseSection
+        product={merchantVariants()}
+        initialVariantId="variant-blue"
+        gallery={[]}
+        rating={null}
+        ratingCount={null}
+      />,
+    );
+    expect(screen.getByText("1.100.000 ₫")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Xanh" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "M" })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getByRole("radio", { name: "Đỏ" }));
+    fireEvent.click(screen.getByRole("radio", { name: "L" }));
+    expect(screen.getByText("800.000 ₫")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Xanh" })).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("keeps an unavailable linked variant unavailable instead of selecting another SKU", () => {
+    renderWithQueryClient(
+      <PurchaseSection
+        product={merchantVariants()}
+        initialVariantId="variant-red"
+        gallery={[]}
+        rating={null}
+        ratingCount={null}
+      />,
+    );
+    expect(screen.getByRole("radio", { name: "Đỏ" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "L" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText("800.000 ₫")).toBeInTheDocument();
+    expect(screen.getByText("stockOut")).toBeInTheDocument();
   });
 });
 
@@ -137,7 +202,10 @@ describe("PurchaseSection — fallback nội dung tiếng Việt", () => {
 
     expect(screen.getByRole("heading", { name: "Áo giáp tiếng Việt" })).toBeInTheDocument();
     expect(screen.getByText("Áo giáp")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "BigBike" })).toHaveAttribute("href", "/en/brands/bigbike");
+    expect(screen.getByRole("link", { name: "BigBike" })).toHaveAttribute(
+      "href",
+      "/en/brands/bigbike",
+    );
     expect(screen.getByText("Hàng chính hãng")).toBeInTheDocument();
     expect(screen.getByText("Miễn phí vận chuyển")).toBeInTheDocument();
   });

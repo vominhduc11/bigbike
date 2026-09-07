@@ -789,6 +789,20 @@ every matching row across all pages without silent truncation. The response decl
 
 ## Admin Catalog Contract
 
+### Google Merchant product feed — web-served XML (2026-09-07)
+
+Landing VI `/product/{slug}/` được rewrite nội bộ sang `/vi/internal/product/{slug}/` theo cùng cơ chế alias của homepage/catalog. Query `variant` giữ nguyên và chỉ có URL sản phẩm công khai trong canonical/link/schema. Alias phải khai `dynamic = "force-dynamic"` ngay tại module route, cùng chế độ với trang gốc; re-export hàm trang không tự kế thừa cấu hình này. Alias tránh vòng 301 về chính URL và lỗi static-to-dynamic khi đọc query theo request; không tạo URL bán hàng mới.
+
+`GET /google-merchant.xml` trên origin website là nguồn RSS 2.0 với namespace `http://base.google.com/ns/1.0`; không phải endpoint JSON Spring và không bọc `ApiResponseFactory`. Không yêu cầu đăng nhập, chỉ chiếu dữ liệu sản phẩm công khai đã có. `HEAD` cùng trạng thái/header và không có body. Phương thức ghi không được hỗ trợ. Không thêm endpoint vào OpenAPI của backend vì endpoint này thuộc Next.js.
+
+- Nội dung VI, giá `VND`; điều kiện chọn sản phẩm và ánh xạ biến thể theo `GMC_RULE_001`–`005`. `Content-Type: application/xml; charset=utf-8`, `Cache-Control: no-store`, `X-Robots-Tag: noindex` (không chặn đường feed trong robots).
+- Đọc tất cả trang catalog công khai (mỗi trang tối đa 100), rồi đọc detail bằng slug để lấy mô tả, ảnh và thuộc tính biến thể. Các lần đọc cho feed dùng `cache: no-store`; giới hạn song song 8 và tối đa 50 trang. Vượt giới hạn là 503, không cắt danh mục. Kiểm tra tổng, ID trùng và trang thiếu trước khi xuất XML.
+- Mỗi item có SKU thật, tên, mô tả văn bản, link mua, ảnh, tình trạng hàng, giá niêm yết, `sale_price` khi sale hợp lệ, `condition=new` cùng quy ước schema hiện hữu, thương hiệu và nhóm hàng của shop khi có. Biến thể có `item_group_id`, `item_group_title`, các `variant_option` từ dữ liệu thật và trường `color`/`size` tương ứng nếu có. Không tự cấp mã GTIN/MPN hoặc khai báo thiếu định danh là sản phẩm không có định danh.
+- Lỗi backend, dữ liệu sai định dạng, phân trang không đầy đủ, SKU thiếu/dài hơn 50 ký tự/trùng không phân biệt hoa thường: HTTP 503, thông báo chung, `Retry-After: 300`, không trả feed thành công một phần. Feed hoàn chỉnh trả thêm `X-Merchant-Product-Count` và `X-Merchant-Item-Count`; số sản phẩm khác số dòng biến thể.
+- `GET /product/{slug}/?variant={variantId}` và bản EN tương ứng chọn trước đúng biến thể thuộc sản phẩm trong lần render đầu. Query không hợp lệ/trùng nhiều lần/ID không tồn tại bỏ chọn trước; các luồng mua, bản nháp, trạng thái còn/hết và canonical không đổi. Query lựa chọn hợp lệ được giữ khi redirect slug chuẩn.
+
+Đăng ký lịch lấy và xác minh trạng thái tiếp nhận/duyệt nằm trong tài khoản GMC, theo `docs/engineering/GMC_SETUP.md`; endpoint không báo thay cho Google kết quả đồng bộ.
+
 ### Product admin lifecycle endpoints
 
 | Method | Path | Permission | Contract |
