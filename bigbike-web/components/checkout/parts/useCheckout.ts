@@ -1,22 +1,27 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { generateId } from "@/lib/utils";
+import {
+  clearCheckoutAttempt,
+  prepareCheckoutAttempt,
+  readCheckoutAttempt,
+  saveCheckoutAttempt,
+} from "@/lib/checkout-session";
 import { submitCheckout } from "@/lib/api/client-api";
 import { hasCustomerSessionHint, useAuth } from "@/lib/auth/auth-store";
 import { useCart } from "@/lib/cart-context";
 import { useAddresses, useCartQuery, useProfile } from "@/lib/query/hooks";
-import type { PriceChange } from "@/lib/contracts/commerce";
+import type { CheckoutPayload, OrderSummary, PriceChange } from "@/lib/contracts/commerce";
 import {
   createCheckoutAddressSchema,
   type CheckoutAddressFormValues,
 } from "@/lib/schemas/checkout";
 import { trackAddShippingInfo, trackBeginCheckout } from "@/lib/analytics";
-import { toOrderConfirmPath } from "@/lib/utils/routes";
+import { toCheckoutResultPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import type { CheckoutPaymentMethod } from "./atoms";
 import { pickDefaultAddress } from "./helpers";
@@ -100,16 +105,15 @@ export function useCheckout() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [priceChanges, setPriceChanges] = useState<PriceChange[]>([]);
-  const [pendingOrderNav, setPendingOrderNav] = useState<{
-    orderNumber: string;
-    orderKey: string;
-  } | null>(null);
+  const [pendingOrderNav, setPendingOrderNav] = useState<OrderSummary | null>(null);
   const beginCheckoutCartId = useRef<string | null>(null);
   const shippingInfoCartId = useRef<string | null>(null);
   const [customerNote, setCustomerNote] = useState("");
   const [shipToDifferent, setShipToDifferent] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("COD");
-  const idempotencyKey = useRef<string>(generateId());
+  const submittingRef = useRef(false);
+  const restoredAttempt = useRef(false);
+  const [recoverable, setRecoverable] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
 
   // Tỉnh/Phường KHÔNG sống trong react-hook-form như 4 ô còn lại (Họ tên/SĐT/Email/
@@ -133,6 +137,60 @@ export function useCheckout() {
   }
 
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
+  const acceptCreatedOrder = useCallback(
+    (order: OrderSummary) => {
+      const attempt = readCheckoutAttempt();
+      if (attempt) saveCheckoutAttempt({ ...attempt, order });
+      clearCheckoutDraft();
+      refreshCount();
+      setRecoverable(false);
+      if (order.priceChanges?.length) {
+        setPriceChanges(order.priceChanges);
+        setPendingOrderNav(order);
+      } else {
+        router.replace(toCheckoutResultPath(order, locale));
+      }
+    },
+    [locale, refreshCount, router],
+  );
+
+  const retryPendingCheckout = useCallback(async () => {
+    const attempt = readCheckoutAttempt();
+    if (!attempt || submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      acceptCreatedOrder(attempt.order ?? (await submitCheckout(attempt.payload, attempt.key)));
+    } catch (error) {
+      reportStorefrontFailure("checkout", error);
+      setSubmitError(t("submitFailed"));
+      if (Number((error as { status?: number }).status) === 400) {
+        clearCheckoutAttempt();
+        setRecoverable(false);
+      } else setRecoverable(true);
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  }, [acceptCreatedOrder, t]);
+
+  useEffect(() => {
+    if (!cart || restoredAttempt.current) return;
+    const timer = setTimeout(() => {
+      restoredAttempt.current = true;
+      const attempt = readCheckoutAttempt();
+      if (!attempt) return;
+      // An empty converted cart may replay the old key; it cannot create a new order.
+      if (attempt.order || attempt.cartId === String(cart.id) || !cart.items.length) {
+        void retryPendingCheckout();
+      } else {
+        clearCheckoutAttempt();
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [cart, retryPendingCheckout]);
+
   const shouldLoadCustomer =
     auth.status === "authenticated" || (auth.status === "loading" && hasCustomerSessionHint());
   const { data: profile } = useProfile({ enabled: shouldLoadCustomer });
@@ -379,35 +437,29 @@ export function useCheckout() {
     setSubmitError("");
     setSubmitting(true);
     try {
-      const order = await submitCheckout(
-        {
-          billingAddress: {
-            fullName: resolvedAddress.fullName,
-            phone: resolvedAddress.phone,
-            email: resolvedAddress.email,
-            country: resolvedAddress.country,
-            province: resolvedAddress.province,
-            ward: resolvedAddress.ward,
-            addressLine1: resolvedAddress.addressLine1,
-          },
-          shippingAddress: shipToDifferent ? shipResolvedAddress : undefined,
-          paymentMethod,
-          customerNote: customerNote.trim() || undefined,
-          locale,
+      const payload: CheckoutPayload = {
+        billingAddress: {
+          fullName: resolvedAddress.fullName,
+          phone: resolvedAddress.phone,
+          email: resolvedAddress.email,
+          country: resolvedAddress.country,
+          province: resolvedAddress.province,
+          ward: resolvedAddress.ward,
+          addressLine1: resolvedAddress.addressLine1,
         },
-        idempotencyKey.current,
-      );
-      clearCheckoutDraft();
-      refreshCount();
-      if (order.priceChanges && order.priceChanges.length > 0) {
-        setPriceChanges(order.priceChanges);
-        setPendingOrderNav({ orderNumber: order.orderNumber, orderKey: order.orderKey });
-      } else {
-        router.push(toOrderConfirmPath(order.orderNumber, order.orderKey, locale));
-      }
+        shippingAddress: shipToDifferent ? shipResolvedAddress : undefined,
+        paymentMethod,
+        customerNote: customerNote.trim() || undefined,
+        locale,
+      };
+      const attempt = prepareCheckoutAttempt(String(cart.id), payload);
+      const order = attempt.order ?? (await submitCheckout(attempt.payload, attempt.key));
+      acceptCreatedOrder(order);
     } catch (error) {
       reportStorefrontFailure("checkout", error);
       setSubmitError(t("submitFailed"));
+      if (Number((error as { status?: number }).status) === 400) clearCheckoutAttempt();
+      else setRecoverable(true);
     } finally {
       setSubmitting(false);
     }
@@ -415,20 +467,27 @@ export function useCheckout() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting) return;
-    await placeOrder();
+    if (submittingRef.current || pendingOrderNav) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
+      await placeOrder();
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   }
 
   function confirmPendingOrder() {
     if (pendingOrderNav) {
-      router.push(
-        toOrderConfirmPath(pendingOrderNav.orderNumber, pendingOrderNav.orderKey, locale),
-      );
+      router.replace(toCheckoutResultPath(pendingOrderNav, locale));
     }
   }
 
   return {
     cart,
+    recoverable,
+    retryPendingCheckout,
     cartLoading,
     cartError,
     submitError,

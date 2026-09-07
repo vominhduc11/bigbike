@@ -1203,6 +1203,13 @@ export async function updateOrderStatus(orderId, orderStatus, reason) {
   return parseDetailPayload(payload, normalizeOrder)
 }
 
+export async function confirmBankTransfer(orderId) {
+  const payload = await requestJson(`/admin/orders/${orderId}/confirm-bank-transfer`, {
+    method: 'POST',
+  })
+  return parseDetailPayload(payload, normalizeOrder)
+}
+
 export async function fetchOrderAllowedTransitions(orderId) {
   try {
     const payload = await requestJson(`/admin/orders/${orderId}/allowed-transitions`)

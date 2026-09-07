@@ -36,6 +36,9 @@ export function StatusBadge({ status, type = 'order', className }) {
   if (type === 'order') {
     tone = ORDER_STATUS_TONE[status] ?? 'muted'
     label = t(`status.order.${status}`, { defaultValue: t('common.unknown') })
+  } else if (type === 'bankTransfer') {
+    tone = status === 'SUCCEEDED' ? 'success' : status === 'PENDING' ? 'warning' : 'muted'
+    label = t(`status.bankTransfer.${status}`, { defaultValue: t('common.unknown') })
   } else if (type === 'visibility') {
     if (status !== true && status !== false) {
       return (

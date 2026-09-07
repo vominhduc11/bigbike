@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { PurchaseEvent } from "@/components/analytics/PurchaseEvent";
 import { fetchOrderLookup, fetchPublicSettings } from "@/lib/api/client-api";
+import { clearCheckoutAttempt } from "@/lib/checkout-session";
 import { queryKeys } from "@/lib/query/keys";
 import { OrderConfirmView } from "./OrderConfirmView";
 
@@ -47,6 +48,9 @@ export function OrderConfirmClient() {
     [settingsQuery.data],
   );
   const order = orderQuery.data ?? null;
+  useEffect(() => {
+    if (order) clearCheckoutAttempt(order.orderNumber);
+  }, [order]);
 
   return (
     <>
@@ -56,8 +60,13 @@ export function OrderConfirmClient() {
         orderKey={orderKey}
         order={order}
         settingsRecord={settingsRecord}
-        isLoading={canLookup && (orderQuery.isLoading || settingsQuery.isLoading)}
+        isLoading={canLookup && orderQuery.isLoading}
         hasError={orderQuery.isError}
+        transferStep={searchParams.get("step") === "bank-transfer"}
+        settingsLoading={settingsQuery.isLoading}
+        settingsError={settingsQuery.isError}
+        retrySettings={() => void settingsQuery.refetch()}
+        retryOrder={() => void orderQuery.refetch()}
       />
     </>
   );

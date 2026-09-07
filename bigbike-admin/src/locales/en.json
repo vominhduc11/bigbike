@@ -489,6 +489,11 @@
       "DISABLED": "Disabled",
       "BLOCKED": "Blocked",
       "UNKNOWN": "Unknown"
+    },
+    "bankTransfer": {
+      "PENDING": "Awaiting payment",
+      "SUCCEEDED": "Paid",
+      "UNKNOWN": "Payment information needs review"
     }
   },
   "sort": {
@@ -1544,7 +1549,8 @@
         "ORDER_STATUS_UPDATED": "Order status updated",
         "ORDER_CANCELLED_BY_CUSTOMER": "Order cancelled by customer",
         "ORDER_NOTE_CREATED": "Note added",
-        "ORDER_REFUND_CREATED": "Refund created"
+        "ORDER_REFUND_CREATED": "Refund created",
+        "ORDER_BANK_TRANSFER_CONFIRMED": "Full bank-transfer receipt confirmed"
       }
     },
     "title": "Orders",
@@ -1677,7 +1683,14 @@
       "reasonLabel": "Reason",
       "reasonPlaceholder": "Describe the reason for this action...",
       "reasonRequired": "A reason is required for this action.",
-      "unsavedActionWarning": "This action was NOT saved because the connection was lost. The order data will be reloaded; please try again."
+      "unsavedActionWarning": "This action was NOT saved because the connection was lost. The order data will be reloaded; please try again.",
+      "transferTitle": "Bank transfer",
+      "transferConfirmTitle": "Confirm full payment received",
+      "transferConfirmMessage": "Have you checked the bank account and received the full {{amount}} for order #{{orderNumber}}? This confirms receipt only; it does not complete the order.",
+      "transferConfirmed": "Full bank-transfer receipt recorded.",
+      "transferPaymentRequired": "Confirm full bank-transfer receipt before completing the order.",
+      "transferPaymentInvalid": "Payment records do not match. Review them before confirming receipt or completing the order.",
+      "transferNotApplicable": "Receipt can only be confirmed for pending or processing bank-transfer orders."
     },
     "emptyAll": "No orders yet",
     "emptyAllDesc": "When customers place orders on the website, they will appear here."
@@ -3018,7 +3031,7 @@
       "bigbike": "BigBike Assistant",
       "source": "Reply source",
       "usedAi": "AI used",
-      "readOnly": "This conversation is view-only; staff cannot take over or reply to the customer here.",
+      "readOnly": "This history is view-only; there are no reply or assignment actions.",
       "sources": {
         "ai": "Automated assistant",
         "rule": "Support rule",
@@ -3034,15 +3047,13 @@
       "active": "Active",
       "endStates": {
         "turnLimit": "Question limit reached",
-        "continued": "Continued in a new conversation",
-        "offTopic": "Outside supported topics",
         "continued": "Continued in a linked chat",
+        "offTopic": "Outside supported topics",
         "unavailable": "Automated support could not continue",
         "dailyLimit": "Automated support paused",
         "disabled": "Automated support is off",
         "closed": "Closed"
-      },
-      "readOnly": "This history is view-only; there are no reply or assignment actions."
+      }
     }
   },
   "settings": {

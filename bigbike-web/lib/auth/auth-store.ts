@@ -2,10 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 import { fetchMe, logoutCustomer } from "@/lib/api/client-api";
+import { clearCheckoutAttempt } from "@/lib/checkout-session";
 import { clearChatSnapshot } from "@/lib/chat/chat-persistence";
 import type { CustomerProfile } from "@/lib/contracts/commerce";
 
- type AuthState =
+type AuthState =
   | { status: "loading" }
   | { status: "anonymous"; reason?: "logout" }
   | { status: "authenticated"; profile: CustomerProfile };
@@ -22,11 +23,11 @@ function setState(next: AuthState) {
   listeners.forEach((listener) => listener(state));
 }
 
- function getAuthState(): AuthState {
+function getAuthState(): AuthState {
   return state;
 }
 
- function subscribeAuth(listener: Listener): () => void {
+function subscribeAuth(listener: Listener): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -101,7 +102,7 @@ export function refreshAuth(): Promise<void> {
   return inflight;
 }
 
- function setAnonymous(reason?: "logout"): void {
+function setAnonymous(reason?: "logout"): void {
   setState(reason ? { status: "anonymous", reason } : { status: "anonymous" });
 }
 
@@ -113,6 +114,7 @@ export async function performLogout(): Promise<void> {
   }
   clearCustomerAuthMarker();
   clearChatSnapshot();
+  clearCheckoutAttempt();
   setAnonymous("logout");
 }
 
@@ -127,9 +129,5 @@ function subscribeWithRefresh(listener: () => void): () => void {
 }
 
 export function useAuth(): AuthState {
-  return useSyncExternalStore(
-    subscribeWithRefresh,
-    getAuthState,
-    () => ANONYMOUS_SERVER_SNAPSHOT,
-  );
+  return useSyncExternalStore(subscribeWithRefresh, getAuthState, () => ANONYMOUS_SERVER_SNAPSHOT);
 }

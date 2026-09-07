@@ -754,7 +754,9 @@
         "viewOrder": "View order",
         "continueShopping": "Continue shopping"
       }
-    }
+    },
+    "recoveringOrder": "Checking your order…",
+    "retryOrder": "Check my order again"
   },
   "AddressFields": {
     "provinceLabel": "Province / City",
@@ -1002,7 +1004,21 @@
     "paymentBankTransfer": "Bank transfer",
     "paymentBacs": "Bank transfer",
     "shippingFree": "Free",
-    "qtyAbbrev": "Qty"
+    "qtyAbbrev": "Qty",
+    "transferStepTitle": "Bank transfer details",
+    "transferStepBody": "Order #{orderNumber} has been recorded. Transfer using your banking app and select Continue, or choose Pay later. The shop will check and confirm receipt.",
+    "transferContinue": "Continue",
+    "transferLater": "Pay later",
+    "transferStatusLabel": "Payment",
+    "transferStatusPENDING": "Awaiting payment",
+    "transferStatusSUCCEEDED": "Paid",
+    "transferStatusUNKNOWN": "Payment information needs review",
+    "step3TransferTitle": "Receive your order",
+    "step3TransferBody": "The shop confirms receipt of your transfer and successful delivery before completing the order. If you have already transferred, please wait for confirmation; do not transfer again.",
+    "bankLoading": "Loading bank details…",
+    "bankLoadFailed": "Bank details could not be loaded. You can still continue to your order and contact the shop for transfer assistance.",
+    "bankSupport": "Bank details are incomplete. You can still continue to your order and contact the shop for transfer assistance.",
+    "retryLoad": "Try again"
   },
   "Cart": {
     "title": "Cart",

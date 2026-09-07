@@ -225,6 +225,7 @@ HMAC identity limiter rather than a new account-lock state. Admin mutations use 
 | `/api/v1/admin/orders` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listOrders` |
 | `/api/v1/admin/orders/{orderId}` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.getOrderDetail` |
 | `/api/v1/admin/orders/{orderId}/allowed-transitions` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAllowedTransitions` |
+| `/api/v1/admin/orders/{orderId}/confirm-bank-transfer` POST | `orders.write`; operational BANK_TRANSFER in PENDING/PROCESSING only, historical rows read-only | `OWNER_CONFIRMED_2026-09-07` | PAY_RULE_002, AdminOrderController |
 | `/api/v1/admin/orders/{orderId}/status` PATCH | `orders.write` | `CONFIRMED_FROM_CODE` | `AdminOrderController.updateOrderStatus` |
 | `/api/v1/admin/orders/{orderId}/audit` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
 | `/api/v1/customer/orders/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |

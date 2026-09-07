@@ -14,6 +14,8 @@ public record AdminOrderDetailResponse(
         String orderNumber,
         String orderKey,
         String status,
+        String paymentMethod,
+        boolean canConfirmBankTransfer,
         String fulfillmentType,
         String customerEmail,
         String customerPhone,

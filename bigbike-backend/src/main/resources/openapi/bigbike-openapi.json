@@ -1035,7 +1035,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Order detail"
+            "description": "Order detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDataResponse"
+                }
+              }
+            }
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -1528,7 +1535,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Order detail"
+            "description": "Order detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailDataResponse"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -2000,13 +2014,66 @@
         }
       }
     },
+    "/api/v1/admin/orders/{orderId}/confirm-bank-transfer": {
+      "post": {
+        "tags": [
+          "Admin Orders"
+        ],
+        "summary": "Confirm full bank-transfer receipt",
+        "description": "Requires orders.write. Operational PENDING/PROCESSING BANK_TRANSFER only. Confirms one full-amount matching PENDING payment to SUCCEEDED, records actor/time and preserves order status. Repeating a confirmed receipt is a no-op. Historical/terminal or invalid payment data returns 409.",
+        "operationId": "adminConfirmBankTransfer",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOrderDetailDataResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
     "/api/v1/admin/orders/{orderId}/status": {
       "patch": {
         "tags": [
           "Admin Orders"
         ],
         "summary": "Update order status",
-        "description": "When transitioning into CANCELLED, cancelReason is required and stored on orders.cancel_reason. Repeating the current status is an idempotent no-op. Historical orders are read-only and return 409 with code HISTORICAL_ORDER_READ_ONLY.",
+        "description": "When transitioning into CANCELLED, cancelReason is required and stored on orders.cancel_reason. Repeating the current status is an idempotent no-op. Historical orders are read-only and return 409 with code HISTORICAL_ORDER_READ_ONLY. BANK_TRANSFER completion additionally requires a matching full SUCCEEDED payment; otherwise 409 BANK_TRANSFER_PAYMENT_REQUIRED or BANK_TRANSFER_PAYMENT_INVALID.",
         "operationId": "adminUpdateOrderStatus",
         "security": [
           {
@@ -10609,6 +10676,115 @@
           }
         }
       },
+      "OrderDetailDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrderDetailResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          }
+        }
+      },
+      "OrderDetailResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "orderKey": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "paymentMethod": {
+            "type": "string",
+            "nullable": true,
+            "description": "Persisted order method; legacy null remains readable."
+          },
+          "customerEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "customerNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string"
+          },
+          "subtotalAmount": {
+            "type": "number"
+          },
+          "discountAmount": {
+            "type": "number"
+          },
+          "shippingAmount": {
+            "type": "number"
+          },
+          "feeAmount": {
+            "type": "number"
+          },
+          "taxAmount": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "paidAmount": {
+            "type": "number"
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "channel": {
+            "type": "string",
+            "nullable": true
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLineItemResponse"
+            }
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderAddressResponse"
+            }
+          },
+          "shippingItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderShippingItemResponse"
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderPaymentResponse"
+            }
+          }
+        }
+      },
       "AdminOrderDetailDataResponse": {
         "type": "object",
         "properties": {
@@ -10750,6 +10926,15 @@
               }
             ],
             "nullable": true
+          },
+          "paymentMethod": {
+            "type": "string",
+            "nullable": true,
+            "description": "Persisted order method; legacy null remains readable."
+          },
+          "canConfirmBankTransfer": {
+            "type": "boolean",
+            "description": "Resource eligibility; caller must also hold orders.write."
           }
         }
       },

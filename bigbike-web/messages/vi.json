@@ -754,7 +754,9 @@
         "viewOrder": "Xem đơn hàng",
         "continueShopping": "Tiếp tục mua sắm"
       }
-    }
+    },
+    "recoveringOrder": "Đang kiểm tra đơn đã đặt…",
+    "retryOrder": "Kiểm tra lại đơn đã đặt"
   },
   "AddressFields": {
     "provinceLabel": "Tỉnh / Thành phố",
@@ -1002,7 +1004,21 @@
     "paymentBankTransfer": "Chuyển khoản ngân hàng",
     "paymentBacs": "Chuyển khoản ngân hàng",
     "shippingFree": "Miễn phí",
-    "qtyAbbrev": "SL"
+    "qtyAbbrev": "SL",
+    "transferStepTitle": "Thông tin chuyển khoản",
+    "transferStepBody": "Đơn #{orderNumber} đã được ghi nhận. Bạn có thể chuyển khoản bằng ứng dụng ngân hàng rồi bấm Tiếp tục, hoặc chọn Chuyển khoản sau. Shop sẽ kiểm tra và xác nhận tiền về.",
+    "transferContinue": "Tiếp tục",
+    "transferLater": "Chuyển khoản sau",
+    "transferStatusLabel": "Thanh toán",
+    "transferStatusPENDING": "Chờ thanh toán",
+    "transferStatusSUCCEEDED": "Đã thanh toán",
+    "transferStatusUNKNOWN": "Cần kiểm tra thông tin thanh toán",
+    "step3TransferTitle": "Nhận hàng",
+    "step3TransferBody": "Shop xác nhận tiền chuyển khoản và giao hàng thành công trước khi hoàn thành đơn. Nếu bạn đã chuyển khoản, vui lòng chờ shop kiểm tra; không cần chuyển lại.",
+    "bankLoading": "Đang tải thông tin ngân hàng…",
+    "bankLoadFailed": "Chưa tải được thông tin ngân hàng. Bạn vẫn có thể tiếp tục xem đơn và liên hệ shop để được hỗ trợ chuyển khoản.",
+    "bankSupport": "Thông tin ngân hàng chưa đầy đủ. Bạn vẫn có thể tiếp tục xem đơn và liên hệ shop để được hỗ trợ chuyển khoản.",
+    "retryLoad": "Thử lại"
   },
   "Cart": {
     "title": "Giỏ hàng",

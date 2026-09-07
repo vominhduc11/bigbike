@@ -799,7 +799,7 @@ Nguyên tắc đọc file này:
 | `SHOP_MANAGER` | Built-in operational admin role. | `CONFIRMED_FROM_REPO` | `AdminRolePermissions.java` |
 | `SEO_EDITOR` | Built-in role for content/redirect SEO work. | `CONFIRMED_FROM_REPO` | `AdminRolePermissions.java` |
 | `COD` | Cash on delivery/manual payment method. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md` |
-| `BANK_TRANSFER` | New storefront bank-transfer/manual payment method; shop sends account details only after phone confirmation. | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md` |
+| `BANK_TRANSFER` | New storefront bank-transfer/manual payment method; bank details appear after order creation; admin confirms full receipt separately from delivery completion (PAY_RULE_002). | `CONFIRMED_FROM_REPO` | `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md` |
 | `BACS` | Legacy bank-transfer/manual payment method; không còn được chấp nhận cho đơn storefront mới. | `LEGACY_COMPATIBILITY` | `BUSINESS_PROCESS.md`, `BUSINESS_RULES.md` |
 | MinIO | S3-compatible media storage in Docker stack. | `CONFIRMED_FROM_REPO` | `docker-compose.yaml` |
 | PostgreSQL | Main relational database. | `CONFIRMED_FROM_REPO` | `docker-compose.yaml` |

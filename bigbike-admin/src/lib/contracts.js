@@ -782,9 +782,10 @@ export function normalizeOrder(input) {
   const shippingAddress = addresses.find((a) => a?.type === 'SHIPPING') ?? addresses[0] ?? undefined
   const billingAddress = addresses.find((a) => a?.type === 'BILLING') ?? undefined
 
-  // Derive payment method from first payment record
+  // Prefer the persisted order method; legacy responses may only contain payments.
   const payments = Array.isArray(s.payments) ? s.payments : []
-  const paymentMethod = toTrimmedStringLocal(payments[0]?.paymentMethod) || undefined
+  const paymentMethod =
+    toTrimmedStringLocal(s.paymentMethod ?? payments[0]?.paymentMethod)?.toUpperCase() || undefined
 
   // Derive customerName: prefer explicit name fields, then shipping address fullName.
   // Do NOT fall back to email/phone — those are separate display fields and showing
@@ -814,6 +815,7 @@ export function normalizeOrder(input) {
     orderStatus: normalizeOrderStatus(s.status ?? s.orderStatus),
     fulfillmentType: toTrimmedStringLocal(s.fulfillmentType) || 'DELIVERY',
     paymentMethod,
+    canConfirmBankTransfer: s.canConfirmBankTransfer === true,
     source: toTrimmedStringLocal(s.source) || undefined,
     orderScope: s.orderScope === 'HISTORICAL' ? 'HISTORICAL' : 'OPERATIONAL',
     historyClassification: historySource

@@ -1934,9 +1934,20 @@ Evidence: `AdminQuickSearchController`, `AdminQuickSearchService`, `AdminOrderSu
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/admin/orders` | `orders.read` | Existing page/status/search/date/sort query plus `orderScope=ALL|OPERATIONAL|HISTORICAL` (API default `ALL`) and optional `attention=OVERDUE`. Overdue is valid only for operational PENDING and uses the owner-fixed 2-day threshold retained under `order_overdue_days`; the Settings screen has no editor for this value. Text/date semantics remain unchanged. | `OWNER_CONFIRMED_2026-09-01` | `ORDER_RULE_011`–`015`, `AdminOrderSupport` |
 | `GET` | `/api/v1/admin/orders/{orderId}` | `orders.read` | Existing snapshots plus `orderScope` and nullable `historyClassification { batchKey, labelVi, labelEn, reasonVi, reasonEn, classifiedAt }`. Customer/guest APIs do not expose this internal metadata. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, `AdminOrderDetailResponse` |
-| `GET` | `/api/v1/admin/orders/{orderId}/allowed-transitions` | `orders.read` | Returns legal lifecycle values for operational orders; returns an empty list for an active historical order. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `STATE_MACHINES.md` §6 |
+| `GET` | `/api/v1/admin/orders/{orderId}/allowed-transitions` | `orders.read` | Returns legal lifecycle values for operational orders; omits COMPLETED for BANK_TRANSFER without a valid full SUCCEEDED payment; returns an empty list for an active historical order. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `STATE_MACHINES.md` §6 |
 | `PATCH` | `/api/v1/admin/orders/{orderId}/status` | `orders.write` | Existing transition contract remains; active historical orders always return `409 HISTORICAL_ORDER_READ_ONLY` before same-status handling or side effects. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `AdminOrderService.updateOrderStatus` |
 | `GET` | `/api/v1/admin/orders/{orderId}/audit` | `orders.read` | Returns the order's internal audit trail in reverse chronological order. | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
+| `POST` | `/api/v1/admin/orders/{orderId}/confirm-bank-transfer` | `orders.write` | Confirms full bank receipt for an eligible active operational order; no body; returns updated detail without changing order status. See the guards and errors below. | `OWNER_CONFIRMED_2026-09-07` | `PAY_RULE_002`, `AdminOrderService.confirmBankTransfer` |
+
+### Manual bank receipt — 2026-09-07
+
+POST /api/v1/admin/orders/{orderId}/confirm-bank-transfer requires orders.write, has no body, and returns 200 ApiDataResponse<AdminOrderDetailResponse>. Only operational PENDING/PROCESSING BANK_TRANSFER orders qualify. The sole payment must match method, total and currency. PENDING becomes SUCCEEDED; an already SUCCEEDED matching record returns unchanged. Audit action ORDER_BANK_TRANSFER_CONFIRMED records actor/time, paymentStatus before/after, paymentId, amount and currency. All writes are one transaction under the order lock; competing status/cancellation commands use the same lock.
+
+Errors: 401 unauthenticated, 403 forbidden, 404 missing order; 409 HISTORICAL_ORDER_READ_ONLY, BANK_TRANSFER_NOT_APPLICABLE (method/terminal order), BANK_TRANSFER_PAYMENT_INVALID (missing/multiple/mismatched/unsupported record), BANK_TRANSFER_PAYMENT_REQUIRED (completion before receipt). PATCH status and GET allowed-transitions share the receipt guard; same-status requests remain no-ops after the historical guard.
+
+Admin/customer/guest detail add nullable paymentMethod from Order. Admin detail adds canConfirmBankTransfer (resource eligibility, independent of caller permission); existing payments[] retains status and paidAt. No payment status field is added to Order. The current admin orders topic emits ORDER_PAYMENT_CONFIRMED after commit for query refresh only, without a new inbox item or customer email.
+
+Web checkout routes BANK_TRANSFER to the existing confirmation URL with step=bank-transfer, preserving so/key and locale. This GET-only step reads the existing order lookup and public settings; both actions remove step. Public settings bank_account_holder, bank_account_number, bank_name and optional bank_branch are the only bank source. No payment redirect, options endpoint or customer payment mutation is added.
 
 ## Customer Admin
 

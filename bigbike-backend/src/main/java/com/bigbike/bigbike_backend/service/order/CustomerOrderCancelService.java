@@ -34,7 +34,7 @@ public class CustomerOrderCancelService {
 
     @Transactional
     public OrderDetailResponse cancel(UUID customerId, UUID orderId) {
-        OrderEntity order = orderRepo.findById(orderId)
+        OrderEntity order = orderRepo.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy đơn hàng."));
 
         if (!customerId.equals(order.getCustomerId())) {

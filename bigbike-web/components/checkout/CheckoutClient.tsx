@@ -16,11 +16,7 @@ import { listPublicSettings } from "@/lib/api/public-api";
 import { queryKeys } from "@/lib/query/keys";
 import type { PublicSiteSetting } from "@/lib/contracts/public";
 import { pickSetting } from "@/lib/utils/settings";
-import {
-  CheckoutConfirmRow,
-  PaymentMethodSelector,
-  ZaloSupportBlock,
-} from "./parts/atoms";
+import { CheckoutConfirmRow, PaymentMethodSelector, ZaloSupportBlock } from "./parts/atoms";
 import { CheckoutAddressFields } from "./parts/CheckoutAddressFields";
 import { CheckoutSummary } from "./parts/CheckoutSummary";
 import { useCheckout } from "./parts/useCheckout";
@@ -48,6 +44,8 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
 
   const {
     cart,
+    recoverable,
+    retryPendingCheckout,
     cartLoading,
     cartError,
     submitError,
@@ -74,42 +72,9 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
     submitting,
   } = useCheckout();
 
-  if (cartLoading && !cart) {
-    // Cùng khối ruột mà app/dat-hang/loading.tsx dùng cho lần điều hướng đầu. Chỉ
-    // lấy phần ruột: tiêu đề + đường dẫn thật đã render ngay phía trên component
-    // này, dùng cả khung sẽ hiện tiêu đề hai lần.
-    return <CheckoutBodySkeleton />;
-  }
-
-  if (cartError) {
+  if (pendingOrderNav) {
     return (
-      <div className="border border-destructive bg-accent p-5 text-destructive" role="alert">
-        {t("loadCartFailed")} <Link href={toCartPath(locale)} className="font-semibold text-destructive! underline">{t("backToCart")}</Link>
-      </div>
-    );
-  }
-
-  if (!cart || cart.items.length === 0) {
-    return (
-      <div className="py-10 text-center" role="status">
-        <p className="font-body text-a2-page font-semibold">{tCart("emptyHeading")}</p>
-        <p className="mb-6 text-muted-foreground">{t("emptyDescription")}</p>
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <Button asChild className="rounded-none"><Link href={toProductListPath(locale)}>{t("continueShopping")}</Link></Button>
-          <Button asChild variant="link"><Link href={toCartPath(locale)}>{t("viewCart")}</Link></Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <form data-checkout-form onSubmit={handleSubmit} noValidate>
       <div className="space-y-4">
-        {submitError && (
-          <div className="border border-destructive bg-accent p-5 text-destructive" role="alert">
-            {submitError}
-          </div>
-        )}
         {priceChanges.length > 0 && pendingOrderNav && (
           <div className="border border-info/30 bg-info/10 p-5" role="status">
             <p className="mt-0 font-semibold">{t("priceChanged")}</p>
@@ -131,11 +96,70 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
           </div>
         )}
       </div>
+    );
+  }
+  if (recoverable || (submitting && !cart?.items.length)) {
+    return (
+      <div className="space-y-4 border border-border p-6" role="status">
+        <p>{submitError || t("recoveringOrder")}</p>
+        <Button disabled={submitting} onClick={() => void retryPendingCheckout()}>
+          {t("retryOrder")}
+        </Button>
+        <Button asChild variant="link">
+          <Link href={toCartPath(locale)}>{t("backToCart")}</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (cartLoading && !cart) {
+    // Cùng khối ruột mà app/dat-hang/loading.tsx dùng cho lần điều hướng đầu. Chỉ
+    // lấy phần ruột: tiêu đề + đường dẫn thật đã render ngay phía trên component
+    // này, dùng cả khung sẽ hiện tiêu đề hai lần.
+    return <CheckoutBodySkeleton />;
+  }
+
+  if (cartError) {
+    return (
+      <div className="border border-destructive bg-accent p-5 text-destructive" role="alert">
+        {t("loadCartFailed")}{" "}
+        <Link href={toCartPath(locale)} className="font-semibold text-destructive! underline">
+          {t("backToCart")}
+        </Link>
+      </div>
+    );
+  }
+
+  if (!cart || cart.items.length === 0) {
+    return (
+      <div className="py-10 text-center" role="status">
+        <p className="font-body text-a2-page font-semibold">{tCart("emptyHeading")}</p>
+        <p className="mb-6 text-muted-foreground">{t("emptyDescription")}</p>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Button asChild className="rounded-none">
+            <Link href={toProductListPath(locale)}>{t("continueShopping")}</Link>
+          </Button>
+          <Button asChild variant="link">
+            <Link href={toCartPath(locale)}>{t("viewCart")}</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form data-checkout-form onSubmit={handleSubmit} noValidate>
+      <div className="space-y-4">
+        {submitError && (
+          <div className="border border-destructive bg-accent p-5 text-destructive" role="alert">
+            {submitError}
+          </div>
+        )}
+      </div>
 
       <div className="mt-6 grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
         {/* ===== CỘT TRÁI: FORM ===== */}
         <div className="space-y-4">
-          
           {/* Card 1: Thông tin nhận hàng */}
           <section className="border border-border bg-background p-6">
             <h2 className="mb-6 font-body text-a2-page font-semibold">{t("step1Title")}</h2>
@@ -152,8 +176,12 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
               />
 
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="order_comments" className="font-body text-a5-meta font-bold text-foreground">
-                  {t("noteLabel")} <span className="font-normal text-muted-foreground">{t("noteOptional")}</span>
+                <label
+                  htmlFor="order_comments"
+                  className="font-body text-a5-meta font-bold text-foreground"
+                >
+                  {t("noteLabel")}{" "}
+                  <span className="font-normal text-muted-foreground">{t("noteOptional")}</span>
                 </label>
                 <Textarea
                   id="order_comments"
@@ -182,7 +210,9 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
 
             {shipToDifferent && (
               <div className="mt-6">
-                <h3 className="mb-4 font-body text-a4-content font-semibold">{t("shippingAddressTitle")}</h3>
+                <h3 className="mb-4 font-body text-a4-content font-semibold">
+                  {t("shippingAddressTitle")}
+                </h3>
                 <div className="space-y-4">
                   <CheckoutAddressFields
                     idPrefix="shipping"
@@ -201,7 +231,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
           {/* Card 2: Phương thức thanh toán */}
           <section className="border border-border bg-background p-6">
             <h2 className="mb-6 font-body text-a2-page font-semibold">{t("paymentMethodTitle")}</h2>
-            
+
             {/*
               `add_payment_info` hangs off the real interaction, not off state: the draft restore
               in useCheckout() calls setPaymentMethod() directly, and that path must stay silent
@@ -215,10 +245,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
               }}
             />
 
-            <CheckoutConfirmRow
-              checked={confirmedChecked}
-              onCheckedChange={setConfirmedChecked}
-            />
+            <CheckoutConfirmRow checked={confirmedChecked} onCheckedChange={setConfirmedChecked} />
 
             <Button
               type="submit"
@@ -230,11 +257,19 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
             <p className="mb-0 mt-3 text-center text-a5-meta text-muted-foreground">
               {t("confirmationTiming")}
               {activeHotline ? (
-                <> {t("hotlineLabel")}: <a className="font-semibold text-foreground hover:text-brand" href={telHref(activeHotline)}>{activeHotline}</a></>
+                <>
+                  {" "}
+                  {t("hotlineLabel")}:{" "}
+                  <a
+                    className="font-semibold text-foreground hover:text-brand"
+                    href={telHref(activeHotline)}
+                  >
+                    {activeHotline}
+                  </a>
+                </>
               ) : null}
             </p>
           </section>
-
         </div>
 
         {/* ===== CỘT PHẢI: TÓM TẮT ĐƠN HÀNG ===== */}

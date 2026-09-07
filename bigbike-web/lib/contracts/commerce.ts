@@ -134,6 +134,7 @@ export type OrderDetail = {
   orderNumber: string;
   orderKey: string | null;
   status: string;
+  paymentMethod?: string | null;
   customerEmail: string | null;
   customerPhone: string | null;
   customerNote: string | null;

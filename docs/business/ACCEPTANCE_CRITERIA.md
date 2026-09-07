@@ -71,3 +71,7 @@ Mọi ca có chữ khách nhìn thấy phải có tiếng Việt có dấu đầ
 > - **Strategic Business Decisions** (3 — B13 payment provider, B14 shipping carrier, B15 receiving + warranty; B15 resolved — serial-tracking removed platform-wide 2026-06-23 (V259) and the warranty feature removed entirely 2026-06-23 (V264)).
 >
 > Mức phạt và phạm vi nghĩa vụ pháp lý cụ thể cần legal counsel xác nhận theo hành vi vi phạm hiện hành; audit không thay thế tư vấn pháp lý chính thức.
+
+## Manual transfer receipt — 2026-09-07
+
+COD is unchanged. BANK_TRANSFER starts pending; the transfer step and confirmation show admin settings and persisted totals. Both continuation actions do not mark paid. Only orders.write confirms full receipt on operational PENDING/PROCESSING orders. Receipt is idempotent, audited and does not complete an order. Direct completion before receipt is rejected. Historical/terminal rows are unchanged. Test retries, reload/price-change recovery, concurrent receipt/cancellation/completion, invalid payment records and bilingual error/support states.

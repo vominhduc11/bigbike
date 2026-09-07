@@ -372,9 +372,7 @@ and must not reuse legacy `BACS`; `BACS`/`null` are read compatibility only. `CO
 
 ### Payment record status vocabulary
 
-`payments.status` is required and is exposed only as read-only transaction metadata in
-`OrderPaymentResponse.status`. It is not `OrderEntity.status` and does not control order
-transitions.
+`payments.status` is required and remains the only payment-status source. For BANK_TRANSFER, the admin receipt command changes PENDING to SUCCEEDED and gates order completion. It is not OrderEntity.status. COD exposes no payment-status UI.
 
 | Value | Meaning |
 |---|---|
@@ -388,8 +386,9 @@ Migration `V353__normalize_payment_record_status.sql` normalizes legacy
 `REFUNDED`/`PARTIALLY_REFUNDED → CANCELLED`, preserves existing canonical values,
 and stops on unknown values instead of guessing. It then adds
 `ck_payments_status` for exactly the four values above. Checkout and WordPress
-import code must write only the same vocabulary. The admin order detail may
-display it but provides no payment-status mutation control. See `PAY_RULE_003`.
+import code must write only the same vocabulary. See PAY_RULE_002/003 (owner decision 2026-09-07).
+
+No schema migration or paid backfill: receipt updates the existing payment.status/paidAt/updatedAt and orders.paidAmount (=totalAmount)/paidAt/updatedAt atomically. Order monetary fields are compatibility projections, not a second payment-state source. ORDER_BANK_TRANSFER_CONFIRMED audit records retain actorId, createdAt, paymentId, amount, currency, confirmedByName (admin display-name snapshot) and paymentStatus before/after. Order detail responses add nullable paymentMethod from orders; admin detail adds boolean canConfirmBankTransfer (resource eligibility only; UI also requires orders.write). Legacy records are unchanged.
 
 ### Admin invite (email-based admin user onboarding)
 

@@ -1,16 +1,14 @@
 import type { OrderDetail } from "@/lib/contracts/commerce";
 
-// Trạng thái đơn (chưa giao) mà khách được phép tự huỷ khi chưa thanh toán.
+// ORDER_RULE_002: khách được huỷ đơn đang chờ xác nhận hoặc đang xử lý.
 const ACTIVE_CANCELLABLE_STATUSES = new Set(["PENDING", "PROCESSING"]);
 
 /**
- * Khách được tự huỷ đơn khi chưa thu tiền và hàng chưa rời kho.
+ * Quyền huỷ hiện có chỉ phụ thuộc trạng thái đơn, không phụ thuộc việc đã nhận tiền.
  * Mirror chính xác backend `CustomerOrderCancelService.isCustomerCancellable` —
  * backend là nguồn chốt cuối; helper này chỉ để ẩn/hiện nút trên UI.
  */
-export function isCustomerCancellable(
-  order: Pick<OrderDetail, "status">,
-): boolean {
+export function isCustomerCancellable(order: Pick<OrderDetail, "status">): boolean {
   return ACTIVE_CANCELLABLE_STATUSES.has(order.status);
 }
 
@@ -26,7 +24,7 @@ export function orderFilterHref(basePath: string, status?: string): string {
 }
 
 export type BankTransferInfo = {
-  /** true khi admin đã nhập đủ chủ TK + số TK → hiển thị box; false → hiện fallback. */
+  /** Chỉ hiển thị tài khoản khi đủ ngân hàng, chủ tài khoản và số tài khoản. */
   configured: boolean;
   holder: string;
   number: string;
@@ -36,21 +34,42 @@ export type BankTransferInfo = {
 
 /**
  * Quyết định thông tin chuyển khoản hiển thị ở trang xác nhận đơn.
- * Trả null khi không phải đơn chuyển khoản (BACS) → không hiển thị gì.
+ * Hỗ trợ BANK_TRANSFER mới và BACS cũ; không suy diễn trạng thái đã thanh toán.
  * Số tài khoản do admin tự nhập ở Cài đặt → Thanh toán (public settings).
  */
 export function resolveBankTransfer(
   paymentMethod: string | null | undefined,
   settings: Map<string, string>,
 ): BankTransferInfo | null {
-  if ((paymentMethod ?? "").trim().toUpperCase() !== "BACS") return null;
+  if (!["BANK_TRANSFER", "BACS"].includes((paymentMethod ?? "").trim().toUpperCase())) return null;
   const holder = settings.get("bank_account_holder")?.trim() ?? "";
   const number = settings.get("bank_account_number")?.trim() ?? "";
+  const bankName = settings.get("bank_name")?.trim() ?? "";
   return {
-    configured: Boolean(holder && number),
+    configured: Boolean(holder && number && bankName),
     holder,
     number,
-    bankName: settings.get("bank_name")?.trim() ?? "",
+    bankName,
     branch: settings.get("bank_branch")?.trim() ?? "",
   };
+}
+
+export function orderPaymentMethod(order: Pick<OrderDetail, "paymentMethod" | "payments">): string {
+  return (order.paymentMethod ?? order.payments[0]?.paymentMethod ?? "").trim().toUpperCase();
+}
+
+/** Match the backend's single full-amount receipt, never infer success from order status. */
+export function bankTransferStatus(order: OrderDetail): "PENDING" | "SUCCEEDED" | "UNKNOWN" | null {
+  if (orderPaymentMethod(order) !== "BANK_TRANSFER") return null;
+  const payment = order.payments[0];
+  if (
+    order.payments.length !== 1 ||
+    payment?.paymentMethod !== "BANK_TRANSFER" ||
+    payment.amount !== order.totalAmount ||
+    payment.currency !== order.currency
+  )
+    return "UNKNOWN";
+  return payment.status === "PENDING" || payment.status === "SUCCEEDED"
+    ? payment.status
+    : "UNKNOWN";
 }

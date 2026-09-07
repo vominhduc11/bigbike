@@ -26,6 +26,12 @@ class AuditLogPersister {
 
     private final ObjectProvider<AuditLogJpaRepository> repoProvider;
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void persistRequired(AuditLogEntity entity) {
+        if (entity.getCreatedAt() == null) entity.setCreatedAt(Instant.now());
+        repoProvider.getObject().save(entity);
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void persist(AuditLogEntity entity) {
         AuditLogJpaRepository repo = repoProvider.getIfAvailable();

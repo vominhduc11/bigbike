@@ -489,6 +489,11 @@
       "DISABLED": "Tạm khoá",
       "BLOCKED": "Bị cấm",
       "UNKNOWN": "Không rõ"
+    },
+    "bankTransfer": {
+      "PENDING": "Chờ thanh toán",
+      "SUCCEEDED": "Đã thanh toán",
+      "UNKNOWN": "Cần kiểm tra thông tin thanh toán"
     }
   },
   "sort": {
@@ -1544,7 +1549,8 @@
         "ORDER_STATUS_UPDATED": "Cập nhật trạng thái đơn",
         "ORDER_CANCELLED_BY_CUSTOMER": "Khách hàng huỷ đơn",
         "ORDER_NOTE_CREATED": "Thêm ghi chú",
-        "ORDER_REFUND_CREATED": "Tạo hoàn tiền"
+        "ORDER_REFUND_CREATED": "Tạo hoàn tiền",
+        "ORDER_BANK_TRANSFER_CONFIRMED": "Xác nhận nhận đủ tiền chuyển khoản"
       }
     },
     "title": "Đơn hàng",
@@ -1677,7 +1683,14 @@
       "reasonLabel": "Lý do",
       "reasonPlaceholder": "Mô tả lý do thực hiện thao tác này...",
       "reasonRequired": "Bắt buộc nhập lý do cho thao tác này.",
-      "unsavedActionWarning": "Thao tác CHƯA được lưu vì kết nối đã ngắt. Dữ liệu đơn sẽ được tải lại; vui lòng thử lại."
+      "unsavedActionWarning": "Thao tác CHƯA được lưu vì kết nối đã ngắt. Dữ liệu đơn sẽ được tải lại; vui lòng thử lại.",
+      "transferTitle": "Chuyển khoản ngân hàng",
+      "transferConfirmTitle": "Xác nhận đã nhận đủ tiền",
+      "transferConfirmMessage": "Bạn đã kiểm tra tài khoản ngân hàng và nhận đủ {{amount}} cho đơn #{{orderNumber}}? Thao tác này chỉ xác nhận tiền về, không hoàn thành đơn.",
+      "transferConfirmed": "Đã ghi nhận đủ tiền chuyển khoản.",
+      "transferPaymentRequired": "Cần xác nhận đã nhận đủ tiền chuyển khoản trước khi hoàn thành đơn.",
+      "transferPaymentInvalid": "Dữ liệu chuyển khoản chưa khớp. Cần kiểm tra trước khi xác nhận hoặc hoàn thành đơn.",
+      "transferNotApplicable": "Chỉ xác nhận tiền cho đơn chuyển khoản đang chờ xác nhận hoặc đang xử lý."
     },
     "emptyAll": "Chưa có đơn hàng nào",
     "emptyAllDesc": "Khi có đơn đặt trên website, đơn sẽ hiện ở đây."
@@ -3018,7 +3031,7 @@
       "bigbike": "Trợ lý BigBike",
       "source": "Nguồn trả lời",
       "usedAi": "Có dùng AI",
-      "readOnly": "Hội thoại chỉ để theo dõi; nhân viên không tiếp nhận hoặc trả lời khách tại đây.",
+      "readOnly": "Lịch sử này chỉ để xem lại; không có chức năng trả lời hoặc tiếp nhận hội thoại.",
       "sources": {
         "ai": "Trợ lý tự động",
         "rule": "Quy tắc hỗ trợ",
@@ -3034,15 +3047,13 @@
       "active": "Đang mở",
       "endStates": {
         "turnLimit": "Đã đủ lượt hỏi",
-        "continued": "Đã tiếp tục ở hội thoại mới",
-        "offTopic": "Ngoài phạm vi hỗ trợ",
         "continued": "Đã nối tiếp hội thoại",
+        "offTopic": "Ngoài phạm vi hỗ trợ",
         "unavailable": "Không thể tiếp tục hỗ trợ tự động",
         "dailyLimit": "Tạm dừng hỗ trợ tự động",
         "disabled": "Đang tắt hỗ trợ tự động",
         "closed": "Đã kết thúc"
-      },
-      "readOnly": "Lịch sử này chỉ để xem lại; không có chức năng trả lời hoặc tiếp nhận hội thoại."
+      }
     }
   },
   "settings": {

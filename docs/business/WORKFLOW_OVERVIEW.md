@@ -12,6 +12,12 @@
 | 6 | System | Push admin order event (no quantity decrement — boolean availability, V261) and, when configured, dispatch one optional Telegram new-order alert after commit | `OWNER_CONFIRMED_2026-09-05` | `CheckoutService.java`, `AdminOrderWsService.java`, Telegram notification service |
 | 7 | Customer/Guest | Track the order from the signed-in order detail or confirmation link: refresh the existing order read every 15 seconds while visible, refresh on tab focus, and stop at `COMPLETED` or `CANCELLED`; no customer WebSocket is used | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web` order query hooks and confirmation client |
 
+## Manual bank-transfer flow (owner decision 2026-09-07)
+
+After checkout has created the order, COD goes directly to confirmation; BANK_TRANSFER first shows bank details, persisted total and BIGBIKE {orderNumber}. Both Continue and Pay later lead to confirmation without changing payment status. Persist checkout attempt/result in the browser session so retries/reloads do not create another order, including the price-change acknowledgement branch. Confirmation and account detail show the current transfer status; COD instructions stay separate.
+
+Staff with orders.write check the bank account externally, then confirm full receipt for an operational PENDING/PROCESSING BANK_TRANSFER order. This writes payment/audit only. They separately confirm successful delivery from PROCESSING to COMPLETED; backend rejects completion before full receipt. Cancelled/completed/historical orders cannot receive a new confirmation. No reversal, partial payment or automatic refund is added.
+
 ## Post-purchase Review Invitation Workflow
 
 | Step | Actor | Current flow | Status | Evidence |

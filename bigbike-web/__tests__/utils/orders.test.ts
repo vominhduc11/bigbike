@@ -36,9 +36,9 @@ describe("resolveBankTransfer", () => {
     ["bank_branch", "HCM"],
   ]);
 
-  it("returns null for non-BACS payment methods", () => {
+  it("returns null for non-transfer payment methods", () => {
     expect(resolveBankTransfer("COD", full)).toBeNull();
-    expect(resolveBankTransfer("BANK_TRANSFER", full)).toBeNull();
+    expect(resolveBankTransfer("BANK_TRANSFER", full)?.configured).toBe(true);
     expect(resolveBankTransfer("", full)).toBeNull();
     expect(resolveBankTransfer(null, full)).toBeNull();
     expect(resolveBankTransfer(undefined, full)).toBeNull();
@@ -54,9 +54,22 @@ describe("resolveBankTransfer", () => {
     expect(r?.branch).toBe("HCM");
   });
 
-  it("is not configured until both holder and number are filled in", () => {
+  it("is not configured until bank, holder and number are filled in", () => {
     expect(resolveBankTransfer("BACS", new Map())?.configured).toBe(false);
-    expect(resolveBankTransfer("BACS", new Map([["bank_account_holder", "A"]]))?.configured).toBe(false);
-    expect(resolveBankTransfer("BACS", new Map([["bank_account_number", "1"]]))?.configured).toBe(false);
+    expect(
+      resolveBankTransfer(
+        "BANK_TRANSFER",
+        new Map([
+          ["bank_account_holder", "A"],
+          ["bank_account_number", "1"],
+        ]),
+      )?.configured,
+    ).toBe(false);
+    expect(resolveBankTransfer("BACS", new Map([["bank_account_holder", "A"]]))?.configured).toBe(
+      false,
+    );
+    expect(resolveBankTransfer("BACS", new Map([["bank_account_number", "1"]]))?.configured).toBe(
+      false,
+    );
   });
 });

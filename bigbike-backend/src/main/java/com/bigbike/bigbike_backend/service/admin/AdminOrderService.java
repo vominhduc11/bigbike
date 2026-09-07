@@ -11,6 +11,9 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.api.order.dto.OrderAddressResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderLineItemResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderPaymentResponse;
+import com.bigbike.bigbike_backend.domain.commerce.PaymentRecordStatus;
+import com.bigbike.bigbike_backend.service.order.BankTransferPolicy;
+import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import com.bigbike.bigbike_backend.api.order.dto.OrderShippingItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.mapper.OrderAddressMapper;
@@ -86,6 +89,7 @@ public class AdminOrderService {
         ALLOWED_TRANSITIONS.put("CANCELLED",  Set.of());
     }
 
+    private final com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository adminUserRepo;
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderAddressJpaRepository addressRepo;
@@ -177,7 +181,10 @@ public class AdminOrderService {
             return List.of();
         }
         Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(order.getStatus(), Set.of());
-        return allowed.stream().sorted().toList();
+        return allowed.stream()
+                .filter(next -> !"COMPLETED".equals(next) || !BankTransferPolicy.isBankTransfer(order)
+                        || BankTransferPolicy.isPaid(order, paymentRepo.findByOrderId(orderId)))
+                .sorted().toList();
     }
 
     // Update order status
@@ -190,7 +197,7 @@ public class AdminOrderService {
             throw ValidationException.fromField("status", "INVALID", "Unknown order status: " + newStatus);
         }
 
-        OrderEntity order = orderRepo.findById(orderId)
+        OrderEntity order = orderRepo.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found."));
 
         if (historyClassificationService.isHistorical(orderId)) {
@@ -211,6 +218,15 @@ public class AdminOrderService {
         if (!allowed.contains(newStatus)) {
             throw new ConflictException(
                     "Cannot transition order from " + currentStatus + " to " + newStatus + ".");
+        }
+
+        if ("COMPLETED".equals(newStatus) && BankTransferPolicy.isBankTransfer(order)) {
+            List<PaymentEntity> payments = paymentRepo.findByOrderId(orderId);
+            BankTransferPolicy.requirePayment(order, payments);
+            if (!BankTransferPolicy.isPaid(order, payments)) {
+                throw new ConflictException("BANK_TRANSFER_PAYMENT_REQUIRED",
+                        "Cần xác nhận đã nhận đủ tiền chuyển khoản trước khi hoàn thành đơn.");
+            }
         }
 
         String beforeStatus = order.getStatus();
@@ -254,6 +270,45 @@ public class AdminOrderService {
         runAfterCommit(() -> orderNotificationService.sendOrderStatusUpdate(statusSnapshot, statusForEmail));
 
         return toDetail(orderRepo.findById(orderId).orElseThrow());
+    }
+
+    @Transactional
+    public AdminOrderDetailResponse confirmBankTransfer(UUID orderId, UUID adminId,
+            String clientIp, String userAgent) {
+        OrderEntity order = orderRepo.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found."));
+        if (historyClassificationService.isHistorical(orderId)) {
+            throw new ConflictException("HISTORICAL_ORDER_READ_ONLY", "Đơn lịch sử chỉ được xem.");
+        }
+        if (!BankTransferPolicy.isBankTransfer(order) || !BankTransferPolicy.isActive(order)) {
+            throw new ConflictException("BANK_TRANSFER_NOT_APPLICABLE",
+                    "Chỉ xác nhận chuyển khoản cho đơn đang chờ xác nhận hoặc đang xử lý.");
+        }
+        PaymentEntity payment = BankTransferPolicy.requirePayment(order, paymentRepo.findByOrderId(orderId));
+        if (payment.getStatus() == PaymentRecordStatus.SUCCEEDED) return toDetail(order);
+
+        Instant now = Instant.now();
+        payment.setStatus(PaymentRecordStatus.SUCCEEDED);
+        payment.setPaidAt(now);
+        payment.setUpdatedAt(now);
+        order.setPaidAmount(order.getTotalAmount());
+        order.setPaidAt(now);
+        order.setUpdatedAt(now);
+        paymentRepo.save(payment);
+        orderRepo.save(order);
+        auditLogWriter.saveRequired(auditLogFactory.build("ADMIN", adminId,
+                "ORDER_BANK_TRANSFER_CONFIRMED", "ORDER", orderId,
+                writeAuditJson(Map.of("paymentStatus", "PENDING")),
+                writeAuditJson(Map.of("paymentStatus", "SUCCEEDED", "paymentId", payment.getId(),
+                        "amount", payment.getAmount(), "currency", payment.getCurrency(),
+                        "paidAt", now.toString(), "confirmedByName", adminUserRepo.findById(adminId)
+                                .map(user -> user.getDisplayName() == null ? adminId.toString() : user.getDisplayName())
+                                .orElse(adminId.toString()))), clientIp, userAgent));
+        adminOrderWsService.pushPaymentConfirmed(new OrderWsEvent(
+                "ORDER_PAYMENT_CONFIRMED", orderId, order.getOrderNumber(),
+                order.getCustomerName(), order.getTotalAmount(), order.getStatus(),
+                order.getPaymentMethod(), now));
+        return toDetail(order);
     }
 
     @Transactional(readOnly = true)
@@ -355,8 +410,8 @@ public class AdminOrderService {
         List<OrderShippingItemResponse> shippingItems = shippingItemRepo.findByOrderId(order.getId())
                 .stream().map(this::toShippingItem).toList();
 
-        List<OrderPaymentResponse> payments = paymentRepo.findByOrderId(order.getId())
-                .stream().map(this::toPayment).toList();
+        List<PaymentEntity> paymentEntities = paymentRepo.findByOrderId(order.getId());
+        List<OrderPaymentResponse> payments = paymentEntities.stream().map(this::toPayment).toList();
 
         String customerName = (order.getCustomerName() != null && !order.getCustomerName().isBlank())
                 ? order.getCustomerName()
@@ -370,37 +425,9 @@ public class AdminOrderService {
                 .activeClassification(order.getId())
                 .orElse(null);
 
-        return new AdminOrderDetailResponse(
-                order.getId(),
-                order.getOrderNumber(),
-                order.getOrderKey(),
-                order.getStatus(),
-                order.getFulfillmentType(),
-                order.getCustomerEmail(),
-                order.getCustomerPhone(),
-                customerName,
-                order.getCustomerNote(),
-                order.getCurrency(),
-                order.getSource(),
-                order.getSubtotalAmount(),
-                order.getDiscountAmount(),
-                order.getShippingAmount(),
-                order.getFeeAmount(),
-                order.getTaxAmount(),
-                order.getTotalAmount(),
-                order.getPaidAmount(),
-                order.getPlacedAt(),
-                order.getPaidAt(),
-                order.getCompletedAt(),
-                order.getCancelledAt(),
-                order.getCancelReason(),
-                lineItems,
-                addresses,
-                shippingItems,
-                payments,
-                classification == null ? "OPERATIONAL" : "HISTORICAL",
-                classification
-        );
+        return orderMapper.toAdminDetailResponse(order, customerName, lineItems, addresses,
+                shippingItems, payments, classification,
+                classification == null && BankTransferPolicy.canConfirm(order, paymentEntities));
     }
 
     private OrderLineItemResponse toLineItem(

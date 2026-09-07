@@ -266,6 +266,14 @@ export function toOrderLookupPath(locale?: Locale): string {
   return translatePath("/don-hang/xac-nhan/", locale ?? getActiveLocale());
 }
 
+export function toCheckoutResultPath(
+  order: { orderNumber: string; orderKey: string; paymentMethod: string },
+  locale?: Locale,
+): string {
+  const path = toOrderConfirmPath(order.orderNumber, order.orderKey, locale);
+  return order.paymentMethod === "BANK_TRANSFER" ? `${path}&step=bank-transfer` : path;
+}
+
 export function toOrderDetailPath(orderId: string, locale?: Locale): string {
   return translatePath(
     `/tai-khoan/don-hang/${encodeURIComponent(orderId)}/`,

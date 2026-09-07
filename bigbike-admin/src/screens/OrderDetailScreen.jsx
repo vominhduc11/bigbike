@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from '@/lib/toast'
@@ -13,6 +13,7 @@ import { AdminTable } from '../components/AdminTable'
 import { CollapsibleSection } from '../components/CollapsibleSection'
 import { Screen, ScreenHeader, StickyActionBar } from '../components/layout'
 import {
+  confirmBankTransfer,
   fetchOrderAllowedTransitions,
   fetchOrderAuditTrail,
   fetchOrderDetail,
@@ -28,6 +29,7 @@ import { recordRecentItem } from '../lib/useRecentItems'
 import { useAdminPresence } from '../lib/useAdminPresence'
 import { Button } from '@/components/ui/button'
 import {
+  bankTransferState,
   REASON_REQUIRED,
   addressLine,
   sameAddress,
@@ -98,6 +100,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       if (String(event?.orderId) === String(orderId)) {
         queryClient.invalidateQueries({ queryKey: ['order', orderId] })
         queryClient.invalidateQueries({ queryKey: ['order-audit', orderId] })
+        queryClient.invalidateQueries({ queryKey: ['order-transitions', orderId] })
       }
     })
     return unsubscribe
@@ -117,6 +120,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       ? 'error'
       : 'success'
 
+  const receiptInFlight = useRef(false)
   const [saving, setSaving] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
   const [reasonModal, setReasonModal] = useState(null)
@@ -148,6 +152,7 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     queryClient.setQueryData(['order', orderId], (old) => ({ ...old, item: updatedOrder }))
     queryClient.invalidateQueries({ queryKey: ['orders'] })
     queryClient.invalidateQueries({ queryKey: ['order-audit', orderId] })
+    queryClient.invalidateQueries({ queryKey: ['order-transitions', orderId] })
   }
 
   async function doStatusChange(newStatus, reason) {
@@ -190,6 +195,38 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       }
       return false
     } finally {
+      setSaving(false)
+      setPendingAction(null)
+    }
+  }
+
+  async function handleConfirmTransfer() {
+    if (receiptInFlight.current || saving || !effectiveCanUpdate || !order?.canConfirmBankTransfer)
+      return
+    receiptInFlight.current = true
+    setSaving(true)
+    setPendingAction('payment')
+    try {
+      const confirmed = await showConfirm(
+        t('orders.detail.transferConfirmMessage', {
+          orderNumber: order.orderNumber,
+          amount: formatCurrencyVnd(order.total),
+        }),
+        t('orders.detail.transferConfirmTitle'),
+      )
+      if (!confirmed) return
+      const response = await confirmBankTransfer(orderId)
+      applyOrderUpdate(response.item)
+      toast.success(t('orders.detail.transferConfirmed'))
+    } catch (error) {
+      toast.error(getOrderMutationError(error, t))
+      await Promise.allSettled([
+        orderQuery.refetch(),
+        transitionsQuery.refetch(),
+        auditQuery.refetch(),
+      ])
+    } finally {
+      receiptInFlight.current = false
       setSaving(false)
       setPendingAction(null)
     }
@@ -314,10 +351,13 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
     ...item,
     id: item.id ?? `order-item-${index}`,
   }))
-  const paymentRows = (order.payments ?? []).map((payment, index) => ({
-    ...payment,
-    id: payment.id ?? `payment-${index}`,
-  }))
+  const transferState = bankTransferState(order)
+  const paymentRows = (order.paymentMethod === 'COD' ? [] : (order.payments ?? [])).map(
+    (payment, index) => ({
+      ...payment,
+      id: payment.id ?? `payment-${index}`,
+    }),
+  )
   const itemColumns = [
     {
       key: 'product',
@@ -369,9 +409,11 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
       key: 'status',
       label: t('orders.detail.colPaymentRecordStatus'),
       render: (payment) =>
-        payment.status
-          ? t(`status.paymentRecord.${payment.status}`, { defaultValue: t('common.unknown') })
-          : t('common.unknown'),
+        payment.paymentMethod === 'BANK_TRANSFER'
+          ? t(`status.bankTransfer.${transferState ?? 'UNKNOWN'}`)
+          : payment.status
+            ? t(`status.paymentRecord.${payment.status}`, { defaultValue: t('common.unknown') })
+            : t('common.unknown'),
     },
     {
       key: 'amount',
@@ -469,6 +511,30 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
           </Button>
         }
       />
+
+      {transferState && (
+        <DetailSection title={t('orders.detail.transferTitle')}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-2">
+              <StatusBadge type="bankTransfer" status={transferState} />
+              <p className="m-0 font-semibold">{formatCurrencyVnd(order.total)}</p>
+              {transferState !== 'SUCCEEDED' &&
+                ['PENDING', 'PROCESSING'].includes(order.orderStatus) && (
+                  <p className="m-0 text-sm text-muted-foreground">
+                    {t('orders.detail.transferPaymentRequired')}
+                  </p>
+                )}
+            </div>
+            {effectiveCanUpdate && order.canConfirmBankTransfer && (
+              <Button disabled={actionsBusy} onClick={handleConfirmTransfer}>
+                {pendingAction === 'payment'
+                  ? t('common.saving')
+                  : t('orders.detail.transferConfirmTitle')}
+              </Button>
+            )}
+          </div>
+        </DetailSection>
+      )}
 
       {isHistorical ? (
         <ReadOnlyBanner warning={t('orders.detail.historicalReadOnly')} />
@@ -714,11 +780,14 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                     },
                     {
                       label: t('orders.detail.colPaymentRecordStatus'),
-                      value: payment.status
-                        ? t(`status.paymentRecord.${payment.status}`, {
-                            defaultValue: t('common.unknown'),
-                          })
-                        : t('common.unknown'),
+                      value:
+                        payment.paymentMethod === 'BANK_TRANSFER'
+                          ? t(`status.bankTransfer.${transferState ?? 'UNKNOWN'}`)
+                          : payment.status
+                            ? t(`status.paymentRecord.${payment.status}`, {
+                                defaultValue: t('common.unknown'),
+                              })
+                            : t('common.unknown'),
                     },
                   ],
                 })}
@@ -774,6 +843,9 @@ export function OrderDetailScreen({ orderId, navigate, canUpdate }) {
                               defaultValue: t('common.unknown'),
                             })
                           : t('common.unknown')}
+                        {details.paymentConfirmed
+                          ? ` · ${details.confirmedByName || entry.actorId || t('common.unknown')}`
+                          : ''}
                         {entry.ipAddress ? ` · ${entry.ipAddress}` : ''}
                       </div>
                       {details.transition ? (

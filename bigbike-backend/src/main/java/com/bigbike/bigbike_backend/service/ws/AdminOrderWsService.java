@@ -18,6 +18,18 @@ public class AdminOrderWsService {
     private final SimpMessagingTemplate messaging;
     private final AdminNotificationService notificationService;
 
+    /** Receipt refresh is not a new order/inbox notification. */
+    public void pushPaymentConfirmed(OrderWsEvent event) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() { doSend(event); }
+            });
+        } else {
+            doSend(event);
+        }
+    }
+
     public void pushEvent(OrderWsEvent event) {
         // Delay push until after the current transaction commits so
         // admin clients that refetch immediately see consistent DB state.

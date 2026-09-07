@@ -54,7 +54,7 @@ File này liên quan trực tiếp đến:
 | Category | `deleted` + `isVisible` | `deleted`: `false`, `true`; `isVisible`: `true`, `false` | `deleted` is the independent Trash lifecycle; `isVisible` independently controls storefront display. Soft-delete/restore cascade the tree; hiding is rejected when a direct child remains visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `CategoryMutationService.java`, `CatalogReadService.java` |
 | Brand | `visible` | `true`, `false` | Delete sets visible false; public only visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility; no full transition map | `BrandMutationService.java`, `CatalogReadService.java` |
 | Order | `status` | `PENDING`, `PROCESSING`, `COMPLETED`, `CANCELLED` | Một state machine duy nhất; không còn shipment-tracking metadata (đã gỡ bỏ 2026-07-23). | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
-| Payment record | `status` on Payment | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` | Snapshot đối soát đọc-chỉ; không tạo thêm trục trạng thái trên Order và không điều khiển chuyển trạng thái đơn. | Backend service + DB constraint | `STATUS_ONLY` | `CheckoutService.java`, `WordPressOrderMapper.java`, payment persistence |
+| Payment record | `status` on Payment | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` | BANK_TRANSFER: admin xác nhận PENDING → SUCCEEDED; là điều kiện hoàn thành đơn. COD không có trạng thái/thao tác thanh toán trên UI; không thêm trạng thái trên Order. | Backend service + DB constraint | `STATUS_ONLY` | `CheckoutService.java`, `WordPressOrderMapper.java`, payment persistence |
 | Inventory / Stock | `stockState`, availability flag | `IN_STOCK`, `OUT_OF_STOCK` | `stockState` mirrors the boolean availability toggle (V261). New variants default available; a new no-variant product defaults `IN_STOCK` unless admin marks it Hết. Selling/cancelling does not change availability. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `InventoryPolicyService.java`, `ProductMutationService.java`, `CheckoutService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–009 |
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V211) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
 | Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `TRASH`; legacy `HIDDEN`/`ARCHIVED`/`PENDING`/`PRIVATE` all migrated to `DRAFT` (V324). | Publish transitions enforced on update (DRAFT ↔ PUBLISHED both directions); delete sequences `PUBLISHED → DRAFT → TRASH` in one request (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `CONFIRMED_FROM_CODE` (2026-08-06) | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
@@ -305,7 +305,7 @@ From `AdminOrderService.ALLOWED_ORDER_STATUSES`:
 
 From checkout behavior:
 
-- New checkout orders start at `PENDING`. `COD` and `BANK_TRANSFER` are manual payment methods; the system does not expose a payment state on the order.
+- New checkout orders start at `PENDING`. `COD` and `BANK_TRANSFER` are manual payment methods; BANK_TRANSFER exposes the existing payment record status, initially PENDING; COD has no payment-status UI.
 - `PROCESSING → COMPLETED` is the shop's direct confirmation of successful delivery, including COD collection. There is no intermediate shipment hand-off step.
 
 ### Terminal States
@@ -319,7 +319,7 @@ From checkout behavior:
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
 | `PENDING` | `PROCESSING` | Admin / `orders.write` | Order exists. | Audit log, status email, websocket event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PROCESSING` | `COMPLETED` | Admin / `orders.write` | Delivery confirmed by the shop. | Sets `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PROCESSING` | `COMPLETED` | Admin / `orders.write` | Delivery confirmed by the shop; BANK_TRANSFER must have one matching full-amount SUCCEEDED payment. | Sets `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `PENDING` | `CANCELLED` | Admin / `orders.write` | Order exists, has not been processed, and request includes non-blank `cancelReason`. | Set `cancelledAt`, store `cancel_reason`, audit, notification, websocket. (No stock restore — availability is a manual boolean.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `PROCESSING` | `CANCELLED` | Admin / `orders.write` | Order exists, has not been completed, and request includes non-blank `cancelReason`. | Set `cancelledAt`, store `cancel_reason`, audit, notification, websocket. (No stock restore — availability is a manual boolean.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 
@@ -367,11 +367,11 @@ From checkout behavior:
 - Fresh tests for every allowed and forbidden transition.
 - Migration verification against the production order snapshot before applying V350.
 
-## 7. Order-level Payment State Machine — Removed
+## 7. Manual bank-transfer receipt — owner decision 2026-09-07
 
-Order-level payment state is no longer part of the contract. No payment status is stored on or exposed from `OrderEntity`, and no payment-state transition endpoint exists.
+No payment status is stored on OrderEntity. Operational BANK_TRANSFER orders in PENDING/PROCESSING permit orders.write to confirm the existing payment PENDING → SUCCEEDED via POST /admin/orders/{orderId}/confirm-bank-transfer. Receipt and audit are atomic and do not change order status. Historical and terminal orders reject before writes; repeated confirmation on an eligible already-paid order is a no-op. No reversal or partial payment is supported.
 
-The separate `payments` snapshot rows remain readable in order detail. Their technical status vocabulary is fixed to `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` (`PAY_RULE_003`). These values are historical/reconciliation metadata only: the admin cannot transition them, and they never permit or block an order transition.
+The separate `payments` snapshot rows remain readable in order detail. Their technical status vocabulary is fixed to `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` (`PAY_RULE_003`). BANK_TRANSFER completion requires exactly one matching SUCCEEDED payment (same total/currency). Missing, multiple, failed/cancelled or mismatched records cannot be confirmed or used to complete an order. COD completion is unchanged; legacy payment records remain read-only. No existing row is automatically marked paid.
 
 ## 8. Shipping / Fulfillment State Machine — Removed
 
@@ -915,7 +915,7 @@ State field: `review_invitation_deliveries.status`; initial state `PENDING`.
 | Order | `CANCELLED` | Inventory | No stock change (V261). | Availability is a manual boolean — cancelling does not restore quantity. | `CONFIRMED_FROM_CODE` |
 | Order | `COMPLETED` | Order timestamps | `completedAt` set if null. | Record completion time. | `CONFIRMED_BACKEND_ENFORCED` |
 | Order | `CANCELLED` | Order timestamps | `cancelledAt` set if null. | Record cancellation time. | `CONFIRMED_BACKEND_ENFORCED` |
-| Payment record | `SUCCEEDED` | Payment snapshot | `paidAt` may be present for a successful historical/manual record. | Read-only reconciliation metadata; no effect on order state. | `STATUS_ONLY` |
+| Payment record | `SUCCEEDED` | Payment snapshot | `paidAt` may be present for a successful historical/manual record. | For BANK_TRANSFER, full receipt permits subsequent delivery completion; legacy records remain readable. | `STATUS_ONLY` |
 | Content | `PUBLISHED` | Public Web / SEO | `publishedAt` set; web revalidation triggered. | Public content lifecycle. | `CONFIRMED_BACKEND_ENFORCED`; public filtering `CONFIRMED_FROM_CODE` (2026-08-06) |
 | Media | `DELETED` | Media Library | Excluded by default from admin media list. | Avoid showing deleted media. | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin User | `DISABLED` / `SUSPENDED` | Auth/API | Blocks login (`AdminAuthService.login`) **and every subsequent authenticated request**, not just login. | Security — fixed 2026-07-06: `JwtAuthFilter` now re-checks the admin's current status/role from DB (cached, evicted on write) on every request instead of trusting the JWT claims alone, so a lock/suspend/demote takes effect on the admin's very next request instead of surviving up to the ~15min access-token TTL. | `CONFIRMED_BACKEND_ENFORCED` — `JwtAuthFilter.java`, `AdminAccountStatusService.java`, `AdminAdminUsersService.java` (evicts cache on status/role change) |
@@ -971,7 +971,7 @@ Notes:
 
 | Entity / State Machine | Status | Gap |
 |---|---|---|
-| Payment Provider/Webhook lifecycle | `NOT_FOUND_IN_REPO` | No automatic payment gateway. New storefront orders use manual `COD` or `BANK_TRANSFER`; shop staff confirm by phone before operational processing, and bank-account details are sent to a transfer customer only by phone/Zalo afterward. `BACS` is legacy-order compatibility only. No payment redirect or provider webhook; the Alepay/ZaloPay plan was dropped. |
+| Payment Provider/Webhook lifecycle | `NOT_FOUND_IN_REPO` | No automatic payment gateway. New storefront orders use manual `COD` or `BANK_TRANSFER`; shop staff confirm by phone before operational processing, and bank-account details appear after order creation and remain on confirmation, from existing public payment settings. `BACS` is legacy-order compatibility only. No payment redirect or provider webhook; the Alepay/ZaloPay plan was dropped. |
 | Shipping Provider/Tracking automation | `NOT_FOUND_IN_REPO` | No carrier integration found; shipment-tracking metadata was removed entirely (2026-07-23). |
 | Serial lifecycle | `REMOVED` | Serial-number tracking was removed platform-wide (2026-06-23, V259). There is no serial lifecycle. Inventory is manual boolean availability only. |
 | Settings lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Settings APIs exist; no state machine confirmed. |

@@ -10,12 +10,18 @@ import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { sectionHeading } from "@/lib/ui-classes";
 import { cn } from "@/lib/utils";
 import { formatAddress, formatVnd, telHref, zaloHref } from "@/lib/utils/format";
-import { resolveBankTransfer } from "@/lib/utils/orders";
+import { BankTransferStatus } from "@/components/checkout/BankTransferStatus";
+import { bankTransferStatus, orderPaymentMethod, resolveBankTransfer } from "@/lib/utils/orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Locale } from "@/i18n/locale";
-import { toHomePath, toOrderConfirmPath, toOrderHistoryPath, toOrderLookupPath } from "@/lib/utils/routes";
+import {
+  toHomePath,
+  toOrderConfirmPath,
+  toOrderHistoryPath,
+  toOrderLookupPath,
+} from "@/lib/utils/routes";
 import { createOrderLookupSchema, type OrderLookupFormValues } from "@/lib/schemas/customer";
 
 type Props = {
@@ -25,6 +31,11 @@ type Props = {
   settingsRecord: Record<string, string>;
   isLoading?: boolean;
   hasError?: boolean;
+  transferStep?: boolean;
+  settingsLoading?: boolean;
+  settingsError?: boolean;
+  retrySettings?: () => void;
+  retryOrder?: () => void;
 };
 
 /**
@@ -34,10 +45,30 @@ type Props = {
  * dựng hẳn ở client để `useTranslations` đổi đúng theo `NEXT_LOCALE` — mirror pattern
  * `OrderDetailContent`/`CheckoutClient` (xem AGENTS.md §6 — client component + next-intl).
  */
-export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord, isLoading = false, hasError = false }: Props) {
+export function OrderConfirmView({
+  orderNumber,
+  orderKey,
+  order,
+  settingsRecord,
+  isLoading = false,
+  hasError = false,
+  transferStep = false,
+  settingsLoading = false,
+  settingsError = false,
+  retrySettings,
+  retryOrder,
+}: Props) {
   const locale = useLocale() as Locale;
   const t = useTranslations("OrderConfirm");
   const tCommon = useTranslations("Common");
+  const router = useRouter();
+  const showTransferStep = Boolean(
+    order &&
+    transferStep &&
+    orderPaymentMethod(order) === "BANK_TRANSFER" &&
+    !["COMPLETED", "CANCELLED"].includes(order.status) &&
+    bankTransferStatus(order) !== "SUCCEEDED",
+  );
 
   if (!orderNumber || !orderKey) {
     return (
@@ -56,9 +87,53 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord,
     <OrderShell>
       {order ? (
         <>
-          <SuccessBanner orderNumber={order.orderNumber} />
-          <NextSteps phone={findAddress(order.addresses, "BILLING")?.phone ?? "—"} />
-          <BankTransferInfo order={order} settings={settings} />
+          {showTransferStep ? (
+            <div className="mb-6 border-l-4 border-brand bg-secondary p-6">
+              <h1 className="font-cta text-a2-heading uppercase">{t("transferStepTitle")}</h1>
+              <p className="mt-3 text-a4-content">
+                {t("transferStepBody", { orderNumber: order.orderNumber })}
+              </p>
+            </div>
+          ) : (
+            <SuccessBanner orderNumber={order.orderNumber} />
+          )}
+          <BankTransferStatus order={order} />
+          {!showTransferStep && (
+            <NextSteps
+              phone={findAddress(order.addresses, "BILLING")?.phone ?? "—"}
+              isTransfer={["BANK_TRANSFER", "BACS"].includes(orderPaymentMethod(order))}
+            />
+          )}
+          <BankTransferInfo
+            order={order}
+            settings={settings}
+            loading={settingsLoading}
+            error={settingsError}
+            retry={retrySettings}
+          />
+          {showTransferStep && (
+            <div className="my-6 grid gap-3 sm:grid-cols-2">
+              <Button
+                onClick={() =>
+                  router.replace(
+                    toOrderConfirmPath(order.orderNumber, order.orderKey ?? undefined, locale),
+                  )
+                }
+              >
+                {t("transferContinue")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.replace(
+                    toOrderConfirmPath(order.orderNumber, order.orderKey ?? undefined, locale),
+                  )
+                }
+              >
+                {t("transferLater")}
+              </Button>
+            </div>
+          )}
           <OrderDetails order={order} />
           <CustomerDetails order={order} />
 
@@ -67,26 +142,29 @@ export function OrderConfirmView({ orderNumber, orderKey, order, settingsRecord,
           {/* CTA Buttons */}
           <div className="space-y-3">
             <ZaloSupportButton zalo={zalo} />
-            <Link href={toHomePath(locale)} className="block w-full border-2 border-foreground bg-card px-6 py-3.5 text-center font-cta text-b4-action font-bold uppercase text-foreground hover:bg-secondary">
+            <Link
+              href={toHomePath(locale)}
+              className="block w-full border-2 border-foreground bg-card px-6 py-3.5 text-center font-cta text-b4-action font-bold uppercase text-foreground hover:bg-secondary"
+            >
               ← {t("continueShopping")}
             </Link>
           </div>
 
           <StoreFooterNote address={storeAddress} />
         </>
+      ) : hasError ? (
+        <OrderLookupError retry={retryOrder} />
       ) : (
-        hasError ? (
-          <OrderLookupError />
-        ) : (
-          <>
-            <ThankYouHero message={t("receivedNotice")} />
-            {isLoading ? (
-              <p className="mx-auto mt-3 max-w-105 text-center text-a4-content leading-6 text-muted-foreground">
-                {tCommon("loading")}
-              </p>
-            ) : <OrderLoadFallback orderNumber={orderNumber} />}
-          </>
-        )
+        <>
+          <ThankYouHero message={t("receivedNotice")} />
+          {isLoading ? (
+            <p className="mx-auto mt-3 max-w-105 text-center text-a4-content leading-6 text-muted-foreground">
+              {tCommon("loading")}
+            </p>
+          ) : (
+            <OrderLoadFallback orderNumber={orderNumber} />
+          )}
+        </>
       )}
     </OrderShell>
   );
@@ -97,8 +175,13 @@ function OrderLookupForm() {
   const t = useTranslations("OrderConfirm");
   const tValidation = useTranslations("FormValidation");
   const router = useRouter();
-  const lookupValidation = (key: string) => key === "required" ? t("lookupRequired") : tValidation(key);
-  const { register, handleSubmit, formState: { errors } } = useForm<OrderLookupFormValues>({
+  const lookupValidation = (key: string) =>
+    key === "required" ? t("lookupRequired") : tValidation(key);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<OrderLookupFormValues>({
     resolver: zodResolver(createOrderLookupSchema(lookupValidation)),
   });
 
@@ -109,7 +192,9 @@ function OrderLookupForm() {
   return (
     <section className="mx-auto max-w-120 border border-border bg-card p-6 sm:p-8">
       <h1 className="font-cta text-a2-heading uppercase text-foreground">{t("lookupTitle")}</h1>
-      <p className="mt-2 text-a4-content leading-relaxed text-muted-foreground">{t("lookupDescription")}</p>
+      <p className="mt-2 text-a4-content leading-relaxed text-muted-foreground">
+        {t("lookupDescription")}
+      </p>
       <form onSubmit={handleSubmit(submit)} className="mt-6 grid gap-4" noValidate>
         <div className="grid gap-1.5">
           <Label htmlFor="order-lookup-number">{t("lookupOrderNumber")}</Label>
@@ -119,22 +204,39 @@ function OrderLookupForm() {
           <Label htmlFor="order-lookup-key">{t("lookupVerificationCode")}</Label>
           <Input id="order-lookup-key" {...register("orderKey")} autoComplete="off" />
         </div>
-        {(errors.orderNumber || errors.orderKey) ? <p role="alert" className="text-a5-meta text-destructive">{errors.orderNumber?.message ?? errors.orderKey?.message}</p> : null}
-        <Button type="submit" className="w-full">{t("lookupSubmit")}</Button>
+        {errors.orderNumber || errors.orderKey ? (
+          <p role="alert" className="text-a5-meta text-destructive">
+            {errors.orderNumber?.message ?? errors.orderKey?.message}
+          </p>
+        ) : null}
+        <Button type="submit" className="w-full">
+          {t("lookupSubmit")}
+        </Button>
       </form>
       <p className="mt-4 text-center text-a5-meta text-muted-foreground">{t("lookupPrivacy")}</p>
     </section>
   );
 }
 
-function OrderLookupError() {
+function OrderLookupError({ retry }: { retry?: () => void }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("OrderConfirm");
   return (
     <section className="mx-auto max-w-120 border border-state-warning bg-state-warning-bg p-6 text-center sm:p-8">
-      <h1 className="font-cta text-a2-heading uppercase text-foreground">{t("lookupFailedTitle")}</h1>
-      <p className="mt-2 text-a4-content leading-relaxed text-muted-foreground">{t("lookupFailedDescription")}</p>
-      <Button asChild className="mt-6"><Link href={toOrderLookupPath(locale)}>{t("lookupSubmit")}</Link></Button>
+      <h1 className="font-cta text-a2-heading uppercase text-foreground">
+        {t("lookupFailedTitle")}
+      </h1>
+      <p className="mt-2 text-a4-content leading-relaxed text-muted-foreground">
+        {t("lookupFailedDescription")}
+      </p>
+      {retry && (
+        <Button className="mt-6 mr-3" onClick={retry}>
+          {t("retryLoad")}
+        </Button>
+      )}
+      <Button asChild className="mt-6">
+        <Link href={toOrderLookupPath(locale)}>{t("lookupSubmit")}</Link>
+      </Button>
     </section>
   );
 }
@@ -163,7 +265,12 @@ function HotlineBar({ hotline, zalo }: { hotline: string; zalo: ZaloContact | nu
       {hotline && zalo && <span>{t("hotlineOr")}</span>}
       {zalo && (
         <span>
-          <a href={zaloHref(zalo.hrefValue)} target="_blank" rel="noopener noreferrer" className="text-white">
+          <a
+            href={zaloHref(zalo.hrefValue)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white"
+          >
             <strong className="text-brand">{formatZaloDisplay(zalo.label)}</strong>
           </a>
         </span>
@@ -183,8 +290,16 @@ function ZaloSupportButton({ zalo }: { zalo: ZaloContact | null }) {
       rel="noopener noreferrer"
       className="flex w-full items-center justify-center gap-2 bg-blue px-6 py-4 font-cta text-b4-action font-bold uppercase text-white hover:bg-blue/90"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="22" height="22" className="mr-2">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        width="22"
+        height="22"
+        className="mr-2"
+      >
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       </svg>
       {t("zaloCtaUrgent")}
     </a>
@@ -217,7 +332,12 @@ function pickOrderConfirmSetting(settings: Map<string, string>, keys: string[]):
 
 function resolveZaloContact(settings: Map<string, string>): ZaloContact | null {
   const hrefValue = pickOrderConfirmSetting(settings, ["zalo_url", "hotline_2", "hotline"]);
-  const rawLabel = pickOrderConfirmSetting(settings, ["zalo_display", "hotline_2", "hotline", "zalo_url"]);
+  const rawLabel = pickOrderConfirmSetting(settings, [
+    "zalo_display",
+    "hotline_2",
+    "hotline",
+    "zalo_url",
+  ]);
   const label = rawLabel ? stripZaloUrl(rawLabel) : stripZaloUrl(hrefValue);
   if (!hrefValue && !label) return null;
   return { hrefValue: hrefValue || label, label: label || hrefValue };
@@ -244,9 +364,7 @@ function OrderShell({ children }: { children: React.ReactNode }) {
       showHero={false}
       mainClassName="bb-checkout-page"
     >
-      <div className="mx-auto max-w-170 px-4 py-8 max-sm:px-3 max-sm:py-4">
-        {children}
-      </div>
+      <div className="mx-auto max-w-170 px-4 py-8 max-sm:px-3 max-sm:py-4">{children}</div>
     </StaticPageShell>
   );
 }
@@ -257,40 +375,51 @@ function SuccessBanner({ orderNumber }: { orderNumber: string }) {
   return (
     <div className="mb-6 bg-surface-dark px-6 py-7 text-center">
       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand">
-        <svg viewBox="0 0 24 24" className="h-8 w-8 fill-white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+        <svg viewBox="0 0 24 24" className="h-8 w-8 fill-white">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+        </svg>
       </div>
       <h1 className="mb-2 font-body text-a1-title font-bold text-white">{t("successTitle")}</h1>
-      <p className="m-0 text-a4-content text-white/70">{t("orderCode")} <strong className="font-body text-a3-section text-brand">#{orderNumber}</strong></p>
+      <p className="m-0 text-a4-content text-white/70">
+        {t("orderCode")}{" "}
+        <strong className="font-body text-a3-section text-brand">#{orderNumber}</strong>
+      </p>
     </div>
   );
 }
 
 // Khung hiển thị 3 bước tiếp theo của quy trình giao nhận
-function NextSteps({ phone }: { phone: string }) {
+function NextSteps({ phone, isTransfer }: { phone: string; isTransfer: boolean }) {
   const t = useTranslations("OrderConfirm");
   const richBold = { b: (chunks: React.ReactNode) => <strong>{chunks}</strong> };
   return (
     <div className="mb-4 border border-border border-l-4 border-l-brand bg-secondary p-5 text-left">
       <p className="mb-3 font-body text-a4-content font-bold text-brand">{t("nextStepsTitle")}</p>
       <div className="mb-3.5 flex items-start gap-3.5">
-        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-body text-a4-content font-bold text-white">1</div>
+        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-body text-a4-content font-bold text-white">
+          1
+        </div>
         <div className="pt-1 text-a4-content leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
           <strong>{t("step1Title")}</strong>
           {t.rich("step1Body", { ...richBold, phone })}
         </div>
       </div>
       <div className="mb-3.5 flex items-start gap-3.5">
-        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-body text-a4-content font-bold text-white">2</div>
+        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-body text-a4-content font-bold text-white">
+          2
+        </div>
         <div className="pt-1 text-a4-content leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
           <strong>{t("step2Title")}</strong>
           {t("step2Body")}
         </div>
       </div>
       <div className="flex items-start gap-3.5">
-        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-body text-a4-content font-bold text-white">3</div>
+        <div className="flex h-8 w-8 min-w-8 items-center justify-center bg-brand font-body text-a4-content font-bold text-white">
+          3
+        </div>
         <div className="pt-1 text-a4-content leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
-          <strong>{t("step3Title")}</strong>
-          {t("step3Body")}
+          <strong>{t(isTransfer ? "step3TransferTitle" : "step3Title")}</strong>
+          {t(isTransfer ? "step3TransferBody" : "step3Body")}
         </div>
       </div>
     </div>
@@ -303,13 +432,21 @@ function ThankYouHero({ message }: { message: string }) {
   return (
     <div className="mx-auto max-w-120 py-2 text-center">
       <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bb-brand-primary-soft)] text-brand">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg
+          width="36"
+          height="36"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <path d="M20 6 9 17l-5-5" />
         </svg>
       </span>
-      <p className="m-0 font-body text-a2-page font-semibold text-foreground">
-        {message}
-      </p>
+      <p className="m-0 font-body text-a2-page font-semibold text-foreground">{message}</p>
     </div>
   );
 }
@@ -330,8 +467,12 @@ function OrderLoadFallback({ orderNumber }: { orderNumber: string }) {
         {t("loadFailed")}
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <Button asChild><Link href={toHomePath(locale)}>{t("continueShopping")}</Link></Button>
-        <Button asChild variant="outline"><Link href={toOrderHistoryPath(locale)}>{t("viewMyOrders")}</Link></Button>
+        <Button asChild>
+          <Link href={toHomePath(locale)}>{t("continueShopping")}</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href={toOrderHistoryPath(locale)}>{t("viewMyOrders")}</Link>
+        </Button>
       </div>
     </div>
   );
@@ -340,15 +481,20 @@ function OrderLoadFallback({ orderNumber }: { orderNumber: string }) {
 // Card chi tiết đơn hàng gồm danh sách sản phẩm và tổng giá
 function OrderDetails({ order }: { order: OrderDetail }) {
   const t = useTranslations("OrderConfirm");
-  const paymentMethod = order.payments[0]?.paymentMethod ?? "";
+  const paymentMethod = orderPaymentMethod(order);
 
   return (
     <div className="border border-border bg-card p-6 max-sm:p-4">
-      <p className="mb-5 border-b-2 border-brand pb-3 font-body text-a3-section font-bold text-foreground">{t("orderDetailsTitle")}</p>
+      <p className="mb-5 border-b-2 border-brand pb-3 font-body text-a3-section font-bold text-foreground">
+        {t("orderDetailsTitle")}
+      </p>
 
       <div className="space-y-4">
         {order.lineItems.map((item) => (
-          <div key={item.id} className="mb-3 flex items-center gap-3 border-b border-border pb-3 text-left last:mb-0 last:border-b-0">
+          <div
+            key={item.id}
+            className="mb-3 flex items-center gap-3 border-b border-border pb-3 text-left last:mb-0 last:border-b-0"
+          >
             <div className="h-12 w-12 shrink-0 border border-border bg-secondary">
               {item.productThumbnailUrl ? (
                 <span
@@ -364,11 +510,16 @@ function OrderDetails({ order }: { order: OrderDetail }) {
               )}
             </div>
             <div className="min-w-0 flex-1 text-left">
-              <p className="m-0 mb-1 line-clamp-2 text-a5-meta font-medium leading-snug text-foreground">{item.productName}</p>
-              <p className="m-0 font-body text-a5-meta text-muted-foreground">
-                {item.variantName ? `${item.variantName} · ` : ""}{t("qtyAbbrev")}: {item.quantity}
+              <p className="m-0 mb-1 line-clamp-2 text-a5-meta font-medium leading-snug text-foreground">
+                {item.productName}
               </p>
-              <p className="m-0 text-a5-meta font-bold text-foreground">{formatVnd(item.lineTotal)}</p>
+              <p className="m-0 font-body text-a5-meta text-muted-foreground">
+                {item.variantName ? `${item.variantName} · ` : ""}
+                {t("qtyAbbrev")}: {item.quantity}
+              </p>
+              <p className="m-0 text-a5-meta font-bold text-foreground">
+                {formatVnd(item.lineTotal)}
+              </p>
             </div>
           </div>
         ))}
@@ -401,19 +552,33 @@ function OrderDetails({ order }: { order: OrderDetail }) {
 
         <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-a5-meta font-bold text-foreground">
           <span>{t("totalLabel")}</span>
-          <span className="font-body text-a3-section text-brand">{formatVnd(order.totalAmount)}</span>
+          <span className="font-body text-a3-section text-brand">
+            {formatVnd(order.totalAmount)}
+          </span>
         </div>
       </div>
     </div>
   );
 }
 
-// Bảng thông tin chuyển khoản cho đơn BACS. BigBike đối soát thủ công — số tài khoản do admin
+// Bảng thông tin chuyển khoản dùng chung cho BANK_TRANSFER và BACS. BigBike đối soát thủ công — số tài khoản do admin
 // tự nhập ở Cài đặt → Thanh toán (group "payment", public). Chưa cấu hình thì hiện fallback
 // hotline thay vì box trống.
-function BankTransferInfo({ order, settings }: { order: OrderDetail; settings: Map<string, string> }) {
+function BankTransferInfo({
+  order,
+  settings,
+  loading,
+  error,
+  retry,
+}: {
+  order: OrderDetail;
+  settings: Map<string, string>;
+  loading: boolean;
+  error: boolean;
+  retry?: () => void;
+}) {
   const t = useTranslations("OrderConfirm");
-  const bank = resolveBankTransfer(order.payments[0]?.paymentMethod, settings);
+  const bank = resolveBankTransfer(orderPaymentMethod(order), error ? new Map() : settings);
   if (!bank) return null; // không phải đơn chuyển khoản → không hiển thị
 
   const { configured, holder, number, bankName, branch } = bank;
@@ -424,7 +589,9 @@ function BankTransferInfo({ order, settings }: { order: OrderDetail; settings: M
     <section>
       <h2 className={cn(sectionHeading, "m-0 mb-4")}>{t("bankTitle")}</h2>
       <div className="border border-border p-4 text-a4-content leading-7 text-foreground">
-        {configured ? (
+        {loading ? (
+          <p role="status">{t("bankLoading")}</p>
+        ) : configured ? (
           <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
             <dt className="text-muted-foreground">{t("bankHolder")}</dt>
             <dd className="m-0 font-semibold">{holder}</dd>
@@ -448,14 +615,19 @@ function BankTransferInfo({ order, settings }: { order: OrderDetail; settings: M
             <dd className="m-0 font-semibold">{transferNote}</dd>
           </dl>
         ) : (
-          <p className="m-0 text-muted-foreground text-left">
-            {t.rich("bankHotlineFallback", {
-              hotline,
-              orderNumber: order.orderNumber,
-              b: (chunks) => <strong className="text-foreground">{chunks}</strong>,
-              code: (chunks) => <code className="rounded bg-muted px-1">{chunks}</code>,
-            })}
-          </p>
+          <div className="text-muted-foreground" role="status">
+            <p className="m-0">{t(error ? "bankLoadFailed" : "bankSupport")}</p>
+            {hotline && (
+              <a className="mt-2 block text-blue underline" href={telHref(hotline)}>
+                {hotline}
+              </a>
+            )}
+            {retry && (
+              <Button className="mt-3" variant="outline" onClick={retry}>
+                {t("retryLoad")}
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </section>
@@ -477,25 +649,43 @@ function CustomerDetails({ order }: { order: OrderDetail }) {
 
   return (
     <div className="border border-border bg-card p-6 max-sm:p-4">
-      <p className="mb-5 border-b-2 border-brand pb-3 font-body text-a3-section font-bold text-foreground">{t("customerDetailsTitle")}</p>
+      <p className="mb-5 border-b-2 border-brand pb-3 font-body text-a3-section font-bold text-foreground">
+        {t("customerDetailsTitle")}
+      </p>
       <table className="w-full border-collapse text-left text-a4-content">
         <tbody>
           <tr>
-            <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">{t("recipientLabel")}</td>
-            <td className="border-b border-border py-2.5 font-bold text-foreground">{billingAddress.fullName}</td>
+            <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">
+              {t("recipientLabel")}
+            </td>
+            <td className="border-b border-border py-2.5 font-bold text-foreground">
+              {billingAddress.fullName}
+            </td>
           </tr>
           <tr>
-            <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">{t("phoneFieldLabel")}</td>
-            <td className="border-b border-border py-2.5 font-bold text-foreground">{billingAddress.phone}</td>
+            <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">
+              {t("phoneFieldLabel")}
+            </td>
+            <td className="border-b border-border py-2.5 font-bold text-foreground">
+              {billingAddress.phone}
+            </td>
           </tr>
           <tr>
-            <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">{t("addressFieldLabel")}</td>
-            <td className="border-b border-border py-2.5 font-bold text-foreground">{addressText}</td>
+            <td className="w-32 border-b border-border py-2.5 pr-3 align-top text-muted-foreground">
+              {t("addressFieldLabel")}
+            </td>
+            <td className="border-b border-border py-2.5 font-bold text-foreground">
+              {addressText}
+            </td>
           </tr>
           {order.customerNote && (
             <tr>
-              <td className="w-32 py-2.5 pr-3 align-top text-muted-foreground">{t("noteFieldLabel")}</td>
-              <td className="py-2.5 font-normal italic text-muted-foreground">{order.customerNote}</td>
+              <td className="w-32 py-2.5 pr-3 align-top text-muted-foreground">
+                {t("noteFieldLabel")}
+              </td>
+              <td className="py-2.5 font-normal italic text-muted-foreground">
+                {order.customerNote}
+              </td>
             </tr>
           )}
         </tbody>
@@ -508,7 +698,10 @@ function findAddress(addresses: OrderAddress[], type: string): OrderAddress | nu
   return addresses.find((address) => address.type?.toUpperCase() === type) ?? null;
 }
 
-function legacyPaymentMethodLabel(method: string, t: ReturnType<typeof useTranslations<"OrderConfirm">>): string {
+function legacyPaymentMethodLabel(
+  method: string,
+  t: ReturnType<typeof useTranslations<"OrderConfirm">>,
+): string {
   switch (method.trim().toUpperCase()) {
     case "COD":
       return t("paymentCod");

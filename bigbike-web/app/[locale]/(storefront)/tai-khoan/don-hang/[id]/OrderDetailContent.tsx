@@ -1,11 +1,19 @@
 "use client";
+import { BankTransferStatus } from "@/components/checkout/BankTransferStatus";
+import { orderPaymentMethod } from "@/lib/utils/orders";
 
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { AccountSectionHeading } from "@/components/account/AccountNav";
 import { Button } from "@/components/ui/button";
 import { useCancelOrder, useOrder } from "@/lib/query/hooks";
-import { formatAddress, formatVnd, orderStatusLabelWithT, paymentMethodLabelWithT, safeText } from "@/lib/utils/format";
+import {
+  formatAddress,
+  formatVnd,
+  orderStatusLabelWithT,
+  paymentMethodLabelWithT,
+  safeText,
+} from "@/lib/utils/format";
 import { isCustomerCancellable } from "@/lib/utils/orders";
 import { useLocalDate } from "@/components/i18n/LocalDate";
 import { toOrderHistoryPath } from "@/lib/utils/routes";
@@ -65,9 +73,13 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
     );
   }
 
-  const billingAddress = order.addresses.find((a) => a.type.toUpperCase().includes("BILL")) ?? order.addresses[0] ?? null;
-  const shippingAddress = order.addresses.find((a) => a.type.toUpperCase().includes("SHIP")) ?? billingAddress;
-  const paymentMethod = order.payments[0]?.paymentMethod;
+  const billingAddress =
+    order.addresses.find((a) => a.type.toUpperCase().includes("BILL")) ??
+    order.addresses[0] ??
+    null;
+  const shippingAddress =
+    order.addresses.find((a) => a.type.toUpperCase().includes("SHIP")) ?? billingAddress;
+  const paymentMethod = orderPaymentMethod(order);
 
   return (
     <>
@@ -94,42 +106,62 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
             {order.lineItems.map((item) => (
               <tr key={item.id} className="border-b border-border">
                 <td className="py-4 pr-4 align-top">
-                  <p className="m-0 font-semibold text-foreground">{safeText(item.productName, tCatalog("title"))}</p>
-                  {item.variantName && <p className="m-0 mt-1 text-muted-foreground">{item.variantName}</p>}
-                  <p className="m-0 mt-1 text-muted-foreground">{t("lineQty", { qty: item.quantity, price: formatVnd(item.unitPrice) })}</p>
+                  <p className="m-0 font-semibold text-foreground">
+                    {safeText(item.productName, tCatalog("title"))}
+                  </p>
+                  {item.variantName && (
+                    <p className="m-0 mt-1 text-muted-foreground">{item.variantName}</p>
+                  )}
+                  <p className="m-0 mt-1 text-muted-foreground">
+                    {t("lineQty", { qty: item.quantity, price: formatVnd(item.unitPrice) })}
+                  </p>
                 </td>
-                <td className="py-4 text-right align-top text-foreground">{formatVnd(item.lineTotal)}</td>
+                <td className="py-4 text-right align-top text-foreground">
+                  {formatVnd(item.lineTotal)}
+                </td>
               </tr>
             ))}
             <tr className="border-b border-border">
               <th className="py-3 pr-4 font-normal text-muted-foreground">{t("subtotal")}</th>
-              <td className="py-3 text-right text-muted-foreground">{formatVnd(order.subtotalAmount)}</td>
+              <td className="py-3 text-right text-muted-foreground">
+                {formatVnd(order.subtotalAmount)}
+              </td>
             </tr>
             {order.discountAmount > 0 && (
               <tr className="border-b border-border">
                 <th className="py-3 pr-4 font-normal text-muted-foreground">{t("discount")}</th>
-                <td className="py-3 text-right text-muted-foreground">-{formatVnd(order.discountAmount)}</td>
+                <td className="py-3 text-right text-muted-foreground">
+                  -{formatVnd(order.discountAmount)}
+                </td>
               </tr>
             )}
             <tr className="border-b border-border">
               <th className="py-3 pr-4 font-normal text-muted-foreground">{t("shipping")}</th>
-              <td className="py-3 text-right text-muted-foreground">{formatVnd(order.shippingAmount)}</td>
+              <td className="py-3 text-right text-muted-foreground">
+                {formatVnd(order.shippingAmount)}
+              </td>
             </tr>
             {order.feeAmount > 0 && (
               <tr className="border-b border-border">
                 <th className="py-3 pr-4 font-normal text-muted-foreground">{t("fee")}</th>
-                <td className="py-3 text-right text-muted-foreground">{formatVnd(order.feeAmount)}</td>
+                <td className="py-3 text-right text-muted-foreground">
+                  {formatVnd(order.feeAmount)}
+                </td>
               </tr>
             )}
             {order.taxAmount > 0 && (
               <tr className="border-b border-border">
                 <th className="py-3 pr-4 font-normal text-muted-foreground">{t("tax")}</th>
-                <td className="py-3 text-right text-muted-foreground">{formatVnd(order.taxAmount)}</td>
+                <td className="py-3 text-right text-muted-foreground">
+                  {formatVnd(order.taxAmount)}
+                </td>
               </tr>
             )}
             <tr>
               <th className="py-3 pr-4 font-semibold text-foreground">{t("totalLong")}</th>
-              <td className="py-3 text-right font-semibold text-foreground">{formatVnd(order.totalAmount)}</td>
+              <td className="py-3 text-right font-semibold text-foreground">
+                {formatVnd(order.totalAmount)}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -140,10 +172,21 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
           <h2 className={cn(sectionSubheading, "mb-3")}>{t("billingAddress")}</h2>
           {billingAddress ? (
             <div className="text-a4-content leading-relaxed text-muted-foreground">
-              <p className="m-0 font-semibold text-foreground">{safeText(billingAddress.fullName, "—")}</p>
+              <p className="m-0 font-semibold text-foreground">
+                {safeText(billingAddress.fullName, "—")}
+              </p>
               {billingAddress.phone && <p className="m-0">{billingAddress.phone}</p>}
-              {billingAddress.email && <p className="m-0 [overflow-wrap:anywhere]">{billingAddress.email}</p>}
-              <p className="m-0">{formatAddress([billingAddress.addressLine1, billingAddress.ward, billingAddress.district, billingAddress.province])}</p>
+              {billingAddress.email && (
+                <p className="m-0 [overflow-wrap:anywhere]">{billingAddress.email}</p>
+              )}
+              <p className="m-0">
+                {formatAddress([
+                  billingAddress.addressLine1,
+                  billingAddress.ward,
+                  billingAddress.district,
+                  billingAddress.province,
+                ])}
+              </p>
             </div>
           ) : (
             <p className="m-0 text-a4-content text-muted-foreground">—</p>
@@ -154,10 +197,21 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
           <h2 className={cn(sectionSubheading, "mb-3")}>{t("shippingAddress")}</h2>
           {shippingAddress ? (
             <div className="text-a4-content leading-relaxed text-muted-foreground">
-              <p className="m-0 font-semibold text-foreground">{safeText(shippingAddress.fullName, "—")}</p>
+              <p className="m-0 font-semibold text-foreground">
+                {safeText(shippingAddress.fullName, "—")}
+              </p>
               {shippingAddress.phone && <p className="m-0">{shippingAddress.phone}</p>}
-              {shippingAddress.email && <p className="m-0 [overflow-wrap:anywhere]">{shippingAddress.email}</p>}
-              <p className="m-0">{formatAddress([shippingAddress.addressLine1, shippingAddress.ward, shippingAddress.district, shippingAddress.province])}</p>
+              {shippingAddress.email && (
+                <p className="m-0 [overflow-wrap:anywhere]">{shippingAddress.email}</p>
+              )}
+              <p className="m-0">
+                {formatAddress([
+                  shippingAddress.addressLine1,
+                  shippingAddress.ward,
+                  shippingAddress.district,
+                  shippingAddress.province,
+                ])}
+              </p>
             </div>
           ) : (
             <p className="m-0 text-a4-content text-muted-foreground">—</p>
@@ -172,6 +226,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
         </p>
       </div>
 
+      <BankTransferStatus order={order} />
       {canCancel && (
         <div className="mt-8 border-t border-border pt-6">
           <p className="mb-3 text-a4-content text-muted-foreground">{t("cancelDescription")}</p>
@@ -184,9 +239,7 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
             {cancelMutation.isPending ? t("cancelInProgress") : t("cancelTrigger")}
           </Button>
           {cancelMutation.isError && (
-            <p className="mt-2 text-a4-content text-brand">
-              {t("cancelFailed")}
-            </p>
+            <p className="mt-2 text-a4-content text-brand">{t("cancelFailed")}</p>
           )}
         </div>
       )}

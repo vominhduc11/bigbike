@@ -15,6 +15,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface OrderJpaRepository extends JpaRepository<OrderEntity, UUID>, JpaSpecificationExecutor<OrderEntity> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM OrderEntity o WHERE o.id = :id")
+    Optional<OrderEntity> findByIdForUpdate(@Param("id") UUID id);
+
     Optional<OrderEntity> findByLegacyId(Long legacyId);
 
     Optional<OrderEntity> findByOrderNumber(String orderNumber);

@@ -150,3 +150,7 @@ Một logical turn tối đa bốn provider calls trong 65 giây. Timeout/quá t
 `multipart upload -> ownership + AI service availability + 1/turn,3/thread,20/day -> MIME/decode/re-encode (JPEG/PNG/WebP, decoder dùng chung cho ảnh khách và ảnh catalog) -> private MinIO -> PENDING/ATTACHED -> Gemini 3.7 Flash phân loại intent -> verified catalog fingerprint matching -> wording “trông giống” -> **nếu khách có gõ câu hỏi: tiếp tục chính fast-path/AI của chat chữ, ghép thành một câu trả lời** -> response`. Mục đích ảnh do chính tấm ảnh quyết định; lời nhắn không tự chuyển hướng sang tra đơn hay từ chối đoán size (owner decision 2026-09-07). Ảnh hoá đơn, ảnh đầu/người, hàng hỏng, ảnh ngoài phạm vi và ảnh bị chặn **dừng lượt**, không nối tiếp. Hai chặng provider chia chung ngân sách thời gian của lượt (dưới 75s của SSE). Xóa history/retention xóa object trước metadata; không có nhánh chuyển ảnh cho nhân viên.
 
 Status: `OWNER_CONFIRMED_2026-08-29`
+
+## Manual transfer receipt — 2026-09-07
+
+Checkout → existing confirmation route with step=bank-transfer → order lookup + public settings → confirmation. Both customer actions navigate only. Admin receipt POST → locked order/payment transaction + audit → after-commit order-topic refresh. Completion PATCH and allowed-transitions read the same payment guard; see PAY_RULE_002.
