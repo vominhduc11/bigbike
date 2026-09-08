@@ -1,0 +1,50 @@
+[
+  {
+    "case": "signed-in-vi",
+    "http": 200,
+    "ownOrderShown": true,
+    "otherOrderShown": false,
+    "quotaBefore": {
+      "date": "2026-09-08",
+      "text": 76,
+      "images": 2
+    },
+    "quotaAfter": {
+      "date": "2026-09-08",
+      "text": 76,
+      "images": 2
+    }
+  },
+  {
+    "case": "signed-in-en",
+    "http": 200,
+    "ownOrderShown": true,
+    "otherOrderShown": false,
+    "quotaBefore": {
+      "date": "2026-09-08",
+      "text": 76,
+      "images": 2
+    },
+    "quotaAfter": {
+      "date": "2026-09-08",
+      "text": 76,
+      "images": 2
+    }
+  },
+  {
+    "case": "guest-forged-customer-id",
+    "http": 200,
+    "ownOrderShown": false,
+    "otherOrderShown": false,
+    "quotaBefore": {
+      "date": "2026-09-08",
+      "text": 76,
+      "images": 2
+    },
+    "quotaAfter": {
+      "date": "2026-09-08",
+      "text": 76,
+      "images": 2
+    }
+  }
+]

@@ -275,9 +275,12 @@ public class SettingDefinitionRegistry {
                 SettingDefinition.builder("ai_assistant_recent_turn_pairs", "ai_assistant", SettingValueType.INTEGER)
                         .min(0).max(12)
                         .description("Số cặp hỏi–đáp gần nhất gửi cho Trợ lý BigBike để hiểu câu nối. Đặt 0 để không gửi lịch sử; tối đa 12.").build(),
+                SettingDefinition.builder("ai_assistant_image_daily_limit", "ai_assistant", SettingValueType.INTEGER)
+                        .min(0).max(10_000)
+                        .description("Số ảnh đọc tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tạm dừng đọc ảnh; vẫn tư vấn bằng chữ.").build(),
                 SettingDefinition.builder("ai_assistant_search_ai_interpretation_enabled", "ai_assistant", SettingValueType.BOOLEAN)
                         .description("Cho AI diễn giải cách nói tự nhiên khi tìm hàng, sau đó backend đối chiếu từng bộ lọc. Tắt để quay về cách kiểm chứng cũ ngay.").build()
-                // Image input and the 40-turn conversation ceiling are fixed software policy.
+                // Per-turn attachment limits and the 40-turn conversation ceiling are fixed software policy.
                 // They deliberately do not appear in the settings registry.
         );
     }

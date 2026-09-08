@@ -16,6 +16,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   ImagePlus,
+  Video,
   Loader2,
   Maximize2,
   MessageCircle,
@@ -47,10 +48,12 @@ import {
   deleteChatHistory,
   fetchChatAvailability,
   fetchChatImageBlob,
+  fetchChatVideoBlob,
   fetchChatHistory,
   openChatSession,
   streamChatMessage,
   uploadChatImage,
+  uploadChatVideo,
   ApiClientError,
   type ChatAction,
   type ChatClarification,
@@ -60,6 +63,7 @@ import {
   type ChatProgressCode,
   type ChatProductCard,
   type ChatImage,
+  type ChatVideo,
   type ChatNextStep,
   type ChatSalesStage,
 } from "@/lib/api/client-api";
@@ -118,16 +122,26 @@ type ChatMessage = {
   requestId?: string;
   failed?: boolean;
   images?: ChatImage[];
+  videos?: ChatVideo[];
+  localVideoUrl?: string;
   localImageUrl?: string;
+  localImageUrls?: string[];
 };
 
 type PendingChatImage = {
+  kind?: "image" | "video";
+  requestId?: string;
   file: File;
   previewUrl: string;
 };
 
 const DEFAULT_MAX_TURNS = 40;
 export const CHAT_MESSAGE_TIMEOUT_MS = 75_000;
+
+// Used only by the submit callback to measure the server's remaining video budget.
+function videoClock() {
+  return performance.now();
+}
 
 class ChatMessageTimeoutError extends Error {
   constructor() {
@@ -142,13 +156,13 @@ function PrivateChatImage({
   localUrl,
   alt,
 }: {
-  image: ChatImage;
+  image: ChatImage | ChatVideo;
   visitorToken?: string;
   localUrl?: string;
   alt: string;
 }) {
   if (localUrl) {
-    return <ChatImagePreview source={localUrl} alt={alt} />;
+    return <ChatImagePreview source={localUrl} alt={alt} video={"expiresAt" in image} />;
   }
   return <RemotePrivateChatImage image={image} visitorToken={visitorToken} alt={alt} />;
 }
@@ -158,20 +172,24 @@ function RemotePrivateChatImage({
   visitorToken,
   alt,
 }: {
-  image: ChatImage;
+  image: ChatImage | ChatVideo;
   visitorToken?: string;
   alt: string;
 }) {
   const [source, setSource] = useState("");
   const [failed, setFailed] = useState(false);
+  const video = "expiresAt" in image;
 
   useEffect(() => {
+    // Restored video metadata can render before the chat identity finishes loading.
+    if (video && !visitorToken) return;
     let cancelled = false;
     let objectUrl = "";
-    void fetchChatImageBlob(image.id, visitorToken)
+    void (video ? fetchChatVideoBlob : fetchChatImageBlob)(image.id, visitorToken)
       .then((blob) => {
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob);
+        setFailed(false);
         setSource(objectUrl);
       })
       .catch(() => {
@@ -181,7 +199,7 @@ function RemotePrivateChatImage({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [image.id, visitorToken]);
+  }, [image.id, visitorToken, video]);
 
   if (failed) {
     return (
@@ -200,10 +218,29 @@ function RemotePrivateChatImage({
       </div>
     );
   }
-  return <ChatImagePreview source={source} alt={alt} />;
+  return <ChatImagePreview source={source} alt={alt} video={"expiresAt" in image} />;
 }
 
-function ChatImagePreview({ source, alt }: { source: string; alt: string }) {
+function ChatImagePreview({
+  source,
+  alt,
+  video = false,
+}: {
+  source: string;
+  alt: string;
+  video?: boolean;
+}) {
+  if (video)
+    return (
+      <video
+        src={source}
+        controls
+        playsInline
+        preload="metadata"
+        aria-label={alt}
+        className="max-h-64 w-full border border-border"
+      />
+    );
   return (
     <Image
       src={source}
@@ -439,8 +476,10 @@ export function FloatingChat({
     intent: PromptIntent;
     requestId: string;
     clarificationSelection?: ChatClarificationSelection;
-    image?: ChatImage;
-    localImageUrl?: string;
+    images?: ChatImage[];
+    video?: ChatVideo;
+    localVideoUrl?: string;
+    localImageUrls?: string[];
   } | null>(null);
   const [progressCode, setProgressCode] = useState<ChatProgressCode | null>(null);
   const [pendingRequestId, setPendingRequestId] = useState<string>();
@@ -455,11 +494,15 @@ export function FloatingChat({
   const [imageSettings, setImageSettings] = useState({
     enabled: false,
     maxBytes: 8 * 1024 * 1024,
-    maxPerTurn: 1,
-    maxPerConversation: 3,
-    dailyLimit: 20,
+    maxPerTurn: 3,
+    maxPerConversation: 9,
+    dailyLimit: 60,
   });
-  const [pendingImage, setPendingImage] = useState<PendingChatImage | null>(null);
+  const [videosEnabled, setVideosEnabled] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [pendingImages, setPendingImages] = useState<PendingChatImage[]>([]);
+  const pendingImage = pendingImages[0];
+  const uploadedImagesRef = useRef(new Map<string, { conversationId: string; image: ChatImage }>());
   const [imageError, setImageError] = useState("");
 
   const fabLauncherRef = useRef<HTMLButtonElement>(null);
@@ -484,6 +527,12 @@ export function FloatingChat({
   const conversationGenerationRef = useRef(0);
   const identityRef = useRef<ChatIdentity | undefined>(undefined);
   const localImageUrlsRef = useRef(new Set<string>());
+  const videoDeadlinesRef = useRef(new Map<string, number>());
+  const [mediaNow, setMediaNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setMediaNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const effectiveContacts = useMemo(
     () => mergeContacts(contacts, fallbackContacts),
@@ -501,6 +550,7 @@ export function FloatingChat({
         answerFormat: item.answerFormat === "MARKDOWN" ? "MARKDOWN" : "PLAIN_TEXT",
         resultKind: item.resultKind || undefined,
         images: item.images || [],
+        videos: item.videos || [],
       }));
     setMessages((current) =>
       mapped.map((item) => ({
@@ -574,13 +624,8 @@ export function FloatingChat({
       setMessages([]);
       setConversationId(undefined);
       setDraft("");
-      setPendingImage((current) => {
-        if (current?.previewUrl) {
-          URL.revokeObjectURL(current.previewUrl);
-          localImageUrlsRef.current.delete(current.previewUrl);
-        }
-        return null;
-      });
+      setPendingImages([]);
+      uploadedImagesRef.current.clear();
       for (const url of localImageUrlsRef.current) URL.revokeObjectURL(url);
       localImageUrlsRef.current.clear();
       setImageError("");
@@ -635,7 +680,8 @@ export function FloatingChat({
               intent: "UNKNOWN",
               requestId: snapshot.pendingRequestId,
               clarificationSelection: failedMessage.clarificationSelection,
-              image: failedMessage.images?.[0],
+              images: failedMessage.images,
+              video: failedMessage.videos?.[0],
             });
           }
         }
@@ -699,6 +745,8 @@ export function FloatingChat({
       messages: messages.slice(-64).map((message) => {
         const persistedMessage = { ...message };
         delete persistedMessage.localImageUrl;
+        delete persistedMessage.localImageUrls;
+        delete persistedMessage.localVideoUrl;
         return persistedMessage;
       }),
       remainingTurns,
@@ -827,12 +875,13 @@ export function FloatingChat({
         const nextContacts = mergeContacts(availability.contacts, fallbackContacts);
 
         setContacts(nextContacts);
+        setVideosEnabled(availability.videos?.enabled === true);
         setImageSettings({
           enabled: availability.images?.enabled === true,
           maxBytes: 8 * 1024 * 1024,
-          maxPerTurn: 1,
-          maxPerConversation: 3,
-          dailyLimit: 20,
+          maxPerTurn: Math.max(1, Math.min(3, availability.images?.maxPerTurn ?? 3)),
+          maxPerConversation: availability.images?.maxPerConversation ?? 9,
+          dailyLimit: availability.images?.dailyLimit ?? 60,
         });
         if (!conversationId) setRemainingTurns(DEFAULT_MAX_TURNS);
         setAvailabilityState("ready");
@@ -852,6 +901,7 @@ export function FloatingChat({
         setServiceMode("CONTACT");
         setContacts(fallbackContacts);
         setImageSettings((current) => ({ ...current, enabled: false }));
+        setVideosEnabled(false);
         const notice = t("fallbackNotice", { reason: "network" });
         setContactNotice(notice);
         setAnnouncement(`${notice} ${t("contactStatus")}`);
@@ -934,19 +984,29 @@ export function FloatingChat({
     intent: PromptIntent = "UNKNOWN",
     existingRequestId?: string,
     clarificationSelection?: ChatClarificationSelection,
-    attachedImage?: PendingChatImage,
-    uploadedImage?: ChatImage,
-    uploadedImageLocalUrl?: string,
+    attachedImages?: PendingChatImage[],
+    uploadedImages?: ChatImage[],
+    uploadedImageLocalUrls?: string[],
+    uploadedVideo?: ChatVideo,
+    uploadedVideoLocalUrl?: string,
   ) {
     const message = raw.trim();
-    if ((!message && !attachedImage && !uploadedImage) || sending || serviceMode !== "AI") return;
+    const attachedImage = attachedImages?.[0];
+    if (
+      (!message && !attachedImage && !uploadedImages?.length && !uploadedVideo) ||
+      sending ||
+      serviceMode !== "AI"
+    )
+      return;
 
     const requestId = existingRequestId ?? createRequestId();
     const isRetry = Boolean(existingRequestId);
     const userMessageId = nextMessageId("user");
     const conversationGeneration = conversationGenerationRef.current;
-    let turnImage = uploadedImage;
-    let turnImageLocalUrl = uploadedImageLocalUrl;
+    let turnVideo = uploadedVideo;
+    let turnVideoLocalUrl = uploadedVideoLocalUrl;
+    let turnImages = uploadedImages ?? [];
+    let turnImageLocalUrls = uploadedImageLocalUrls ?? [];
     let turnConversationId = conversationId;
     let userMessageVisible = isRetry;
     if (!attachedImage) setDraft("");
@@ -960,21 +1020,59 @@ export function FloatingChat({
     nearBottomRef.current = true;
 
     try {
-      if (attachedImage && !turnImage) {
-        const upload = await uploadChatImage({
+      if (attachedImage?.kind === "video" && !turnVideo) {
+        const upload = await uploadChatVideo({
           file: attachedImage.file,
-          requestId: createRequestId(),
+          requestId: attachedImage.requestId || requestId,
           conversationId,
           lang: activeLocale,
           visitorToken,
         });
         if (!mountedRef.current || conversationGeneration !== conversationGenerationRef.current)
           return;
-        turnImage = upload.image;
-        turnImageLocalUrl = attachedImage.previewUrl;
+        turnVideo = upload.video;
+        videoDeadlinesRef.current.set(
+          turnVideo.id,
+          videoClock() + (upload.remainingMillis ?? 60_000),
+        );
+        // Play the normalized MP4 from the protected endpoint; a phone's original MOV/HEVC
+        // may not play in this browser even though the server has decoded it successfully.
+        turnVideoLocalUrl = undefined;
+        URL.revokeObjectURL(attachedImage.previewUrl);
+        localImageUrlsRef.current.delete(attachedImage.previewUrl);
         turnConversationId = upload.conversationId;
         setConversationId(upload.conversationId);
-        setPendingImage(null);
+        setPendingImages([]);
+        setImageError("");
+        setDraft("");
+      }
+      if (attachedImage && attachedImage.kind !== "video" && !turnImages.length) {
+        const uploads: ChatImage[] = [];
+        const urls: string[] = [];
+        // Sequential uploads share one conversation. Stable per-file IDs make a partial retry
+        // reuse already stored files instead of consuming more conversation slots.
+        for (const pending of attachedImages ?? []) {
+          const uploadId = pending.requestId!;
+          const upload =
+            uploadedImagesRef.current.get(uploadId) ??
+            (await uploadChatImage({
+              file: pending.file,
+              requestId: uploadId,
+              conversationId: turnConversationId,
+              lang: activeLocale,
+              visitorToken,
+            }));
+          if (!mountedRef.current || conversationGeneration !== conversationGenerationRef.current)
+            return;
+          uploadedImagesRef.current.set(uploadId, upload);
+          uploads.push(upload.image);
+          urls.push(pending.previewUrl);
+          turnConversationId = upload.conversationId;
+          setConversationId(upload.conversationId);
+        }
+        turnImages = uploads;
+        turnImageLocalUrls = urls;
+        setPendingImages([]);
         setImageError("");
         setDraft("");
       }
@@ -991,11 +1089,13 @@ export function FloatingChat({
           {
             id: userMessageId,
             role: "USER",
-            content: message || t("imageSent"),
+            content: message || t(turnVideo ? "videoSent" : "imageSent"),
             requestId,
             clarificationSelection,
-            images: turnImage ? [turnImage] : [],
-            localImageUrl: turnImageLocalUrl,
+            images: turnImages,
+            videos: turnVideo ? [turnVideo] : [],
+            localVideoUrl: turnVideoLocalUrl,
+            localImageUrls: turnImageLocalUrls,
           },
         ];
       });
@@ -1004,39 +1104,50 @@ export function FloatingChat({
       const controller = new AbortController();
       let timeoutId: number | undefined;
       const timeout = new Promise<never>((_, reject) => {
-        timeoutId = window.setTimeout(() => {
-          controller.abort();
-          reject(new ChatMessageTimeoutError());
-        }, CHAT_MESSAGE_TIMEOUT_MS);
+        timeoutId = window.setTimeout(
+          () => {
+            controller.abort();
+            reject(new ChatMessageTimeoutError());
+          },
+          turnVideo
+            ? Math.max(
+                0,
+                (videoDeadlinesRef.current.get(turnVideo.id) ?? videoClock() + 60_000) -
+                  videoClock(),
+              )
+            : CHAT_MESSAGE_TIMEOUT_MS,
+        );
       });
       const onProgress = (code: ChatProgressCode) => {
         if (mountedRef.current && conversationGeneration === conversationGenerationRef.current)
           setProgressCode(code);
       };
-      const request = turnImage
-        ? streamChatMessage(
-            message,
-            activeLocale,
-            turnConversationId,
-            requestId,
-            onProgress,
-            controller.signal,
-            pageContext,
-            clarificationSelection,
-            visitorToken,
-            [turnImage.id],
-          )
-        : streamChatMessage(
-            message,
-            activeLocale,
-            turnConversationId,
-            requestId,
-            onProgress,
-            controller.signal,
-            pageContext,
-            clarificationSelection,
-            visitorToken,
-          );
+      const request =
+        turnImages.length || turnVideo
+          ? streamChatMessage(
+              message,
+              activeLocale,
+              turnConversationId,
+              requestId,
+              onProgress,
+              controller.signal,
+              pageContext,
+              clarificationSelection,
+              visitorToken,
+              turnImages.map((image) => image.id),
+              turnVideo ? [turnVideo.id] : [],
+            )
+          : streamChatMessage(
+              message,
+              activeLocale,
+              turnConversationId,
+              requestId,
+              onProgress,
+              controller.signal,
+              pageContext,
+              clarificationSelection,
+              visitorToken,
+            );
       const response = await Promise.race([request, timeout]).finally(() => {
         if (timeoutId !== undefined) window.clearTimeout(timeoutId);
       });
@@ -1096,20 +1207,41 @@ export function FloatingChat({
       if (!mountedRef.current || conversationGeneration !== conversationGenerationRef.current)
         return;
       if (!userMessageVisible) {
+        const videoErrorKeys: Record<string, string> = {
+          CHAT_VIDEO_TOO_LARGE: "videoTooLarge",
+          CHAT_VIDEO_TOO_LONG: "videoTooLong",
+          CHAT_VIDEO_UNSUPPORTED_TYPE: "videoUnsupported",
+          CHAT_VIDEO_CONVERSATION_LIMIT: "videoConversationLimit",
+          CHAT_VIDEO_DAILY_LIMIT: "videoDailyLimitReached",
+          CHAT_VIDEO_TIMEOUT: "videoTimeout",
+          CHAT_MEDIA_EXCLUSIVE: "mediaExclusive",
+          CHAT_VIDEO_UNAVAILABLE: "videoUnavailable",
+        };
         const notice =
-          error instanceof ApiClientError
-            ? error.code === "CHAT_IMAGE_TOO_LARGE" || error.status === 413
-              ? t("imageTooLarge")
-              : error.code === "CHAT_IMAGE_UNSUPPORTED_TYPE" || error.status === 415
-                ? t("imageUnsupported")
-                : error.code === "CHAT_IMAGE_DAILY_LIMIT" || error.status === 429
-                  ? t("imageDailyLimitReached")
-                  : error.code === "CHAT_IMAGE_CONVERSATION_LIMIT"
-                    ? t("imageConversationLimit")
-                    : error.code === "CHAT_IMAGE_UNAVAILABLE"
-                      ? t("imageUnavailable")
-                      : t("imageInvalid")
-            : t("imageUploadFailed");
+          attachedImage?.kind === "video"
+            ? t(
+                error instanceof ApiClientError
+                  ? videoErrorKeys[error.code || ""] ||
+                      (error.status === 413
+                        ? "videoTooLarge"
+                        : error.status === 429
+                          ? "videoUploadFailed"
+                          : "videoInvalid")
+                  : "videoUploadFailed",
+              )
+            : error instanceof ApiClientError
+              ? error.code === "CHAT_IMAGE_TOO_LARGE" || error.status === 413
+                ? t("imageTooLarge")
+                : error.code === "CHAT_IMAGE_UNSUPPORTED_TYPE" || error.status === 415
+                  ? t("imageUnsupported")
+                  : error.code === "CHAT_IMAGE_DAILY_LIMIT"
+                    ? t("imageDailyLimitReached")
+                    : error.code === "CHAT_IMAGE_CONVERSATION_LIMIT"
+                      ? t("imageConversationLimit")
+                      : error.code === "CHAT_IMAGE_UNAVAILABLE"
+                        ? t("imageUnavailable")
+                        : t(error.status === 429 ? "imageUploadFailed" : "imageInvalid")
+              : t("imageUploadFailed");
         setImageError(notice);
         setContactNotice(notice);
         setPendingRequestId(undefined);
@@ -1126,13 +1258,15 @@ export function FloatingChat({
         intent,
         requestId,
         clarificationSelection,
-        image: turnImage,
-        localImageUrl: turnImageLocalUrl,
+        images: turnImages,
+        video: turnVideo,
+        localVideoUrl: turnVideoLocalUrl,
+        localImageUrls: turnImageLocalUrls,
       });
       setPendingRequestId(requestId);
       const notice =
         error instanceof ChatMessageTimeoutError
-          ? t("timeoutNotice")
+          ? t(turnVideo ? "videoTimeout" : "timeoutNotice")
           : t("fallbackNotice", { reason: "network" });
       setContactNotice(notice);
       setAnnouncement(`${notice} ${t("contactStatus")}`);
@@ -1146,31 +1280,42 @@ export function FloatingChat({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void submitMessage(draft, "UNKNOWN", undefined, undefined, pendingImage || undefined);
+    void submitMessage(
+      draft,
+      "UNKNOWN",
+      undefined,
+      undefined,
+      pendingImages.length ? pendingImages : undefined,
+    );
   }
 
-  function clearPendingImage() {
-    setPendingImage((current) => {
-      if (current?.previewUrl) {
-        URL.revokeObjectURL(current.previewUrl);
-        localImageUrlsRef.current.delete(current.previewUrl);
-      }
-      return null;
-    });
+  function clearPendingImage(previewUrl?: string) {
+    const removed = pendingImages.filter((image) => !previewUrl || image.previewUrl === previewUrl);
+    for (const image of removed) {
+      URL.revokeObjectURL(image.previewUrl);
+      localImageUrlsRef.current.delete(image.previewUrl);
+      if (image.requestId) uploadedImagesRef.current.delete(image.requestId);
+    }
+    setPendingImages((current) =>
+      previewUrl ? current.filter((image) => image.previewUrl !== previewUrl) : [],
+    );
     setImageError("");
     if (imageInputRef.current) imageInputRef.current.value = "";
   }
 
   function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!file || !imageSettings.enabled) return;
-    setImageError("");
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    if (!files.length || !imageSettings.enabled || pendingImage?.kind === "video") return;
+    if (pendingImages.length + files.length > imageSettings.maxPerTurn) {
+      setImageError(t("imageTurnLimit", { count: imageSettings.maxPerTurn }));
+      return;
+    }
+    if (files.some((file) => !["image/jpeg", "image/png", "image/webp"].includes(file.type))) {
       setImageError(t("imageUnsupported"));
       return;
     }
-    if (file.size <= 0 || file.size > imageSettings.maxBytes) {
+    if (files.some((file) => file.size <= 0 || file.size > imageSettings.maxBytes)) {
       setImageError(
         t("imageTooLarge", {
           maxMb: Math.max(1, Math.floor(imageSettings.maxBytes / (1024 * 1024))),
@@ -1178,11 +1323,52 @@ export function FloatingChat({
       );
       return;
     }
-    clearPendingImage();
+    const next = files.map((file) => {
+      const previewUrl = URL.createObjectURL(file);
+      localImageUrlsRef.current.add(previewUrl);
+      return { file, previewUrl, requestId: createRequestId() };
+    });
+    setPendingImages((current) => [...current, ...next]);
+    setImageError("");
+  }
+
+  function handleVideoSelection(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !videosEnabled || pendingImage) return;
+    if (file.size <= 0 || file.size > 40 * 1024 * 1024) {
+      setImageError(t("videoTooLarge"));
+      return;
+    }
+    if (
+      !["video/mp4", "video/quicktime", "video/webm", "", "application/octet-stream"].includes(
+        file.type,
+      )
+    ) {
+      setImageError(t("videoUnsupported"));
+      return;
+    }
     const previewUrl = URL.createObjectURL(file);
     localImageUrlsRef.current.add(previewUrl);
-    setPendingImage({ file, previewUrl });
+    setPendingImages([{ file, previewUrl, kind: "video", requestId: createRequestId() }]);
     setImageError("");
+    // Browser metadata is a convenience check. The server decodes and validates the whole file.
+    const probe = document.createElement("video");
+    probe.preload = "metadata";
+    probe.onloadedmetadata = () => {
+      if (Number.isFinite(probe.duration) && probe.duration > 15) {
+        setPendingImages((current) => {
+          if (current[0]?.previewUrl !== previewUrl) return current;
+          URL.revokeObjectURL(previewUrl);
+          localImageUrlsRef.current.delete(previewUrl);
+          return [];
+        });
+        setImageError(t("videoTooLong"));
+      }
+      probe.removeAttribute("src");
+      probe.load();
+    };
+    probe.src = previewUrl;
   }
 
   function toggleContact() {
@@ -1579,6 +1765,23 @@ export function FloatingChat({
                         <div
                           className={`border px-4 py-3 font-body text-a5-meta leading-relaxed text-foreground ${message.role === "USER" ? "border-chat bg-cyan/10" : "border-border bg-background"}`}
                         >
+                          {message.videos?.map((video, index) => (
+                            <div className="mb-3" key={video.id} data-chat-customer-video>
+                              {video.contentPath &&
+                              new Date(video.expiresAt).getTime() > mediaNow ? (
+                                <PrivateChatImage
+                                  image={video}
+                                  visitorToken={visitorToken}
+                                  localUrl={index === 0 ? message.localVideoUrl : undefined}
+                                  alt={t("customerVideoAlt")}
+                                />
+                              ) : (
+                                <p className="border border-border bg-muted p-3 text-muted-foreground">
+                                  {t("videoExpired")}
+                                </p>
+                              )}
+                            </div>
+                          ))}
                           {message.images?.length ? (
                             <div className="mb-3 grid gap-2" data-chat-customer-images>
                               {message.images.map((image, imageIndex) => (
@@ -1586,7 +1789,10 @@ export function FloatingChat({
                                   key={image.id}
                                   image={image}
                                   visitorToken={visitorToken}
-                                  localUrl={imageIndex === 0 ? message.localImageUrl : undefined}
+                                  localUrl={
+                                    message.localImageUrls?.[imageIndex] ??
+                                    (imageIndex === 0 ? message.localImageUrl : undefined)
+                                  }
                                   alt={t("customerImageAlt")}
                                 />
                               ))}
@@ -1732,8 +1938,10 @@ export function FloatingChat({
                           retryMessage.requestId,
                           retryMessage.clarificationSelection,
                           undefined,
-                          retryMessage.image,
-                          retryMessage.localImageUrl,
+                          retryMessage.images,
+                          retryMessage.localImageUrls,
+                          retryMessage.video,
+                          retryMessage.localVideoUrl,
                         )
                       : void requestAvailability(true)
                   }
@@ -1750,25 +1958,37 @@ export function FloatingChat({
               </p>
             ) : null}
 
-            {pendingImage ? (
+            {pendingImages.map((pendingImage, index) => (
               <div
+                key={pendingImage.previewUrl}
                 className="mb-3 flex items-start gap-3 border border-border bg-muted p-3"
                 data-chat-pending-image
               >
-                <Image
-                  src={pendingImage.previewUrl}
-                  alt={t("selectedImageAlt")}
-                  width={80}
-                  height={80}
-                  unoptimized
-                  className="size-20 shrink-0 border border-border object-cover"
-                />
+                {pendingImage.kind === "video" ? (
+                  <video
+                    src={pendingImage.previewUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    aria-label={t("selectedVideoAlt")}
+                    className="h-20 w-24 shrink-0 border border-border"
+                  />
+                ) : (
+                  <Image
+                    src={pendingImage.previewUrl}
+                    alt={`${t("selectedImageAlt")} ${index + 1}`}
+                    width={80}
+                    height={80}
+                    unoptimized
+                    className="size-20 shrink-0 border border-border object-cover"
+                  />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-body text-a5-meta font-semibold text-foreground">
                     {pendingImage.file.name}
                   </p>
                   <p className="mt-1 font-body text-a5-meta text-muted-foreground">
-                    {t("selectedImageReady")}
+                    {t(pendingImage.kind === "video" ? "selectedVideoReady" : "selectedImageReady")}
                   </p>
                 </div>
                 <Button
@@ -1776,14 +1996,16 @@ export function FloatingChat({
                   variant="ghost"
                   size="icon"
                   className="size-11 min-h-11 shrink-0 p-0"
-                  onClick={clearPendingImage}
+                  onClick={() => clearPendingImage(pendingImage.previewUrl)}
                   disabled={sending}
-                  aria-label={t("removeSelectedImage")}
+                  aria-label={t(
+                    pendingImage.kind === "video" ? "removeSelectedVideo" : "removeSelectedImage",
+                  )}
                 >
                   <X className="size-4" aria-hidden="true" />
                 </Button>
               </div>
-            ) : null}
+            ))}
 
             {imageError ? (
               <p
@@ -1805,9 +2027,14 @@ export function FloatingChat({
                     ref={imageInputRef}
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
+                    multiple
                     className="sr-only"
                     onChange={handleImageSelection}
-                    disabled={composerLocked || Boolean(pendingImage)}
+                    disabled={
+                      composerLocked ||
+                      pendingImage?.kind === "video" ||
+                      pendingImages.length >= imageSettings.maxPerTurn
+                    }
                     aria-label={t("chooseImage")}
                   />
                   <Button
@@ -1816,13 +2043,43 @@ export function FloatingChat({
                     size="icon"
                     className="size-12 h-12 min-h-12 shrink-0 p-0"
                     onClick={() => imageInputRef.current?.click()}
-                    disabled={composerLocked || Boolean(pendingImage)}
+                    disabled={
+                      composerLocked ||
+                      pendingImage?.kind === "video" ||
+                      pendingImages.length >= imageSettings.maxPerTurn
+                    }
                     aria-label={t("chooseImage")}
                     title={t("chooseImageHint", {
+                      count: imageSettings.maxPerTurn,
                       maxMb: Math.max(1, Math.floor(imageSettings.maxBytes / (1024 * 1024))),
                     })}
                   >
                     <ImagePlus className="size-5" aria-hidden="true" />
+                  </Button>
+                </>
+              ) : null}
+              {videosEnabled ? (
+                <>
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/webm,.mov"
+                    className="sr-only"
+                    onChange={handleVideoSelection}
+                    disabled={composerLocked || Boolean(pendingImage)}
+                    aria-label={t("chooseVideo")}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-12 h-12 min-h-12 shrink-0 p-0"
+                    onClick={() => videoInputRef.current?.click()}
+                    disabled={composerLocked || Boolean(pendingImage)}
+                    aria-label={t("chooseVideo")}
+                    title={t("chooseVideoHint")}
+                  >
+                    <Video className="size-5" aria-hidden="true" />
                   </Button>
                 </>
               ) : null}

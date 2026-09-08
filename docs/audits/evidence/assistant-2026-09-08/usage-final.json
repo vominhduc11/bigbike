@@ -1,0 +1,237 @@
+{
+  "asOf": "2026-09-08T08:52:37.670605+00:00",
+  "definition": "Logical AI allowances recorded by BigBike; provider tool steps/retries are not additional day slots.",
+  "approvedBudget": {
+    "text": 160,
+    "images": 8,
+    "videos": 8
+  },
+  "auditUsed": {
+    "text": 92,
+    "images": 5,
+    "videos": 8
+  },
+  "shopCounters": {
+    "date": "2026-09-08",
+    "text": 93,
+    "images": 5
+  },
+  "videoCounterInIsolatedPreview": 8,
+  "attributionCrossCheck": {
+    "liveBaselineTextBeforeScopedDeletion": 33,
+    "isolatedAssistantRowsWithTextAiCalled": 59
+  },
+  "videoBrowserAdditionalSlot": 1,
+  "runs": [
+    {
+      "run": "image-preview",
+      "recordedResponses": 3,
+      "successfulResponses": 3,
+      "used": {
+        "text": 0,
+        "images": 3,
+        "videos": 0
+      }
+    },
+    {
+      "run": "baseline",
+      "recordedResponses": 97,
+      "successfulResponses": 80,
+      "used": {
+        "text": 33,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "preview-1",
+      "recordedResponses": 80,
+      "successfulResponses": 80,
+      "used": {
+        "text": 18,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "preview-3",
+      "recordedResponses": 80,
+      "successfulResponses": 80,
+      "used": {
+        "text": 7,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "preview-7",
+      "recordedResponses": 1,
+      "successfulResponses": 1,
+      "used": {
+        "text": 0,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "ambiguity-before",
+      "recordedResponses": 4,
+      "successfulResponses": 4,
+      "used": {
+        "text": 0,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "name-complete",
+      "recordedResponses": 8,
+      "successfulResponses": 8,
+      "used": {
+        "text": 2,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "name-color-final",
+      "recordedResponses": 6,
+      "successfulResponses": 6,
+      "used": {
+        "text": 3,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "preview-6",
+      "recordedResponses": 9,
+      "successfulResponses": 9,
+      "used": {
+        "text": 0,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "preview-2",
+      "recordedResponses": 80,
+      "successfulResponses": 80,
+      "used": {
+        "text": 15,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "name-release",
+      "recordedResponses": 2,
+      "successfulResponses": 2,
+      "used": {
+        "text": 2,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "name-final",
+      "recordedResponses": 4,
+      "successfulResponses": 4,
+      "used": {
+        "text": 0,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "last-regression",
+      "recordedResponses": 18,
+      "successfulResponses": 18,
+      "used": {
+        "text": 3,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "historical-extra",
+      "recordedResponses": 4,
+      "successfulResponses": 4,
+      "used": {
+        "text": 0,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "preview-4",
+      "recordedResponses": 42,
+      "successfulResponses": 42,
+      "used": {
+        "text": 0,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "historical-original",
+      "recordedResponses": 6,
+      "successfulResponses": 6,
+      "used": {
+        "text": 2,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "preview-5",
+      "recordedResponses": 15,
+      "successfulResponses": 15,
+      "used": {
+        "text": 2,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "video-validation",
+      "recordedResponses": 3,
+      "successfulResponses": 1,
+      "used": {
+        "text": 0,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "final-80",
+      "recordedResponses": 80,
+      "successfulResponses": 80,
+      "used": {
+        "text": 4,
+        "images": 0,
+        "videos": 0
+      }
+    },
+    {
+      "run": "video-main",
+      "recordedResponses": 8,
+      "successfulResponses": 7,
+      "used": {
+        "text": 1,
+        "images": 0,
+        "videos": 7
+      }
+    },
+    {
+      "run": "image-baseline",
+      "recordedResponses": 2,
+      "successfulResponses": 2,
+      "used": {
+        "text": 0,
+        "images": 2,
+        "videos": 0
+      }
+    }
+  ]
+}

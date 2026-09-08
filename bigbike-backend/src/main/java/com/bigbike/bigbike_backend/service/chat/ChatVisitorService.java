@@ -27,6 +27,12 @@ public class ChatVisitorService {
     private final ChatMessageJpaRepository messageRepo;
     private final JwtService jwtService;
     private final ChatImageService chatImageService;
+    private com.bigbike.bigbike_backend.service.chat.ChatVideoService chatVideoService;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setChatVideoService(com.bigbike.bigbike_backend.service.chat.ChatVideoService service) {
+        this.chatVideoService = service;
+    }
+
 
     @Autowired
     public ChatVisitorService(
@@ -115,12 +121,15 @@ public class ChatVisitorService {
         var imagesByMessage = chatImageService == null ? java.util.Map.<UUID, List<com.bigbike.bigbike_backend.api.chat.dto.ChatImageResponse>>of()
                 : chatImageService.referencesByMessageIds(
                         messages.stream().map(message -> message.getId()).toList());
+        var videosByMessage = chatVideoService == null ? java.util.Map.<UUID, List<com.bigbike.bigbike_backend.api.chat.dto.ChatVideoResponse>>of()
+                : chatVideoService.referencesByMessageIds(messages.stream().map(message -> message.getId()).toList());
         List<ChatHistoryMessageResponse> result = messages.stream().map(message ->
                 new ChatHistoryMessageResponse(
                         message.getId(), message.getSequenceNo(), message.getRole(), message.getContent(),
                         message.getSource(), message.getAnswerFormat(), message.getResultKind(),
                         message.getCreatedAt(),
-                        imagesByMessage.getOrDefault(message.getId(), List.of()))).toList();
+                        imagesByMessage.getOrDefault(message.getId(), List.of()),
+                        videosByMessage.getOrDefault(message.getId(), List.of()))).toList();
         long latest = messages.isEmpty() ? messageRepo.findMaxSequence(conversationId)
                 : messages.get(messages.size() - 1).getSequenceNo();
         return new ChatHistoryResponse(
@@ -135,6 +144,9 @@ public class ChatVisitorService {
             if (chatImageService != null && !chatImageService.deleteForConversations(conversationIds)) {
                 throw new IllegalStateException("Không xoá được ảnh trong lịch sử hội thoại.");
             }
+            if (chatVideoService != null && !chatVideoService.deleteForConversations(conversationIds)) {
+                throw new IllegalStateException("Không xoá được video trong lịch sử hội thoại.");
+            }
             conversationRepo.deleteByCustomerId(customerId);
             return new ChatDeleteHistoryResponse(true);
         }
@@ -144,6 +156,9 @@ public class ChatVisitorService {
                 .stream().map(ChatConversationEntity::getId).toList();
         if (chatImageService != null && !chatImageService.deleteForConversations(conversationIds)) {
             throw new IllegalStateException("Không xoá được ảnh trong lịch sử hội thoại.");
+        }
+        if (chatVideoService != null && !chatVideoService.deleteForConversations(conversationIds)) {
+            throw new IllegalStateException("Không xoá được video trong lịch sử hội thoại.");
         }
         conversationRepo.deleteByVisitorId(visitorId);
         visitorRepo.deleteById(visitorId);

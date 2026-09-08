@@ -80,7 +80,10 @@ describe("review public mutations", () => {
         photos: [],
         website: "",
       }),
-    ).rejects.toMatchObject<ReviewRequestError>({ status, message });
+    ).rejects.toMatchObject({ status, message } satisfies Pick<
+      ReviewRequestError,
+      "status" | "message"
+    >);
   });
 
   it("leaves network failures distinguishable from backend responses", async () => {

@@ -1,0 +1,26 @@
+[
+  {
+    "case": "image-owner",
+    "http": 200,
+    "cacheControl": "no-store",
+    "bytes": 61912
+  },
+  {
+    "case": "image-anonymous",
+    "http": 404
+  },
+  {
+    "case": "image-other-visitor",
+    "http": 404
+  },
+  {
+    "case": "history-owner",
+    "http": 200,
+    "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+    "bytes": 1645
+  },
+  {
+    "case": "history-other-visitor",
+    "http": 404
+  }
+]

@@ -34,6 +34,20 @@ public class ChatImageEntity {
     @Column(name = "customer_message_id")
     private UUID customerMessageId;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.SMALLINT)
+    @Column(name = "attachment_position", nullable = false)
+    private int attachmentPosition;
+
+    @Column(name = "quota_reserved_on")
+    private java.time.LocalDate quotaReservedOn;
+
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "analysis_json", columnDefinition = "jsonb")
+    private String analysisJson;
+
+    @Column(name = "analysis_deadline_at")
+    private Instant analysisDeadlineAt;
+
     @Column(name = "storage_bucket", nullable = false, length = 255)
     private String storageBucket;
 

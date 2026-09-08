@@ -7,7 +7,11 @@ import { DetailSection } from '../components/DetailSection'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { Screen, ScreenHeader } from '../components/layout'
-import { fetchAdminChatImageBlob, fetchChatConversation } from '../lib/adminApi'
+import {
+  fetchAdminChatImageBlob,
+  fetchAdminChatVideoBlob,
+  fetchChatConversation,
+} from '../lib/adminApi'
 import { formatDateTime } from '../lib/formatters'
 
 function DetailValue({ label, children }) {
@@ -50,14 +54,15 @@ function endedReasonLabel(reason, t) {
   return labels[reason] || t('common.unknown')
 }
 
-function PrivateCustomerImage({ image, alt, loadError }) {
+function PrivateCustomerImage({ image, alt, loadError, video = false }) {
   const [source, setSource] = useState('')
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     let objectUrl = ''
-    fetchAdminChatImageBlob(image.id)
+    const fetchMedia = video ? fetchAdminChatVideoBlob : fetchAdminChatImageBlob
+    fetchMedia(image.id)
       .then((blob) => {
         if (cancelled) return
         objectUrl = URL.createObjectURL(blob)
@@ -70,7 +75,7 @@ function PrivateCustomerImage({ image, alt, loadError }) {
       cancelled = true
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [image.id])
+  }, [image.id, video])
 
   if (failed) {
     return (
@@ -89,6 +94,17 @@ function PrivateCustomerImage({ image, alt, loadError }) {
       </div>
     )
   }
+  if (video)
+    return (
+      <video
+        src={source}
+        controls
+        playsInline
+        preload="metadata"
+        aria-label={alt}
+        className="max-h-96 w-full rounded-[var(--admin-radius-thumb)] border border-border"
+      />
+    )
   return (
     <img
       src={source}
@@ -98,7 +114,11 @@ function PrivateCustomerImage({ image, alt, loadError }) {
   )
 }
 
-export function ChatConversationDetailScreen({ conversationId, navigate }) {
+export function ChatConversationDetailScreen({
+  conversationId,
+  messageId: targetMessageId,
+  navigate,
+}) {
   const { t } = useTranslation()
   const detailQuery = useQuery({
     queryKey: ['chat-conversation', conversationId],
@@ -113,6 +133,13 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
       ),
     [conversation?.messages],
   )
+
+  useEffect(() => {
+    if (!targetMessageId || !/^[0-9a-f-]{36}$/i.test(targetMessageId)) return
+    const element = document.getElementById(`chat-message-${targetMessageId}`)
+    element?.scrollIntoView({ block: 'center' })
+    element?.focus({ preventScroll: true })
+  }, [messages, targetMessageId])
 
   if (detailQuery.isLoading) {
     return (
@@ -179,6 +206,8 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
                   return (
                     <li
                       key={message.id}
+                      id={`chat-message-${message.id}`}
+                      tabIndex={-1}
                       className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
                     >
                       {!isUser ? (
@@ -202,6 +231,23 @@ export function ChatConversationDetailScreen({ conversationId, navigate }) {
                             {formatDateTime(message.createdAt)}
                           </time>
                         </header>
+                        {message.videos?.map((video) => (
+                          <div className="mb-3" key={video.id} data-admin-chat-video>
+                            {video.contentPath &&
+                            new Date(video.expiresAt).getTime() > Date.now() ? (
+                              <PrivateCustomerImage
+                                image={video}
+                                video
+                                alt={t('chatAdmin.detail.customerVideoAlt')}
+                                loadError={t('chatAdmin.detail.customerVideoLoadError')}
+                              />
+                            ) : (
+                              <p className="border border-border bg-surface-muted p-3 text-sm text-muted-foreground">
+                                {t('chatAdmin.detail.videoExpired')}
+                              </p>
+                            )}
+                          </div>
+                        ))}
                         {message.images?.length ? (
                           <div className="mb-3 grid gap-2" data-admin-chat-images>
                             {message.images.map((image) => (

@@ -92,6 +92,7 @@ public class ChatProductDiscoveryApiTest {
     @Autowired private ChatMessageJpaRepository messageRepository;
     @Autowired private ChatConversationJpaRepository conversationRepository;
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private com.bigbike.bigbike_backend.repository.catalog.PublishedProductListingCache listingCache;
 
     @MockitoBean private ChatAssistantSettings assistantSettings;
     @MockitoBean private AiChatClient aiChatClient;
@@ -143,7 +144,7 @@ public class ChatProductDiscoveryApiTest {
 
     @ParameterizedTest(name = "public q={0}")
     @MethodSource("publicTanamiQueries")
-    void sharedPublicProductSearchUsesMeaningfulAndTokens(String query) throws Exception {
+    void storefrontKeepsItsCurrentCoverageRulesSeparateFromAssistantTokens(String query) throws Exception {
         MvcResult result = mockMvc.perform(get("/api/v1/products")
                         .param("q", query)
                         .param("page", "1")
@@ -153,7 +154,13 @@ public class ChatProductDiscoveryApiTest {
 
         JsonNode data = objectMapper.readTree(result.getResponse().getContentAsByteArray()).path("data");
         assertThat(data.toString()).contains(TANAMI_SLUG);
-        assertThat(data.toString()).doesNotContain(fixture.otherProduct().getSlug());
+        if (query.equals("sản phẩm tanami")) {
+            // SEARCH_RULE_001/002, owner 2026-09-07: storefront keeps all words and then allows
+            // a strict majority match. "sản phẩm" is a marker on every sellable product.
+            assertThat(data.get(0).path("slug").asText()).isEqualTo(TANAMI_SLUG);
+        } else {
+            assertThat(data.toString()).doesNotContain(fixture.otherProduct().getSlug());
+        }
     }
 
     @ParameterizedTest(name = "typo={0}")
@@ -266,17 +273,17 @@ public class ChatProductDiscoveryApiTest {
                 .doesNotContain("TIÊU CHUẨN AN TOÀN")
                 .doesNotEndWith("TIÊU CHUẨN AN TOÀN.");
         assertThat(headsets.path("answer").asText())
-                .contains("9 lựa chọn đang bán", "vài mẫu bên dưới", "tầm giá");
-        assertThat(headsets.path("clarification").isObject()).isTrue();
-        assertThat(headsets.path("products").size()).isBetween(1, 3);
+                .contains("8 mẫu phù hợp bên dưới");
+        assertThat(headsets.path("products").size()).isEqualTo(8);
         assertThat(contextAfterCategoryChange.category())
                 .isEqualTo("tai-nghe-bluetooth-mu-bao-hiem");
         assertThat(contextAfterCategoryChange.brand()).isNull();
         assertThat(contextAfterCategoryChange.minPrice()).isNull();
         assertThat(contextAfterCategoryChange.maxPrice()).isNull();
         assertThat(aboveThree.path("answer").asText())
-                .contains("5 mẫu phù hợp bên dưới");
-        assertThat(aboveThree.path("products").size()).isEqualTo(5);
+                .contains("4 mẫu phù hợp bên dưới");
+        assertThat(aboveThree.path("products").size()).isEqualTo(4);
+        assertThat(aboveThree.path("products").toString()).doesNotContain("Cam-S");
     }
 
     @Test
@@ -293,6 +300,7 @@ public class ChatProductDiscoveryApiTest {
         createdProductIds.add(product.getId());
         brandRepository.saveAndFlush(ls2);
         productRepository.saveAndFlush(product);
+        listingCache.invalidate();
 
         for (String question : List.of("Tìm sản phẩm thương hiệu LS2", "san pham ls2")) {
             JsonNode data = send(null, question, "vi");
@@ -732,6 +740,7 @@ public class ChatProductDiscoveryApiTest {
         List<ProductEntity> products = List.of(tanami, other, draft, soldOut);
         products.forEach(product -> createdProductIds.add(product.getId()));
         productRepository.saveAllAndFlush(products);
+        listingCache.invalidate();
         return new Fixture(tanami, other);
     }
 
@@ -863,7 +872,7 @@ public class ChatProductDiscoveryApiTest {
         }
 
         List<String> expensiveHeadsetNames = List.of(
-                "SCS S12", "SCS T2 Plus", "SCS G7+", "SCS Cam-S", "SCS S13");
+                "Tai nghe SCS S12", "Tai nghe SCS T2 Plus", "Tai nghe SCS G7+", "Camera SCS Cam-S", "Tai nghe SCS S13");
         List<BigDecimal> expensiveHeadsetPrices = List.of(
                 new BigDecimal("5890000"),
                 new BigDecimal("3390000"),
@@ -902,6 +911,7 @@ public class ChatProductDiscoveryApiTest {
         }
         products.forEach(product -> createdProductIds.add(product.getId()));
         productRepository.saveAllAndFlush(products);
+        listingCache.invalidate();
         acceptanceFixture = new AcceptanceFixture(helmets, headsets, z503, mf510, mf509);
         return acceptanceFixture;
     }

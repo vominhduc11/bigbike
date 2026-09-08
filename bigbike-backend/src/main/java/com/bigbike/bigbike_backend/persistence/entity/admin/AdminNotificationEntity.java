@@ -30,6 +30,9 @@ public class AdminNotificationEntity {
     @Column(name = "order_number", length = 100)
     private String orderNumber;
 
+    @Column(name = "chat_message_id")
+    private UUID chatMessageId;
+
     @Column(columnDefinition = "text")
     private String payload;
 

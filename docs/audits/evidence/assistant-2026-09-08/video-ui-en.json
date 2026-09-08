@@ -1,0 +1,10 @@
+[
+  {
+    "caseId": "UI_EN_SIZE_ERROR",
+    "message": "Please choose a video no larger than 40 MB."
+  },
+  {
+    "caseId": "UI_EN_DURATION_ERROR",
+    "message": "Please choose a video no longer than 15 seconds."
+  }
+]

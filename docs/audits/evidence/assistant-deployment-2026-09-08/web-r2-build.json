@@ -1,0 +1,8 @@
+{
+  "startedAt": "2026-09-08T09:55:08.524321+00:00",
+  "endedAt": "2026-09-08T10:00:56.210206+00:00",
+  "exitCode": 0,
+  "environmentFile": ".env.vps",
+  "image": "bigbike-assistant-web:20260908-r2",
+  "reason": "Wait for restored visitor token before fetching private video"
+}

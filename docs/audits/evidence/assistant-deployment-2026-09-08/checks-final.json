@@ -1,0 +1,164 @@
+{
+  "at": "2026-09-08T10:11:34.941960+00:00",
+  "deployment": "verified on production domains",
+  "inheritedHandoffChecks": {
+    "source": "/root/bigbike-assistant-handoff-20260908/evidence/checks-final.json",
+    "backendFullTests": 1730,
+    "backendExistingSkips": 1,
+    "backendLatestAssistantAndOpenApiTests": 289,
+    "webTests": 684,
+    "adminTests": 1144,
+    "rerunFullAudit": false
+  },
+  "newChecks": {
+    "productionWebBuild": {
+      "startedAt": "2026-09-08T09:55:08.524321+00:00",
+      "endedAt": "2026-09-08T10:00:56.210206+00:00",
+      "exitCode": 0,
+      "environmentFile": ".env.vps",
+      "image": "bigbike-assistant-web:20260908-r2",
+      "reason": "Wait for restored visitor token before fetching private video"
+    },
+    "productionAdminBuild": {
+      "startedAt": "2026-09-08T09:29:44.631472+00:00",
+      "endedAt": "2026-09-08T09:37:05.045040+00:00",
+      "exitCode": 0,
+      "environmentFile": ".env.vps",
+      "webImage": "bigbike-assistant-web:20260908",
+      "adminImage": "bigbike-assistant-admin:20260908"
+    },
+    "webLint": {
+      "exitCode": 0
+    },
+    "adminLint": {
+      "exitCode": 0,
+      "note": "Shared checkout lacked prettier binary; used already verified worktree toolchain via PATH; source checked in shared checkout."
+    },
+    "videoHistoryTests": {
+      "tests": 35,
+      "exitCode": 0
+    },
+    "videoHistoryStaticChecks": [
+      {
+        "command": [
+          "npx",
+          "eslint",
+          "components/home/FloatingChat.tsx",
+          "components/home/FloatingChat.test.tsx"
+        ],
+        "exitCode": 0
+      },
+      {
+        "command": [
+          "npx",
+          "prettier",
+          "--check",
+          "components/home/FloatingChat.tsx",
+          "components/home/FloatingChat.test.tsx"
+        ],
+        "exitCode": 0
+      },
+      {
+        "command": [
+          "npm",
+          "run",
+          "check:no-runtime-business-data"
+        ],
+        "exitCode": 0
+      }
+    ],
+    "gatewaySyntaxAndReload": {
+      "at": "2026-09-08T09:40:33.488200+00:00",
+      "testExit": 0,
+      "reloadExit": 0,
+      "sha256": "9e7a2b7ec126b20d3ef83b889d419f3984934b93b796b2670e646c4e2505eacc",
+      "exactVideoLimit": "45m",
+      "otherLocationsUnchanged": true,
+      "forwardingHeaderOnNewRoute": "X-Forwarded-For: $remote_addr"
+    },
+    "liveBrowser": {
+      "at": "2026-09-08T10:04:37.373309+00:00",
+      "imageId": "sha256:9895177fda3276f98426d1b1466999659a348dfbcc1b157de086b787f7876002",
+      "reloadPlayback": {
+        "at": "2026-09-08T10:04:25.790Z",
+        "case": "production-reload-playback",
+        "duration": 12.00161,
+        "controls": true,
+        "privateBlob": true,
+        "played": true
+      },
+      "runtime": {
+        "at": "2026-09-08T10:04:28.457Z",
+        "case": "production-browser-health",
+        "pageErrors": [],
+        "apiErrors": [],
+        "applicationConsoleErrors": [],
+        "externalConsoleWarnings": [
+          "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+          "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+        ]
+      },
+      "externalWarningAlreadyRecordedIn": "docs/audits/WEB_HEADER_UI_2026_09_07.md:61"
+    },
+    "migrationHistory": {
+      "at": "2026-09-08T10:09:38.878416+00:00",
+      "oldHistoryEntries": 454,
+      "comparisonKey": "installed_rank",
+      "oldHistoryUnchanged": true,
+      "newHistoryEntries": [
+        {
+          "installed_rank": 457,
+          "version": "1081",
+          "description": "chat short videos",
+          "type": "SQL",
+          "script": "V1081__chat_short_videos.sql",
+          "checksum": -1548257978,
+          "installed_by": "bigbike",
+          "installed_on": "2026-09-08T16:37:40.183759",
+          "execution_time": 223,
+          "success": true
+        }
+      ]
+    },
+    "fixtureCleanup": {
+      "at": "2026-09-08T10:04:39.939534+00:00",
+      "ownedVisitorIdentities": 4,
+      "remainingFixtureRows": {
+        "visitors": 0,
+        "conversations": 0,
+        "messages": 0,
+        "videos": 0,
+        "images": 0
+      },
+      "quotaBefore": {
+        "date": "2026-09-08",
+        "text": 93,
+        "images": 5,
+        "videos": 9,
+        "auditDayVideos": 9
+      },
+      "quotaAfter": {
+        "date": "2026-09-08",
+        "text": 93,
+        "images": 5,
+        "videos": 9,
+        "auditDayVideos": 9
+      },
+      "globalCleanupUsed": false
+    },
+    "privateObjectDeleted": {
+      "authenticatedObjectStat": "NoSuchKey"
+    }
+  },
+  "additionalAi": {
+    "text": 0,
+    "images": 0,
+    "videos": 1
+  },
+  "limitations": [
+    "No further real-video calls for previously audited captionless, timeout or rejection cases.",
+    "Authenticated admin without chat.read inherited from audit; live tested owner, other visitor, anonymous and authorized admin.",
+    "Known pre-existing Cloudflare analytics CSP warning remains recorded."
+  ],
+  "noCommitOrPush": true
+}

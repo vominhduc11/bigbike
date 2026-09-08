@@ -2,7 +2,13 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/image", () => ({
-  default: ({ src, alt, fill, preload, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+  default: ({
+    src,
+    alt,
+    fill,
+    preload,
+    ...props
+  }: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean; preload?: boolean }) => {
     void fill;
     void preload;
     return (
@@ -24,7 +30,10 @@ describe("MediaImage source safety", () => {
       />,
     );
 
-    expect(screen.getByRole("img", { name: "Mũ bảo hiểm" })).toHaveAttribute("data-next-image", "true");
+    expect(screen.getByRole("img", { name: "Mũ bảo hiểm" })).toHaveAttribute(
+      "data-next-image",
+      "true",
+    );
   });
 
   it("keeps an unallowlisted legacy URL as a native image instead of breaking optimization", () => {

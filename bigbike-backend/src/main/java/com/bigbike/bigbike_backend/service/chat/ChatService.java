@@ -68,6 +68,10 @@ public class ChatService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ConcurrentMap<UUID, ReentrantLock> conversationLocks = new ConcurrentHashMap<>();
 
+    @org.springframework.beans.factory.annotation.Autowired
+    void setChatVideoService(ChatVideoService service) { this.chatVideoService = service; }
+    private ChatVideoService chatVideoService;
+
     @Transactional(readOnly = true)
     public ChatAvailabilityResponse availability(String lang) {
         ChatAssistantSettings.Snapshot settings = assistantSettings.load(lang);
@@ -75,7 +79,7 @@ public class ChatService {
         int conversationLimit = STANDARD_MAX_TURNS;
         ChatAssistantSettings.ImageSettings imageSettings = assistantSettings.imageSettings();
         if (imageSettings == null) {
-            imageSettings = new ChatAssistantSettings.ImageSettings(true, 20, 3);
+            imageSettings = new ChatAssistantSettings.ImageSettings(true, ChatAssistantSettings.IMAGE_DAILY_LIMIT, ChatAssistantSettings.IMAGE_CONVERSATION_LIMIT);
         }
         boolean imagesEnabled = imageSettings.enabled() && aiClient.isConfigured();
         // Owner decision 2026-09-06 (CHAT_RULE_059): khung chat không còn dòng công bố ảnh.
@@ -86,22 +90,145 @@ public class ChatService {
                 conversationLimit,
                 settings.contacts(),
                 new ChatImageAvailabilityResponse(
-                        imagesEnabled, ChatImageStorageService.MAX_UPLOAD_BYTES, 1,
-                        imageSettings.conversationLimit(), imageSettings.dailyLimit()));
+                        imagesEnabled, ChatImageStorageService.MAX_UPLOAD_BYTES, ChatAssistantSettings.IMAGE_TURN_LIMIT,
+                        imageSettings.conversationLimit(), imageSettings.dailyLimit()),
+                chatVideoService == null ? null : chatVideoService.availability());
     }
 
     public ChatMessageResponse send(ChatMessageRequest request, UUID customerId) {
-        UUID lockKey = request.getConversationId() != null
-                ? request.getConversationId()
+        boolean video = request.getVideoIds() != null && !request.getVideoIds().isEmpty();
+        if (video && request.getImageIds() != null && !request.getImageIds().isEmpty()) {
+            throw ChatVideoErrors.invalid("CHAT_MEDIA_EXCLUSIVE", request.getLang());
+        }
+        Instant deadline = null;
+        if (video) {
+            if (chatVideoService == null) throw ChatVideoErrors.invalid("CHAT_VIDEO_UNAVAILABLE", request.getLang());
+            UUID visitorId = visitorService.resolveVisitorId(request.getVisitorToken());
+            var replay = request.getRequestId() == null ? Optional.<ChatMessageResponse>empty() : replayStoredResponse(
+                    request.getRequestId(), customerId, visitorId, assistantSettings.load(request.getLang()), resolveMaxTurns(request));
+            if (replay.isPresent()) return replay.get();
+            deadline = chatVideoService.deadline(request.getVideoIds(), request.getConversationId(),
+                    customerId, visitorId, request.getRequestId(), request.getLang());
+            Instant storedDeadline = deadline;
+            var before = conversationRepo.findById(request.getConversationId()).orElseThrow(
+                    () -> new NotFoundException("Conversation not found"));
+            var settings = assistantSettings.load(request.getLang());
+            int limit = resolveMaxTurns(request);
+            int counted = Math.min(limit, before.getCountedTurns() + 1);
+            java.util.function.Function<String, ChatMessageResponse> failureResponse = code ->
+                    new ChatMessageResponse(before.getId(), null, "AI", "AI",
+                            ChatVideoErrors.message(code, request.getLang()), "PLAIN_TEXT",
+                            "CLARIFICATION", before.getTurnCount() + 1, limit, Math.max(0, limit - counted),
+                            List.of(), null, List.of(), settings.contacts(), List.of(), before.getSalesStage(),
+                            null, counted, limit, Math.max(0, limit - counted), null);
+            try {
+                return ChatVideoDeadline.call(storedDeadline,
+                        () -> sendLocked(request, customerId, true, storedDeadline),
+                        () -> failureResponse.apply("CHAT_VIDEO_TIMEOUT"));
+            } catch (ChatTurnBudget.Expired failure) {
+                return failureResponse.apply("CHAT_VIDEO_TIMEOUT");
+            } catch (ChatTurnBudget.CallsExhausted failure) {
+                return failureResponse.apply("CHAT_VIDEO_UNAVAILABLE");
+            }
+        }
+        if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
+            if (chatImageService == null) throw ValidationException.fromField("imageIds", "CHAT_IMAGE_UNAVAILABLE",
+                    "Tính năng đọc ảnh hiện chưa sẵn sàng.");
+            UUID visitorId = visitorService.resolveVisitorId(request.getVisitorToken());
+            var replay = request.getRequestId() == null ? Optional.<ChatMessageResponse>empty() : replayStoredResponse(
+                    request.getRequestId(), customerId, visitorId, assistantSettings.load(request.getLang()), resolveMaxTurns(request));
+            if (replay.isPresent()) return replay.get();
+            UUID existingMessageId = request.getRequestId() == null ? null : messageRepo.findFirstByRequestIdAndRole(
+                    request.getRequestId(), "CUSTOMER").map(ChatMessageEntity::getId).orElse(null);
+            Instant imageDeadline = chatImageService.deadline(request.getImageIds(), request.getConversationId(),
+                    customerId, visitorId, existingMessageId);
+            return sendLocked(request, customerId, false, imageDeadline);
+        }
+        return sendLocked(request, customerId, false, null);
+    }
+
+    private ChatMessageResponse sendLocked(ChatMessageRequest request, UUID customerId, boolean video, Instant deadline) {
+        UUID lockKey = request.getConversationId() != null ? request.getConversationId()
                 : request.getRequestId() != null ? request.getRequestId() : UUID.randomUUID();
         ReentrantLock lock = conversationLocks.computeIfAbsent(lockKey, ignored -> new ReentrantLock());
-        lock.lock();
+        if (video || deadline != null) {
+            try {
+                if (!lock.tryLock() && !lock.tryLock(Math.max(0,
+                        java.time.Duration.between(Instant.now(), deadline).toMillis() - 750), java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                    if (!video) throw imageBusy(request.getLang());
+                    throw new ChatTurnBudget.Expired();
+                }
+            } catch (InterruptedException failure) {
+                Thread.currentThread().interrupt();
+                if (!video) throw imageBusy(request.getLang());
+                throw new ChatTurnBudget.Expired();
+            }
+        } else lock.lock();
         try {
-            return sendUnlocked(request, customerId);
+            if (!video && deadline == null) return sendUnlocked(request, customerId);
+            if (!video) {
+                try (var imageBudget = ChatTurnBudget.open(deadline)) {
+                    return sendUnlocked(request, customerId);
+                } catch (ChatTurnBudget.Expired | ChatTurnBudget.CallsExhausted failure) {
+                    return imageFailureResponse(request, customerId);
+                }
+            }
+            var budget = ChatTurnBudget.open(deadline);
+            String failureCode = null;
+            try (budget) { return sendUnlocked(request, customerId); }
+            catch (ChatTurnBudget.Expired failure) { failureCode = "CHAT_VIDEO_TIMEOUT"; }
+            catch (ChatTurnBudget.CallsExhausted failure) { failureCode = "CHAT_VIDEO_UNAVAILABLE"; }
+            catch (IllegalStateException failure) {
+                log.warn("chat_video_turn_failed type={}", failure.getClass().getSimpleName());
+                failureCode = "CHAT_VIDEO_UNAVAILABLE";
+            }
+            return videoFailureResponse(request, customerId, failureCode, budget.usedTextSlot());
         } finally {
             lock.unlock();
             if (!lock.hasQueuedThreads()) conversationLocks.remove(lockKey, lock);
         }
+    }
+
+    private static ValidationException imageBusy(String lang) {
+        return ValidationException.fromField("imageIds", "CHAT_IMAGE_UNAVAILABLE", "en".equals(lang)
+                ? "The previous reply is still processing. Please try sending these images again shortly."
+                : "Lượt trước vẫn đang xử lý. Anh/chị gửi lại các ảnh này sau ít giây nhé.");
+    }
+
+    private ChatMessageResponse imageFailureResponse(ChatMessageRequest request, UUID customerId) {
+        var settings = assistantSettings.load(request.getLang());
+        UUID visitorId = visitorService.resolveVisitorId(request.getVisitorToken());
+        var replay = replayStoredResponse(request.getRequestId(), customerId, visitorId, settings, resolveMaxTurns(request));
+        if (replay.isPresent()) return replay.get();
+        var conversation = loadOrCreate(request.getConversationId(), customerId, visitorId, request.getLang());
+        String content = request.getMessage() == null || request.getMessage().isBlank()
+                ? ("en".equals(request.getLang()) ? "Sent images." : "Đã gửi ảnh.") : request.getMessage();
+        saveCustomerMessage(conversation, content, request.getRequestId(), !isClarificationReply(conversation, request));
+        return imageOnlyResponse(conversation, settings, request, content,
+                new ChatImageService.ImageTurnResult("en".equals(request.getLang())
+                        ? "Sorry, this image check took too long. Please describe the item so I can keep helping."
+                        : "Em xin lỗi, lần đọc ảnh này mất quá lâu. Anh/chị mô tả món cần tìm để em hỗ trợ tiếp nhé.",
+                        ChatMessageSource.PROVIDER_UNAVAILABLE, "CLARIFICATION", List.of(), false, false), resolveMaxTurns(request));
+    }
+
+    private ChatMessageResponse videoFailureResponse(ChatMessageRequest request, UUID customerId, String code, boolean aiCalled) {
+        UUID visitorId = visitorService.resolveVisitorId(request.getVisitorToken());
+        var settings = assistantSettings.load(request.getLang());
+        var replay = replayStoredResponse(request.getRequestId(), customerId, visitorId, settings, resolveMaxTurns(request));
+        if (replay.isPresent()) return replay.get();
+        var conversation = loadOrCreate(request.getConversationId(), customerId, visitorId, request.getLang());
+        var customer = saveCustomerMessage(conversation,
+                request.getMessage() == null || request.getMessage().isBlank()
+                        ? ("en".equals(request.getLang()) ? "Sent a video." : "Đã gửi một video.") : request.getMessage(),
+                request.getRequestId(), !isClarificationReply(conversation, request));
+        chatVideoService.markTimeout(request.getVideoIds(), customer.getId());
+        String answer = ChatVideoErrors.message(code, request.getLang());
+        saveAssistantMessage(conversation, answer, ChatMessageSource.TOOL, aiCalled, List.of(), 0,
+                request.getRequestId(), "PLAIN_TEXT", "CLARIFICATION", List.of(), null, null, null);
+        finishTurnIfNeeded(conversation, resolveMaxTurns(request));
+        conversationRepo.save(conversation);
+        return aiResponse(conversation, settings, answer, List.of(), "CLARIFICATION", List.of(),
+                resolveMaxTurns(request), null, null, null);
     }
 
     /** Provider waits must never keep a database transaction or connection open. */
@@ -122,7 +249,16 @@ public class ChatService {
             conversation.setEndedReason(null);
         }
         if (conversation.getEndedReason() == null && conversation.getCountedTurns() >= maxTurns) {
+            UUID previousConversationId = conversation.getId();
             conversation = continueConversation(conversation);
+            if (request.getImageIds() != null && !request.getImageIds().isEmpty()) {
+                chatImageService.moveToContinuation(request.getImageIds(), previousConversationId, conversation.getId());
+                request.setConversationId(conversation.getId());
+            }
+            if (request.getVideoIds() != null && !request.getVideoIds().isEmpty()) {
+                chatVideoService.moveToContinuation(request.getVideoIds(), previousConversationId, conversation.getId());
+                request.setConversationId(conversation.getId());
+            }
         }
         if (conversation.getEndedReason() != null) {
             return contactResponse(
@@ -138,20 +274,28 @@ public class ChatService {
                 throw ValidationException.fromField(
                         "imageIds", "CHAT_IMAGE_UNAVAILABLE", "Tính năng đọc ảnh hiện chưa sẵn sàng.");
             }
+            UUID existingMessageId = request.getRequestId() == null ? null : messageRepo.findFirstByRequestIdAndRole(
+                    request.getRequestId(), "CUSTOMER").map(ChatMessageEntity::getId).orElse(null);
+            chatImageService.validateTurn(conversation, existingMessageId, request.getImageIds());
             boolean customerAsked = request.getMessage() != null && !request.getMessage().isBlank();
             String customerContent = customerAsked
                     ? request.getMessage()
-                    : ("en".equals(request.getLang()) ? "Sent an image." : "Đã gửi một ảnh.");
+                    : ("en".equals(request.getLang()) ? "Sent images." : "Đã gửi ảnh.");
             ChatMessageEntity customerMessage = saveCustomerMessage(
                     conversation, customerContent, request.getRequestId(),
                     countCustomerTurn);
             ChatImageService.ImageTurnResult imageResult = chatImageService.processTurn(
                     conversation, customerMessage.getId(), request.getImageIds(),
-                    customerContent, request.getLang());
+                    customerAsked ? request.getMessage() : "", request.getLang());
+            if (imageResult.evidence() == null) imageResult = imageResult.withEvidence(
+                    new ChatImageEvidence(null, null, null, List.of()));
             // Owner decision 2026-09-07: a question typed with the photo gets answered in the same
             // reply. Recognising the photo and then stopping is what made "cái mũ này giá bao
             // nhiêu?" come back with no price at all, while the very same question asked one turn
             // later was answered correctly.
+            saveConversationContext(conversation, withImagePrelude(readConversationContext(conversation),
+                    ImageTurnPrelude.of(imageResult)));
+            conversationRepo.save(conversation);
             boolean chain = customerAsked
                     && imageResult.continuesToText()
                     && remainingTurnMillis(startedNanos) >= MIN_CHAINED_TEXT_MILLIS;
@@ -160,6 +304,24 @@ public class ChatService {
                         conversation, settings, request, customerContent, imageResult, maxTurns);
             }
             prelude = ImageTurnPrelude.of(imageResult);
+        }
+        if (request.getVideoIds() != null && !request.getVideoIds().isEmpty()) {
+            ChatTurnBudget.checkTime();
+            String caption = request.getMessage() == null ? "" : request.getMessage();
+            String customerContent = caption.isBlank()
+                    ? ("en".equals(request.getLang()) ? "Sent a video." : "Đã gửi một video.") : caption;
+            var customerMessage = saveCustomerMessage(conversation, customerContent, request.getRequestId(), countCustomerTurn);
+            conversationRepo.save(conversation);
+            var videoResult = chatVideoService.processTurn(conversation, customerMessage.getId(), request.getVideoIds(),
+                    request.getRequestId(), caption, request.getLang());
+            ChatTurnBudget.checkTime();
+            String question = caption.isBlank() ? videoResult.spokenQuestion() : caption;
+            if (question == null || question.isBlank() || !videoResult.result().continuesToText()) {
+                return imageOnlyResponse(conversation, settings, request, customerContent, videoResult.result(), maxTurns);
+            }
+            // Actual speech is used only during this request; the stored customer row remains caption/"Sent a video".
+            request.setMessage(question);
+            prelude = ImageTurnPrelude.of(videoResult.result());
         }
         Optional<ChatInputGuard.Decision> inputDecision = inputGuard.evaluate(
                 request.getMessage(), request.getLang());
@@ -224,8 +386,15 @@ public class ChatService {
         ChatToolService.ConversationContext conversationContext = readConversationContext(conversation);
         List<ChatMessageEntity> existingMessages = messageRepo
                 .findByConversationIdOrderByCreatedAtAsc(conversation.getId());
-        ChatToolService.ConversationContext referenceContext = withImagePrelude(
+        ChatToolService.ConversationContext photoContext = withImagePrelude(
                 contextForImmediatePreviousCards(conversationContext, existingMessages), prelude);
+        ChatToolService.ConversationContext referenceContext = photoContext.imageEvidence() == null
+                ? photoContext
+                : toolService.imageContextForQuestion(
+                        request.getMessage(), request.getLang(), photoContext,
+                        request.getClarificationSelection());
+        // Persist photo facts before any fallback so a provider failure cannot erase the customer's scope.
+        saveConversationContext(conversation, referenceContext);
         List<ChatHistorySanitizer.RecentTurn> recentTurns = settings.recentTurnPairs() == 0
                 ? List.of()
                 : ChatHistorySanitizer.recentTurns(existingMessages, settings.recentTurnPairs());
@@ -251,7 +420,7 @@ public class ChatService {
             ToolOutcome tool = fastPath.get();
             Optional<ChatResponseGuard.CheckedAnswer> checked = responseGuard.check(
                     tool.localAnswer(), tool.products(), request.getLang(),
-                    tool.requiredDisclosures(), tool.catalogTotals());
+                    tool.requiredDisclosures(), tool.catalogTotals(), tool.matchingProductNames());
             if (checked.isEmpty()) {
                 String reason = responseGuard.rejectionReason(
                         tool.localAnswer(), tool.products(), request.getLang(),
@@ -294,7 +463,7 @@ public class ChatService {
                     request.getRequestId(), answerFormat(advice.answer()), responseKind,
                     advice.actions(), tool.clarification(), advice, prelude);
             saveConversationContext(conversation, toolService.recordConversationContext(
-                    conversationContext,
+                    referenceContext,
                     request.getMessage(),
                     request.getLang(),
                     advice.products(),
@@ -331,6 +500,7 @@ public class ChatService {
                             request.getMessage(), "CONTACT", List.of(), List.of(), settings.contacts()),
                     maxTurns, prelude);
         }
+        ChatTurnBudget.textSlotReserved();
         conversation.setAiCallCount(conversation.getAiCallCount() + 1);
 
         ChatToolService.ToolContext toolContext = new ChatToolService.ToolContext(
@@ -343,7 +513,12 @@ public class ChatService {
             // text half gets what is left rather than a fresh full deadline — otherwise the pair
             // can outlive the 75s stream the reply travels back on. A plain text turn is the only
             // provider call of its turn and keeps the untouched deadline.
-            ai = prelude == null
+            ai = referenceContext.imageEvidence() != null
+                    ? aiClient.answerWithImageEvidence(request.getMessage(), request.getLang(), toolRegistry, true,
+                            (call, session) -> toolService.execute(call, toolContext, session), vocabulary,
+                            referenceContext.productSlugs(), recentTurns,
+                            java.time.Duration.ofMillis(remainingTurnMillis(startedNanos)), referenceContext.imageEvidence())
+                    : prelude == null
                     ? aiClient.answer(
                             request.getMessage(),
                             request.getLang(),
@@ -487,7 +662,7 @@ public class ChatService {
                 request.getRequestId(), answerFormat(advice.answer()), responseKind,
                 advice.actions(), null, advice, prelude);
         saveConversationContext(conversation, toolService.recordConversationContext(
-                conversationContext,
+                referenceContext,
                 request.getMessage(),
                 request.getLang(),
                 advice.products(),
@@ -522,21 +697,25 @@ public class ChatService {
             ChatImageService.ImageTurnResult imageResult,
             int maxTurns
     ) {
+        ChatClarificationResponse clarification = imageResult.evidence() == null ? null
+                : imageResult.evidence().clarification(request.getLang());
+        if (clarification != null && !isClarificationReply(conversation, request))
+            conversation.setCountedTurns(Math.max(0, conversation.getCountedTurns() - 1));
         List<com.bigbike.bigbike_backend.api.chat.dto.ChatActionResponse> imageActions =
-                ChatActionCatalog.choose(
+                clarification != null ? List.of() : ChatActionCatalog.choose(
                         customerContent, imageResult.resultKind(), imageResult.products(),
                         List.of(), settings.contacts());
         saveAssistantMessage(
                 conversation, imageResult.answer(), imageResult.source(), false,
                 imageResult.products(), 0, request.getRequestId(), "PLAIN_TEXT",
                 imageResult.resultKind(), imageActions,
-                null, null, null);
+                clarification, null, null);
         finishTurnIfNeeded(conversation, maxTurns);
         conversationRepo.save(conversation);
         return aiResponse(
                 conversation, settings, imageResult.answer(), imageResult.products(),
                 imageResult.resultKind(), imageActions, maxTurns,
-                null, null, null);
+                clarification, null, null);
     }
 
     private ChatConversationEntity loadOrCreate(
@@ -942,7 +1121,7 @@ public class ChatService {
         return new ChatToolService.ConversationContext(
                 context.category(), context.brand(), context.minPrice(), context.maxPrice(),
                 slugs, context.awaitingOrderLogin(), context.productDecision(),
-                rememberedProductSlugs(messages, slugs));
+                rememberedProductSlugs(messages, slugs), context.imageEvidence());
     }
 
     /**
@@ -1097,6 +1276,12 @@ public class ChatService {
         ChatSalesAdvisorService.Advice advice = salesAdvisorService.advise(
                 conversation, request.getMessage(), request.getLang(), settings,
                 context, answer, products, source, resultKind, clarification, actions);
+        if (context.imageEvidence() != null && context.imageEvidence().brandName() != null) {
+            Set<String> allowed = toolService.imageScopedSlugs(context, request.getLang());
+            advice = new ChatSalesAdvisorService.Advice(advice.answer(), advice.products(),
+                    advice.crossSellProducts().stream().filter(product -> allowed.contains(product.slug())).toList(),
+                    advice.salesStage(), advice.outcomeCode(), advice.nextStep(), advice.actions());
+        }
         // The advisor runs after the guard and may rewrite or extend the reply, so its output has
         // to face the same gate. If the rewrite would not pass, keep the answer that already did
         // rather than losing the turn.
@@ -1123,14 +1308,14 @@ public class ChatService {
      * one customer's photo into another's answer. It is a required parameter on every response
      * chokepoint so the compiler, not review, guarantees no branch forgets it.
      */
-    private record ImageTurnPrelude(String answer, List<ChatProductCardResponse> products) {
+    private record ImageTurnPrelude(String answer, List<ChatProductCardResponse> products, ChatImageEvidence evidence) {
 
         ImageTurnPrelude {
             products = products == null ? List.of() : List.copyOf(products);
         }
 
         static ImageTurnPrelude of(ChatImageService.ImageTurnResult result) {
-            return new ImageTurnPrelude(result.answer(), result.products());
+            return new ImageTurnPrelude(result.answer(), result.products(), result.evidence());
         }
 
         List<String> productSlugs() {
@@ -1168,7 +1353,11 @@ public class ChatService {
             return base;
         }
         LinkedHashMap<String, ChatProductCardResponse> merged = new LinkedHashMap<>();
+        Set<String> filteredSlugs = base.stream().filter(java.util.Objects::nonNull)
+                .map(ChatProductCardResponse::slug).collect(java.util.stream.Collectors.toSet());
         for (ChatProductCardResponse card : prelude.products()) {
+            if ("PRODUCT_RESULTS".equals(resultKind) && !base.isEmpty()
+                    && (card == null || !filteredSlugs.contains(card.slug()))) continue;
             if (card != null && card.slug() != null) merged.putIfAbsent(card.slug(), card);
         }
         for (ChatProductCardResponse card : base) {
@@ -1211,7 +1400,14 @@ public class ChatService {
      */
     private static ChatToolService.ConversationContext withImagePrelude(
             ChatToolService.ConversationContext base, ImageTurnPrelude prelude) {
-        if (prelude == null || prelude.productSlugs().isEmpty()) return base;
+        if (prelude == null) return base;
+        if (prelude.evidence() != null) {
+            ChatImageEvidence evidence = prelude.evidence();
+            return new ChatToolService.ConversationContext(
+                    evidence.group(), evidence.brand(), null, null,
+                    prelude.productSlugs(), base.awaitingOrderLogin(), null, prelude.productSlugs(), evidence);
+        }
+        if (prelude.productSlugs().isEmpty()) return base;
         LinkedHashSet<String> slugs = new LinkedHashSet<>(prelude.productSlugs());
         slugs.addAll(base.productSlugs());
         LinkedHashSet<String> remembered = new LinkedHashSet<>(prelude.productSlugs());
@@ -1219,7 +1415,7 @@ public class ChatService {
         return new ChatToolService.ConversationContext(
                 base.category(), base.brand(), base.minPrice(), base.maxPrice(),
                 List.copyOf(slugs), base.awaitingOrderLogin(), base.productDecision(),
-                List.copyOf(remembered));
+                List.copyOf(remembered), base.imageEvidence());
     }
 
     private static String providerUnavailableText(String lang) {
@@ -1243,6 +1439,7 @@ public class ChatService {
             ChatSalesAdvisorService.Advice salesAdvice,
             ImageTurnPrelude prelude
     ) {
+        ChatTurnBudget.checkTime();
         List<ChatProductCardResponse> storedProducts = preludeProducts(prelude, products, resultKind);
         String storedContent = preludeAnswer(prelude, content);
         ChatMessageEntity message = new ChatMessageEntity();
@@ -1278,6 +1475,7 @@ public class ChatService {
             message.setCrossSellProductsJson(salesAdvice.crossSellProducts().isEmpty()
                     ? null : writeJson(salesAdvice.crossSellProducts()));
         }
+        ChatTurnBudget.checkTime();
         messageRepo.save(message);
     }
 

@@ -371,6 +371,7 @@ function parseRoute(pathname) {
 // Vai trò bắt buộc cho từng route (ngoài permission). Chỉ Dashboard cần, để khớp backend.
 function AdminApp() {
   const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname))
+  const [search, setSearch] = useState(() => window.location.search)
   const authState = useAuth()
   const { status: authStatus, reconcileAccess, invalidateSession } = authState
   const { t } = useTranslation()
@@ -396,12 +397,16 @@ function AdminApp() {
         window.history.pushState({}, '', fullUrl)
       }
       setPathname(normalizedPath)
+      setSearch(queryPart)
     },
     [pathname],
   )
 
   useEffect(() => {
-    const handlePopState = () => setPathname(normalizePath(window.location.pathname))
+    const handlePopState = () => {
+      setPathname(normalizePath(window.location.pathname))
+      setSearch(window.location.search)
+    }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
@@ -839,7 +844,11 @@ function AdminApp() {
       break
     case 'chat-conversation-detail':
       screen = (
-        <ChatConversationDetailScreen conversationId={route.conversationId} navigate={navigate} />
+        <ChatConversationDetailScreen
+          conversationId={route.conversationId}
+          messageId={new URLSearchParams(search).get('message')}
+          navigate={navigate}
+        />
       )
       break
     case 'admin-users':

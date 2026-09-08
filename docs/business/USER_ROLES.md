@@ -505,3 +505,7 @@ Production auth status:
 ## Audit Notes
 
 Documentation này được tạo bằng thao tác đọc/inspect repository qua GitHub connector. Không chạy migration, seed, deploy, refactor hoặc command có side effect. Không sửa business logic hoặc source code ứng dụng.
+
+### Tiếp nhận biên lai trong Trợ lý — 2026-09-08
+
+Owner gán `chat.read` cho người cần xem thông báo biên lai và Hội thoại. Việc xác nhận đã nhận tiền vẫn cần `orders.write`, thao tác tại đơn hàng sau đối chiếu; không có vai trò hay quyền chat ghi mới (CHAT_RULE_066).

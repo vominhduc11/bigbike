@@ -31,7 +31,7 @@ class ChatAssistantSettingsTest {
     }
 
     @Test
-    void defaultsToFourHundredAiTurnsAndKeepsImageQuotasOutOfOwnerSettings() {
+    void defaultsToFourHundredTextTurnsAndSixtyConfigurableImages() {
         SiteSettingJpaRepository repository = mock(SiteSettingJpaRepository.class);
         when(repository.findAll()).thenReturn(List.of());
 
@@ -39,7 +39,7 @@ class ChatAssistantSettingsTest {
 
         assertThat(snapshot.dailyLimit()).isEqualTo(400);
         assertThat(settings(repository).imageSettings())
-                .isEqualTo(new ChatAssistantSettings.ImageSettings(true, 20, 3));
+                .isEqualTo(new ChatAssistantSettings.ImageSettings(true, 60, 9));
     }
 
     @Test
@@ -63,6 +63,19 @@ class ChatAssistantSettingsTest {
         assertThat(en.returnExchangePolicy().text())
                 .isEqualTo(policyService.plainText("return-exchange", "en"))
                 .contains("7 days");
+    }
+
+    @Test
+    void imageLimitChangesWithoutRestartAndLeavesTextLimitUntouched() {
+        SiteSettingJpaRepository repository = mock(SiteSettingJpaRepository.class);
+        ChatAssistantSettings assistant = settings(repository);
+        for (String limit : List.of("0", "60", "120", "10000")) {
+            when(repository.findAll()).thenReturn(List.of(
+                    setting(ChatAssistantSettings.KEY_IMAGE_DAILY_LIMIT, limit),
+                    setting(ChatAssistantSettings.KEY_DAILY_LIMIT, "120")));
+            assertThat(assistant.imageSettings().dailyLimit()).isEqualTo(Integer.parseInt(limit));
+            assertThat(assistant.load("vi").dailyLimit()).isEqualTo(120);
+        }
     }
 
     private static ChatAssistantSettings settings(SiteSettingJpaRepository repository) {

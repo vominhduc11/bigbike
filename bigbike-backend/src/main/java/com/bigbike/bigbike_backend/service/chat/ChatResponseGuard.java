@@ -29,7 +29,7 @@ public class ChatResponseGuard {
                     + "|SEARCH_WAS_BROADENED)\\b");
     /** Lowercase hyphenated values are catalog/admin slugs, never customer-facing colour names. */
     private static final Pattern RAW_INTERNAL_SLUG = Pattern.compile(
-            "(?<![\\p{L}\\p{N}])(?:[a-z0-9]{2,}(?:-[a-z0-9]{2,})+)(?![\\p{L}\\p{N}])");
+            "(?<![\\p{L}\\p{N}])(?:[a-z0-9]{2,}(?:-[a-z0-9]{2,})+)(?![\\p{L}\\p{N}])", Pattern.CASE_INSENSITIVE);
     /**
      * Customer copy legitimately uses a small number of standard English compounds. Keep the
      * allow-list exact so catalogue values such as {@code ronin-red} remain blocked.
@@ -40,6 +40,7 @@ public class ChatResponseGuard {
             "destination-specific",
             "product-condition",
             "shipping-method",
+            "lower-priced", "heat-welded", "customer-requested", "made-to-order", "self-repair", "inner-city", "energy-absorbing",
             "signed-in");
     /**
      * Ordinary gear vocabulary that is written with a hyphen in both languages. Without this the
@@ -164,8 +165,17 @@ public class ChatResponseGuard {
             Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
             ChatToolService.CatalogTotals catalogTotals
     ) {
+        return check(answer, products, lang, requiredDisclosures, catalogTotals, List.of());
+    }
+
+    /** CHAT_RULE_004: immutable item names from an owned order are data, not translated prose. */
+    public Optional<CheckedAnswer> check(
+            String answer, List<ChatProductCardResponse> products, String lang,
+            Set<ChatToolService.RequiredDisclosure> requiredDisclosures,
+            ChatToolService.CatalogTotals catalogTotals, List<String> recordedItemNames
+    ) {
         String content = trimToSentenceLimit(answer);
-        if (!isSafeCustomerText(content, lang, products)
+        if (!isSafeCustomerText(content, lang, products, recordedItemNames)
                 || !hasSafeAssistantTone(content, lang)
                 || !containsRequiredDisclosures(content, lang, requiredDisclosures)
                 // Completeness wording is a model-invention rule. Text composed by this backend —
@@ -527,8 +537,14 @@ public class ChatResponseGuard {
     /** Product cards let the slug rule recognise a hyphenated word that is part of a real name. */
     public boolean isSafeCustomerText(
             String value, String lang, List<ChatProductCardResponse> products) {
+        return isSafeCustomerText(value, lang, products, List.of());
+    }
+
+    private boolean isSafeCustomerText(String value, String lang,
+            List<ChatProductCardResponse> products, List<String> recordedItemNames) {
         if (value == null || value.isBlank()) return false;
         String content = value.trim();
+        if (!Pattern.compile("\\p{L}").matcher(content).find()) return false;
         if (TECHNICAL_TERMS.matcher(content).find()
                 || RAW_INTERNAL_CODES.matcher(content).find()
                 || containsRawInternalSlug(content, lang, products)
@@ -541,15 +557,24 @@ public class ChatResponseGuard {
                         ChatToolService.normalize(content)).find()) {
             return false;
         }
+        String prose = content;
+        if (recordedItemNames != null) {
+            for (String name : recordedItemNames.stream().limit(25).toList()) {
+                if (name != null && name.length() >= 3 && name.length() <= 1000) {
+                    prose = prose.replace(name, "recorded item");
+                }
+            }
+        }
         return !"en".equals(lang)
-                || (!VIETNAMESE_TEXT.matcher(content).find()
-                && !VI_PRONOUNS.matcher(content).find());
+                || (!VIETNAMESE_TEXT.matcher(prose).find()
+                && !VI_PRONOUNS.matcher(prose).find());
     }
 
     /** Vietnamese assistant copy must never address the customer as "em". */
     public boolean hasSafeAssistantTone(String value, String lang) {
         if (value == null || value.isBlank()) return false;
-        if ("en".equals(lang)) return isSafeCustomerText(value, lang);
+        // Language and product-name checks already ran with the verified cards.
+        if ("en".equals(lang)) return true;
         String normalized = ChatToolService.normalize(value)
                 .replaceAll("[^\\p{Alnum}]+", " ")
                 .replaceAll("\\s+", " ")

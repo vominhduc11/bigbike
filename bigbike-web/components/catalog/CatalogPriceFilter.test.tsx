@@ -11,11 +11,12 @@ const { localeState, routerState } = vi.hoisted(() => ({
 
 vi.mock("next-intl", () => ({
   useLocale: () => localeState.value,
-  useTranslations: () => (key: string) => ({
-    priceRangeAria: localeState.value === "vi" ? "Khoảng giá" : "Price range",
-    priceMinAria: localeState.value === "vi" ? "Giá thấp nhất" : "Minimum price",
-    priceMaxAria: localeState.value === "vi" ? "Giá cao nhất" : "Maximum price",
-  }[key] ?? key),
+  useTranslations: () => (key: string) =>
+    ({
+      priceRangeAria: localeState.value === "vi" ? "Khoảng giá" : "Price range",
+      priceMinAria: localeState.value === "vi" ? "Giá thấp nhất" : "Minimum price",
+      priceMaxAria: localeState.value === "vi" ? "Giá cao nhất" : "Maximum price",
+    })[key] ?? key,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -33,18 +34,16 @@ const range: CatalogPriceRange = {
   ],
 };
 
-function renderFilter(overrides: Partial<{
-  currentMinPrice?: number;
-  currentMaxPrice?: number;
-}> = {}) {
-  const queryHref = vi.fn((override: Record<string, string | string[] | number | undefined>) => JSON.stringify(override));
-  const result = render(
-    <CatalogPriceFilter
-      range={range}
-      queryHref={queryHref}
-      {...overrides}
-    />,
+function renderFilter(
+  overrides: Partial<{
+    currentMinPrice?: number;
+    currentMaxPrice?: number;
+  }> = {},
+) {
+  const queryHref = vi.fn((override: Record<string, string | string[] | number | undefined>) =>
+    JSON.stringify(override),
   );
+  const result = render(<CatalogPriceFilter range={range} queryHref={queryHref} {...overrides} />);
   return { ...result, queryHref };
 }
 
@@ -73,10 +72,10 @@ describe("CatalogPriceFilter UI contract", () => {
 
     expect(endpointLine).toHaveTextContent("50.000₫");
     expect(endpointLine).toHaveTextContent("12.000.000₫");
-    expect(container.querySelectorAll('[data-price-input]').length).toBe(0);
-    expect(container.querySelector('[data-price-range-hint]')).toBeNull();
-    expect(container.querySelector('[data-price-apply]')).toBeNull();
-    expect(container.querySelectorAll('[data-price-thumb-label]').length).toBe(0);
+    expect(container.querySelectorAll("[data-price-input]").length).toBe(0);
+    expect(container.querySelector("[data-price-range-hint]")).toBeNull();
+    expect(container.querySelector("[data-price-apply]")).toBeNull();
+    expect(container.querySelectorAll("[data-price-thumb-label]").length).toBe(0);
     expect(container.querySelector('[data-price-filter-active="false"]')).not.toBeNull();
     expect(container.querySelector('[data-price-scale-density="true"]')).not.toBeNull();
     expect(thumbs).toHaveLength(2);
@@ -95,17 +94,23 @@ describe("CatalogPriceFilter UI contract", () => {
     expect(endpointLine).toHaveTextContent("2.000.000₫");
     expect(endpointLine).toHaveTextContent("2.500.000₫");
     expect(container.querySelectorAll('[data-price-range-label="true"]')).toHaveLength(1);
-    expect(container.querySelectorAll('[data-price-thumb-label]')).toHaveLength(0);
+    expect(container.querySelectorAll("[data-price-thumb-label]")).toHaveLength(0);
   });
 
   it("uses full currency labels in English and keeps the 44px thumb hit areas", () => {
     localeState.value = "en";
     const { container } = renderFilter({ currentMinPrice: 2_000_000, currentMaxPrice: 4_000_000 });
     const thumbs = screen.getAllByRole("slider");
-    const indicators = container.querySelectorAll('[data-slider-thumb-indicator="true"]');
+    const indicators = container.querySelectorAll<HTMLElement>(
+      '[data-slider-thumb-indicator="true"]',
+    );
 
-    expect(container.querySelector('[data-price-range-label="true"]')).toHaveTextContent("2,000,000 VND");
-    expect(container.querySelector('[data-price-range-label="true"]')).toHaveTextContent("4,000,000 VND");
+    expect(container.querySelector('[data-price-range-label="true"]')).toHaveTextContent(
+      "2,000,000 VND",
+    );
+    expect(container.querySelector('[data-price-range-label="true"]')).toHaveTextContent(
+      "4,000,000 VND",
+    );
     expect(thumbs[0]).toHaveClass("h-11", "w-11");
     expect(thumbs[1]).toHaveClass("h-11", "w-11");
     expect(indicators).toHaveLength(2);

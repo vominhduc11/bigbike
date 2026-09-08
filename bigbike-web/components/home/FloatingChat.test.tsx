@@ -13,6 +13,8 @@ const api = vi.hoisted(() => ({
   deleteChatHistory: vi.fn(),
   streamChatMessage: vi.fn(),
   uploadChatImage: vi.fn(),
+  uploadChatVideo: vi.fn(),
+  fetchChatVideoBlob: vi.fn(),
   fetchChatImageBlob: vi.fn(),
 }));
 
@@ -34,7 +36,10 @@ vi.mock("@tanstack/react-query", () => ({
     invalidateQueries: () => Promise.resolve(),
   }),
 }));
-vi.mock("@/lib/api/client-api", () => api);
+vi.mock("@/lib/api/client-api", async (original) => ({
+  ...(await original<typeof import("@/lib/api/client-api")>()),
+  ...api,
+}));
 vi.mock("@/lib/auth/auth-store", () => ({ useAuth: () => ({ status: "anonymous" }) }));
 vi.mock("@/lib/cart-context", () => ({ useCart: () => ({ addToCart: vi.fn() }) }));
 vi.mock("next/navigation", () => ({ usePathname: () => navigation.pathname }));
@@ -79,12 +84,20 @@ beforeEach(() => {
     mode: "AI",
     maxTurns: 40,
     contacts: {},
+    videos: {
+      enabled: true,
+      maxBytes: 40 * 1024 * 1024,
+      maxDurationSeconds: 15,
+      maxPerTurn: 1,
+      maxPerConversation: 2,
+      dailyLimit: 10,
+    },
     images: {
       enabled: true,
       maxBytes: 8 * 1024 * 1024,
-      maxPerTurn: 1,
-      maxPerConversation: 3,
-      dailyLimit: 20,
+      maxPerTurn: 3,
+      maxPerConversation: 9,
+      dailyLimit: 60,
     },
   });
   api.openChatSession.mockResolvedValue({
@@ -98,6 +111,7 @@ beforeEach(() => {
     messages: [],
   });
   api.streamChatMessage.mockResolvedValue(defaultResult);
+  api.fetchChatVideoBlob.mockResolvedValue(new Blob(["video"], { type: "video/mp4" }));
   api.deleteChatHistory.mockResolvedValue({ deleted: true });
   HTMLElement.prototype.scrollTo = vi.fn();
   window.matchMedia = vi.fn().mockReturnValue({ matches: true });
@@ -115,6 +129,104 @@ async function openReadyChat(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("FloatingChat", () => {
+  it("waits for the restored visitor token before loading a private video", async () => {
+    URL.createObjectURL = vi.fn(() => "blob:restored-video");
+    URL.revokeObjectURL = vi.fn();
+    const video = {
+      id: "video-restore",
+      contentPath: "/api/v1/chat/videos/video-restore/content",
+      status: "READY",
+      mimeType: "video/mp4",
+      sizeBytes: 128,
+      durationSeconds: 12,
+      hasAudio: true,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    };
+    window.sessionStorage.setItem(
+      "bb_ai_chat_session_v1",
+      JSON.stringify({
+        version: 5,
+        expiresAt: Date.now() + 86400000,
+        locale: "vi",
+        conversationId: "conversation-1",
+        remainingTurns: 39,
+        serviceMode: "AI",
+        messages: [
+          { id: "customer-video", role: "USER", content: "Video đã gửi", videos: [video] },
+        ],
+      }),
+    );
+    let finishSession!: (value: unknown) => void;
+    api.openChatSession.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSession = resolve;
+        }),
+    );
+    api.fetchChatVideoBlob.mockImplementation((_id, token) =>
+      token
+        ? Promise.resolve(new Blob(["video"], { type: "video/mp4" }))
+        : Promise.reject(new Error("Visitor token is not restored yet")),
+    );
+    const user = userEvent.setup();
+    render(<FloatingChat />);
+    await user.click(screen.getByRole("button", { name: "open" }));
+    await waitFor(() => expect(api.openChatSession).toHaveBeenCalled());
+    expect(api.fetchChatVideoBlob).not.toHaveBeenCalled();
+    await act(async () =>
+      finishSession({ visitorToken: "visitor-token", activeConversationId: null }),
+    );
+    await waitFor(() =>
+      expect(document.querySelector("video")).toHaveAttribute("src", "blob:restored-video"),
+    );
+  });
+
+  it("sends a video without a caption and keeps photo/video selection exclusive", async () => {
+    URL.createObjectURL = vi.fn(() => "blob:test-video");
+    URL.revokeObjectURL = vi.fn();
+    api.uploadChatVideo.mockResolvedValue({
+      conversationId: "conversation-1",
+      video: {
+        id: "video-1",
+        contentPath: "/api/v1/chat/videos/video-1/content",
+        status: "PENDING",
+        mimeType: "video/mp4",
+        sizeBytes: 128,
+        durationSeconds: 12,
+        hasAudio: true,
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      },
+    });
+    const user = userEvent.setup();
+    await openReadyChat(user);
+    const input = document.querySelector('input[type="file"][accept^="video"]') as HTMLInputElement;
+    await user.upload(input, new File(["video bytes"], "E2E_video.mp4", { type: "video/mp4" }));
+    expect(screen.getByRole("button", { name: "chooseImage" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "chooseVideo" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await waitFor(() => expect(api.streamChatMessage).toHaveBeenCalled());
+    const args = api.streamChatMessage.mock.calls[0];
+    expect(args[0]).toBe("");
+    expect(args[9]).toEqual([]);
+    expect(args[10]).toEqual(["video-1"]);
+    expect(api.uploadChatImage).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("customerVideoAlt")).toHaveAttribute("controls");
+  });
+
+  it("rejects oversized videos before upload without consuming an AI turn", async () => {
+    const user = userEvent.setup();
+    await openReadyChat(user);
+    const input = document.querySelector('input[type="file"][accept^="video"]') as HTMLInputElement;
+    const file = new File(["video"], "E2E_large.mp4", { type: "video/mp4" });
+    Object.defineProperty(file, "size", { value: 40 * 1024 * 1024 + 1 });
+    await user.upload(input, file);
+    expect(screen.getByRole("alert")).toHaveTextContent("videoTooLarge");
+    expect(api.uploadChatVideo).not.toHaveBeenCalled();
+    expect(api.streamChatMessage).not.toHaveBeenCalled();
+  });
+
   it.each([
     "/dat-hang",
     "/dat-hang/",
@@ -383,6 +495,84 @@ describe("FloatingChat", () => {
 
     await user.click(screen.getByRole("button", { name: "open" }));
     expect((await screen.findAllByText("Em đã tìm được mẫu phù hợp.")).length).toBeGreaterThan(0);
+  });
+
+  it("uploads three photos in one conversation and sends them in selection order", async () => {
+    URL.createObjectURL = vi.fn((file: File) => `blob:${file.name}`);
+    URL.revokeObjectURL = vi.fn();
+    api.uploadChatImage.mockImplementation(async ({ file }: { file: File }) => ({
+      conversationId: "photo-conversation",
+      image: { id: file.name, mimeType: "image/png", width: 800, height: 600, sizeBytes: 10 },
+    }));
+    const user = userEvent.setup();
+    await openReadyChat(user);
+    const input = document.querySelector(
+      'input[type="file"][accept="image/jpeg,image/png,image/webp"]',
+    ) as HTMLInputElement;
+    await user.upload(
+      input,
+      [1, 2, 3].map((index) => new File(["image"], `photo-${index}.png`, { type: "image/png" })),
+    );
+    expect(screen.getAllByAltText(/selectedImageAlt/)).toHaveLength(3);
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await waitFor(() => expect(api.streamChatMessage).toHaveBeenCalled());
+    expect(api.uploadChatImage).toHaveBeenCalledTimes(3);
+    expect(api.uploadChatImage.mock.calls[1][0].conversationId).toBe("photo-conversation");
+    expect(api.uploadChatImage.mock.calls[2][0].conversationId).toBe("photo-conversation");
+    expect(api.streamChatMessage.mock.calls[0][9]).toEqual([
+      "photo-1.png",
+      "photo-2.png",
+      "photo-3.png",
+    ]);
+    expect(window.sessionStorage.getItem("bb_ai_chat_session_v1") ?? "").not.toContain("blob:");
+  });
+
+  it("rejects four photos before upload and lets the customer choose again", async () => {
+    const user = userEvent.setup();
+    await openReadyChat(user);
+    const input = document.querySelector(
+      'input[type="file"][accept="image/jpeg,image/png,image/webp"]',
+    ) as HTMLInputElement;
+    await user.upload(
+      input,
+      [1, 2, 3, 4].map((index) => new File(["image"], `photo-${index}.png`, { type: "image/png" })),
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("imageTurnLimit:3");
+    expect(api.uploadChatImage).not.toHaveBeenCalled();
+    expect(api.streamChatMessage).not.toHaveBeenCalled();
+  });
+
+  it("reuses completed uploads after a partial upload failure", async () => {
+    URL.createObjectURL = vi.fn((file: File) => `blob:${file.name}`);
+    URL.revokeObjectURL = vi.fn();
+    api.uploadChatImage
+      .mockResolvedValueOnce({
+        conversationId: "photos",
+        image: { id: "one", mimeType: "image/png" },
+      })
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({
+        conversationId: "photos",
+        image: { id: "two", mimeType: "image/png" },
+      });
+    const user = userEvent.setup();
+    await openReadyChat(user);
+    const input = document.querySelector(
+      'input[type="file"][accept="image/jpeg,image/png,image/webp"]',
+    ) as HTMLInputElement;
+    await user.upload(
+      input,
+      [1, 2].map((index) => new File(["image"], `photo-${index}.png`, { type: "image/png" })),
+    );
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("imageUploadFailed"));
+    await user.click(screen.getByRole("button", { name: "send" }));
+    await waitFor(() => expect(api.streamChatMessage).toHaveBeenCalled());
+    expect(api.uploadChatImage).toHaveBeenCalledTimes(3);
+    expect(api.uploadChatImage.mock.calls[1][0].requestId).toBe(
+      api.uploadChatImage.mock.calls[2][0].requestId,
+    );
+    expect(api.streamChatMessage.mock.calls[0][9]).toEqual(["one", "two"]);
   });
 
   it("hides the image control when the AI image service is unavailable", async () => {

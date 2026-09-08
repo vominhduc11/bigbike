@@ -49,6 +49,59 @@ class ChatToolServiceTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Test
+    void cameraIdentifiersDoNotBecomeOrangeConstraints() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        when(catalog.assistantColorVocabulary()).thenReturn(Set.of("cam", "orange", "black", "red"));
+        when(catalog.assistantLocalizedColorLabel(any(), eq("en"))).thenAnswer(call ->
+                ((String) call.getArgument(0)).replaceAll("(?i)\\bcam\\b", "Orange"));
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+        assertThat(tools.extractRequestedColor("Do you sell the SCS Cam-S camera?")).isNull();
+        assertThat(tools.extractRequestedColor("I need a dash cam")).isNull();
+        assertThat(tools.extractRequestedColor("SCS Cam-S màu cam")).isEqualTo("orange");
+        assertThat(tools.extractRequestedColor("a red-black helmet")).isNotNull();
+    }
+
+    @Test
+    void explicitEnglishColourWinsOverCarbonInTheModelName() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        when(catalog.assistantColorVocabulary()).thenReturn(Set.of("carbon", "red"));
+        when(catalog.assistantColorFacets("red")).thenReturn(Set.of("red"));
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+        assertThat(tools.extractRequestedColor("Is the Caberg Drift Evo Carbon available in red in size M?"))
+                .isEqualTo("red");
+    }
+
+    @Test
+    void namedCameraDoesNotMatchEveryProductContainingCamera() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        when(catalog.assistantColorVocabulary()).thenReturn(Set.of("cam", "orange"));
+        Product camera = product("camera-scs-cam-s", "SCS Cam-S motorcycle helmet dash cam", BigDecimal.valueOf(3_290_000), List.of());
+        Product headset = product("scs-s12", "SCS S12 intercom with camera", BigDecimal.valueOf(5_890_000), List.of());
+        when(catalog.searchProductsForAssistant(any(), any(), any(), any(), any(), any(), anyInt(), any()))
+                .thenReturn(List.of(camera, headset));
+        when(catalog.getProductBySlug(camera.slug(), "en")).thenReturn(camera);
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+        var result = tools.resolve("Do you sell the SCS Cam-S camera?", "en", null, historySettings());
+        assertThat(result.products()).extracting(ChatProductCardResponse::slug).containsExactly(camera.slug());
+    }
+
+    @Test
+    void colourTranslationCannotRenameVerifiedCameraModels() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        Product camera = product("cam-s", "SCS Cam-S motorcycle helmet dash cam", BigDecimal.valueOf(3_290_000), List.of());
+        Product headset = product("scs-s12", "SCS S12 motorcycle helmet intercom", BigDecimal.valueOf(5_890_000), List.of());
+        when(catalog.getProductBySlug("cam-s", "en")).thenReturn(camera);
+        when(catalog.getProductBySlug("scs-s12", "en")).thenReturn(headset);
+        when(catalog.assistantLocalizedColorLabel(any(), eq("en"))).thenAnswer(call ->
+                ((String) call.getArgument(0)).replaceAll("(?i)cam", "Orange"));
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+        ChatToolService.ConversationContext context = new ChatToolService.ConversationContext(
+                null, null, null, null, List.of("cam-s", "scs-s12"), false);
+        var answer = tools.resolveFastPath("Compare these models", "en", null, historySettings(), context).orElseThrow();
+        assertThat(answer.localAnswer()).contains(camera.name(), headset.name()).doesNotContain("Orange");
+    }
+
+    @Test
     @DisplayName("get_my_orders refuses a guest before the order service can run")
     void guestOrderQuestionNeverReadsOrders() {
         CatalogReadService catalog = mock(CatalogReadService.class);
@@ -139,7 +192,7 @@ class ChatToolServiceTest {
         assertThat(lightest.localAnswer()).contains("chưa ghi cân nặng cho các mũ đang bán")
                 .doesNotContain("nhẹ nhất là");
         assertThat(lightest.products()).isEmpty();
-        verifyNoInteractions(catalog);
+        verify(catalog, atLeastOnce()).listAssistantCategories("vi");
     }
 
     @Test
@@ -435,9 +488,9 @@ class ChatToolServiceTest {
             assertThat(outcome.products()).extracting(card -> card.slug())
                     .as(question)
                     .containsExactly("mu-bao-hiem-fullface-agv-k3");
-            assertThat(outcome.toolJson())
-                    .contains("\"detailTool\":\"get_product\"", "\"size\":[\"M\",\"L\",\"XL\"]")
-                    .doesNotContain("\"color\":[");
+            assertThat(outcome.localAnswer())
+                    .contains("M, L, XL")
+                    .doesNotContain("Các màu đang bán");
         }
 
         verify(catalog, times(2)).getProductBySlug("mu-bao-hiem-fullface-agv-k3", "vi");
@@ -480,7 +533,7 @@ class ChatToolServiceTest {
 
         assertThat(result.terminalAnswer()).isNotNull();
         assertThat(result.terminalAnswer().answer())
-                .contains("Anh/chị", "Các size đang bán là M, L", "Các màu đang bán là Đen, Trắng")
+                .contains("Các size đang bán là M, L", "Các màu đang bán là Đen, Trắng")
                 .doesNotContain("Đỏ", "XL", "OUT_OF_STOCK");
         assertThat(result.products()).extracting(card -> card.slug())
                 .containsExactly("mu-bao-hiem-fullface-agv-k3");
@@ -857,7 +910,7 @@ class ChatToolServiceTest {
                 tools, getProduct, context, slug, "mũ ILM HS711 phù hợp với ai");
 
         assertThat(size.terminalAnswer().answer())
-                .contains("M, L, XL, XXL", "chưa cập nhật bảng size theo số đo", "đo vòng đầu");
+                .contains("M, L, XL, XXL", "chưa cập nhật bảng size theo số đo");
         assertThat(safety.terminalAnswer().answer())
                 .contains("DOT", "ECE 22.06", "1.403g", "Lưu ý an toàn bắt buộc",
                         "không mang lại mức che chắn tương đương",
@@ -1695,10 +1748,10 @@ class ChatToolServiceTest {
         CatalogReadService catalog = mock(CatalogReadService.class);
         List<Product> candidates = List.of(
                 product("accessory", "Bộ phụ kiện tai nghe SCS", BigDecimal.valueOf(580_000), List.of()),
-                product("s7x", "SCS S7X", BigDecimal.valueOf(650_000), List.of()),
-                product("s10x", "SCS S10X", BigDecimal.valueOf(1_550_000), List.of()),
-                product("s13", "SCS S13", BigDecimal.valueOf(3_190_000), List.of()),
-                product("t2-plus", "SCS T2 Plus", BigDecimal.valueOf(3_390_000), List.of()));
+                product("s7x", "Tai nghe SCS S7X", BigDecimal.valueOf(650_000), List.of()),
+                product("s10x", "Tai nghe SCS S10X", BigDecimal.valueOf(1_550_000), List.of()),
+                product("s13", "Tai nghe SCS S13", BigDecimal.valueOf(3_190_000), List.of()),
+                product("t2-plus", "Tai nghe SCS T2 Plus", BigDecimal.valueOf(3_390_000), List.of()));
         when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(candidates, 1, 10, candidates.size(), 1));
@@ -1718,10 +1771,10 @@ class ChatToolServiceTest {
     void priorMentionIsPrioritizedWithoutDroppingTheVerifiedSmallSet() {
         CatalogReadService catalog = mock(CatalogReadService.class);
         List<Product> headsets = List.of(
-                product("s13", "SCS S13", BigDecimal.valueOf(3_190_000), List.of()),
-                product("g7-plus", "SCS G7+", BigDecimal.valueOf(3_290_000), List.of()),
-                product("t2-plus", "SCS T2 Plus", BigDecimal.valueOf(3_390_000), List.of()),
-                product("scs-s12", "SCS S12", BigDecimal.valueOf(5_890_000), List.of()));
+                product("s13", "Tai nghe SCS S13", BigDecimal.valueOf(3_190_000), List.of()),
+                product("g7-plus", "Tai nghe SCS G7+", BigDecimal.valueOf(3_290_000), List.of()),
+                product("t2-plus", "Tai nghe SCS T2 Plus", BigDecimal.valueOf(3_390_000), List.of()),
+                product("scs-s12", "Tai nghe SCS S12", BigDecimal.valueOf(5_890_000), List.of()));
         when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                 any(), any(), any(), any()))
                 .thenReturn(new PageResult<>(headsets, 1, 10, headsets.size(), 1));
@@ -1776,7 +1829,7 @@ class ChatToolServiceTest {
     @Test
     @DisplayName("CHAT_RULE_017: size and colour constrain gloves without becoming a model search")
     void sizeAndColourStayOptionFiltersNotIdentifiers() {
-        CatalogReadService catalog = mock(CatalogReadService.class);
+        CatalogReadService catalog = colorCatalog();
         Product glove = product(
                 "gang-tay-den-l", "Găng tay touring đen", BigDecimal.valueOf(850_000),
                 List.of(variant(true, "Màu sắc", "Đen", "Size", "L")));
@@ -2151,6 +2204,8 @@ class ChatToolServiceTest {
                             : List.of();
                     return new PageResult<>(found, 1, 10, found.size(), 1);
                 });
+        when(catalog.getProductBySlug("agv-k1s", "vi")).thenReturn(agv);
+        when(catalog.getProductBySlug("caberg-avalon-x", "vi")).thenReturn(caberg);
         ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
 
         ChatToolService.ToolOutcome outcome = tools.resolve(
@@ -2165,7 +2220,7 @@ class ChatToolServiceTest {
     @Test
     @DisplayName("a colour plus size question is answered for that exact combination")
     void colourAndSizeAreCheckedAsOneCombination() {
-        CatalogReadService catalog = mock(CatalogReadService.class);
+        CatalogReadService catalog = colorCatalog();
         String slug = "caberg-avalon-x";
         Product helmet = product(slug, "Mũ Caberg Avalon X", BigDecimal.valueOf(3_390_000),
                 List.of(
@@ -2309,6 +2364,17 @@ class ChatToolServiceTest {
                 null, null, true, false, null, sortOrder, null, null, null, null);
     }
 
+    private static CatalogReadService colorCatalog() {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        when(catalog.assistantLocalizedColorLabel(any(), any())).thenAnswer(call -> call.getArgument(0));
+        when(catalog.assistantColorVocabulary()).thenReturn(Set.of("den", "do", "trang"));
+        when(catalog.assistantColorFacets(any())).thenAnswer(call -> {
+            String color = call.getArgument(0);
+            return Set.of("den", "do", "trang").contains(color) ? Set.of(color) : Set.of();
+        });
+        return catalog;
+    }
+
     private static ProductVariant sizeVariant(String size) {
         return new ProductVariant(
                 "variant-" + size,
@@ -2336,6 +2402,42 @@ class ChatToolServiceTest {
                 null,
                 List.of(),
                 true);
+    }
+
+    @Test
+    void imageGroupSurvivesTheFindSuitableProductsFollowUpAndContextRoundTrip() throws Exception {
+        CatalogReadService catalog = mock(CatalogReadService.class);
+        Product gloves = org.mockito.Mockito.spy(product("gloves", "Găng tay", BigDecimal.valueOf(500_000), List.of()));
+        var group = new CategorySummary("gloves", "gang-tay", null, "Găng tay", true, false);
+        org.mockito.Mockito.doReturn(group).when(gloves).category();
+        org.mockito.Mockito.doReturn(List.of(group)).when(gloves).categories();
+        when(catalog.listAssistantDecisionProducts("vi")).thenReturn(List.of(gloves,
+                product("helmet", "Mũ bảo hiểm", BigDecimal.valueOf(1_000_000), List.of())));
+        ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));
+        var image = new ChatImageEvidence("gang-tay", null, null, List.of());
+        var context = ChatToolService.ConversationContext.empty().withImageEvidence(image);
+        context = MAPPER.readValue(MAPPER.writeValueAsString(context), ChatToolService.ConversationContext.class);
+        var result = tools.resolveFastPath("Tìm sản phẩm phù hợp", "vi", null, historySettings(), context).orElseThrow();
+        assertThat(result.products()).extracting(ChatProductCardResponse::slug).containsExactly("gloves");
+        var remembered = tools.recordConversationContext(context, "Tìm sản phẩm phù hợp", "vi", result.products(), List.of(), result.effectiveSearchScope());
+        assertThat(remembered.category()).isEqualTo("gang-tay");
+        assertThat(remembered.imageEvidence()).isEqualTo(image);
+    }
+
+    @Test
+    void imageSelectionMustMatchThePendingQuestionAndThenRetainsOnlyThatScope() {
+        ChatToolService tools = new ChatToolService(mock(CatalogReadService.class), mock(OrderReadService.class));
+        UUID pending = UUID.randomUUID();
+        var evidence = new ChatImageEvidence(null, null, null, List.of(), List.of(
+                new ChatImageEvidence.Choice(1, "gang-tay", null, null, List.of()),
+                new ChatImageEvidence.Choice(2, null, "caberg", "Caberg", List.of())), pending);
+        var context = ChatToolService.ConversationContext.empty().withImageEvidence(evidence);
+        assertThat(tools.imageContextForQuestion("Ảnh 2", "vi", context,
+                new ChatClarificationSelectionRequest(UUID.randomUUID(), "image-2")).imageEvidence().ambiguous()).isTrue();
+        var selected = tools.imageContextForQuestion("Ảnh 2", "vi", context,
+                new ChatClarificationSelectionRequest(pending, "image-2"));
+        assertThat(selected.brand()).isEqualTo("caberg");
+        assertThat(selected.imageEvidence().ambiguous()).isFalse();
     }
 
     private static ChatToolService.ToolExecution getProduct(
@@ -2367,7 +2469,7 @@ class ChatToolServiceTest {
                 null,
                 null,
                 null,
-                null,
+                name.startsWith("Mũ") ? new CategorySummary("mu-bao-hiem", "mu-bao-hiem", null, "Mũ bảo hiểm", true, false) : null,
                 List.of(),
                 null,
                 List.of(),

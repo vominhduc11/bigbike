@@ -2073,6 +2073,17 @@ function normalizeChatMessage(input) {
     answerFormat: s.answerFormat === 'MARKDOWN' ? 'MARKDOWN' : 'PLAIN_TEXT',
     resultKind: safeChatString(s.resultKind),
     createdAt: safeChatString(s.createdAt),
+    videos: Array.isArray(s.videos)
+      ? s.videos
+          .map((video) => ({
+            id: safeChatString(video?.id),
+            contentPath: safeChatString(video?.contentPath),
+            status: safeChatString(video?.status),
+            expiresAt: safeChatString(video?.expiresAt),
+            durationSeconds: Number(video?.durationSeconds) || 0,
+          }))
+          .filter((video) => video.id)
+      : [],
     images: Array.isArray(s.images)
       ? s.images
           .map((image) => ({
@@ -2086,7 +2097,7 @@ function normalizeChatMessage(input) {
             createdAt: safeChatString(image?.createdAt),
           }))
           .filter((image) => image.id)
-          .slice(0, 1)
+          .slice(0, 3)
       : [],
   }
 }
@@ -2139,6 +2150,18 @@ export async function fetchAdminChatImageBlob(imageId) {
   }
 }
 
+export async function fetchAdminChatVideoBlob(videoId) {
+  try {
+    const result = await requestBlob(
+      `/admin/chat/videos/${encodeURIComponent(videoId)}/content`,
+      'chat-video',
+    )
+    return result.blob
+  } catch (error) {
+    throw normalizeError(error)
+  }
+}
+
 export async function fetchChatStats(input) {
   try {
     const params = typeof input === 'string' ? { date: input } : input || {}
@@ -2154,6 +2177,14 @@ export async function fetchChatStats(input) {
       limit: safeChatCount(data.limit),
       remaining: safeChatCount(data.remaining),
       conversations: safeChatCount(data.conversations),
+      images:
+        data.images && typeof data.images === 'object'
+          ? {
+              used: safeChatCount(data.images.used),
+              limit: safeChatCount(data.images.limit),
+              remaining: safeChatCount(data.images.remaining),
+            }
+          : null,
       quality: {
         answers: safeChatCount(data.quality?.answers),
         productResults: safeChatCount(data.quality?.productResults),
@@ -2541,6 +2572,9 @@ function normalizeAdminNotification(input) {
     thresholdDays: Number(parsed.thresholdDays) || 0,
     cutoffAt: parsed.cutoffAt || undefined,
     digest: s.type === 'INVENTORY_OUT_OF_STOCK_DIGEST' ? parsed : undefined,
+    conversationId:
+      s.type === 'CHAT_BANK_TRANSFER_RECEIPT' ? safeChatString(parsed.conversationId) : '',
+    messageId: s.type === 'CHAT_BANK_TRANSFER_RECEIPT' ? safeChatString(parsed.messageId) : '',
     at: s.createdAt ? new Date(s.createdAt).getTime() : Date.now(),
     read: s.isRead === true,
     fromServer: true,

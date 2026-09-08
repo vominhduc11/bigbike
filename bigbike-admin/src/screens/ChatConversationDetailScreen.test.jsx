@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   fetchChatConversation: vi.fn(),
@@ -17,6 +17,7 @@ vi.mock('react-i18next', () => ({
 vi.mock('../lib/adminApi', () => mocks)
 
 const { ChatConversationDetailScreen } = await import('./ChatConversationDetailScreen')
+const originalScrollIntoView = Element.prototype.scrollIntoView
 
 const conversation = {
   id: 'conversation-1',
@@ -47,6 +48,12 @@ function renderScreen() {
 }
 
 describe('ChatConversationDetailScreen', () => {
+  afterEach(() => {
+    window.history.replaceState({}, '', '/')
+    vi.restoreAllMocks()
+    if (originalScrollIntoView) Element.prototype.scrollIntoView = originalScrollIntoView
+    else delete Element.prototype.scrollIntoView
+  })
   beforeEach(() => {
     Object.values(mocks).forEach((mock) => mock.mockReset())
     mocks.fetchChatConversation.mockResolvedValue({ item: conversation })
@@ -79,5 +86,41 @@ describe('ChatConversationDetailScreen', () => {
     expect(screen.getByText('chatAdmin.detail.endStates.closed')).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(screen.queryByText('chatAdmin.detail.live.send')).not.toBeInTheDocument()
+  })
+
+  it('focuses the selected receipt when opening another notification in the same conversation', async () => {
+    const first = '00000000-0000-4000-8000-000000000001'
+    const second = '00000000-0000-4000-8000-000000000002'
+    mocks.fetchChatConversation.mockResolvedValue({
+      item: {
+        ...conversation,
+        messages: [
+          { ...conversation.messages[0], id: first, role: 'CUSTOMER', content: 'Biên lai 1' },
+          { ...conversation.messages[0], id: second, role: 'CUSTOMER', content: 'Biên lai 2' },
+        ],
+      },
+    })
+    const scroll = vi.fn()
+    Element.prototype.scrollIntoView = scroll
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const content = (messageId) => (
+      <QueryClientProvider client={client}>
+        <ChatConversationDetailScreen
+          conversationId="conversation-1"
+          messageId={messageId}
+          navigate={vi.fn()}
+        />
+      </QueryClientProvider>
+    )
+    window.history.replaceState({}, '', `/?message=${first}`)
+    const view = render(content(first))
+    await screen.findByText('Biên lai 1')
+    expect(document.activeElement).toHaveAttribute('id', `chat-message-${first}`)
+
+    window.history.replaceState({}, '', `/?message=${second}`)
+    view.rerender(content(second))
+    expect(document.activeElement).toHaveAttribute('id', `chat-message-${second}`)
+    expect(scroll).toHaveBeenCalledTimes(2)
+    expect(mocks.fetchChatConversation).toHaveBeenCalledTimes(1)
   })
 })

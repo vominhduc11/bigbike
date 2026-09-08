@@ -21,6 +21,7 @@ public class ChatAssistantSettings {
 
     public static final String KEY_ENABLED = "ai_assistant_enabled";
     public static final String KEY_DAILY_LIMIT = "ai_assistant_daily_limit";
+    public static final String KEY_IMAGE_DAILY_LIMIT = "ai_assistant_image_daily_limit";
     public static final String KEY_RECENT_TURN_PAIRS = "ai_assistant_recent_turn_pairs";
     public static final String KEY_SEARCH_AI_INTERPRETATION_ENABLED =
             "ai_assistant_search_ai_interpretation_enabled";
@@ -33,15 +34,18 @@ public class ChatAssistantSettings {
     public static final int DEFAULT_TURN_LIMIT = 40;
     /** CHAT_RULE_049: memory lives in the browser session, so no day-based window is published. */
     public static final int SESSION_MEMORY_HOURS = ChatVisitorEntity.SESSION_HOURS;
-    public static final int IMAGE_DAILY_LIMIT = 20;
-    public static final int IMAGE_CONVERSATION_LIMIT = 3;
+    public static final int IMAGE_DAILY_LIMIT = 60;
+    public static final int IMAGE_TURN_LIMIT = 3;
+    public static final int IMAGE_CONVERSATION_LIMIT = 9;
 
     private final SiteSettingJpaRepository settingRepo;
     private final StorePolicyService storePolicyService;
 
-    /** Image quotas are software policy, not settings. Availability is checked by the AI client. */
+    /** CHAT_RULE_057: daily allowance is owner-editable; file/turn limits are fixed. */
+    @Transactional(readOnly = true)
     public ImageSettings imageSettings() {
-        return new ImageSettings(true, IMAGE_DAILY_LIMIT, IMAGE_CONVERSATION_LIMIT);
+        int limit = Math.min(10_000, readInteger(settingsByKey(), KEY_IMAGE_DAILY_LIMIT, IMAGE_DAILY_LIMIT));
+        return new ImageSettings(true, limit, IMAGE_CONVERSATION_LIMIT);
     }
 
     @Transactional(readOnly = true)

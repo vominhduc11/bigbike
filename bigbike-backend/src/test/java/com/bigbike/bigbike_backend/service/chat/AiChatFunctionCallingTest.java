@@ -608,6 +608,25 @@ class AiChatFunctionCallingTest {
         }
     }
 
+    @Test
+    void verifiedImageBrandReachesTextInTheCurrentUserMessage() {
+        ScriptedTransport transport = new ScriptedTransport(
+                functionCall("search_products", Map.of("brand", "caberg", "lang", "vi"), "logo-1"));
+        var evidence = new ChatImageEvidence(null, "caberg", "Caberg", List.of());
+        var result = client(transport).answerWithImageEvidence(
+                "Tìm sản phẩm của thương hiệu này", "vi", REGISTRY, true,
+                (call, session) -> new ChatToolService.ToolExecution(call.name(), "{}", List.of(), List.of(), Set.of(),
+                        new ChatToolService.DeterministicAnswer("Em đã kiểm tra các mẫu của Caberg đang bán.", false, false)),
+                ChatToolService.AssistantCatalogVocabulary.empty(), List.of(), List.of(), java.time.Duration.ofSeconds(20), evidence);
+        assertThat(result).isPresent();
+        var body = MAPPER.valueToTree(transport.requests().get(0));
+        assertThat(body.path("contents")).hasSize(1);
+        assertThat(body.path("contents").path(0).path("role").asText()).isEqualTo("user");
+        assertThat(body.path("contents").path(0).path("parts").toString()).contains("Caberg", "Image observations", "Tìm sản phẩm");
+        assertThat(body.path("systemInstruction").toString()).doesNotContain("Caberg");
+        assertThat(body.toString()).doesNotContain("storageObjectKey", "analysisJson", "customerId", "inlineData");
+    }
+
     private static AiChatClient client(ScriptedTransport transport) {
         return new AiChatClient("test-key", "gemini-2.5-flash", transport);
     }

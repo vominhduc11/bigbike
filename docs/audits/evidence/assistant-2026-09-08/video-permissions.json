@@ -1,0 +1,22 @@
+[
+  {
+    "caseId": "V_ADMIN_AUTHORIZED",
+    "http": 200,
+    "bytes": 1136685,
+    "cacheControl": "no-store"
+  },
+  {
+    "caseId": "V_ADMIN_ANONYMOUS",
+    "http": 401
+  },
+  {
+    "caseId": "V_ADMIN_VISITOR_DENIED",
+    "http": 401
+  },
+  {
+    "caseId": "V_CUSTOMER_OWNER_READ",
+    "http": 200,
+    "bytes": 1136685,
+    "cacheControl": "no-store"
+  }
+]

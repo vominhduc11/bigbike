@@ -1,0 +1,46 @@
+[
+  {
+    "name": "/bb-assistant-audit-redis-20260908",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/bb-assistant-audit-minio-20260908",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/bb-assistant-audit-pg-20260908",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/bigbike-postgres",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/bigbike-redis",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/bigbike-minio",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/4thitek-admin-fe-1",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/4thitek-backend-1",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/4thitek-main-fe-1",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/4thitek-minio-1",
+    "startedBeforeDeployment": true
+  },
+  {
+    "name": "/4thitek-postgres-1",
+    "startedBeforeDeployment": true
+  }
+]

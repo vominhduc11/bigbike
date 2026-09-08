@@ -57,6 +57,23 @@ describe("chat persistence", () => {
     expect(window.sessionStorage.getItem(CHAT_STORAGE_KEY)).not.toContain("0909123456");
   });
 
+  it("persists only validated private video metadata and keeps expired placeholders", () => {
+    const video = {
+      id: "video-1",
+      status: "DELETED",
+      contentPath: null,
+      mimeType: "video/mp4",
+      sizeBytes: 128,
+      durationSeconds: 12,
+      hasAudio: true,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() - 1).toISOString(),
+    };
+    writeChatSnapshot({ ...snapshot, messages: [{ ...snapshot.messages[0], videos: [video] }] });
+    expect(readChatSnapshot()?.messages[0].videos).toEqual([video]);
+    expect(window.sessionStorage.getItem(CHAT_STORAGE_KEY)).not.toContain("blob:");
+  });
+
   it("removes an expired snapshot instead of restoring it", () => {
     writeChatSnapshot({ ...snapshot, expiresAt: Date.now() - 1 });
 

@@ -1,0 +1,243 @@
+{
+  "command": "./mvnw test -Dtest=Chat*Test,OpenApiContractDriftTest (isolated H2 + dedicated Testcontainers PostgreSQL)",
+  "exitCode": 0,
+  "latestSource": true,
+  "classes": 33,
+  "tests": 289,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "reports": [
+    {
+      "class": "com.bigbike.bigbike_backend.api.ChatControllerIdentityTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.ChatControllerStreamTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.ChatProductDiscoveryApiTest",
+      "tests": 44,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.OpenApiContractDriftTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatActionCatalogTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatAnsweredQuestionsTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatArticleToolTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatAssistantSettingsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatAvailabilityTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatCategoryAliasHygieneTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatClarificationDecisionTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatConcurrencyTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatHistorySanitizerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatImageChainedTurnTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatImageServiceTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatImageStorageServiceTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatInputGuardTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatMessageSourcePostgresTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatNaturalQueryRegressionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatProductImageFingerprintServiceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatResponseGuardTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatRetentionCleanupServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatSalesAdvisorServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatSearchInterpretationTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatServiceFallbackTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatToolRegistryTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatToolServiceTest",
+      "tests": 78,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatTransactionBoundaryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVideoBudgetTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVideoQuotaPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVideoServiceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVideoTemporaryCleanupTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVisitorServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ]
+}

@@ -14,6 +14,18 @@ class ChatResponseGuardTest {
     private final ChatResponseGuard guard = new ChatResponseGuard();
 
     @Test
+    void ownedOrderSnapshotNamesDoNotInvalidateEnglishProse() {
+        String item = "Mũ bảo hiểm fullface AGV K1S";
+        String answer = "Your order is pending. Items (names as recorded): " + item + ".";
+        assertThat(guard.check(answer, List.of(), "en", Set.of(), null, List.of(item))).isPresent();
+        assertThat(guard.check(answer, List.of(), "en")).isEmpty();
+        assertThat(guard.check(answer + " Anh/chị chờ nhé.", List.of(), "en", Set.of(), null,
+                List.of(item))).isEmpty();
+        assertThat(guard.check(answer + " Internal API result.", List.of(), "en", Set.of(), null,
+                List.of(item))).isEmpty();
+    }
+
+    @Test
     @DisplayName("published policy wording survives, invented warehouse wording does not")
     void completenessRuleAppliesToModelProseOnly() {
         // Verbatim from the shop's warranty table; the whole answer used to be discarded and the

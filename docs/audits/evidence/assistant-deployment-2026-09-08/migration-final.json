@@ -1,0 +1,20 @@
+{
+  "at": "2026-09-08T10:09:38.878416+00:00",
+  "oldHistoryEntries": 454,
+  "comparisonKey": "installed_rank",
+  "oldHistoryUnchanged": true,
+  "newHistoryEntries": [
+    {
+      "installed_rank": 457,
+      "version": "1081",
+      "description": "chat short videos",
+      "type": "SQL",
+      "script": "V1081__chat_short_videos.sql",
+      "checksum": -1548257978,
+      "installed_by": "bigbike",
+      "installed_on": "2026-09-08T16:37:40.183759",
+      "execution_time": 223,
+      "success": true
+    }
+  ]
+}

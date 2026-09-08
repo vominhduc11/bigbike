@@ -2346,23 +2346,23 @@ Mọi response dùng envelope chuẩn `ApiDataResponse`. Chat không nhận `cus
 
 ### `GET /api/v1/chat/availability?lang=vi|en`
 
-Response `data`: `{ mode, reason, maxTurns, contacts, images }`.
+Response `data`: `{ mode, reason, maxTurns, contacts, images, videos }`.
 
 - `mode`: `AI|CONTACT`; `reason` là mã an toàn public.
 - `contacts`: `{hotline,zaloUrl,messengerUrl,zaloDisplay,messengerDisplay}` từ setting contact; chỉ mở thẻ liên hệ khi khách chủ động bấm nút liên hệ.
-- `images`: `{enabled,maxBytes,maxPerTurn,maxPerConversation,dailyLimit}`. Khi dịch vụ AI đã khai báo, `enabled=true`; nếu chưa khai báo, widget tự ẩn nút ảnh. Các giới hạn cố định là 8 MB, 1/lượt, 3/hội thoại, 20/ngày. Trường `disclosure` **đã bị gỡ** (owner decision 2026-09-06): khung chat không còn dòng công bố ảnh, nội dung công bố nằm ở trang Chính sách bảo mật của storefront.
+- `images`: `{enabled,maxBytes,maxPerTurn,maxPerConversation,dailyLimit}`. Khi dịch vụ AI đã khai báo, `enabled=true`; nếu chưa khai báo, widget tự ẩn nút ảnh. Các giới hạn cố định là 8 MB/ảnh, 3/lượt, 9/hội thoại; hạn mức ngày lấy setting (mặc định 60). Trường `disclosure` **đã bị gỡ** (owner decision 2026-09-06): khung chat không còn dòng công bố ảnh, nội dung công bố nằm ở trang Chính sách bảo mật của storefront.
 - Endpoint không tạo conversation, không gọi Gemini và không có trường proactive/model/cost.
 
 ### `POST /api/v1/chat/messages`
 
-Body `@Valid`: `{ conversationId?:uuid, requestId?:uuid, message?:0..1000, imageIds?:uuid[0..1], lang:"vi|en", pageContext?:{type:"PRODUCT",productSlug:"slug"}, clarificationSelection?:{clarificationId,optionId} }`. Ít nhất một trong `message`/`imageIds` phải có. `conversationId` bỏ trống ở lượt đầu; client giữ nguyên `requestId` khi retry. Cùng request id trả đúng kết quả đã lưu, không tăng quota/tạo tin/gọi provider lần hai.
+Body `@Valid`: `{ conversationId?:uuid, requestId?:uuid, message?:0..1000, imageIds?:uuid[0..3], videoIds?:uuid[0..1], lang:"vi|en", pageContext?:{type:"PRODUCT",productSlug:"slug"}, clarificationSelection?:{clarificationId,optionId} }`. Ít nhất một trong `message`/`imageIds`/`videoIds` phải có; `imageIds` và `videoIds` không được cùng có giá trị. `conversationId` bỏ trống ở lượt đầu; client giữ nguyên `requestId` khi retry. Cùng request id trả đúng kết quả đã lưu, không tăng quota/tạo tin/gọi provider lần hai.
 
 Response `data`: `{ conversationId, assistantMessageId, mode, reason, answer, answerFormat, resultKind, turnCount, maxTurns, remainingTurns, products, crossSellProducts, clarification, nextStep, actions, contacts, continuation }`.
 
 - `actions` chỉ là allowlist server-owned; chỉ có `CALL_HOTLINE`, `OPEN_ZALO`, `OPEN_MESSENGER` cho liên hệ trực tiếp. Không có `CONTACT_STAFF`, `leadOffer`, `leadPrompt`, interaction id hoặc proof gắn đơn.
 - Customer turn có trần cố định 40; clarification và retry cùng `requestId` không tính. Khi đạt trần, backend tạo hội thoại nối tiếp cùng thread/context đã làm sạch, không trả hard `TURN_LIMIT` và không chặn khách.
 - Transaction không giữ lock/connection trong lúc provider chờ. Storefront không tạo request liên hệ khi khách mở thẻ contact.
-- Lượt gửi kèm `imageIds` **và** `message`: `answer` là một chuỗi ghép — câu nhận diện ảnh, một dòng trống, rồi câu trả lời của phần tư vấn chữ; `products` là danh sách gộp (thẻ của ảnh trước, khử trùng theo slug, tối đa tám). Chỉ có **một** `assistantMessageId` cho lượt đó, đúng bằng dòng đã lưu. Vì có thêm câu nhận diện nên `answer` của lượt ghép có thể vượt mốc 2.000 ký tự mà lớp kiểm áp cho phần do model sinh; câu chữ **không** bị cắt bớt, cắt sẽ làm mất vế “trông giống/looks similar” (`CHAT_RULE_058`). Ảnh hoá đơn, ảnh đầu/người, hàng hỏng, ảnh ngoài phạm vi và ảnh bị chặn trả về đúng như trước, không ghép.
+- Lượt gửi kèm `imageIds` **và** `message`: `answer` là một chuỗi ghép — câu nhận diện ảnh, một dòng trống, rồi câu trả lời của phần tư vấn chữ; `products` là danh sách gộp (thẻ của ảnh trước, khử trùng theo slug, tối đa tám). Chỉ có **một** `assistantMessageId` cho lượt đó, đúng bằng dòng đã lưu. Vì có thêm câu nhận diện nên `answer` của lượt ghép có thể vượt mốc 2.000 ký tự mà lớp kiểm áp cho phần do model sinh; câu chữ **không** bị cắt bớt, cắt sẽ làm mất vế “trông giống/looks similar” (`CHAT_RULE_058`). Ảnh chứng từ/biên lai, ảnh đầu/người, hàng hỏng, ảnh ngoài phạm vi và ảnh bị chặn dùng luồng riêng, không ghép với tư vấn bán hàng; biên lai chuyển khoản tiếp nhận theo CHAT_RULE_066.
 
 Trước quota/AI, backend xử lý fast-path policy/shop/order, nội dung ngoài phạm vi/an toàn và vòng làm rõ bằng dữ kiện đã xác minh. Từ 2026-09-06 fast-path còn phủ **câu hỏi quy định pháp luật về trang bị** (từ chối lịch sự kèm phần shop trả lời được) và **câu mặc cả giá** (`CHAT_RULE_008`, đặt sau nhánh ngoài phạm vi để "giá vàng có giảm không" không bị hiểu là mặc cả). Các nhánh này có `ai_called=false` và không dùng quota. Chỉ lượt cần AI mới giữ đúng một slot daily atomically; retry cùng logical turn không giữ slot thứ hai.
 
@@ -2370,7 +2370,7 @@ Trước quota/AI, backend xử lý fast-path policy/shop/order, nội dung ngo�
 
 `products` trong response là hàng mà câu trả lời thật sự nói tới: khi một lượt gọi nhiều tool, backend chỉ giữ thẻ được nhắc tên trong `answer`, còn lại lấy kết quả của lần tra sản phẩm gần nhất; không có thẻ liên quan thì trả mảng rỗng (`CHAT_RULE_020`).
 
-Một logical turn có deadline backend 65 giây và tối đa bốn lần gọi provider. Khi timeout, quá tải, `429`, `5xx`, lỗi mạng hoặc payload rỗng/không hợp lệ, backend chỉ thử lại **Gemini 3.7 Flash** khi còn budget. Không đổi model và không retry để né safety/content refusal. Nếu hết budget, response là lời xin lỗi lịch sự kèm action liên hệ trực tiếp đã cấu hình; không tạo handoff.
+Một logical turn có deadline backend 65 giây và tối đa bốn lần gọi provider. Lượt ảnh đang chờ hội thoại bận cũng dùng thời gian này; quá thời gian chờ thì trả lỗi ảnh tạm thời song ngữ, không ghi thêm tin hoặc giữ thêm hạn mức cho lượt chưa xử lý. Khi timeout, quá tải, `429`, `5xx`, lỗi mạng hoặc payload rỗng/không hợp lệ, backend chỉ thử lại **Gemini 3.7 Flash** khi còn budget. Không đổi model và không retry để né safety/content refusal. Nếu hết budget, response là lời xin lỗi lịch sự kèm action liên hệ trực tiếp đã cấu hình; không tạo handoff.
 
 Function registry giữ bảy tool read-only `search_products`, `list_categories`, `get_product`, `get_policy`, `get_shop_info`, `get_my_orders`, `search_articles`. Backend kiểm schema/quyền/allowlist mọi call. `get_my_orders` chỉ đọc current customer server-side và không trả address/email/phone/note/key. Cách nói tự nhiên dùng `ai_assistant_search_ai_interpretation_enabled`; bộ viết tắt phổ thông nằm trong code, không có API quản lý owner.
 
@@ -2385,10 +2385,12 @@ Body, ownership, idempotency và result giống endpoint thường. Server chỉ
 | `POST` | `/api/v1/chat/sessions` | Body `{visitorId:uuid,locale:"vi|en"}`; trả signed visitor token có hiệu lực **trong phiên trình duyệt** (`CHAT_RULE_049`, owner decision 2026-09-05). Không còn `memoryEnabled` trong request và không còn `rememberedThrough` 30 ngày trong response; server không nối lại hội thoại của phiên trước. Client chỉ gọi endpoint này **khi khách mở khung chat**, không gọi lúc tải trang. |
 | `GET` | `/api/v1/chat/conversations/{id}/messages?afterSequence=0` | Chỉ own customer hoặc signed visitor; trả lịch sử AI/customer, continuation và image metadata an toàn. |
 | `DELETE` | `/api/v1/chat/history` | Xác minh principal rồi hard-delete toàn bộ conversation/ảnh của chính principal; idempotent `{deleted:true}`; không xóa cart/tài khoản. |
-| `POST multipart` | `/api/v1/chat/images` | `requestId`, optional `conversationId`, `lang`, file. Khi AI service đã khai báo; validate ownership/idempotency/JPG-PNG-WebP/MIME-decode/re-encode/1 ảnh/8 MB/3 hội thoại/20 ngày, lưu private. |
+| `POST multipart` | `/api/v1/chat/images` | `requestId`, optional `conversationId`, `lang`, file. Khi AI service đã khai báo; validate ownership/idempotency/JPG-PNG-WebP/MIME-decode/re-encode/1 ảnh mỗi upload/8 MB mỗi ảnh/9 ảnh mỗi hội thoại; quota đọc ảnh giữ tại message, lưu private. |
 | `GET` | `/api/v1/chat/images/{id}/content` | Đúng customer/visitor token; stream `private,no-store`, không presign/public URL. |
 
 Image message attach dùng `imageIds` trên message endpoint. Ảnh `PENDING` phải thuộc caller/conversation và chưa dùng lần khác; retry không tính lại quota vision. History/response image metadata không có object key, filename hoặc hash. Mã lỗi public: `CHAT_IMAGE_TOO_LARGE`, `CHAT_IMAGE_UNSUPPORTED_TYPE`, `CHAT_IMAGE_INVALID`, `CHAT_IMAGE_TURN_LIMIT`, `CHAT_IMAGE_CONVERSATION_LIMIT`, `CHAT_IMAGE_NOT_FOUND`.
+
+Khi nhiều ảnh có hãng/loại khác nhau, `clarification.criterion = IMAGE`; options dùng `kind = FILTER`, `id = image-1|image-2|image-3` theo thứ tự gửi. Chỉ chấp nhận lựa chọn thuộc `clarificationId` đang chờ của hội thoại. Chọn một ảnh giữ hãng/loại của ảnh đó cho câu trả lời và lượt sau. Lịch sử trả ảnh theo `attachment_position`; frontend khôi phục tối đa 3 tham chiếu ảnh, không lưu bytes/blob URL vào sessionStorage.
 
 ### Admin chat history (read-only)
 
@@ -2396,13 +2398,13 @@ Image message attach dùng `imageIds` trên message endpoint. Ảnh `PENDING` ph
 |---|---|---|
 | `GET` | `/api/v1/admin/chat/conversations` | `chat.read`; pagination/date filter. Item chỉ có summary hội thoại, turn/quota-relevant result summary và timestamps; không lead, revenue, attribution, model/cost/token/latency telemetry. |
 | `GET` | `/api/v1/admin/chat/conversations/{id}` | `chat.read`; conversation/messages/images và source/result kind cần xem, không contact lead, feedback hay attribution/telemetry model. |
-| `GET` | `/api/v1/admin/chat/stats` | `chat.read` hoặc `settings.read`; `date` và optional `from/to`. Trả daily quota `{used,limit,remaining}`, conversation count và `quality:{answers,productResults,clarifications,outOfScope,contentRefusals}`; không cost/model/fallback/lead/action/revenue fields. |
+| `GET` | `/api/v1/admin/chat/stats` | `chat.read` hoặc `settings.read`; `date` và optional `from/to`. Trả daily quota chữ `{used,limit,remaining}` và `images:{used,limit,remaining}`, conversation count và `quality:{answers,productResults,clarifications,outOfScope,contentRefusals}`; không cost/model/fallback/lead/action/revenue fields. |
 | `GET` | `/api/v1/admin/chat/images/{id}/content` | `chat.read`; stream private bytes. |
 
 `NOT_FOUND_IN_REPO` (kiểm 2026-09-07): hai endpoint `POST /api/v1/admin/chat/product-image-index/rebuild`
 và `GET /api/v1/admin/chat/product-image-index` từng được mô tả ở đây nhưng **chưa từng tồn tại trong
 mã** — không có controller, service hay màn quản trị nào. Chỉ mục vân ảnh được dựng dần ngay trong
-lượt chat của khách, tối đa 15 vân ảnh mới mỗi lượt, nên không cần thao tác dựng lại thủ công. Nếu
+lượt chat của khách, tối đa 15 vân ảnh mới mỗi lượt, và có CLI vận hành riêng theo CHAT_RULE_069 để dựng đầy đủ sau khi chuyển kho; không thêm hai endpoint nêu trên. Nếu
 sau này thật sự cần một nút dựng lại thì phải thêm cả mã lẫn quyền, không phải chỉ ghi lại vào đây.
 
 Không còn endpoint model catalog/chọn model/evaluation, interaction/lead, feedback, attribution, funnel, unanswered/data-gap hoặc template preview.
@@ -2413,10 +2415,40 @@ Không còn endpoint model catalog/chọn model/evaluation, interaction/lead, fe
 |---|---|---|
 | `ai_assistant_enabled` | `BOOLEAN` | `true`; master switch, false trả CONTACT. |
 | `ai_assistant_daily_limit` | `INTEGER` | `400`; trần logical AI response/ngày Việt Nam; `0` tắt AI. |
+| `ai_assistant_image_daily_limit` | `INTEGER` | `60`; 0–10.000 ảnh/ngày Việt Nam; 0 tạm dừng đọc ảnh. |
 | `ai_assistant_recent_turn_pairs` | `INTEGER` | `12`; `0` tắt, tối đa 12. |
 | `ai_assistant_search_ai_interpretation_enabled` | `BOOLEAN` | `true`; công tắc hiểu cách nói tự nhiên, backend vẫn hậu kiểm. |
 
 Các key không `publicAllowed`. Trần hội thoại được cố định trong phần mềm ở 40 lượt; giới hạn ảnh
-cũng cố định ở 1 ảnh/lượt, 3 ảnh/hội thoại, 20 ảnh/ngày và 8 MB, không phải setting.
+là 3 ảnh/lượt, 9 ảnh/hội thoại và 8 MB/ảnh; hạn mức ngày chỉnh qua setting, mặc định 60.
 Không có setting model, fallback, pricing/cost warning, model evaluation, lead capture, proactive,
-template/abbreviation editor, memory days, lịch trực, email handoff hoặc image quota owner-editable.
+template/abbreviation editor, memory days, lịch trực, email handoff. Hạn mức ảnh/ngày được bổ sung lại theo owner decision 2026-09-08.
+
+
+### Video ngắn của chat (2026-09-08; CHAT_RULE_062–065)
+
+- `availability.videos`: `{enabled,maxBytes,maxDurationSeconds,maxPerTurn,maxPerConversation,dailyLimit}` = cấu hình được xác minh/40 MiB/15/1/2/10. Không có `disclosure`; công bố ở trang Chính sách bảo mật.
+- `POST /api/v1/chat/videos`: multipart `file`, `requestId:uuid`, `conversationId?:uuid`, `lang=vi|en`; nhận `X-Chat-Visitor-Token`/phiên khách như ảnh. Chấp nhận MP4, MOV, WebM khi nội dung thật giải mã được. Trả `{conversationId,video}` sau khi xác minh giới hạn và chuẩn hóa. Retry cùng chủ, hội thoại và `requestId` dùng lại tệp đã nhận. Không trả object key/hash/tên gốc. Không nhận lại video cho request đã có ảnh.
+- `ChatVideoResponse`: `{id,status,mimeType,sizeBytes,durationSeconds,hasAudio,contentPath,createdAt,expiresAt}`; `contentPath` chỉ là đường có kiểm quyền, không phải URL public hay token trong query. Tệp hết hạn/đã chặn có `contentPath=null` và dấu trạng thái; UI Việt/Anh có placeholder.
+- `GET /api/v1/chat/videos/{id}/content`: chủ hội thoại đọc bytes MP4 đã chuẩn hóa, `Cache-Control: no-store`. Không quyền, hết hạn hoặc bị chặn trả 404. Admin đọc tại `GET /api/v1/admin/chat/videos/{id}/content` với `chat.read`; không quyền admin trả 403 như ảnh.
+- History khách và transcript admin thêm `videos:ChatVideoResponse[]` cho mỗi message; mảng trống cho client/record cũ. Upload không tự gọi AI. `POST messages`/`messages/stream` nhận `videoIds`; trả đúng một assistant message đã lưu, gộp phần nhận diện/quan sát và lời đáp theo quy tắc thẻ của ảnh.
+- Đồng hồ 60 giây từ khi nhận xong tệp được lưu phía server; retry/gửi message trễ không gia hạn. Hết giờ nhận câu xin lỗi Việt/Anh mời gửi ảnh, không gửi câu trả lời muộn. Mã lỗi video: `CHAT_VIDEO_TOO_LARGE`, `CHAT_VIDEO_TOO_LONG`, `CHAT_VIDEO_INVALID`, `CHAT_VIDEO_UNSUPPORTED_TYPE`, `CHAT_VIDEO_CONVERSATION_LIMIT`, `CHAT_VIDEO_DAILY_LIMIT`, `CHAT_VIDEO_TIMEOUT`, `CHAT_VIDEO_UNAVAILABLE`; mỗi mã có thông báo khách song ngữ. Tệp lẫn ảnh/video dùng `CHAT_MEDIA_EXCLUSIVE`.
+- Ngoài thời hạn từng chặng, lượt đọc video có thời hạn bao ngoài: hủy công việc khi hết ngân sách và trả câu xin lỗi ngay. Nếu kho lịch sử đang bị treo, phản hồi lỗi không chờ ghi lịch sử (`assistantMessageId=null`); khi công việc được giải phóng chỉ được lưu lỗi hết giờ, không lưu kết quả tư vấn muộn. Giao diện cũng chặn chờ quá thời gian còn lại của lượt video.
+- Upload response thêm `remainingMillis` (0–60.000), thời gian còn lại phía máy chủ tính khi trả kết quả chuẩn hóa. Client dùng số này để đặt thời hạn chờ mà không phụ thuộc đồng hồ của thiết bị; retry upload vẫn trả thời gian của deadline ban đầu.
+
+- Khi media kèm câu hỏi lọc sản phẩm (giá/size/nhóm), thẻ từ nhận diện chỉ được ghép nếu cũng nằm trong kết quả lọc hiện tại. Không dùng thẻ giống hình nhưng vượt ngân sách để chen vào kết quả phù hợp. Câu hỏi về thao tác được giữ cùng chủ đề thao tác quan sát/nghe được; thiếu mẫu cụ thể thì hỏi rõ, không tự hướng dẫn cơ cấu khác.
+- Khi khách nối tiếp câu hỏi tai nghe bằng một mức giá, kết quả vẫn phải là tai nghe/intercom. Camera độc lập hay bộ phụ kiện trong cùng danh mục không được thay cho mẫu tai nghe; tai nghe tích hợp camera vẫn được xét theo dữ liệu sản phẩm.
+- Hỏi xác nhận giá bằng đại từ chưa rõ (`cái kia rẻ hơn đúng không?`, `Is that one cheaper?`) sau nhiều mẫu phải hỏi khách chọn mẫu theo `CHAT_RULE_006`; không tự coi đó là lệnh chọn mẫu rẻ nhất. Yêu cầu rõ `mẫu rẻ hơn` trong nhóm đã so sánh vẫn có thể đối chiếu giá đã xác minh. Khi mới có một mẫu, chỉ báo giá của mẫu đó, không khẳng định rẻ hơn một mẫu chưa xác định.
+- Khi tải lại lịch sử, trạng thái lỗi đọc media trước lúc khôi phục token phiên không được che kết quả đọc thành công sau khi token sẵn sàng. Ảnh/video vẫn chỉ đọc bằng quyền của phiên hiện tại; UI bỏ lỗi cũ khi lượt đọc hợp lệ thành công.
+- Tên sản phẩm đã xác minh phải giữ nguyên khi dịch nhãn màu: `Cam-S` và từ `cam` trong tên camera không được đổi thành `Orange`. Câu diễn đạt `I am looking for ...` là yêu cầu tìm hàng, không thêm `looking` làm mã mẫu. Bộ lọc loại hàng khách nêu áp dụng cả đường tìm kiếm lẫn đường hỏi làm rõ.
+- Khi nhận câu hỏi, tên mã có dấu nối như `Cam-S` và cụm loại hàng `dash cam` không tạo bộ lọc màu cam. Chỉ hiểu một cụm có dấu nối là tổ hợp màu khi tất cả thành phần đều là màu trong danh mục hiện hành; vẫn giữ mã mẫu nguyên vẹn cho tìm kiếm.
+- Giữ đủ thành phần của mã có dấu nối khi tìm mẫu; không tìm riêng `cam` rồi ghép mọi sản phẩm có chữ `camera`. Nhãn màu sau `in` trong câu Anh (ví dụ `in red in size M`) là lựa chọn khách yêu cầu; màu/chất liệu khác trong tên mẫu không được ghi đè lựa chọn đó. Từ hỏi `không` không được sửa gần đúng thành danh mục `hông`.
+- Với một mã mẫu cụ thể, câu đếm kết quả dùng tên sản phẩm đã xác minh, không suy công dụng từ tên danh mục dùng chung (camera độc lập nằm trong danh mục tai nghe không vì thế trở thành intercom). Câu hỏi `Do you sell/have ...?` được xử lý như hỏi shop có bán/còn hàng.
+
+### Image turns — owner decision 2026-09-08
+
+`imageIds` là mảng có thứ tự, không trùng, tối đa ba UUID khác null. Tải từng ảnh bằng requestId riêng ổn định; các upload kế tiếp dùng conversationId của upload đầu. Backend xác minh toàn bộ ảnh cùng chủ/hội thoại, chưa gắn lượt khác và còn nội dung trước khi gắn. Quota giữ nguyên tử từng ảnh mới, theo thứ tự, có thể nhận một phần khi gần hết. `ChatImageResponse.status` thêm `ANALYSIS_FAILED` cho lỗi kỹ thuật và dùng `LIMIT_SKIPPED` cho ảnh chưa đưa đi đọc. Replay giữ thứ tự, kết quả và lượt đã giữ. `availability` không gọi AI.
+
+`GET /admin/chat/stats` giữ trường chữ cũ và thêm `images` (used/limit/remaining), quyền `chat.read` hoặc `settings.read`. `ai_assistant_image_daily_limit` chỉ sửa qua Settings hiện có, không publicAllowed. Limit hiện hành không phải số liệu lịch sử và không reset used.
+
+Thông báo thêm loại `CHAT_BANK_TRANSFER_RECEIPT` với payload `{schemaVersion:1,conversationId,messageId}`; `orderId/orderNumber` rỗng. GET notifications và POST mark-all-read nhận thêm scope `chat.read`, lọc scope ở server. Nhấn thông báo mở Hội thoại đúng tin; đọc ảnh vẫn đi endpoint private. Không có endpoint thanh toán mới hay lệnh thanh toán từ chat.

@@ -59,6 +59,22 @@ class AdminNotificationScopeTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void chatOnlyInboxRequestsOnlyReceiptRowsAndDoesNotGrantOrderAccess() {
+        UUID adminId = UUID.randomUUID();
+        when(readRepository.findById(adminId)).thenReturn(Optional.empty());
+        when(notificationRepository.findScoped(org.mockito.ArgumentMatchers.eq(false),
+                org.mockito.ArgumentMatchers.eq(false), org.mockito.ArgumentMatchers.eq(true), any(Pageable.class)))
+                .thenReturn(List.of(notification("CHAT_BANK_TRANSFER_RECEIPT")));
+        when(notificationRepository.countScoped(false, false, true)).thenReturn(1L);
+        var inbox = service.inboxFor(adminId, false, false, true);
+        assertThat(inbox.items()).singleElement().satisfies(item ->
+                assertThat(item.notification().getType()).isEqualTo("CHAT_BANK_TRANSFER_RECEIPT"));
+        assertThat(inbox.unreadCount()).isEqualTo(1);
+        verify(notificationRepository, never()).findVisible(any());
+        verify(notificationRepository, never()).findAllVisible(any());
+    }
+
     private static AdminNotificationEntity notification(String type) {
         AdminNotificationEntity notification = new AdminNotificationEntity();
         notification.setId(UUID.randomUUID());

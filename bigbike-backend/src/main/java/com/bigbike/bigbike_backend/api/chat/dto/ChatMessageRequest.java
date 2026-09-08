@@ -39,15 +39,19 @@ public class ChatMessageRequest {
     @Size(max = 1000, message = "Tin nhắn không được dài quá 1.000 ký tự.")
     private String message;
 
-    @Size(max = 1, message = "Mỗi lượt chỉ gửi được một ảnh.")
-    private List<UUID> imageIds;
+    @Size(max = 3, message = "Mỗi lượt gửi tối đa 3 ảnh. / Send up to 3 images per message.")
+    private List<@jakarta.validation.constraints.NotNull UUID> imageIds;
+
+    @Size(max = 1, message = "Mỗi lượt chỉ gửi được một video. / Send one video per message.")
+    private List<@jakarta.validation.constraints.NotNull UUID> videoIds;
 
     @NotBlank(message = "Ngôn ngữ không được để trống.")
     @Pattern(regexp = "^(vi|en)$", message = "Ngôn ngữ phải là vi hoặc en.")
     private String lang;
 
-    @AssertTrue(message = "Tin nhắn hoặc ảnh không được để trống.")
+    @AssertTrue(message = "Vui lòng gửi tin nhắn, ảnh hoặc video. / Please send a message, photo or video.")
     public boolean isMessageOrImageProvided() {
-        return (message != null && !message.isBlank()) || (imageIds != null && !imageIds.isEmpty());
+        return (message != null && !message.isBlank()) || (imageIds != null && !imageIds.isEmpty())
+                || (videoIds != null && !videoIds.isEmpty());
     }
 }

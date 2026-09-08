@@ -58,19 +58,19 @@ public class StorePolicyService {
         StringBuilder lead = new StringBuilder();
         String heading = null;
         StringBuilder body = new StringBuilder();
-        for (Element element : document.body().children()) {
-            for (Element node : element.select("h2").isEmpty()
-                    ? List.of(element) : element.children()) {
+        for (Element node : document.select("h2, h3, p, li, tr")) {
+                if ("tr".equals(node.tagName()) && node.select("td").isEmpty()) continue;
                 if ("h2".equalsIgnoreCase(node.tagName())) {
                     if (heading != null) sections.add(section(heading, body));
                     heading = node.text().replaceAll("\\s+", " ").trim();
                     body = new StringBuilder();
+                } else if (node.parents().stream().anyMatch(parent -> java.util.Set.of("li", "tr").contains(parent.tagName()))) {
+                    continue;
                 } else if (heading == null) {
-                    lead.append(' ').append(node.text());
+                    lead.append('\n').append(node.text());
                 } else {
-                    body.append(' ').append(node.text());
+                    body.append('\n').append(node.text());
                 }
-            }
         }
         if (heading != null) sections.add(section(heading, body));
         String intro = lead.toString().replaceAll("\\s+", " ").trim();
@@ -79,7 +79,7 @@ public class StorePolicyService {
     }
 
     private static PolicySection section(String heading, StringBuilder body) {
-        return new PolicySection(heading, body.toString().replaceAll("\\s+", " ").trim());
+        return new PolicySection(heading, body.toString().replaceAll("[\\t\\r ]+", " ").trim());
     }
 
     /** One heading of a published policy plus its plain text. */

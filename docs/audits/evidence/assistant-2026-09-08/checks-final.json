@@ -1,0 +1,54 @@
+{
+  "at": "2026-09-08T09:07:19.371822+00:00",
+  "web": {
+    "lint": "pass",
+    "formatChangedFiles": "pass",
+    "typeCheckAndProductionBuild": "pass",
+    "generatedPages": 75,
+    "fullTestFiles": 104,
+    "fullTests": 684,
+    "failures": 0,
+    "realUi": "pass at 375/768/1440 px; reload, video controls, bilingual errors"
+  },
+  "admin": {
+    "lint": "pass",
+    "i18n": "pass, 3821 keys per locale",
+    "format": "pass",
+    "build": "pass",
+    "fullTestFiles": 120,
+    "fullTests": 1144,
+    "failures": 0,
+    "realVideoUi": "pass"
+  },
+  "backend": {
+    "fullSuiteCheckpoint": {
+      "tests": 1730,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "skipClass": "PublicReadApiTest"
+    },
+    "latestAssistantAndOpenApi": {
+      "tests": 289,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "releasePackage": "pass",
+    "runtimeImage": "pass",
+    "realClipDecodeH264AacEncode": "pass, no AI call",
+    "previewConfigExcludedFromJar": true
+  },
+  "gatewayCandidate": {
+    "syntax": "pass",
+    "liveFileChanged": false,
+    "reloaded": false
+  },
+  "hygiene": {
+    "gitDiffCheck": "pass",
+    "privateCredentialScan": "pass",
+    "mojibakeInChangedUi": "none"
+  },
+  "deployment": "not performed; owner approval required"
+}

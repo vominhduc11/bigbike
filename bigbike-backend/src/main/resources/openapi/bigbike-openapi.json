@@ -8472,11 +8472,30 @@
     },
     "/api/v1/chat/availability": {
       "get": {
-        "tags": ["AI Assistant"],
+        "tags": [
+          "AI Assistant"
+        ],
         "summary": "Get BigBike Assistant availability and contact fallback",
         "operationId": "getChatAvailability",
-        "parameters": [{"name":"lang","in":"query","schema":{"type":"string","enum":["vi","en"],"default":"vi"}}],
-        "responses": {"200":{"description":"AI or contact mode; never calls Gemini"}}
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "default": "vi"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "AI/contact mode, contacts, image limits and videos {enabled,maxBytes:41943040,maxDurationSeconds:15,maxPerTurn:1,maxPerConversation:2,dailyLimit:10}; never calls Gemini."
+          }
+        }
       }
     },
     "/api/v1/chat/images": {
@@ -8508,26 +8527,242 @@
     },
     "/api/v1/chat/messages": {
       "post": {
-        "tags": ["AI Assistant"],
+        "tags": [
+          "AI Assistant"
+        ],
         "summary": "Send one message to BigBike Assistant",
         "operationId": "sendChatMessage",
         "requestBody": {
           "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true,"description":"Logical turn idempotency key; reuse when retrying."},"message":{"type":"string","maxLength":1000,"description":"Optional only when exactly one owned imageId is supplied."},"imageIds":{"type":"array","maxItems":1,"items":{"type":"string","format":"uuid"},"description":"At most one previously uploaded, owned image for this turn."},"lang":{"type":"string","enum":["vi","en"]},"pageContext":{"type":"object","nullable":true,"required":["type","productSlug"],"properties":{"type":{"type":"string","enum":["PRODUCT"]},"productSlug":{"type":"string","maxLength":160}}},"clarificationSelection":{"type":"object","nullable":true,"required":["clarificationId","optionId"],"properties":{"clarificationId":{"type":"string","format":"uuid"},"optionId":{"type":"string","maxLength":80,"pattern":"^[a-z0-9]+(?:[-_][a-z0-9]+)*$"}},"description":"Optional quick-choice metadata; accepted only when it matches the pending clarification. The visible option label remains message."}}}}}
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "lang"
+                ],
+                "properties": {
+                  "conversationId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "requestId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true,
+                    "description": "Logical turn idempotency key; reuse when retrying."
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Optional with owned image(s) or one video. Images and video are mutually exclusive."
+                  },
+                  "imageIds": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "Up to three distinct previously uploaded owned images, in sending order. Retry preserves IDs and order; image and video are mutually exclusive."
+                  },
+                  "lang": {
+                    "type": "string",
+                    "enum": [
+                      "vi",
+                      "en"
+                    ]
+                  },
+                  "pageContext": {
+                    "type": "object",
+                    "nullable": true,
+                    "required": [
+                      "type",
+                      "productSlug"
+                    ],
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "PRODUCT"
+                        ]
+                      },
+                      "productSlug": {
+                        "type": "string",
+                        "maxLength": 160
+                      }
+                    }
+                  },
+                  "clarificationSelection": {
+                    "type": "object",
+                    "nullable": true,
+                    "required": [
+                      "clarificationId",
+                      "optionId"
+                    ],
+                    "properties": {
+                      "clarificationId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "optionId": {
+                        "type": "string",
+                        "maxLength": 80,
+                        "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+                      }
+                    },
+                    "description": "Optional quick-choice metadata; accepted only when it matches the pending clarification. The visible option label remains message."
+                  },
+                  "videoIds": {
+                    "type": "array",
+                    "maxItems": 1,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "One owned video, mutually exclusive with imageIds; one stored reply, within 60 seconds of complete upload receipt, otherwise photo fallback."
+                  },
+                  "visitorToken": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
         },
-        "responses": {"200":{"description":"Guarded answer with assistantMessageId, automatic continuation after 40 turns, optional clarification {id, criterion, options[{id,label,count,kind}]}, fixed actions and at most 8 products. Clarification kind is FILTER or BYPASS and costs no provider call."},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded (10 writes/minute/IP)"}}
+        "responses": {
+          "200": {
+            "description": "Guarded answer with assistantMessageId, automatic continuation after 40 turns, optional clarification {id, criterion, options[{id,label,count,kind}]}, fixed actions and at most 8 products. Clarification kind is FILTER or BYPASS and costs no provider call. Image recognition keeps verified brand/category context. Mixed image scopes use clarification criterion IMAGE and FILTER options image-1..image-3."
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "description": "CHAT tier exceeded (10 writes/minute/IP)"
+          }
+        }
       }
     },
     "/api/v1/chat/messages/stream": {
       "post": {
-        "tags": ["AI Assistant"],
+        "tags": [
+          "AI Assistant"
+        ],
         "summary": "Send one message and receive fixed progress events plus one guarded result",
         "operationId": "streamChatMessage",
         "requestBody": {
           "required": true,
-          "content": {"application/json":{"schema":{"type":"object","required":["lang"],"properties":{"conversationId":{"type":"string","format":"uuid","nullable":true},"requestId":{"type":"string","format":"uuid","nullable":true},"message":{"type":"string","maxLength":1000},"imageIds":{"type":"array","maxItems":1,"items":{"type":"string","format":"uuid"}},"lang":{"type":"string","enum":["vi","en"]},"pageContext":{"type":"object","nullable":true,"required":["type","productSlug"],"properties":{"type":{"type":"string","enum":["PRODUCT"]},"productSlug":{"type":"string","maxLength":160}}},"clarificationSelection":{"type":"object","nullable":true,"required":["clarificationId","optionId"],"properties":{"clarificationId":{"type":"string","format":"uuid"},"optionId":{"type":"string","maxLength":80,"pattern":"^[a-z0-9]+(?:[-_][a-z0-9]+)*$"}}}}}}}
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "lang"
+                ],
+                "properties": {
+                  "conversationId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "requestId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "message": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "description": "Optional with owned image(s) or one video. Images and video are mutually exclusive."
+                  },
+                  "imageIds": {
+                    "type": "array",
+                    "maxItems": 3,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "Up to three distinct previously uploaded owned images, in sending order. Retry preserves IDs and order; image and video are mutually exclusive."
+                  },
+                  "lang": {
+                    "type": "string",
+                    "enum": [
+                      "vi",
+                      "en"
+                    ]
+                  },
+                  "pageContext": {
+                    "type": "object",
+                    "nullable": true,
+                    "required": [
+                      "type",
+                      "productSlug"
+                    ],
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "PRODUCT"
+                        ]
+                      },
+                      "productSlug": {
+                        "type": "string",
+                        "maxLength": 160
+                      }
+                    }
+                  },
+                  "clarificationSelection": {
+                    "type": "object",
+                    "nullable": true,
+                    "required": [
+                      "clarificationId",
+                      "optionId"
+                    ],
+                    "properties": {
+                      "clarificationId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "optionId": {
+                        "type": "string",
+                        "maxLength": 80,
+                        "pattern": "^[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+                      }
+                    }
+                  },
+                  "videoIds": {
+                    "type": "array",
+                    "maxItems": 1,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "One owned video, mutually exclusive with imageIds; one stored reply, within 60 seconds of complete upload receipt, otherwise photo fallback."
+                  },
+                  "visitorToken": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
         },
-        "responses": {"200":{"description":"text/event-stream: UNDERSTANDING, optional CHECKING_PRODUCTS, FINALIZING, then one guarded result with optional clarification; never model draft"},"400":{"$ref":"#/components/responses/ValidationError"},"429":{"description":"CHAT tier exceeded"}}
+        "responses": {
+          "200": {
+            "description": "text/event-stream: UNDERSTANDING, optional CHECKING_PRODUCTS, FINALIZING, then one guarded result with optional clarification; never model draft Image recognition keeps verified brand/category context. Mixed image scopes use clarification criterion IMAGE and FILTER options image-1..image-3."
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "429": {
+            "description": "CHAT tier exceeded"
+          }
+        }
       }
     },
     "/api/v1/chat/sessions": {
@@ -8541,15 +8776,48 @@
     },
     "/api/v1/chat/conversations/{id}/messages": {
       "get": {
-        "tags": ["AI Assistant"],
+        "tags": [
+          "AI Assistant"
+        ],
         "summary": "Synchronize ordered messages after an ownership check",
         "operationId": "getOwnedChatHistory",
         "parameters": [
-          {"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},
-          {"name":"afterSequence","in":"query","schema":{"type":"integer","format":"int64","minimum":0,"default":0}},
-          {"name":"X-Chat-Visitor-Token","in":"header","schema":{"type":"string","maxLength":128}}
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "afterSequence",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "X-Chat-Visitor-Token",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
         ],
-        "responses": {"200":{"description":"REST-authoritative ordered transcript with customer, assistant and system messages, plus continuation state"},"404":{"$ref":"#/components/responses/NotFound"}}
+        "responses": {
+          "200": {
+            "description": "REST-authoritative ordered transcript with customer, assistant and system messages, plus continuation state Each message includes videos: ChatVideoResponse[], empty for text/images. Expired video references have no contentPath."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     },
     "/api/v1/chat/history": {
@@ -8601,12 +8869,38 @@
     },
     "/api/v1/admin/chat/conversations/{id}": {
       "get": {
-        "tags": ["Admin AI Assistant"],
+        "tags": [
+          "Admin AI Assistant"
+        ],
         "summary": "Get one read-only BigBike Assistant conversation with messages and private images",
         "operationId": "getChatConversation",
-        "security": [{"AdminBearerAuth":[]}],
-        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],
-        "responses": {"200":{"description":"Conversation detail"},"403":{"$ref":"#/components/responses/Forbidden"},"404":{"$ref":"#/components/responses/NotFound"}}
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation detail Each message includes videos: ChatVideoResponse[], empty for text/images. Expired video references have no contentPath."
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     },
     "/api/v1/admin/chat/stats": {
@@ -8616,36 +8910,299 @@
         "operationId": "getChatStats",
         "security": [{"AdminBearerAuth":[]}],
         "parameters": [{"name":"date","in":"query","schema":{"type":"string","format":"date"},"description":"Snapshot anchor for today, current month and 14-day monitoring."},{"name":"from","in":"query","schema":{"type":"string","format":"date"},"description":"Inclusive selected-period start in Asia/Ho_Chi_Minh."},{"name":"to","in":"query","schema":{"type":"string","format":"date"},"description":"Inclusive selected-period end in Asia/Ho_Chi_Minh."}],
-        "responses": {"200":{"description":"Daily AI quota plus selected-period reply-quality stats. Response includes periodFrom and periodTo."},"403":{"$ref":"#/components/responses/Forbidden"}}
+        "responses": {"200":{
+          "description": "Daily text allowance and images {used,limit,remaining}, plus periodFrom/periodTo reply-quality aggregates; requires chat.read or settings.read. The limit is the current setting, not a historical limit.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "images": {
+                        "type": "object",
+                        "required": [
+                          "used",
+                          "limit",
+                          "remaining"
+                        ],
+                        "properties": {
+                          "used": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "limit": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "remaining": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },"403":{"$ref":"#/components/responses/Forbidden"}}
       }
     },
     "/api/v1/admin/notifications": {
       "get": {
-        "tags": ["Admin Notifications"],
+        "tags": [
+          "Admin Notifications"
+        ],
         "summary": "List permission-scoped persistent notifications",
         "operationId": "listAdminNotifications",
-        "security": [{"AdminBearerAuth":[]}],
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Recent order and/or inventory notifications with exact unread count",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/AdminNotificationInboxResponse"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminNotificationInboxResponse"
+                }
+              }
+            }
           },
-          "403": {"$ref":"#/components/responses/Forbidden"}
-        }
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "description": " Supports chat.read for CHAT_BANK_TRANSFER_RECEIPT notifications. Payload contains only schemaVersion, conversationId and messageId; no order authority or payment confirmation. Conversation deletion cascades to this notification."
       }
     },
     "/api/v1/admin/notifications/mark-all-read": {
       "post": {
-        "tags": ["Admin Notifications"],
+        "tags": [
+          "Admin Notifications"
+        ],
         "summary": "Mark all notification scopes visible to the current admin as read",
         "operationId": "markAllAdminNotificationsRead",
-        "security": [{"AdminBearerAuth":[]}],
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Unread count after advancing this admin read marker",
-            "content": {"application/json":{"schema":{"$ref":"#/components/schemas/AdminNotificationMarkReadResponse"}}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminNotificationMarkReadResponse"
+                }
+              }
+            }
           },
-          "403": {"$ref":"#/components/responses/Forbidden"}
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "description": " Supports chat.read for CHAT_BANK_TRANSFER_RECEIPT notifications. Payload contains only schemaVersion, conversationId and messageId; no order authority or payment confirmation. Conversation deletion cascades to this notification."
+      }
+    },
+    "/api/v1/chat/videos": {
+      "post": {
+        "tags": [
+          "AI Assistant"
+        ],
+        "summary": "Upload one customer video to the private internal chat-video store",
+        "operationId": "uploadChatVideo",
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "conversationId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vi",
+                "en"
+              ],
+              "default": "vi"
+            }
+          },
+          {
+            "name": "X-Chat-Visitor-Token",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "MP4, MOV or WebM; maximum 40 MiB and 15 seconds, including sound. One video per turn, two per conversation, ten analyses per shop day."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Private video; no public URL; no-store; bytes expire after seven days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "conversationId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "video": {
+                          "$ref": "#/components/schemas/ChatVideoResponse"
+                        },
+                        "remainingMillis": {
+                          "type": "integer", "format": "int64", "minimum": 0, "maximum": 60000,
+                          "description": "Remaining time from the original server upload deadline; retries never extend it."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "description": "CHAT tier exceeded"
+          }
+        }
+      }
+    },
+    "/api/v1/chat/videos/{id}/content": {
+      "get": {
+        "tags": [
+          "AI Assistant"
+        ],
+        "summary": "Read one owned, non-expired customer chat video",
+        "operationId": "getOwnedChatVideoContent",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Chat-Visitor-Token",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private video; no public URL; no-store; bytes expire after seven days.",
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/chat/videos/{id}/content": {
+      "get": {
+        "tags": [
+          "Admin AI Assistant"
+        ],
+        "summary": "Read one non-expired chat video with chat.read permission",
+        "operationId": "getAdminChatVideoContent",
+        "security": [
+          {
+            "AdminBearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private video; no public URL; no-store; bytes expire after seven days.",
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     }
@@ -14705,7 +15262,71 @@
           "data":{"type":"object","required":["unreadCount"],"properties":{"unreadCount":{"type":"integer","format":"int64","minimum":0}}},
           "meta":{"$ref":"#/components/schemas/ApiMeta"}
         }
+      },
+    "ChatVideoResponse": {
+      "type": "object",
+      "required": [
+        "id",
+        "status",
+        "mimeType",
+        "sizeBytes",
+        "durationSeconds",
+        "hasAudio",
+        "createdAt",
+        "expiresAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "ATTACHED",
+            "PROCESSING",
+            "READY",
+            "UNRECOGNIZED",
+            "REJECTED_UNSAFE",
+            "LIMIT_SKIPPED",
+            "TIMED_OUT",
+            "DELETING",
+            "DELETED"
+          ]
+        },
+        "mimeType": {
+          "type": "string",
+          "enum": [
+            "video/mp4"
+          ]
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "format": "int64",
+          "maximum": 41943040
+        },
+        "durationSeconds": {
+          "type": "number",
+          "maximum": 15
+        },
+        "hasAudio": {
+          "type": "boolean"
+        },
+        "contentPath": {
+          "type": "string",
+          "nullable": true
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       }
     }
+  }
   }
 }

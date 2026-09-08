@@ -64,9 +64,9 @@ class ChatSearchInterpretationTest {
 
         for (SearchCase searchCase : cases) {
             CatalogReadService catalog = catalogWithPublicVocabulary();
-            Product expected = product("safe-" + searchCase.expectedCategory(), "Sản phẩm an toàn",
+            Product expected = product("safe-" + searchCase.expectedCategory(), searchCase.modelCategory() + " đã xác minh",
                     BigDecimal.valueOf(1_500_000));
-        when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
+            when(catalog.listProducts(anyInt(), anyInt(), any(), any(), any(), any(), any(), anyList(),
                     any(), any(), any(), any()))
                     .thenReturn(new PageResult<>(List.of(expected), 1, 10, 1, 1));
             ChatToolService tools = new ChatToolService(catalog, mock(OrderReadService.class));

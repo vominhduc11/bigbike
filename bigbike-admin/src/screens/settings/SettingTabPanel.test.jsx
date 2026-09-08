@@ -1,11 +1,28 @@
-import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render as baseRender, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
 import { SettingTabPanel } from './SettingTabPanel'
+import { fetchChatStats } from '@/lib/adminApi'
+const auth = vi.hoisted(() => ({ hasPermission: vi.fn() }))
+vi.mock('@/lib/auth', () => ({ useHasPermission: () => auth.hasPermission }))
+vi.mock('@/lib/adminApi', () => ({ fetchChatStats: vi.fn() }))
+
+function render(ui) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return baseRender(ui, {
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    ),
+  })
+}
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key, values = {}) => values.defaultValue ?? key,
+    t: (key, values = {}) =>
+      key === 'chatAdmin.imageQuota.usage'
+        ? `${values.used}/${values.limit}, còn ${values.remaining}, ${values.date}`
+        : (values.defaultValue ?? key),
   }),
 }))
 vi.mock('./SettingField', () => ({
@@ -56,6 +73,10 @@ function panelProps(overrides = {}) {
 }
 
 describe('SettingTabPanel', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    auth.hasPermission.mockImplementation((permission) => permission === 'settings.read')
+  })
   it('keeps the first section open and lets later sections collapse', async () => {
     const user = userEvent.setup()
     render(<SettingTabPanel {...panelProps()} />)
@@ -101,5 +122,57 @@ describe('SettingTabPanel', () => {
     rerender(<SettingTabPanel {...panelProps({ saveSuccess: true })} />)
     expect(screen.getByRole('toolbar')).toHaveTextContent('settings.saveSuccess')
     expect(screen.queryByRole('button', { name: 'settings.saveCount' })).not.toBeInTheDocument()
+  })
+  it('shows actual image usage to settings readers without granting access to photos', async () => {
+    vi.mocked(fetchChatStats).mockResolvedValue({
+      date: '2026-09-08',
+      images: { used: 21, limit: 60, remaining: 39 },
+    })
+    render(
+      <SettingTabPanel
+        {...panelProps({
+          canUpdate: false,
+          items: [
+            { key: 'ai_assistant_image_daily_limit', value: '60', settingGroup: 'AI_ASSISTANT' },
+          ],
+        })}
+      />,
+    )
+    expect(await screen.findByText('21/60, còn 39, 2026-09-08')).toBeVisible()
+    expect(fetchChatStats).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not invent zero usage when stats are missing and permits retry', async () => {
+    vi.mocked(fetchChatStats)
+      .mockResolvedValueOnce({ images: null })
+      .mockResolvedValue({ date: '2026-09-08', images: { used: 60, limit: 60, remaining: 0 } })
+    const user = userEvent.setup()
+    render(
+      <SettingTabPanel
+        {...panelProps({
+          items: [
+            { key: 'ai_assistant_image_daily_limit', value: '60', settingGroup: 'AI_ASSISTANT' },
+          ],
+        })}
+      />,
+    )
+    expect(await screen.findByText('chatAdmin.imageQuota.error')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'common.retry' }))
+    expect(await screen.findByText('60/60, còn 0, 2026-09-08')).toBeVisible()
+  })
+
+  it('does not request stats without either read permission', () => {
+    auth.hasPermission.mockReturnValue(false)
+    render(
+      <SettingTabPanel
+        {...panelProps({
+          items: [
+            { key: 'ai_assistant_image_daily_limit', value: '60', settingGroup: 'AI_ASSISTANT' },
+          ],
+        })}
+      />,
+    )
+    expect(screen.getByText('chatAdmin.imageQuota.permission')).toBeVisible()
+    expect(fetchChatStats).not.toHaveBeenCalled()
   })
 })

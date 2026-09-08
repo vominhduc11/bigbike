@@ -1,0 +1,6 @@
+{
+  "caseId": "V_ADMIN_AUTHENTICATED_WITHOUT_CHAT_READ",
+  "http": 403,
+  "fixture": "isolated owner-authorized admin; empty permission role",
+  "aiUsed": 0
+}

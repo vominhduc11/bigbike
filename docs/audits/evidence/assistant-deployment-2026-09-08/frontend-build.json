@@ -1,0 +1,8 @@
+{
+  "startedAt": "2026-09-08T09:29:44.631472+00:00",
+  "endedAt": "2026-09-08T09:37:05.045040+00:00",
+  "exitCode": 0,
+  "environmentFile": ".env.vps",
+  "webImage": "bigbike-assistant-web:20260908",
+  "adminImage": "bigbike-assistant-admin:20260908"
+}

@@ -170,3 +170,12 @@ Status: `OWNER_CONFIRMED_2026-08-29`
 ## Manual transfer receipt — 2026-09-07
 
 Checkout → existing confirmation route with step=bank-transfer → order lookup + public settings → confirmation. Both customer actions navigate only. Admin receipt POST → locked order/payment transaction + audit → after-commit order-topic refresh. Completion PATCH and allowed-transitions read the same payment guard; see PAY_RULE_002.
+
+
+### Video ngắn trong chat — 08/09/2026
+
+`FloatingChat -> chọn ảnh hoặc video -> POST /chat/videos -> nhận videoId -> POST /chat/messages hoặc /chat/stream với videoIds -> kiểm ownership/giới hạn -> xem toàn bộ video + nghe âm thanh -> trả lời câu gõ/câu nói bằng dữ liệu shop -> một tin trợ lý`. Các chặng cùng hạn 60 giây kể từ nhận xong tệp. Không lời hỏi: quay sản phẩm thì tìm mẫu cùng nhóm/trông giống; quay thao tác thì mô tả điều thấy và hỏi rõ mục đích. Quá giờ mời gửi ảnh. Web/admin đọc video bằng đường nội dung riêng tư, không qua kho media công khai; transcript giữ dấu hết hạn sau bảy ngày. Thông báo lỗi và công bố ở Chính sách bảo mật đủ Việt/Anh (`CHAT_RULE_062`–`065`).
+
+### Image flow — 2026-09-08
+
+Website giữ một requestId cho mỗi upload và một requestId cho tin nhắn; truyền imageIds có thứ tự. Image analysis → verified image evidence → catalog filter/text advisor/response guard → conversation context. Stats thêm quota ảnh cho Settings và Hội thoại. Receipt notification → private transcript; không gọi endpoint thanh toán từ chat. CLI chuyển kho/dựng chỉ mục là luồng vận hành riêng, owner chạy sau triển khai.

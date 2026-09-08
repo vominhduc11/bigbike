@@ -1045,3 +1045,23 @@ Documentation này được tạo bằng thao tác đọc/inspect repository qua
 Chế độ khóa quản trị thủ công đã bị gỡ hoàn toàn theo quyết định ngày 30/08/2026. Vì vậy BigBike không còn state machine, trạng thái lưu trữ, transition, API hoặc quyền nào cho chức năng này. Migration mới `V1071` dọn bảng `maintenance_state`, dữ liệu cài đặt cũ và vai trò kỹ thuật; các migration lịch sử giữ nguyên.
 
 Trang xin lỗi tự động do Nginx phục vụ khi upstream thật sự không phản hồi là fallback hạ tầng, không phải state machine nghiệp vụ và vẫn được giữ nguyên.
+
+
+## 15D. Trợ lý BigBike — vòng đời video ngắn (08/09/2026)
+
+| From | To | Điều kiện / tác động |
+|---|---|---|
+| — | `PENDING` | Chủ hội thoại hợp lệ; MP4/MOV/WebM đọc được, ≤15 giây/40 MB; dưới hai video/hội thoại, cùng lượt không có ảnh. Lưu bản chuẩn hóa riêng tư, giữ âm thanh, ghi mốc nhận xong và hạn trả lời +60 giây. |
+| `PENDING` | `ATTACHED` | Gắn đúng một tin khách; retry giữ nguyên tệp và đồng hồ. |
+| `ATTACHED` | `PROCESSING` | Giữ một slot video/ngày nguyên tử, không hoàn sau lỗi. |
+| `PROCESSING` | `READY` / `UNRECOGNIZED` | Đã xem/nghe cả đoạn; đủ/chưa đủ căn cứ nhận diện. Câu trả lời qua cùng chốt dữ kiện/giọng văn như ảnh. |
+| `PROCESSING` | `REJECTED_UNSAFE` | Chặn quyền đọc ngay, xóa object; lỗi xóa được tác vụ lịch thử lại. |
+| `ATTACHED` | `LIMIT_SKIPPED` | Hết mười slot video của shop trong ngày. Thông báo song ngữ, không làm hỏng chat chữ. |
+| `PENDING` / `ATTACHED` / `PROCESSING` | `TIMED_OUT` | Hết 60 giây tính từ nhận xong; xin lỗi và mời gửi ảnh, không trả kết quả muộn. |
+| mọi trạng thái chưa xóa | `DELETING` → `DELETED` | Khách xóa lịch sử hoặc đủ bảy ngày: chặn đọc khi hết hạn, xóa object trước metadata; thử lại nếu kho tệp lỗi. |
+
+Nguồn: `CHAT_RULE_062`–`065`. Không thêm trạng thái hội thoại hay quyền quản trị.
+
+### Ảnh chat nhiều tệp — 2026-09-08
+
+PENDING → ATTACHED chỉ sau kiểm toàn bộ quyền/thứ tự ảnh. ATTACHED → PROCESSING khi giữ được lượt đọc; ảnh chưa đủ lượt → LIMIT_SKIPPED. PROCESSING → READY khi có kết quả hợp lệ, UNRECOGNIZED khi đã xem nhưng chưa rõ, ANALYSIS_FAILED khi hết thử do lỗi kỹ thuật; REJECTED_UNSAFE vẫn chặn đọc và xóa object như trước. Retry cùng logical turn dùng lại quota/deadline/kết quả đã lưu. Biên lai READY tạo thông báo tham chiếu tin nhắn, không tạo trạng thái chat nhân viên, đơn hàng hoặc thanh toán.

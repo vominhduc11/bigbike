@@ -64,6 +64,7 @@ public class ChatSalesAdvisorService {
         String outcome = outcomeCode(source, resultKind, products, clarification);
 
         CheaperAlternative cheaper = isPriceObjection(normalized)
+                && !containsAny(normalized, "mau nao", "cai nao", "which one", "which is", "which of")
                 ? cheaperAlternative(products, context, lang) : null;
         if (cheaper != null) {
             products = List.of(cheaper.card());
@@ -76,7 +77,8 @@ public class ChatSalesAdvisorService {
         }
 
         Product focus = focusProduct(products, context, lang);
-        boolean missingSizeGuide = asksSize(normalized) && focus != null && !hasSizeGuide(focus);
+        boolean missingSizeGuide = containsAny(normalized, "chon size", "bang size", "huong dan size", "vua khong", "fit", "size guide", "which size")
+                && focus != null && !hasSizeGuide(focus);
         if (missingSizeGuide) {
             answer = missingSizeAnswer(focus, english);
             if (confirmsMissingSizeGuide(normalized)) {
@@ -112,7 +114,8 @@ public class ChatSalesAdvisorService {
         // CHAT_RULE_001 (owner decision 2026-09-05): a follow-up line is only appended when it
         // fits the question. Pasting a sales prompt onto a refusal, an out-of-scope reply or a
         // question the assistant just asked reads like a machine and annoyed customers.
-        if (nextStepFitsContext(source, resultKind, clarification, answer)) {
+        if (products.isEmpty() && containsAny(normalized, "shop co gi", "what do you sell", "what can you help")
+                && nextStepFitsContext(source, resultKind, clarification, answer)) {
             answer = appendNextStep(answer, next.copy());
         }
 
@@ -190,32 +193,32 @@ public class ChatSalesAdvisorService {
     private static String tradeoff(Product baseline, Product alternative, boolean english) {
         if (hasSizeGuide(baseline) && !hasSizeGuide(alternative)) {
             return english
-                    ? "The trade-off is that BigBike does not yet have this model's size guide."
+                    ? "The tradeoff is that BigBike does not yet have this model's size guide."
                     : "Đánh đổi là shop chưa có hướng dẫn size của mẫu này.";
         }
         if (hasText(baseline.specifications()) && !hasText(alternative.specifications())) {
             return english
-                    ? "The trade-off is that its detailed specifications are not yet saved."
+                    ? "The tradeoff is that its detailed specifications are not yet saved."
                     : "Đánh đổi là thông số chi tiết của mẫu này chưa được cập nhật.";
         }
         int baselineOptions = availableVariantCount(baseline);
         int alternativeOptions = availableVariantCount(alternative);
         if (alternativeOptions < baselineOptions) {
             return english
-                    ? "The trade-off is fewer currently available variant choices."
+                    ? "The tradeoff is fewer currently available variant choices."
                     : "Đánh đổi là số lựa chọn phiên bản đang còn hàng ít hơn.";
         }
         String alternativeBrand = alternative.brand() == null ? null : alternative.brand().name();
         String baselineBrand = baseline.brand() == null ? null : baseline.brand().name();
         if (hasText(alternativeBrand) && !alternativeBrand.equalsIgnoreCase(baselineBrand)) {
             return english
-                    ? "The trade-off is switching to " + alternativeBrand
-                            + "; BigBike does not have enough saved data to claim identical features."
+                    ? "The tradeoff is switching to " + alternativeBrand
+                            + "; I cannot confirm identical features from the product information available."
                     : "Đánh đổi là chuyển sang thương hiệu " + alternativeBrand
                             + "; shop chưa có đủ dữ liệu để khẳng định tính năng giống hệt.";
         }
         return english
-                ? "BigBike does not have enough saved data to claim identical features, so compare the product details before deciding."
+                ? "I cannot confirm identical features from the product information available. Please compare the product details before deciding."
                 : "Shop chưa có đủ dữ liệu để khẳng định tính năng giống hệt, nên anh/chị cần đối chiếu trang chi tiết trước khi chọn.";
     }
 
@@ -454,7 +457,7 @@ public class ChatSalesAdvisorService {
     }
 
     private static boolean isPriceObjection(String normalized) {
-        return containsAny(normalized,
+        return ChatToolService.isPriceNegotiationRequest(normalized) || containsAny(normalized,
                 "dat qua", "mac qua", "gia cao", "re hon", "qua ngan sach",
                 "giam gia", "bot gia", "gia tot hon", "gia mem hon", "mac ca", "tra gia",
                 "too expensive", "price is high", "cheaper", "over budget",
@@ -545,7 +548,10 @@ public class ChatSalesAdvisorService {
 
     private static boolean containsAny(String value, String... needles) {
         if (value == null) return false;
-        for (String needle : needles) if (value.contains(needle)) return true;
+        for (String needle : needles) {
+            if (java.util.regex.Pattern.compile("(?<![\\p{L}\\p{N}])"
+                    + java.util.regex.Pattern.quote(needle) + "(?![\\p{L}\\p{N}])").matcher(value).find()) return true;
+        }
         return false;
     }
 

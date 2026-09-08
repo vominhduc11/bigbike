@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-08T10:09:17.648996+00:00",
+  "baseCommit": "1e5bb99dc4f64a6fa3d5208cac9ce7213d92e095",
+  "handoffPatchFileCount": 160,
+  "backendAndAdminMatchVerifiedHandoff": true,
+  "handoffFilesWithDeploymentFollowups": [
+    "bigbike-web/components/home/FloatingChat.test.tsx",
+    "bigbike-web/components/home/FloatingChat.tsx",
+    "docs/engineering/DATA_CONTRACT.md",
+    "docs/engineering/DEPLOYMENT_GUIDE.md",
+    "docs/engineering/deployment-snippets/chat-video.nginx.conf"
+  ],
+  "productionEnvironmentUnchanged": true,
+  "backendJarSha256": "75f6ea11ff596e346cebf54b5e178794b725d3235cf2286ee17dce3d26540c67"
+}

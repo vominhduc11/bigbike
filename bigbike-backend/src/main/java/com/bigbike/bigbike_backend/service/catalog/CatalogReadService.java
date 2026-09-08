@@ -296,12 +296,40 @@ public class CatalogReadService {
      */
     public Set<String> assistantColorFacets(String rawColor) {
         if (rawColor == null || rawColor.isBlank()) return Set.of();
-        return activeVisualCatalog().resolve(List.of(rawColor), List.of()).colors();
+        var catalog = activeVisualCatalog();
+        String normalized = com.bigbike.bigbike_backend.service.catalog.CatalogReadSupport.colorBaseSlug(rawColor);
+        String key = catalog.colors().stream()
+                .filter(definition -> normalized.equals(CatalogReadSupport.colorBaseSlug(definition.labelVi()))
+                        || normalized.equals(CatalogReadSupport.colorBaseSlug(definition.labelEn())))
+                .map(CatalogVisualFacetCatalog.Definition::key).findFirst().orElse(rawColor);
+        return catalog.resolve(List.of(key), List.of()).colors();
     }
 
     /** Every colour spelling the catalogue recognises; empty when the facet data is unavailable. */
     public Set<String> assistantColorVocabulary() {
-        return activeVisualCatalog().colorVocabulary();
+        var catalog = activeVisualCatalog();
+        Set<String> terms = new java.util.LinkedHashSet<>(catalog.colorVocabulary());
+        for (var definition : catalog.colors()) {
+            if (definition.labelVi() != null) terms.add(CatalogReadSupport.colorBaseSlug(definition.labelVi()));
+            if (definition.labelEn() != null) terms.add(CatalogReadSupport.colorBaseSlug(definition.labelEn()));
+        }
+        return Set.copyOf(terms);
+    }
+
+    /** Translate only the catalog's own literal color/finish labels, preserving named patterns. */
+    public String assistantLocalizedColorLabel(String value, String lang) {
+        if (value == null || !"en".equals(lang)) return value;
+        var visual = activeVisualCatalog();
+        String result = value;
+        var labels = java.util.stream.Stream.concat(visual.colors().stream(), visual.finishes().stream())
+                .filter(definition -> definition.labelVi() != null && definition.labelEn() != null)
+                .sorted(java.util.Comparator.comparingInt((CatalogVisualFacetCatalog.Definition definition) -> definition.labelVi().length()).reversed())
+                .toList();
+        for (var definition : labels) {
+            result = result.replaceAll("(?iu)(?<![\\p{L}\\p{N}])" + java.util.regex.Pattern.quote(definition.labelVi())
+                    + "(?![\\p{L}\\p{N}])", java.util.regex.Matcher.quoteReplacement(definition.labelEn()));
+        }
+        return result;
     }
 
     /**

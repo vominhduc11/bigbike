@@ -1,0 +1,128 @@
+[
+  {
+    "run": "ambiguity-before",
+    "successfulResponses": 4,
+    "cards": 6,
+    "mismatches": []
+  },
+  {
+    "run": "baseline",
+    "successfulResponses": 80,
+    "cards": 65,
+    "mismatches": []
+  },
+  {
+    "run": "final-80",
+    "successfulResponses": 80,
+    "cards": 110,
+    "mismatches": []
+  },
+  {
+    "run": "historical-extra",
+    "successfulResponses": 4,
+    "cards": 12,
+    "mismatches": []
+  },
+  {
+    "run": "historical-original",
+    "successfulResponses": 6,
+    "cards": 15,
+    "mismatches": []
+  },
+  {
+    "run": "image-baseline",
+    "successfulResponses": 2,
+    "cards": 4,
+    "mismatches": []
+  },
+  {
+    "run": "image-preview",
+    "successfulResponses": 3,
+    "cards": 2,
+    "mismatches": []
+  },
+  {
+    "run": "last-regression",
+    "successfulResponses": 18,
+    "cards": 39,
+    "mismatches": []
+  },
+  {
+    "run": "name-color-final",
+    "successfulResponses": 6,
+    "cards": 10,
+    "mismatches": []
+  },
+  {
+    "run": "name-complete",
+    "successfulResponses": 8,
+    "cards": 9,
+    "mismatches": []
+  },
+  {
+    "run": "name-final",
+    "successfulResponses": 4,
+    "cards": 13,
+    "mismatches": []
+  },
+  {
+    "run": "name-release",
+    "successfulResponses": 2,
+    "cards": 2,
+    "mismatches": []
+  },
+  {
+    "run": "preview-1",
+    "successfulResponses": 80,
+    "cards": 98,
+    "mismatches": []
+  },
+  {
+    "run": "preview-2",
+    "successfulResponses": 80,
+    "cards": 99,
+    "mismatches": []
+  },
+  {
+    "run": "preview-3",
+    "successfulResponses": 80,
+    "cards": 124,
+    "mismatches": []
+  },
+  {
+    "run": "preview-4",
+    "successfulResponses": 42,
+    "cards": 54,
+    "mismatches": []
+  },
+  {
+    "run": "preview-5",
+    "successfulResponses": 15,
+    "cards": 14,
+    "mismatches": []
+  },
+  {
+    "run": "preview-6",
+    "successfulResponses": 9,
+    "cards": 7,
+    "mismatches": []
+  },
+  {
+    "run": "preview-7",
+    "successfulResponses": 1,
+    "cards": 1,
+    "mismatches": []
+  },
+  {
+    "run": "video-main",
+    "successfulResponses": 7,
+    "cards": 19,
+    "mismatches": []
+  },
+  {
+    "run": "video-browser",
+    "successfulResponses": 1,
+    "cards": 3,
+    "mismatches": []
+  }
+]

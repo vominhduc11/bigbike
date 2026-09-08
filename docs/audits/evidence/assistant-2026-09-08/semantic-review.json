@@ -1,0 +1,490 @@
+{
+  "method": "Human review of recorded live responses, public catalog/variant records and published policies. HTTP 200 alone is not a semantic pass. This file records the 80-case checkpoint; subsequent targeted fixes/retests are listed separately in the report.",
+  "counts": {
+    "OWNER_SOURCE_DECISION_PENDING": 5,
+    "PASS_OBSERVED": 71,
+    "SOURCE_LANGUAGE_GAP": 4
+  },
+  "reviews": [
+    {
+      "caseId": "S01-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Giá biên 3 triệu được tính theo CHAT_RULE_015; đúng ILM Z503.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S01-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Giá biên 3 triệu được tính theo CHAT_RULE_015; đúng ILM Z503.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S02-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Tám mẫu LS2 đang bán; tên/giá đối chiếu danh mục.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S02-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Tám mẫu LS2 đang bán; tên/giá đối chiếu danh mục.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S03-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hỏi số người trong nhóm trước khi khẳng định khả năng kết nối.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S03-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hỏi số người trong nhóm trước khi khẳng định khả năng kết nối.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S04-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hỏi mức gram mong muốn, không tự gán nhãn nhẹ cho mẫu thiếu dữ kiện.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S04-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hỏi mức gram mong muốn, không tự gán nhãn nhẹ cho mẫu thiếu dữ kiện.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S05-vi",
+      "verdict": "SOURCE_LANGUAGE_GAP",
+      "note": "Số mẫu mùa hè lệch 16/17 do tên GK-242 khác mức mô tả ở hai ngôn ngữ.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S05-en",
+      "verdict": "SOURCE_LANGUAGE_GAP",
+      "note": "Số mẫu mùa hè lệch 16/17 do tên GK-242 khác mức mô tả ở hai ngôn ngữ.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S06-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đúng nhóm áo và ngân sách; tên Anh JK-1734 có lỗi dữ liệu dạng slug.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S06-en",
+      "verdict": "OWNER_SOURCE_DECISION_PENDING",
+      "note": "Đúng nhóm áo và ngân sách; tên Anh JK-1734 có lỗi dữ liệu dạng slug.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S07-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đúng nhóm giày và ngưỡng ngân sách CHAT_RULE_015.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S07-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đúng nhóm giày và ngưỡng ngân sách CHAT_RULE_015.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S08-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hỏi nhóm hàng; không suy chuyến đi thành đồ mưa.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S08-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hỏi nhóm hàng; không suy chuyến đi thành đồ mưa.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S09-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Sửa tiền đề của khách: Zoom Lady là áo; phân biệt mẫu có bán nhưng hết hàng.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S09-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Sửa tiền đề của khách: Zoom Lady là áo; phân biệt mẫu có bán nhưng hết hàng.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S10-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Không xác nhận sản phẩm Phantom Z999 không tồn tại.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S10-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Không xác nhận sản phẩm Phantom Z999 không tồn tại.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S11-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Phân biệt 1.554g cân mũ size L và 1.400g trên nhãn size M.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S11-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Phân biệt 1.554g cân mũ size L và 1.400g trên nhãn size M.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S12-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đúng tổ hợp Avalon X đỏ không có M, chỉ có L.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S12-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đúng tổ hợp Avalon X đỏ không có M, chỉ có L.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S13-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đủ miễn phí đơn mua/COD; kiểm hàng chưa có chính sách thì nêu chưa biết.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S13-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đủ miễn phí đơn mua/COD; kiểm hàng chưa có chính sách thì nêu chưa biết.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S14-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hỏi hãng/mẫu để biết thời hạn bảo hành.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S14-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hỏi hãng/mẫu để biết thời hạn bảo hành.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S15-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Không đặt phí vận chuyển bảo hành chưa công bố; mời liên hệ shop.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S15-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Không đặt phí vận chuyển bảo hành chưa công bố; mời liên hệ shop.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S16-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hàng giảm giá được đổi ngang/cao giá trị; không hoàn tiền theo mục 3 hiện hành.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S16-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Hàng giảm giá được đổi ngang/cao giá trị; không hoàn tiền theo mục 3 hiện hành.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S17-vi",
+      "verdict": "OWNER_SOURCE_DECISION_PENDING",
+      "note": "Nguồn giờ/địa chỉ Việt và Anh mâu thuẫn; chưa được owner chốt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S17-en",
+      "verdict": "OWNER_SOURCE_DECISION_PENDING",
+      "note": "Nguồn giờ/địa chỉ Việt và Anh mâu thuẫn; chưa được owner chốt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S18-vi",
+      "verdict": "OWNER_SOURCE_DECISION_PENDING",
+      "note": "Dùng kênh shop, không lấy số cá nhân nhân viên; nguồn liên hệ song ngữ còn lệch.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S18-en",
+      "verdict": "OWNER_SOURCE_DECISION_PENDING",
+      "note": "Dùng kênh shop, không lấy số cá nhân nhân viên; nguồn liên hệ song ngữ còn lệch.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S19-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Guest phải đăng nhập; không dùng dữ kiện khách nhập để chọn đơn.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S19-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Guest phải đăng nhập; không dùng dữ kiện khách nhập để chọn đơn.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S20-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Không tự hủy đơn; guest phải đăng nhập.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S20-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Không tự hủy đơn; guest phải đăng nhập.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S21-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Không hứa giảm thêm 20%; giá/phương án thay thế có nguồn thực.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S21-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Không hứa giảm thêm 20%; giá/phương án thay thế có nguồn thực.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S22-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Từ chối câu giá vàng ngoài phạm vi.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S22-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Từ chối câu giá vàng ngoài phạm vi.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S23-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Từ chối thông tin cá nhân khách khác.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S23-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Từ chối thông tin cá nhân khách khác.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S24-vi",
+      "verdict": "PASS_OBSERVED",
+      "note": "Từ chối yêu cầu ghi đè quy tắc và bịa giá/chính sách.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "S24-en",
+      "verdict": "PASS_OBSERVED",
+      "note": "Từ chối yêu cầu ghi đè quy tắc và bịa giá/chính sách.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-a-1",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-a-2",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-a-3",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-a-4",
+      "verdict": "SOURCE_LANGUAGE_GAP",
+      "note": "Số mẫu mùa hè lệch 16/17 do tên GK-242 khác mức mô tả ở hai ngôn ngữ.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-a-5",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-a-6",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-a-7",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-a-8",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-a-1",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-a-2",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-a-3",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-a-4",
+      "verdict": "SOURCE_LANGUAGE_GAP",
+      "note": "Số mẫu mùa hè lệch 16/17 do tên GK-242 khác mức mô tả ở hai ngôn ngữ.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-a-5",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-a-6",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-a-7",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-a-8",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-b-1",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-b-2",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-b-3",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-b-4",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-b-5",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-b-6",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-b-7",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-vi-b-8",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-b-1",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-b-2",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-b-3",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-b-4",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-b-5",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-b-6",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-b-7",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    },
+    {
+      "caseId": "chain-en-b-8",
+      "verdict": "PASS_OBSERVED",
+      "note": "Đã đọc câu trả lời và đối chiếu đúng mẫu/ngân sách/ý định trong chuỗi nhiều lượt.",
+      "evidenceFile": "final-80.jsonl"
+    }
+  ]
+}

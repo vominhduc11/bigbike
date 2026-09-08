@@ -1,0 +1,11 @@
+{
+  "has_audio": true,
+  "duration_seconds": 12.00161,
+  "size_bytes": 2212722,
+  "status": "READY",
+  "received_at": "2026-09-08T09:44:49.500374+00:00",
+  "deadline_at": "2026-09-08T09:45:49.500374+00:00",
+  "expires_at": "2026-09-15T09:44:49.500374+00:00",
+  "seconds": 40.860642,
+  "retention_days": 7.0
+}

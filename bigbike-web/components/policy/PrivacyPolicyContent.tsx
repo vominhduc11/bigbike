@@ -30,8 +30,8 @@ const COPY = {
     en: "BigBike.vn is committed to protecting our customers' personal information. This page explains how we collect, use and protect your data.",
   },
   effectiveDate: {
-    vi: "Có hiệu lực từ ngày 27/08/2026.",
-    en: "Effective from 27 August 2026.",
+    vi: "Cập nhật ngày 08/09/2026.",
+    en: "Updated on 8 September 2026.",
   },
   s1Title: { vi: "1. Thông tin chúng tôi thu thập", en: "1. Information we collect" },
   s2Title: { vi: "2. Mục đích sử dụng", en: "2. How we use it" },
@@ -61,15 +61,15 @@ const COPY = {
   zaloLabel: { vi: "Zalo", en: "Zalo" },
   s6Title: { vi: "6. Bảo vệ dữ liệu", en: "6. Data protection" },
   s7Title: {
-    vi: "7. Ảnh gửi trong Trợ lý BigBike",
-    en: "7. Images sent to BigBike Assistant",
+    vi: "7. Ảnh và video gửi trong Trợ lý BigBike",
+    en: "7. Images and videos sent to BigBike Assistant",
   },
   // Câu cuối trước đây nói khung chat sẽ nhắc cách xử lý ảnh trước khi khách chọn ảnh. Dòng công
   // bố đó đã gỡ khỏi khung chat ngày 06/09/2026 (CHAT_RULE_059) và nội dung công bố chuyển hẳn về
   // đúng mục này, nên câu cũ đang mô tả một thứ không còn tồn tại.
   s7Intro: {
-    vi: "Tính năng gửi ảnh luôn sẵn sàng khi dịch vụ AI Google đã được BigBike cấu hình; tính năng này không có công tắc bật/tắt trong Cài đặt. Mục này là nơi công bố đầy đủ cách ảnh khách gửi được xử lý.",
-    en: "Image upload is always available when BigBike has configured Google's AI service; there is no image on/off switch in Settings. This section is the full disclosure of how images you send are handled.",
+    vi: "Anh/chị có thể gửi ảnh hoặc video ngắn để tìm sản phẩm tương tự hoặc diễn đạt thao tác cần hỏi. Video có thể kèm lời nhắn hoặc được gửi riêng. Mục này công bố cách BigBike xử lý các tệp đó.",
+    en: "You can send an image or short video to find a similar product or show an operation you want to ask about. A video may be sent with a message or on its own. This section explains how BigBike handles these files.",
   },
   footerNote: {
     vi: "Chính sách này có thể được cập nhật theo thời gian. Phiên bản mới nhất luôn được đăng tại bigbike.vn.",
@@ -87,8 +87,8 @@ const COLLECT: Bi[] = [
     en: "Email (if you register an account or subscribe to promotions)",
   },
   {
-    vi: "Ảnh và câu hỏi kèm theo nếu khách chủ động dùng tính năng gửi ảnh trong Trợ lý BigBike",
-    en: "An image and its accompanying question when you choose to use image upload in BigBike Assistant",
+    vi: "Ảnh, video gồm cả âm thanh và câu hỏi kèm theo khi khách chủ động gửi trong Trợ lý BigBike",
+    en: "Images, videos including sound, and accompanying questions when you choose to send them to BigBike Assistant",
   },
 ];
 
@@ -100,8 +100,8 @@ const PURPOSE: Bi[] = [
   },
   { vi: "Gửi thông tin khuyến mãi (nếu khách đồng ý)", en: "Send promotions (with your consent)" },
   {
-    vi: "Phân loại mục đích của ảnh và đối chiếu với hàng BigBike đang bán để hỗ trợ tư vấn",
-    en: "Classify the image's purpose and compare it with products BigBike currently sells for customer support",
+    vi: "Nhận diện hình ảnh, lắng nghe âm thanh trong video, hiểu thao tác và đối chiếu với hàng BigBike đang bán để hỗ trợ tư vấn",
+    en: "Recognize images, listen to video sound, understand product operations and compare with products BigBike currently sells for customer support",
   },
 ];
 
@@ -123,8 +123,8 @@ const SHARE: Bi[] = [
     en: "Google, Meta — anonymous data for advertising",
   },
   {
-    vi: "Dịch vụ AI Google (Gemini) — ảnh và câu hỏi kèm theo, chỉ khi khách chủ động gửi ảnh để nhận diện",
-    en: "Google's AI service (Gemini) — the image and accompanying question, only when you choose image recognition",
+    vi: "Dịch vụ AI Google (Gemini) — ảnh hoặc toàn bộ video gồm cả âm thanh và câu hỏi kèm theo, chỉ khi khách chủ động gửi để được tư vấn",
+    en: "Google's AI service (Gemini) — the image or entire video including sound, and accompanying question, only when you choose to send them for assistance",
   },
 ];
 
@@ -144,28 +144,40 @@ const PROTECT: Bi[] = [
 
 const CHAT_IMAGES: Bi[] = [
   {
-    vi: "Bản ảnh BigBike lưu nằm trong kho riêng tư nội bộ, không có đường dẫn công khai; chỉ nhân viên có quyền xem hội thoại mới xem được.",
-    en: "BigBike's stored copy stays in private internal storage with no public URL; only staff permitted to view conversations can access it.",
+    vi: "Thương hiệu và loại hàng nhận ra từ ảnh được dùng để tư vấn và giữ ngữ cảnh trong hội thoại. Với ảnh biên lai chuyển khoản, trợ lý tiếp nhận và báo nội bộ cho shop kiểm tra; chỉ shop xác nhận thanh toán sau khi đối chiếu ngân hàng.",
+    en: "Brands and product categories recognized in photos help the assistant advise you and follow the conversation. Transfer receipt images are received and flagged internally for the shop to review; only the shop confirms payment after checking bank records.",
   },
   {
-    vi: "Ảnh được gửi tới dịch vụ AI Google (Gemini) để nhận diện. BigBike dùng kết quả như mức độ tương đồng, không coi đó là xác nhận chắc chắn về sản phẩm, giá, thông số, bảo hành, đơn hàng hoặc size.",
-    en: "The image is sent to Google's AI service (Gemini) for recognition. BigBike treats the result as similarity only, not certain confirmation of a product, price, specification, warranty, order detail, or size.",
+    vi: "Mỗi lượt nhận tối đa 3 ảnh (JPG, PNG hoặc WebP, 8 MB/ảnh; tối đa 9 ảnh/hội thoại) hoặc một video. Video tối đa 15 giây, 40 MB; mỗi hội thoại nhận tối đa 2 video, toàn shop tối đa 10 video mỗi ngày.",
+    en: "Each message accepts up to 3 images (JPG, PNG or WebP, 8 MB each; up to 9 images per conversation) or one video. Videos may be up to 15 seconds and 40 MB; the limit is 2 videos per conversation and 10 videos for the shop per day.",
   },
   {
-    vi: "Ảnh tự động bị xoá khi hết hạn lưu 90 ngày. Nếu khách xoá lịch sử trò chuyện, ảnh trong lịch sử đó cũng bị xoá.",
-    en: "Images are automatically deleted after the 90-day retention period. Deleting chat history also deletes images attached to that history.",
+    vi: "Trợ lý xem cả video và nghe tiếng để trả lời trong cùng lượt, tối đa 60 giây tính từ lúc máy chủ nhận xong tệp. Thời gian tải tệp lên không nằm trong 60 giây này. Nếu quá giờ, trợ lý sẽ xin lỗi và mời anh/chị gửi ảnh chụp thay thế.",
+    en: "The assistant reviews the video and listens to its sound in the same turn, within 60 seconds after the server receives the complete file. Upload time is excluded. If that time is exceeded, it will apologize and ask you to send photos instead.",
   },
   {
-    vi: "Khách có quyền xem ảnh đã lưu trong lịch sử của mình. Khách tự xoá được bất cứ lúc nào bằng nút xoá cuộc trò chuyện ngay trong khung chat; ảnh kèm theo bị xoá cùng lúc. Khách cũng có thể yêu cầu BigBike xoá giúp.",
-    en: "You can view images saved in your own history. You can delete them yourself at any time with the clear-conversation button in the chat panel, which removes the attached images with it. You may also ask BigBike to delete them for you.",
+    vi: "Ảnh và video BigBike lưu nằm trong kho riêng tư nội bộ, không có đường dẫn công khai; chỉ nhân viên có quyền xem hội thoại mới xem được.",
+    en: "BigBike's stored images and videos stay in private internal storage with no public URL; only staff permitted to view conversations can access it.",
   },
   {
-    vi: "Ảnh không phù hợp có thể bị chặn và không được xử lý tiếp. Khách luôn có thể không gửi ảnh và mô tả nhu cầu bằng chữ.",
-    en: "Inappropriate images may be blocked and not processed further. You can always avoid image upload and describe your request in text.",
+    vi: "Ảnh hoặc toàn bộ video gồm cả âm thanh được gửi tới dịch vụ AI Google (Gemini) để nhận diện và hiểu thao tác. BigBike dùng kết quả như mức độ tương đồng, không coi đó là xác nhận chắc chắn về sản phẩm, giá, thông số, bảo hành, đơn hàng hoặc size.",
+    en: "The image or entire video including sound is sent to Google's AI service (Gemini) for recognition and understanding product operations. BigBike treats the result as similarity only, not certain confirmation of a product, price, specification, warranty, order detail, or size.",
   },
   {
-    vi: "Nếu ảnh có giấy tờ, hoá đơn hoặc màn hình đơn hàng, khách nên che tên, số điện thoại, địa chỉ, mã đơn và thông tin không cần thiết trước khi gửi.",
-    en: "If an image contains a document, invoice, or order screen, please cover names, phone numbers, addresses, order codes, and any unnecessary details before sending it.",
+    vi: "Ảnh tự động bị xoá sau 90 ngày; tệp video tự động bị xoá sau 7 ngày. Lịch sử chữ vẫn được lưu theo thời hạn hội thoại. Nếu khách xoá lịch sử trò chuyện, ảnh và video trong lịch sử đó cũng bị xoá.",
+    en: "Images are automatically deleted after 90 days; video files are automatically deleted after 7 days. Text history follows the conversation retention period. Deleting chat history also deletes its attached images and videos.",
+  },
+  {
+    vi: "Khách có quyền xem ảnh và video đã lưu trong lịch sử của mình. Khách tự xoá được bất cứ lúc nào bằng nút xoá cuộc trò chuyện ngay trong khung chat; ảnh và video kèm theo bị xoá cùng lúc. Khách cũng có thể yêu cầu BigBike xoá giúp.",
+    en: "You can view images and videos saved in your own history. You can delete them yourself at any time with the clear-conversation button in the chat panel, which removes the attached images and videos with it. You may also ask BigBike to delete them for you.",
+  },
+  {
+    vi: "Ảnh hoặc video không phù hợp có thể bị chặn và không được xử lý tiếp. Khách luôn có thể không gửi tệp và mô tả nhu cầu bằng chữ.",
+    en: "Inappropriate images or videos may be blocked and not processed further. You can always avoid sending files and describe your request in text.",
+  },
+  {
+    vi: "Nếu ảnh hoặc video có giấy tờ, hoá đơn hoặc màn hình đơn hàng, khách nên che tên, số điện thoại, địa chỉ, mã đơn và thông tin không cần thiết trước khi gửi.",
+    en: "If an image or video contains a document, invoice, or order screen, please cover names, phone numbers, addresses, order codes, and any unnecessary details before sending it.",
   },
 ];
 

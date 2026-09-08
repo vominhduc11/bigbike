@@ -11,7 +11,7 @@ public class ChatInputGuard {
 
     private static final Pattern ROLE_ATTACK = Pattern.compile(
             "(?i)(ignore (?:all |the )?(?:previous|system)|reveal (?:your )?(?:prompt|instructions)|"
-                    + "you are now|developer message|system prompt|bỏ qua (?:mọi )?(?:hướng dẫn|chỉ dẫn)|"
+                    + "you are now|developer message|system prompt|ignore (?:all |the )?rules|bỏ qua (?:mọi )?(?:hướng dẫn|chỉ dẫn|quy tắc|quy định)|"
                     + "tiết lộ (?:prompt|chỉ dẫn)|đóng vai (?:một )?(?:hacker|ai khác))");
     private static final Pattern ADULT = Pattern.compile(
             "(?iu)(18\\+|chuyện người lớn|chuyện 18|nội dung người lớn|porn|sex(?: video)?|nude|xxx|"
@@ -30,12 +30,20 @@ public class ChatInputGuard {
                     + "gian dối|bán đắt)");
     private static final Pattern CLEARLY_OUT_OF_SCOPE = Pattern.compile(
             "(?i)(dự báo thời tiết|weather forecast|viết code|write code|giải bài tập|solve my homework|"
-                    + "công thức nấu ăn|recipe for|tin chính trị|political news|tỷ giá hôm nay|exchange rate today)");
+                    + "công thức nấu ăn|recipe for|tin chính trị|political news|tỷ giá hôm nay|exchange rate today|"
+                    + "(?:solve|calculate|giải).{0,30}(?:[=^²]|squared|equation|phương trình|\\d\\s*[-+*/]))");
 
     public Optional<Decision> evaluate(String text, String lang) {
         if (text == null || text.isBlank()) return Optional.empty();
         String value = text.trim().toLowerCase(Locale.ROOT);
         boolean english = "en".equals(lang);
+        String normalized = ChatToolService.normalize(value);
+        if ((normalized.contains("khach hang") || normalized.contains("customers"))
+                && (normalized.contains("so dien thoai") || normalized.contains("phone numbers") || normalized.contains("email"))) {
+            return Optional.of(new Decision(ChatMessageSource.CONTENT_REFUSAL, english
+                    ? "I cannot share other customers' personal information. I can help with BigBike products, store policies or orders on your own signed-in account."
+                    : "Em không thể cung cấp thông tin cá nhân của khách khác. Em có thể hỗ trợ sản phẩm, chính sách BigBike hoặc đơn của chính tài khoản anh/chị đang đăng nhập."));
+        }
         if (ROLE_ATTACK.matcher(value).find()) {
             return Optional.of(new Decision(
                     ChatMessageSource.ROLE_DEFENSE,

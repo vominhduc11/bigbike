@@ -1,0 +1,7 @@
+{
+  "productionApi": true,
+  "previewUrls": false,
+  "canonicalProduction": true,
+  "htmlFiles": 60,
+  "backendJarSha256": "75f6ea11ff596e346cebf54b5e178794b725d3235cf2286ee17dce3d26540c67"
+}

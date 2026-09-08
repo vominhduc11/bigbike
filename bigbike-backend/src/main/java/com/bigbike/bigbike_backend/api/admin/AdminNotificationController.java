@@ -28,11 +28,12 @@ public class AdminNotificationController extends AdminControllerSupport {
 
     @GetMapping
     public ApiDataResponse<Map<String, Object>> list(HttpServletRequest request) {
-        var user = devAdminAuthService.requireAnyPermission(request, "orders.read", "inventory.read");
+        var user = devAdminAuthService.requireAnyPermission(request, "orders.read", "inventory.read", "chat.read");
         InboxView inbox = notificationService.inboxFor(
                 resolveAdminId(),
                 hasPermission(user.permissions(), "orders.read"),
-                hasPermission(user.permissions(), "inventory.read"));
+                hasPermission(user.permissions(), "inventory.read"),
+                hasPermission(user.permissions(), "chat.read"));
         List<Map<String, Object>> mapped = inbox.items().stream().map(this::toMap).toList();
         return apiResponseFactory.data(
                 Map.of("unreadCount", inbox.unreadCount(), "items", mapped), request);
@@ -42,7 +43,7 @@ public class AdminNotificationController extends AdminControllerSupport {
     // only ever advances the caller's high-water mark via mark-all-read below.
     @PostMapping("/mark-all-read")
     public ApiDataResponse<Map<String, Object>> markAllRead(HttpServletRequest request) {
-        devAdminAuthService.requireAnyPermission(request, "orders.read", "inventory.read");
+        devAdminAuthService.requireAnyPermission(request, "orders.read", "inventory.read", "chat.read");
         long remaining = notificationService.markAllReadFor(resolveAdminId());
         return apiResponseFactory.data(Map.of("unreadCount", remaining), request);
     }

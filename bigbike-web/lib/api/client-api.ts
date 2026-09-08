@@ -178,11 +178,31 @@ export type ChatImage = {
   createdAt: string;
 };
 
+export type ChatVideo = {
+  id: string;
+  contentPath: string | null;
+  mimeType: string;
+  sizeBytes: number;
+  durationSeconds: number;
+  hasAudio: boolean;
+  status: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
 export type ChatAvailability = {
   mode: "AI" | "CONTACT";
   reason?: string | null;
   maxTurns: number;
   contacts: ChatContact;
+  videos?: {
+    enabled: boolean;
+    maxBytes: number;
+    maxDurationSeconds: number;
+    maxPerTurn: number;
+    maxPerConversation: number;
+    dailyLimit: number;
+  };
   images: {
     enabled: boolean;
     maxBytes: number;
@@ -247,7 +267,8 @@ export type ChatClarificationCriterion =
   | "COLOR"
   | "MEASUREMENT"
   | "REFERENCE"
-  | "INTERPRETATION";
+  | "INTERPRETATION"
+  | "IMAGE";
 
 export type ChatClarificationOption = {
   id: string;
@@ -320,6 +341,7 @@ const CHAT_CLARIFICATION_CRITERIA = new Set<ChatClarificationCriterion>([
   "MEASUREMENT",
   "REFERENCE",
   "INTERPRETATION",
+  "IMAGE",
 ]);
 const CHAT_OPTION_ID = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
 const CHAT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -578,15 +600,23 @@ export function fetchChatAvailability(lang: "vi" | "en"): Promise<ChatAvailabili
         mode: source.mode === "AI" ? "AI" : "CONTACT",
         maxTurns: Number.isFinite(source.maxTurns) ? source.maxTurns : 40,
         contacts: normalizeChatContacts(source.contacts),
+        videos: {
+          enabled: source.videos?.enabled === true,
+          maxBytes: 40 * 1024 * 1024,
+          maxDurationSeconds: 15,
+          maxPerTurn: 1,
+          maxPerConversation: 2,
+          dailyLimit: 10,
+        },
         images: {
           enabled: source.images?.enabled === true,
           maxBytes: Number.isFinite(source.images?.maxBytes)
             ? source.images.maxBytes
             : 8 * 1024 * 1024,
-          maxPerTurn: Number.isFinite(source.images?.maxPerTurn) ? source.images.maxPerTurn : 1,
+          maxPerTurn: Number.isFinite(source.images?.maxPerTurn) ? source.images.maxPerTurn : 3,
           maxPerConversation: Number.isFinite(source.images?.maxPerConversation)
             ? source.images.maxPerConversation
-            : 3,
+            : 9,
           dailyLimit: Number.isFinite(source.images?.dailyLimit) ? source.images.dailyLimit : 0,
         },
       };
@@ -604,6 +634,7 @@ export function sendChatMessage(
   clarificationSelection?: ChatClarificationSelection,
   visitorToken?: string,
   imageIds?: string[],
+  videoIds?: string[],
 ): Promise<ChatMessageResult> {
   return clientRequest<unknown>(
     "POST",
@@ -616,7 +647,8 @@ export function sendChatMessage(
       pageContext: pageContext ?? null,
       clarificationSelection: clarificationSelection ?? null,
       visitorToken: visitorToken || null,
-      imageIds: imageIds?.slice(0, 1) ?? [],
+      imageIds: imageIds ?? [],
+      videoIds: videoIds ?? [],
     },
     undefined,
     signal,
@@ -648,6 +680,7 @@ export async function streamChatMessage(
   clarificationSelection?: ChatClarificationSelection,
   visitorToken?: string,
   imageIds?: string[],
+  videoIds?: string[],
 ): Promise<ChatMessageResult> {
   const headers: Record<string, string> = {
     Accept: "text/event-stream",
@@ -668,7 +701,8 @@ export async function streamChatMessage(
       pageContext: pageContext ?? null,
       clarificationSelection: clarificationSelection ?? null,
       visitorToken: visitorToken || null,
-      imageIds: imageIds?.slice(0, 1) ?? [],
+      imageIds: imageIds ?? [],
+      videoIds: videoIds ?? [],
     }),
     signal,
   });
@@ -728,6 +762,7 @@ export type ChatHistoryMessage = {
   resultKind?: string | null;
   createdAt: string;
   images: ChatImage[];
+  videos?: ChatVideo[];
 };
 
 export type ChatHistory = {
@@ -818,6 +853,69 @@ export async function uploadChatImage(input: {
       createdAt: typeof image.createdAt === "string" ? image.createdAt : new Date().toISOString(),
     },
   };
+}
+
+export async function uploadChatVideo(input: {
+  file: File;
+  requestId: string;
+  conversationId?: string;
+  lang: "vi" | "en";
+  visitorToken?: string;
+}): Promise<{ conversationId: string; video: ChatVideo; remainingMillis: number }> {
+  const params = new URLSearchParams({ requestId: input.requestId, lang: input.lang });
+  if (input.conversationId) params.set("conversationId", input.conversationId);
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (input.visitorToken) headers["X-Chat-Visitor-Token"] = input.visitorToken;
+  const csrf = getCsrfToken();
+  if (csrf) headers["X-CSRF-Token"] = csrf;
+  const form = new FormData();
+  form.append("file", input.file);
+  const response = await fetch(`${API_BASE_URL}/api/v1/chat/videos?${params}`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: form,
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok)
+    throw toApiClientError(
+      response.status,
+      payload,
+      retryAfterSeconds(response.headers?.get?.("Retry-After")),
+    );
+  const data = payloadData(payload) as {
+    conversationId?: unknown;
+    video?: ChatVideo;
+    remainingMillis?: number;
+  } | null;
+  if (
+    typeof data?.conversationId !== "string" ||
+    typeof data.video?.id !== "string" ||
+    typeof data.video.expiresAt !== "string" ||
+    !Number.isFinite(data.video.durationSeconds)
+  ) {
+    throw new Error(invalidPayloadMessage());
+  }
+  return {
+    conversationId: data.conversationId,
+    video: data.video,
+    remainingMillis: Number.isFinite(data.remainingMillis)
+      ? Math.max(0, Math.min(60_000, data.remainingMillis!))
+      : 60_000,
+  };
+}
+
+export async function fetchChatVideoBlob(videoId: string, visitorToken?: string): Promise<Blob> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/chat/videos/${encodeURIComponent(videoId)}/content`,
+    {
+      credentials: "include",
+      cache: "no-store",
+      headers: visitorToken ? { "X-Chat-Visitor-Token": visitorToken } : undefined,
+    },
+  );
+  if (!response.ok) throw new ApiClientError(response.status);
+  return response.blob();
 }
 
 export async function fetchChatImageBlob(imageId: string, visitorToken?: string): Promise<Blob> {

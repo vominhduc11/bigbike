@@ -23,6 +23,15 @@ import org.junit.jupiter.api.Test;
 class ChatSalesAdvisorServiceTest {
 
     @Test
+    void discountedGoodsAreNotMistakenForCounterfeitGoods() {
+        var advisor = new ChatSalesAdvisorService(mock(CatalogReadService.class));
+        var advice = advisor.advise(conversation(), "Hàng giảm giá có được đổi trả không?", "vi", settings(),
+                ChatToolService.ConversationContext.empty(), "Hàng giảm giá được đổi theo chính sách đổi trả.",
+                List.of(), "RULE", "ANSWER", null, List.of());
+        assertThat(advice.answer()).isEqualTo("Hàng giảm giá được đổi theo chính sách đổi trả.");
+    }
+
+    @Test
     void broadQuestionNarrowsTheNeedWithoutAskingForContactDetails() {
         ChatSalesAdvisorService advisor = new ChatSalesAdvisorService(mock(CatalogReadService.class));
 
@@ -36,7 +45,7 @@ class ChatSalesAdvisorServiceTest {
     }
 
     @Test
-    void missingSizeGuideIsAdmittedWithoutGuessingMeasurementsOrCapturingContact() {
+    void stockAnswerIsPreservedWhenTheSizeGuideIsMissing() {
         CatalogReadService catalog = mock(CatalogReadService.class);
         Product helmet = product("mu-a", "Mũ A", 1_500_000, null);
         when(catalog.getProductBySlug("mu-a", "vi")).thenReturn(helmet);
@@ -48,7 +57,8 @@ class ChatSalesAdvisorServiceTest {
 
         assertThat(advice.salesStage()).isEqualTo("DECIDING");
         assertThat(advice.nextStep().type()).isEqualTo("CHOOSE_SIZE");
-        assertThat(advice.answer()).contains("chưa có hướng dẫn size", "không đoán số đo")
+        // CHAT_RULE_060: availability and fit advice are different questions (live R03).
+        assertThat(advice.answer()).contains("Size M còn hàng.")
                 .doesNotContainPattern("(?i)\\b(?:5[0-9]|6[0-9])\\s*cm\\b")
                 .doesNotContain("để lại số");
     }
@@ -63,7 +73,7 @@ class ChatSalesAdvisorServiceTest {
         when(catalog.listAssistantDecisionProducts("vi")).thenReturn(List.of(baseline, cheaper));
         ChatSalesAdvisorService advisor = new ChatSalesAdvisorService(catalog);
 
-        var advice = advisor.advise(conversation(), "Mẫu này đắt quá", "vi", settings(),
+        var advice = advisor.advise(conversation(), "Mẫu này giảm thêm 20% được không?", "vi", settings(),
                 context("mu-premium"), "Giá đang niêm yết.",
                 List.of(card("mu-premium", "Mũ Premium", 2_000_000)),
                 "TOOL", "PRODUCT_RESULTS", null, List.of());

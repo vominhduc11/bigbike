@@ -10,5 +10,6 @@ import org.mapstruct.ReportingPolicy;
 public interface ChatMapper {
 
     @Mapping(target = "images", ignore = true)
+    @Mapping(target = "videos", ignore = true)
     AdminChatMessageResponse toMessage(ChatMessageEntity entity);
 }

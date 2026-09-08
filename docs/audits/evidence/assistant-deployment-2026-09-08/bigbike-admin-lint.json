@@ -1,0 +1,4 @@
+{
+  "exitCode": 0,
+  "note": "Shared checkout lacked prettier binary; used already verified worktree toolchain via PATH; source checked in shared checkout."
+}

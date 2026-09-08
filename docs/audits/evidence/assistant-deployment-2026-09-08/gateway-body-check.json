@@ -1,0 +1,9 @@
+{
+  "requestBytes": 11534336,
+  "http": 400,
+  "errorCode": "VALIDATION_ERROR",
+  "videoErrorCode": "CHAT_VIDEO_UNSUPPORTED_TYPE",
+  "passesOld10MiBGatewayLimit": true,
+  "rejectedAsUnsupportedMedia": true,
+  "aiCalls": 0
+}

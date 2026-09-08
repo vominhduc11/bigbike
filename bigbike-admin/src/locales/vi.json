@@ -149,7 +149,9 @@
     "unread": "Chưa đọc",
     "syncError": "Không đồng bộ được trạng thái đã đọc.",
     "loadError": "Không tải được thông báo. Vui lòng thử lại.",
-    "unknownOrder": "Đơn hàng"
+    "unknownOrder": "Đơn hàng",
+    "transferReceipt": "Biên lai chuyển khoản trong chat",
+    "transferReceiptDescription": "Mở ảnh khách gửi và đối chiếu ngân hàng trước khi xác nhận thanh toán."
   },
   "search": {
     "open": "Mở tìm kiếm nhanh",
@@ -3026,6 +3028,9 @@
       "noMessages": "Chưa có nội dung hội thoại",
       "noMessagesDescription": "Hội thoại này chưa lưu được tin nhắn hoặc dữ liệu đã hết thời hạn lưu.",
       "customer": "Khách hàng",
+      "customerVideoAlt": "Video khách gửi trong hội thoại",
+      "customerVideoLoadError": "Không tải được video khách gửi.",
+      "videoExpired": "Tệp video đã hết hạn lưu hoặc không còn xem được.",
       "customerImageAlt": "Ảnh khách gửi trong hội thoại",
       "customerImageLoadError": "Không tải được ảnh. Tài khoản cần quyền xem hội thoại và ảnh phải còn trong hạn lưu.",
       "bigbike": "Trợ lý BigBike",
@@ -3054,6 +3059,13 @@
         "disabled": "Đang tắt hỗ trợ tự động",
         "closed": "Đã kết thúc"
       }
+    },
+    "imageQuota": {
+      "title": "Lượt đọc ảnh hôm nay",
+      "permission": "Cần quyền xem hội thoại để xem số lượt đã dùng.",
+      "loading": "Đang tải số lượt đọc ảnh…",
+      "error": "Chưa tải được số lượt đọc ảnh. Vui lòng thử lại.",
+      "usage": "Ngày {{date}} (giờ Việt Nam): đã dùng {{used}}/{{limit}} ảnh; còn {{remaining}} ảnh."
     }
   },
   "settings": {
@@ -3133,7 +3145,8 @@
       "ai_assistant_enabled": "Bật Trợ lý BigBike",
       "ai_assistant_daily_limit": "Số lượt gọi AI tối đa mỗi ngày",
       "ai_assistant_recent_turn_pairs": "Số cặp hỏi–đáp gần nhất Trợ lý BigBike được đọc",
-      "ai_assistant_search_ai_interpretation_enabled": "Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng"
+      "ai_assistant_search_ai_interpretation_enabled": "Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng",
+      "ai_assistant_image_daily_limit": "Số ảnh đọc tối đa mỗi ngày"
     },
     "keyHint": {
       "inventory_out_of_stock_digest_enabled": "Tắt để hệ thống im lặng hoàn toàn. Khi bật, chỉ gửi nếu thực sự có hàng hết.",
@@ -3143,7 +3156,8 @@
       "ai_assistant_enabled": "Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.",
       "ai_assistant_daily_limit": "Giới hạn lượt AI theo ngày giờ Việt Nam; mặc định 400 lượt/ngày. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ.",
       "ai_assistant_recent_turn_pairs": "Chọn từ 0 đến 12, mặc định 12. Đặt 0 để không gửi lịch sử; thông tin riêng tư được che và mỗi tin được cắt gọn.",
-      "ai_assistant_search_ai_interpretation_enabled": "Bật để Trợ lý BigBike hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay."
+      "ai_assistant_search_ai_interpretation_enabled": "Bật để Trợ lý BigBike hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay.",
+      "ai_assistant_image_daily_limit": "Dùng chung cho mọi khách, tính lại từ 0 giờ Việt Nam. Khởi điểm 60 ảnh; nhập 0 để tạm dừng đọc ảnh. Thử lại không tính thêm lượt ảnh."
     },
     "keyWhere": {
       "inventory_out_of_stock_digest_enabled": "bật/tắt bản tin trong chuông quản trị và email nội bộ",
@@ -3151,7 +3165,8 @@
       "ai_assistant_enabled": "bật/tắt Trợ lý BigBike trên toàn website",
       "ai_assistant_daily_limit": "trần lượt gọi AI mỗi ngày, giờ Việt Nam",
       "ai_assistant_recent_turn_pairs": "0–12 cặp gần nhất để hiểu câu nối",
-      "ai_assistant_search_ai_interpretation_enabled": "chuyển giữa cách hiểu tìm hàng mới và cũ"
+      "ai_assistant_search_ai_interpretation_enabled": "chuyển giữa cách hiểu tìm hàng mới và cũ",
+      "ai_assistant_image_daily_limit": "hạn mức ảnh dùng chung theo ngày giờ Việt Nam"
     },
     "section": {
       "inventory_digest": "Bản tin hết hàng mỗi sáng",

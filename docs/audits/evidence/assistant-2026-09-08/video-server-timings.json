@@ -1,0 +1,82 @@
+[
+  {
+    "receivedAt": "2026-09-08T06:53:04.16839+00:00",
+    "repliedAt": "2026-09-08T06:53:23.956202+00:00",
+    "serverElapsedSeconds": 19.787812,
+    "durationSeconds": 12.005,
+    "hasAudio": true,
+    "status": "READY",
+    "expiresExactly7Days": true,
+    "caseId": "V01_OPERATION_VI_NO_CAPTION"
+  },
+  {
+    "receivedAt": "2026-09-08T06:55:00.015342+00:00",
+    "repliedAt": "2026-09-08T06:55:19.339595+00:00",
+    "serverElapsedSeconds": 19.324253,
+    "durationSeconds": 12.003,
+    "hasAudio": true,
+    "status": "READY",
+    "expiresExactly7Days": true,
+    "caseId": "V02_SIMILAR_EN_CAPTION"
+  },
+  {
+    "receivedAt": "2026-09-08T07:05:33.685213+00:00",
+    "repliedAt": "2026-09-08T07:05:54.062253+00:00",
+    "serverElapsedSeconds": 20.37704,
+    "durationSeconds": 12.005,
+    "hasAudio": true,
+    "status": "READY",
+    "expiresExactly7Days": true,
+    "caseId": "V03_ADJUSTMENT_EN_NO_CAPTION"
+  },
+  {
+    "receivedAt": "2026-09-08T07:06:09.497865+00:00",
+    "repliedAt": "2026-09-08T07:06:18.762063+00:00",
+    "serverElapsedSeconds": 9.264198,
+    "durationSeconds": 12.005,
+    "hasAudio": true,
+    "status": "READY",
+    "expiresExactly7Days": true,
+    "caseId": "V05_AUDIO_OPERATION"
+  },
+  {
+    "receivedAt": "2026-09-08T07:06:33.997268+00:00",
+    "repliedAt": "2026-09-08T07:06:43.170362+00:00",
+    "serverElapsedSeconds": 9.173094,
+    "durationSeconds": 12,
+    "hasAudio": false,
+    "status": "READY",
+    "expiresExactly7Days": true,
+    "caseId": "V06_MUTED_CONTROL"
+  },
+  {
+    "receivedAt": "2026-09-08T07:06:58.645623+00:00",
+    "repliedAt": "2026-09-08T07:07:12.32633+00:00",
+    "serverElapsedSeconds": 13.680707,
+    "durationSeconds": 12.005,
+    "hasAudio": true,
+    "status": "READY",
+    "expiresExactly7Days": true,
+    "caseId": "V01_OPERATION_VI_NO_CAPTION_RETEST"
+  },
+  {
+    "receivedAt": "2026-09-08T07:07:27.493317+00:00",
+    "repliedAt": "2026-09-08T07:07:43.504436+00:00",
+    "serverElapsedSeconds": 16.011119,
+    "durationSeconds": 12.003,
+    "hasAudio": true,
+    "status": "READY",
+    "expiresExactly7Days": true,
+    "caseId": "V02_SIMILAR_EN_CAPTION_RETEST"
+  },
+  {
+    "receivedAt": "2026-09-08T08:03:32.622074+00:00",
+    "repliedAt": "2026-09-08T08:03:51.990792+00:00",
+    "serverElapsedSeconds": 19.368718,
+    "durationSeconds": 12.003,
+    "hasAudio": true,
+    "status": "READY",
+    "expiresExactly7Days": true,
+    "caseId": "V04_UI"
+  }
+]

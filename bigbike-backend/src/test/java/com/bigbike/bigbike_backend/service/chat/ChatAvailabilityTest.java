@@ -46,7 +46,7 @@ class ChatAvailabilityTest {
     }
 
     @Test
-    @DisplayName("configured availability exposes fixed image policy without retired greeting fields")
+    @DisplayName("configured availability exposes current image policy without retired greeting fields")
     void availabilityExposesFixedImagePolicy() {
         AiChatClient chatClient = mock(AiChatClient.class);
         when(chatClient.isConfigured()).thenReturn(true);
@@ -55,9 +55,9 @@ class ChatAvailabilityTest {
         var availability = service.availability("vi");
         assertThat(availability.maxTurns()).isEqualTo(40);
         assertThat(availability.images().enabled()).isTrue();
-        assertThat(availability.images().maxPerTurn()).isEqualTo(1);
-        assertThat(availability.images().maxPerConversation()).isEqualTo(3);
-        assertThat(availability.images().dailyLimit()).isEqualTo(20);
+        assertThat(availability.images().maxPerTurn()).isEqualTo(3);
+        assertThat(availability.images().maxPerConversation()).isEqualTo(9);
+        assertThat(availability.images().dailyLimit()).isEqualTo(60);
         assertThat(availability.images().maxBytes()).isEqualTo(8L * 1024 * 1024);
     }
 

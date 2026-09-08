@@ -489,3 +489,24 @@ VPS has repeatedly carried working-tree changes that Git did not yet hold.
 Evidence:
 
 - repo search for carrier implementations
+
+
+## Video ngắn của trợ lý (2026-09-08)
+
+Theo `CHAT_RULE_062–065`, dùng nguyên Gemini 3.7 Flash và private MinIO của ảnh. Backend dùng `ffprobe` xác minh nội dung/thời lượng, `ffmpeg` giải mã toàn clip và chuẩn hóa H.264/AAC MP4, bỏ metadata/chapters/attachments, giới hạn CPU/tệp tạm và thời gian tiến trình. Chỉ đọc tệp cục bộ đã nhận, không nhận URL do khách cung cấp và không cho bộ giải mã mở mạng. Chuẩn hóa để payload native video nằm dưới giới hạn inline của provider; không cắt thời lượng để biến tệp quá dài thành hợp lệ. Lỗi giải mã hoặc thiếu công cụ đóng tính năng video và có thông báo Việt/Anh.
+
+Provider nhận **toàn clip có tiếng** bằng inline video; khung hình lấy mẫu cục bộ chỉ phục vụ so sánh dấu vân tay catalog. Cả xem/nghe và tư vấn chữ dùng chung 60 giây từ `received_at`, tối đa bốn provider calls. Lời nói/ảnh là input không đáng tin về quy định shop; tra dữ liệu hiện hành để trả giá, tồn, chính sách/đơn. Không ghi raw payload, tiếng nói hoặc video vào log. Cleanup tệp tạm trong `finally`, diệt đúng tiến trình con khi hết giờ; không trả kết quả nền sau deadline.
+
+Runtime backend phải có `ffmpeg`/`ffprobe`. Hai property nội bộ `bigbike.chat.video.ffmpeg` và `bigbike.chat.video.ffprobe` mặc định tên binary trong PATH, cho phép chỉ định công cụ riêng trong preview; không thêm setting chủ shop. Bucket private và credentials kế thừa ảnh, không có provider key hoặc dịch vụ lưu video mới.
+
+- Video chat: tác vụ dọn mỗi phút cũng quét object tiền tố `chat/videos/` trong cùng private bucket, xóa object có thời điểm lưu quá 7 ngày kể cả khi lần lưu metadata trước đó thất bại. Không đọc/xóa tiền tố ảnh hoặc media công khai. MinIO dùng region mặc định `us-east-1`; video có client timeout riêng, không sửa timeout của client dùng chung.
+
+- Tệp tạm sau giải mã được xóa ngay trong `finally`; job video cũng dọn thư mục tạm do chính tính năng tạo đã quá 7 ngày để xử lý lần máy chủ dừng đột ngột. Tika core có thể gọi WebM là `application/x-matroska`; phải kiểm tra EBML DocType thực là `webm` trước khi chấp nhận, rồi vẫn giải mã toàn tệp.
+
+### Image reliability — 2026-09-08
+
+CHAT_RULE_057/066–069 thay giới hạn ảnh cũ: 3/lượt, 9/hội thoại, 8 MB/ảnh và setting 60/ngày. Cùng model cố định; JSON schema đầy đủ, ảnh trong lô có chỉ số, lỗi cắt/rỗng/sai schema được retry trong 65 giây/tối đa bốn provider calls chung với chữ. Không log payload/ảnh/biên lai/khóa. Biên lai chỉ tạo notification nội bộ có chat.read, không email/Telegram. CLI dùng đường lưu media hiện có và chỉ mục cục bộ; không chạy scheduler/HTTP server hoặc gọi Gemini khi chuyển kho.
+
+Công cụ owner chạy: Python chuẩn + `psql` đọc/lập manifest, tải ảnh công khai từ origin owner chỉ định (kiểm tra IP công khai, chặn đổi DNS/redirect nội bộ), gọi API upload media hiện có để chuẩn hóa/dedup, rồi cập nhật có điều kiện đúng các trường ảnh. Dùng `PATCH /admin/products/{id}` với payload rỗng sau mỗi sản phẩm để đi qua đường đồng bộ thư mục/cache/revalidation hiện có. Nếu bước này lỗi, manifest giữ `REFRESH_PENDING` để chạy lại; không báo sản phẩm đã hoàn tất. Chỉ đọc/ghi `products`, `product_variants`, `product_variant_gallery_images`, thư viện media và chỉ mục ảnh công khai; bỏ nguyên khối video. Main Java riêng chỉ dựng lại dấu vân tay bằng cùng thuật toán runtime, JDBC và MinIO; không khởi động Spring, Flyway hoặc scheduler. Manifest lưu ngoài Git, ghi bền trước thay đổi và có so sánh giá trị trước–sau khi resume/rollback; rollback giữ media mới để không làm hỏng tham chiếu dùng chung.
+
+Môi trường làm việc ngày 08/09/2026 là VPS chứa dữ liệu thật (owner xác nhận). Các lệnh kiểm thử phải dùng dữ liệu giả lập/cơ sở dữ liệu kiểm thử riêng, không đọc hội thoại riêng tư và không gọi AI thật. Công cụ chuyển kho và reindex trên dữ liệu vận hành do owner chủ động chạy sau bàn giao.

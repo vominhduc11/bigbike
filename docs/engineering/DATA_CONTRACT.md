@@ -2415,7 +2415,7 @@ admin concurrency metadata.
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 14 active keys (desktop background, title, alt text and per-page illustration; plus 2 global fallbacks). The 3 legacy `hero_*_mobile_image_url` keys remain stored and returned for compatibility only; they are not editable or rendered. Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage SEO title and description (`seo_home_title`/`seo_home_description`), plus the homepage bottom SEO HTML block (`home_content_bottom_html`). The visible homepage H1 is the localized title of the introduction block, not a site-setting field. The former `seo_home_h1` row is retained in storage for compatibility but is no longer editable or part of the public homepage contract. | SEO website |
-| `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần mặc định 400 lượt AI/ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..12`, mặc định `12`) và công tắc diễn giải cách nói tự nhiên. Trần 40 lượt/hội thoại và hạn mức ảnh là hằng số phần mềm, không phải setting. Lịch sử lấy từ đúng conversation, che PII rồi cắt 450 ký tự/tin. Không chứa khoá AI. | Trợ lý BigBike |
+| `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần mặc định 400 lượt AI/ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..12`, mặc định `12`) và công tắc diễn giải cách nói tự nhiên. Trần 40 lượt/hội thoại cố định; hạn mức ảnh/ngày là setting `ai_assistant_image_daily_limit`, mặc định 60, 0–10.000. Lịch sử lấy từ đúng conversation, che PII rồi cắt 450 ký tự/tin. Không chứa khoá AI. | Trợ lý BigBike |
 | `order_operations` | Private runtime data. `order_overdue_days` (`INTEGER`, effective value `2`, minimum `1`) remains stored for the daily overdue reminder, Orders filter and CSV export; it is not editable or exposed as an admin Settings tab and is never exposed by public settings. | (ẩn — dữ liệu nội bộ, không UI) |
 | `store` | **No active rows.** The former low-stock threshold was removed in V279 with the quantity-based inventory model; this group must not be used to recreate a “sắp hết hàng” tier. | (không có tab — nhóm trống) |
 | `inventory` | Hai khóa private cho bản tin hết hàng hằng ngày: `inventory_out_of_stock_digest_enabled` (`BOOLEAN`, mặc định `true`) và `inventory_out_of_stock_digest_time` (`STRING`, mặc định `08:00`, `HH:mm` giờ Việt Nam). Các khóa tồn kho/bảo hành cũ vẫn đã gỡ như mô tả ở trên; không có ngưỡng số lượng. | Cảnh báo hết hàng |
@@ -2622,7 +2622,7 @@ Backend dùng atomic upsert có điều kiện `used_count < dailyLimit` trướ
 
 ### `chat_images` và `chat_image_daily_usage`
 
-`chat_images` giữ id/request id, conversation/message FK, private bucket/object key, MIME/kích thước/hash sau re-encode, status, intent/safety code, expiry/timestamps. Không trả object key, filename, EXIF/GPS hay raw hash ra DTO. `chat_image_daily_usage` giữ quota nguyên tử theo ngày Việt Nam. Contract cố định: 1 ảnh/lượt, 3 ảnh/hội thoại, 20 ảnh/ngày, tối đa 8 MB; ảnh private được xóa object trước metadata khi hết hạn/xóa history.
+`chat_images` giữ id/request id, conversation/message FK, private bucket/object key, MIME/kích thước/hash sau re-encode, status, intent/safety code, expiry/timestamps. Không trả object key, filename, EXIF/GPS hay raw hash ra DTO. `chat_image_daily_usage` giữ quota nguyên tử theo ngày Việt Nam. Contract: 3 ảnh/lượt, 9 ảnh/hội thoại, hạn mức ngày cấu hình mặc định 60, tối đa 8 MB/ảnh; ảnh private được xóa object trước metadata khi hết hạn/xóa history.
 
 ### `chat_product_image_fingerprints`
 
@@ -2630,7 +2630,7 @@ Một row dấu vân tay cục bộ cho ảnh chính của hàng đang bán: `pr
 
 ### Browser chat state và cart
 
-Browser chỉ giữ signed visitor token, preference nhớ/tắt, conversation/thread id, sequence và UI session flags cần hiển thị. Khi tắt nhớ, token chuyển sang `sessionStorage`; xóa history xóa token/cache sau server hard-delete; logout không để lộ history khách cũ. Không có cờ mở lời chủ động, form liên hệ, phản hồi câu trả lời hoặc proof gắn đơn.
+Browser chỉ giữ signed visitor token trong `sessionStorage`, conversation/thread id, sequence và UI session flags cần hiển thị (`CHAT_RULE_049`). Không còn preference nhớ/tắt; xóa history xóa token/cache sau server hard-delete; logout không để lộ history khách cũ. Không có cờ mở lời chủ động, form liên hệ, phản hồi câu trả lời hoặc proof gắn đơn.
 
 `cart_items` không có field conversation/interaction/attributed-at. Thêm giỏ từ chat dùng cùng validation sản phẩm, biến thể, giá và tồn như mọi lần thêm giỏ khác.
 
@@ -2642,3 +2642,26 @@ Browser chỉ giữ signed visitor token, preference nhớ/tắt, conversation/t
 - Toàn bộ `chat_visitors` hiện có, notification loại `CHAT_LEAD` và settings đã bỏ (model lựa chọn, cost warning, template/abbreviation owner-editable, memory-days, proactive và image quota owner-editable).
 - V1070 xóa các setting `ai_assistant_image_enabled`, `ai_assistant_conversation_turn_limit`, `ai_assistant_greeting`, `ai_assistant_quick_prompts`, `ai_assistant_handoff_email_enabled`, `ai_assistant_handoff_email_recipient`, `ai_assistant_business_hours`.
 - Dữ liệu cũ có thể chứa metadata lead trong `chat_messages.action_metadata` được scrub; transcript AI/customer, ảnh và counter quota được giữ.
+
+
+### `chat_videos` và `chat_video_daily_usage` (2026-09-08)
+
+`chat_videos`: UUID `id`, `conversation_id`, nullable `customer_message_id`, `request_id`; `storage_bucket`, `storage_object_key`, `mime_type`, `size_bytes`, `duration_seconds`, `has_audio`, `sha256`; `status`, `intent_code`, `safety_code`; `received_at`, `deadline_at`, `expires_at`, `deleted_at`, `created_at`, `updated_at`. Unique `request_id` như ảnh; FK như `chat_images`. Không lưu tên gốc, GPS/EXIF/metadata thiết bị hay bản chép tiếng nói riêng. Phần câu hỏi nghe được đã che thông tin riêng tư chỉ dùng tạm để tư vấn cùng lượt.
+
+`deadline_at = received_at + 60 giây`, `expires_at = received_at + 7 ngày`; không thay khi retry. Tệp chuẩn hóa MP4/H.264/AAC, giữ toàn thời lượng và audio khi có. DTO chỉ trả các trường quy định trong API_CONTRACT, không trả storage key/hash/deadline nội bộ. Upload response có `remainingMillis` (0–60.000) để client đặt thời hạn chờ theo ngân sách còn lại; không lưu trường dẫn xuất này. Message cũ có `videos=[]`.
+
+`chat_video_daily_usage`: `usage_date DATE PRIMARY KEY`, `used_count integer >=0`, `created_at/updated_at TIMESTAMPTZ`. Ngày Việt Nam, atomic conditional upsert giữ tối đa 10 slot/ngày trước khi gọi đọc video; lỗi không hoàn slot. Độc lập `chat_ai_daily_usage`/`chat_image_daily_usage`. Số slot đã dùng khi chạy AI thật trên preview phải được ghi nhận vào đúng ngày đã dùng, kể cả khi triển khai vào ngày sau; đối chiếu lượt production độc lập để không bỏ sót hoặc đếm trùng, không coi dữ liệu mới là ngân sách mới.
+
+Hạn tệp video bảy ngày ghi đè hạn tệp ảnh 90 ngày; lịch sử có thể giữ metadata không định danh tệp sau khi xóa object. Khi xóa hội thoại, xóa object ảnh/video trước khi xóa metadata/message. Mọi migration là bổ sung mới, không sửa migration đã áp dụng.
+
+- Browser chat snapshot giữ tham chiếu `videos[]` (ID, trạng thái, loại tệp, dung lượng, thời lượng, có âm thanh, thời điểm tạo/hết hạn và contentPath riêng tư). Không lưu bytes, blob URL, tên tệp gốc hay bản chép lời; metadata cũ không có `videos` vẫn đọc được. Khi khôi phục snapshot, giao diện giữ trạng thái loading của video cho đến khi nhận được token của phiên chat, rồi mới tải bytes; không gửi yêu cầu thiếu định danh trong lúc phiên đang khôi phục. History luôn kiểm tra quyền/hết hạn tại máy chủ khi tải bytes.
+
+### Image reliability and receipts (V1082; owner decision 2026-09-08)
+
+- `chat_images`: thêm `attachment_position` (PostgreSQL SMALLINT, 0..2, mặc định 0; ánh xạ Hibernate dùng JDBC SMALLINT để qua kiểm schema khi khởi động), `quota_reserved_on` (ngày Việt Nam, nullable), `analysis_json` (JSONB nullable, chỉ kết quả đã kiểm tra; không raw prose/PII), `analysis_deadline_at` (nullable TIMESTAMPTZ; lấy deadline chung đầu lượt gửi, dùng lại trong retry). Status thêm `ANALYSIS_FAILED`, còn `UNRECOGNIZED` nghĩa là đã xem nhưng chưa nhận ra. Reservation và dấu trên ảnh ghi cùng transaction; retry không giữ lượt mới.
+- `chat_conversations.context_json`: thêm `imageEvidence` nullable, gồm hãng/nhóm đã chuẩn hóa, tên hãng quan sát an toàn, các lựa chọn ảnh có thứ tự và mẫu đã đối chiếu. Chỉ trong chính phiên/hội thoại nối tiếp; không filename, chữ trên biên lai, dữ liệu người hoặc ảnh bytes. Record cũ thiếu trường vẫn đọc được.
+- `admin_notifications.chat_message_id`: nullable FK tới `chat_messages` ON DELETE CASCADE; unique khi khác null, chống trùng thông báo tiếp nhận cùng tin. Payload chỉ schemaVersion/conversationId/messageId; notification không kéo dài tuổi ảnh. Dọn thông báo chung không cắt ngắn vòng đời biên lai; biên lai được xóa theo FK khi tin/hội thoại bị xóa hoặc hết hạn. Các loại thông báo khác giữ hành vi hiện có.
+- `site_settings.ai_assistant_image_daily_limit`: private INTEGER, group ai_assistant, mặc định 60; migration không sửa quota chữ hoặc bộ đếm đã dùng.
+- CLI chuyển kho lưu manifest vận hành ngoài git gồm tham chiếu ảnh trước–sau, version/checksum, trạng thái và lý do bỏ qua; không dùng bảng live migration cũ và không chứa dữ liệu khách.
+
+Ảnh chứng từ, biên lai, người, hàng hỏng hoặc ảnh bị chặn chỉ giữ mã phân loại/an toàn trong `analysis_json`; không giữ hãng/nhóm/tên mẫu mà provider có thể suy từ chữ riêng tư trên các ảnh này. Với ảnh sản phẩm, nhóm và slug lưu đệm được đối chiếu catalog; tên hãng ngoài catalog chỉ là quan sát ngắn đã kiểm cấu trúc, không phải thông tin về đơn hàng hay cá nhân.

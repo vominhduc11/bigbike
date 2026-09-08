@@ -1,0 +1,15 @@
+{"caseId": "UI_HOME", "http": 200}
+{"caseId": "UI_HOME", "http": 200}
+{"caseId": "UI_HOME", "http": 200}
+{"caseId": "UI_HOME", "http": 200}
+{"caseId": "UI_VIDEO_40MB_PLUS_ONE", "rejected": true, "videoQuota": 7}
+{"caseId": "UI_HOME", "http": 200}
+{"caseId": "UI_HOME", "http": 200}
+{"caseId": "UI_VIDEO_RESPONSIVE", "width": 1440, "withinViewport": true}
+{"caseId": "UI_VIDEO_RESPONSIVE", "width": 768, "withinViewport": true}
+{"caseId": "UI_VIDEO_RESPONSIVE", "width": 375, "withinViewport": true}
+{"caseId": "UI_HOME", "http": 200}
+{"caseId": "UI_VIDEO_RESPONSIVE", "width": 1440, "withinViewport": true}
+{"caseId": "UI_VIDEO_RESPONSIVE", "width": 768, "withinViewport": true}
+{"caseId": "UI_VIDEO_RESPONSIVE", "width": 375, "withinViewport": true}
+{"caseId": "UI_VIDEO_HISTORY_RELOAD", "duration": 12.00161, "controls": true, "privateBlob": true, "consoleErrors": []}

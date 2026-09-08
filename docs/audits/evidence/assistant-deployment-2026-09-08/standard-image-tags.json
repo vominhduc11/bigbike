@@ -1,0 +1,17 @@
+[
+  {
+    "service": "bigbike-backend",
+    "standardTag": "bigbike-bigbike-backend:latest",
+    "imageId": "sha256:f67d2770989378cfcabaaa6806ec31cdfe5db744cffa08c882d890c15f522123"
+  },
+  {
+    "service": "bigbike-admin",
+    "standardTag": "bigbike-bigbike-admin:latest",
+    "imageId": "sha256:938e09c92118afeb75aeca2cab0bb102ff5ab3930dc9dd7369a5589665dea014"
+  },
+  {
+    "service": "bigbike-web",
+    "standardTag": "bigbike-bigbike-web:latest",
+    "imageId": "sha256:9895177fda3276f98426d1b1466999659a348dfbcc1b157de086b787f7876002"
+  }
+]

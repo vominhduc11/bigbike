@@ -1,0 +1,26 @@
+{
+  "at": "2026-09-08T10:04:39.939534+00:00",
+  "ownedVisitorIdentities": 4,
+  "remainingFixtureRows": {
+    "visitors": 0,
+    "conversations": 0,
+    "messages": 0,
+    "videos": 0,
+    "images": 0
+  },
+  "quotaBefore": {
+    "date": "2026-09-08",
+    "text": 93,
+    "images": 5,
+    "videos": 9,
+    "auditDayVideos": 9
+  },
+  "quotaAfter": {
+    "date": "2026-09-08",
+    "text": 93,
+    "images": 5,
+    "videos": 9,
+    "auditDayVideos": 9
+  },
+  "globalCleanupUsed": false
+}

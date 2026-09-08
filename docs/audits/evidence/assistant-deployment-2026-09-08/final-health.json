@@ -1,0 +1,49 @@
+{
+  "at": "2026-09-08T10:05:29.846632+00:00",
+  "publicChecks": [
+    {
+      "url": "https://bigbike.vn/",
+      "http": 200,
+      "tlsVerified": true
+    },
+    {
+      "url": "https://admin.bigbike.vn/",
+      "http": 200,
+      "tlsVerified": true
+    },
+    {
+      "url": "https://api.bigbike.vn/actuator/health",
+      "http": 200,
+      "tlsVerified": true
+    }
+  ],
+  "services": [
+    {
+      "name": "/bigbike-backend",
+      "imageId": "sha256:f67d2770989378cfcabaaa6806ec31cdfe5db744cffa08c882d890c15f522123",
+      "imageTag": "bigbike-assistant-candidate:20260908",
+      "health": "healthy",
+      "startedAt": "2026-09-08T09:38:27.189016613Z"
+    },
+    {
+      "name": "/bigbike-web",
+      "imageId": "sha256:9895177fda3276f98426d1b1466999659a348dfbcc1b157de086b787f7876002",
+      "imageTag": "bigbike-assistant-web:20260908-r2",
+      "health": "healthy",
+      "startedAt": "2026-09-08T10:02:05.425604432Z"
+    },
+    {
+      "name": "/bigbike-admin",
+      "imageId": "sha256:938e09c92118afeb75aeca2cab0bb102ff5ab3930dc9dd7369a5589665dea014",
+      "imageTag": "bigbike-assistant-admin:20260908",
+      "health": "healthy",
+      "startedAt": "2026-09-08T09:41:20.016647634Z"
+    }
+  ],
+  "backendLogCheck": {
+    "messageConstraintErrors": 0,
+    "videoStorageFailures": 0,
+    "videoCleanupFailures": 0,
+    "startupDetected": true
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "buildExitCode": 0,
+  "imageTag": "bigbike-assistant-candidate:20260908",
+  "jarSha256": "75f6ea11ff596e346cebf54b5e178794b725d3235cf2286ee17dce3d26540c67",
+  "jarBytes": 111848784,
+  "sharedServicesChanged": false,
+  "imageId": "sha256:f67d2770989378cfcabaaa6806ec31cdfe5db744cffa08c882d890c15f522123",
+  "runtimeUser": "bigbike",
+  "fullRealClipDecodeAndH264AacEncodeExitCode": 0,
+  "aiUsedForRuntimeCheck": 0
+}

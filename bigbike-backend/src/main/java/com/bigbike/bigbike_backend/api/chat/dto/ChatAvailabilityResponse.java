@@ -5,5 +5,6 @@ public record ChatAvailabilityResponse(
         String reason,
         int maxTurns,
         ChatContactResponse contacts,
-        ChatImageAvailabilityResponse images
+        ChatImageAvailabilityResponse images,
+        ChatVideoAvailabilityResponse videos
 ) {}

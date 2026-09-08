@@ -122,7 +122,7 @@ public class ChatProductImageFingerprintService {
                     ? decode(row)
                     : Optional.empty();
             if (value.isEmpty()) {
-                if (computed >= MAX_NEW_FINGERPRINTS_PER_TURN) {
+                if (computed >= MAX_NEW_FINGERPRINTS_PER_TURN || !ChatTurnBudget.reserveFingerprint()) {
                     deferred++;
                     continue;
                 }
@@ -322,6 +322,15 @@ public class ChatProductImageFingerprintService {
             return Optional.empty();
         }
     }
+
+    /** Same descriptor for the owner-run index tool; customer bytes are never persisted here. */
+    public static Optional<IndexDescriptor> indexDescriptor(byte[] bytes) {
+        return fingerprint(bytes).map(value -> new IndexDescriptor(FINGERPRINT_VERSION,
+                String.format(Locale.ROOT, "%016x", value.dHash()), encodeHistogram(value.histogram()),
+                BigDecimal.valueOf(value.aspectRatio()).setScale(6, RoundingMode.HALF_UP)));
+    }
+
+    public record IndexDescriptor(String version, String dHashHex, String colorHistogram, BigDecimal aspectRatio) {}
 
     static Optional<Fingerprint> fingerprint(byte[] bytes) {
         if (bytes == null || bytes.length == 0) return Optional.empty();

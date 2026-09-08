@@ -1,0 +1,1699 @@
+{
+  "run": "backend full gate; quiet Maven log has no errors; all classes emitted completed reports",
+  "includesLatestCamFix": false,
+  "classes": 211,
+  "tests": 1730,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 1,
+  "reports": [
+    {
+      "class": "com.bigbike.bigbike_backend.BigbikeBackendApplicationTests",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminAuditLogApiTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminAuthApiTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminAuthSecurityTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminChatPermissionTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminContentApiTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminContentOpenApiContractTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminCustomerContractApiTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminDashboardApiTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminMediaP0Test",
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminMutationApiTest",
+      "tests": 46,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminNotificationAfterCommitTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminNotificationServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminProductAssignmentApiTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminProductExportApiTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminQuickSearchApiTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminReadApiTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminRedirectApiTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminReportApiTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminReportRepositoryQueryTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminRolesApiTest",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminSizeScaleGroupApiTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AdminUsersApiTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.AuthProfileGuardTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.ChatControllerIdentityTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.ChatControllerStreamTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.ChatProductDiscoveryApiTest",
+      "tests": 44,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.ContentP1ApiTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.ContentPublicApiTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.CustomerAddressApiTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.CustomerOAuthApiTest",
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.GuestOrderLinkingTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.HomeHighlightsApiTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.HomeVideoApiTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.HomepagePublicApiTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.OpenApiContractDriftTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1DCustomerAuthTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1ECartApiTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1FCheckoutApiTest",
+      "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1GOrderReadApiTest",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1HAdminOrderApiTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1I1CustomerStatusLoginTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1IAdminManagementApiTest",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1K1ContractHardeningTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1KInventoryP0FixApiTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1KOpenApiContractTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1NReviewsApiTest",
+      "tests": 82,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.ProductImportMediaPreservationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.ProductImportRoundTripTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.PrometheusEndpointTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.PublicReadApiTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.PublicReviewApiTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.PublicSearchApiTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.RbacSecurityTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.RbacUrlGateIntegrationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.SliderApiTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.UnknownApiPathTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.admin.dto.HighlightRequestValidationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.error.GlobalExceptionHandlerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.api.public_.dto.PublicHomeVideoResponseTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.CatalogReferenceCacheSerializationTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.ClientIpResolverTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.CorsConfigTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.CustomerAuthCookiesTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.CustomerCsrfFilterTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.RateLimitingFilterTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.WebSocketConfigAccessTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.ratelimit.RateLimitConcurrencyGuardTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.ratelimit.RateLimitPolicyCatalogTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.ratelimit.RateLimitPropertiesBindingTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.ratelimit.RateLimitServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.config.ratelimit.RateLimitStartupValidatorTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.domain.catalog.ProductGenderSupportTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.domain.catalog.SeoIndexPolicyTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.AdminNotificationRetentionMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.CategoryBrandMobileBannerMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.DailyOutOfStockDigestMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.FreezeStorePolicyMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.KhuyenMaiHotCategoryImageMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.ManualMaintenanceRemovalMigrationPostgresTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.MediaFolderTreeMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.PerformanceMigrationsPostgresTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.ReviewInvitationMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.migration.ReviewInvitationSettingsRemovalMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.qa.QaDevAdminAuthProdProfileTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.qa.QaEmailLinkCaptureTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.repository.admin.AdminNotificationPostgresQueryTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.repository.catalog.CatalogPostgresQueryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.repository.catalog.ProductSearchTermsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.schema.HomeVideoRepositoryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.schema.Phase1BSchemaTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.schema.Phase1CCommerceSchemaTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.schema.SliderRepositoryTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminAttributeServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminCustomerAvatarCleanupTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminCustomerCsvExportServiceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminMediaFolderServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminMenuServiceTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminMutationValidatorsTest",
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminNotificationRetentionCleanupServiceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminNotificationScopeTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminOrderCsvExportServiceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminQuickSearchReaderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminQuickSearchServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminRoleServiceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.AdminSizeScaleGroupServiceTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.BankTransferPostgresIntegrationTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.BrandLogoUrlImportServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.BrandLogoValidationServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.CatalogReferenceCacheEvictorTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.CatalogRequestValidatorSizeScaleTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.CatalogRequestValidatorTest",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.CategoryDeletionImpactServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.CsvExportUtilTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.FullProductCatalogCsvExportServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.MediaAutoFolderServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.OrderOperationsPostgresIntegrationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.OrderOverdueReminderServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.ProductBilingualRoundtripTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.ProductFieldApplierVideoMetadataTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.ProductImportServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.ProductTemplateFileRoundTripTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.VariantAttributeReferenceValidationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.VariantGalleryRoundtripTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.VariantSkuConflictTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.admin.settings.SettingValueValidatorTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.auth.AdminAccessChangeServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.auth.PasswordServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.auth.PasswordServiceWpHashTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.auth.PermissionCatalogMigrationConsistencyTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.auth.PermissionCatalogTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.cart.CartRetentionPostgresIntegrationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.cart.RetentionBatchSchedulerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.catalog.CatalogReadServiceAssistantCategorySummaryTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.catalog.CatalogReadServiceMultiFilterTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.catalog.CatalogVisualFacetCatalogTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.catalog.DescriptionBlockRendererTest",
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.catalog.ProductAnalyticsResolverTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.catalog.ProductRichHtmlImageEnricherTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.catalog.SizeScaleCatalogTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.AiChatFunctionCallingTest",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.AiChatRequestShapeTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.BigBikeSearchDecisionTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatActionCatalogTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatAnsweredQuestionsTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatArticleToolTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatAssistantSettingsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatAvailabilityTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatCategoryAliasHygieneTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatClarificationDecisionTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatConcurrencyTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatHistorySanitizerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatImageChainedTurnTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatImageServiceTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatImageStorageServiceTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatInputGuardTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatMessageSourcePostgresTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatNaturalQueryRegressionTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatProductImageFingerprintServiceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatResponseGuardTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatRetentionCleanupServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatSalesAdvisorServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatSearchInterpretationTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatServiceFallbackTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatToolRegistryTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatToolServiceTest",
+      "tests": 74,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatTransactionBoundaryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVideoBudgetTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVideoQuotaPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVideoServiceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVideoTemporaryCleanupTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.chat.ChatVisitorServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.checkout.TelegramOrderNotificationServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.content.BodyBlockParserTest",
+      "tests": 38,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.content.StorePolicyServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.email.EmailDispatchServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.email.InternalMailRecipientTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.inventory.InventoryOutOfStockDigestCoordinatorTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.inventory.InventoryOutOfStockDigestEmailServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.inventory.InventoryOutOfStockDigestSchedulerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.inventory.InventoryOutOfStockDigestServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.inventory.InventoryPolicyServiceOutOfStockAgeTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.media.ImageCompressionServiceTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.media.ImageDimensionsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.pricing.VariantPricingTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.public_.PublicReviewConcurrencyTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.public_.ReviewPhotoOrphanCleanupServiceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.public_.ReviewPhotoStorageServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.AiReviewModerationRequestShapeTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.ReviewBannedWordMatcherTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.ReviewModerationOutcomeTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.ReviewModerationServiceTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.invitation.ReviewInvitationEmailServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.invitation.ReviewInvitationLifecycleServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.invitation.ReviewInvitationSchedulerTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.invitation.ReviewInvitationServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.invitation.ReviewInvitationSettingsTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.review.invitation.ReviewInvitationStoreTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.search.GlobalSearchServiceTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.search.StorefrontSearchRulesTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.security.HomeVideoUrlPolicyTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.slider.SliderReadServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.video.FacebookUrlParserTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.video.TikTokUrlParserTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.video.YouTubeHomeVideoClientTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.video.YouTubeHomeVideoSyncServiceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.video.YouTubeHomeVideoSyncWriterTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.video.YouTubeUrlParserTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.service.web.WebRevalidationServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.util.AdminSearchTextTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    },
+    {
+      "class": "com.bigbike.bigbike_backend.util.SeoTextNormalizerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": null
+    }
+  ]
+}

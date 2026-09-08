@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   fetchAdminChatImageBlob,
+  fetchAdminChatVideoBlob,
   fetchChatConversation,
   fetchChatConversations,
   fetchChatStats,
@@ -72,6 +73,8 @@ describe('admin chat contract', () => {
                   height: 600,
                   sizeBytes: 12345,
                 },
+                { id: 'image-2', mimeType: 'image/png' },
+                { id: 'image-3', mimeType: 'image/webp' },
               ],
             },
           ],
@@ -84,6 +87,8 @@ describe('admin chat contract', () => {
     expect(result.item.messages[0].products).toEqual([{ slug: 'mu-34', price: 1590000 }])
     expect(result.item.messages[0].images).toEqual([
       expect.objectContaining({ id: 'image-1', mimeType: 'image/jpeg' }),
+      expect.objectContaining({ id: 'image-2', mimeType: 'image/png' }),
+      expect.objectContaining({ id: 'image-3', mimeType: 'image/webp' }),
     ])
     expect(result.item).not.toHaveProperty('handoff')
   })
@@ -124,6 +129,18 @@ describe('admin chat contract', () => {
       conversations: 7,
       quality: { answers: 5, productResults: 2 },
     })
+  })
+
+  it('loads a video only through the authenticated chat media endpoint', async () => {
+    const blob = new Blob(['private-video'], { type: 'video/mp4' })
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => null },
+      blob: async () => blob,
+    })
+    await expect(fetchAdminChatVideoBlob('video-1')).resolves.toBe(blob)
+    expect(fetchMock.mock.calls[0][0]).toContain('/admin/chat/videos/video-1/content')
   })
 
   it('keeps private image content behind the read-only image endpoint', async () => {

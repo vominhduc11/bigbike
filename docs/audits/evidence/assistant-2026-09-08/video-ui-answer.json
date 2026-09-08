@@ -1,0 +1,72 @@
+{
+  "caseId": "V04_UI",
+  "http": 200,
+  "response": {
+    "mode": "AI",
+    "reason": "AI",
+    "answer": "Em nhận ra sản phẩm trong video có vẻ thuộc nhóm Mũ bảo hiểm fullface nhưng chưa xác định đáng tin cậy được mẫu cụ thể. Các mẫu cùng nhóm đang bán bên dưới để anh/chị tự đối chiếu; em không khẳng định mẫu nào là cùng sản phẩm.\n\nChính sách bảo hành: BigBike cam kết bảo hành chính hãng theo đúng quy định của từng nhà sản xuất. Thời hạn bảo hành cụ thể hiển thị trên trang chi tiết từng sản phẩm. Anh/chị xem trang chính sách đầy đủ để biết chi tiết.",
+    "answerFormat": "PLAIN_TEXT",
+    "resultKind": "PRODUCT_RESULTS",
+    "turnCount": 1,
+    "maxTurns": 40,
+    "remainingTurns": 39,
+    "products": [
+      {
+        "slug": "mu-bao-hiem-fullface-ls2-ff800-storm",
+        "name": "Mũ bảo hiểm fullface LS2 FF800 Storm",
+        "imageUrl": "/media/migration/wordpress/ba/baf1dff44053ecbc3844513cbc99ced247a10acabfd09acb790b9435ba00b533/MU-BAO-HIEM-LS2-FF800-XANH-LA-2.jpg",
+        "retailPrice": 3190000.0,
+        "salePrice": null,
+        "currency": "VND",
+        "stockState": "IN_STOCK"
+      },
+      {
+        "slug": "mu-bao-hiem-fullface-nic-n02",
+        "name": "Mũ bảo hiểm fullface NIC N02",
+        "imageUrl": "/media/uploads/7aed19ed-fc52-4762-b4c0-a0b1f746d4b0/mu-bao-hiem-fullface-carbon-nic-n02-1-kinh.webp",
+        "retailPrice": 6800000.0,
+        "salePrice": null,
+        "currency": "VND",
+        "stockState": "IN_STOCK"
+      },
+      {
+        "slug": "mu-bao-hiem-fullface-ilm-mf509",
+        "name": "Mũ bảo hiểm fullface ILM MF509",
+        "imageUrl": "/media/uploads/8a95afad-27e2-425e-a475-ae79b758819f/mu-bao-hiem-fullface-ilm-mf-509-chup-nghieng-mat-truoc.webp",
+        "retailPrice": 5850000.0,
+        "salePrice": null,
+        "currency": "VND",
+        "stockState": "IN_STOCK"
+      }
+    ],
+    "clarification": null,
+    "actions": [
+      {
+        "type": "FIND_PRODUCTS"
+      }
+    ],
+    "crossSellProducts": [],
+    "salesStage": "BROWSING",
+    "nextStep": {
+      "type": "SHARE_NEED",
+      "productSlug": null
+    },
+    "countedTurns": 1,
+    "turnLimit": 40,
+    "turnsRemaining": 39
+  },
+  "timing": {
+    "receivedAt": "2026-09-08T08:03:32.622074+00:00",
+    "durationSeconds": 12.003,
+    "hasAudio": true,
+    "answerAt": "2026-09-08T08:03:51.990792+00:00",
+    "elapsedFromFullUpload": 19.368718
+  },
+  "textImageCounters": {
+    "date": "2026-09-08",
+    "text": 83,
+    "images": 5
+  },
+  "videoCounter": 8,
+  "replayConsumedAI": false
+}

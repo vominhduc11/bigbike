@@ -1,0 +1,33 @@
+{
+  "command": "PW_BASE_URL=https://bigbike.vn npx playwright test assistant-images.e2e.ts --workers=1",
+  "passed": 2,
+  "locales": [
+    "vi",
+    "en"
+  ],
+  "viewportWidths": [
+    375,
+    768,
+    1440
+  ],
+  "verified": [
+    "Fourth image rejected with localized feedback",
+    "Three previews in selection order",
+    "Removing one image enables selection again",
+    "No horizontal overflow",
+    "No page errors or hydration errors"
+  ],
+  "browserOnlySessionInterception": true,
+  "imageUploads": 0,
+  "newConversationRecords": 0,
+  "realAiCalls": 0,
+  "knownWarning": "Cloudflare analytics beacon blocked by existing site CSP, recorded in the earlier deployment audit. The exact known beacon warning is recorded separately; other CSP and hydration errors still fail the test.",
+  "screenshots": [
+    "images-en-1440.png",
+    "images-en-375.png",
+    "images-en-768.png",
+    "images-vi-1440.png",
+    "images-vi-375.png",
+    "images-vi-768.png"
+  ]
+}

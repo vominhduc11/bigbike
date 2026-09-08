@@ -2,7 +2,13 @@ import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/image", () => ({
-  default: ({ src, alt, fill, preload, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+  default: ({
+    src,
+    alt,
+    fill,
+    preload,
+    ...props
+  }: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean; preload?: boolean }) => {
     void fill;
     void preload;
     return (
@@ -17,7 +23,9 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a href={String(href)} {...props}>{children}</a>
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
   ),
 }));
 
@@ -27,8 +35,20 @@ describe("AboutPageContent brand frames", () => {
   it("keeps every about-page brand logo in a centered 128px frame", () => {
     const { container } = render(
       <AboutPageContent
-        brands={[{ id: "agv", name: "AGV", slug: "agv", logo: { url: "/media/brands/agv.png", width: 128, height: 55 } }]}
-        contact={{ address: "Địa chỉ cửa hàng", hotline: "0900000000", hotline2: "", facebookUrl: "https://facebook.com/bigbike" }}
+        brands={[
+          {
+            id: "agv",
+            name: "AGV",
+            slug: "agv",
+            logo: { url: "/media/brands/agv.png", width: 128, height: 55 },
+          },
+        ]}
+        contact={{
+          address: "Địa chỉ cửa hàng",
+          hotline: "0900000000",
+          hotline2: "",
+          facebookUrl: "https://facebook.com/bigbike",
+        }}
       />,
     );
 

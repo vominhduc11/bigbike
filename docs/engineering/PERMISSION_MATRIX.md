@@ -284,3 +284,12 @@ Status: `CONFIRMED_FROM_CODE` — `AdminRolePermissions.java`, `AdminReportContr
 ## Manual Maintenance Authority — removed 2026-08-30
 
 There is no admin-lock action, technical role or `maintenance.manage` permission to authorize. The remaining permission matrix applies normally to admin operations, and `ADMIN` remains an editable system role under the existing self-lockout safeguards. Static outage page generation is an infrastructure operation documented in `DEPLOYMENT_GUIDE.md`, not an admin permission.
+
+
+### Video chat riêng tư — 08/09/2026
+
+`CHAT_RULE_065`: video dùng đúng ownership và `chat.read` của ảnh. Khách chỉ tải/xem video thuộc hội thoại của mình; thiếu/sai định danh, quá hạn bảy ngày hoặc bị chặn đều trả 404. Admin thiếu `chat.read` trả 403; có quyền vẫn không xem được tệp đã hết hạn/bị chặn. Không cấp quyền mới, không có URL MinIO công khai và không cho sửa transcript.
+
+### Receipt image notifications — 2026-09-08
+
+CHAT_RULE_066: `chat.read` cho xem thông báo biên lai và ảnh riêng tư trong Hội thoại; notifications GET/mark-all-read hỗ trợ scope này, không cấp quyền đơn hàng. `settings.read/settings.write` đọc/sửa hạn mức ảnh; `settings.read` thấy số đã dùng nhưng không xem ảnh. `orders.write` vẫn là quyền duy nhất cho lệnh xác nhận chuyển khoản hiện có. Không cấp tự động quyền cho vai trò, không khôi phục `chat.reply`.

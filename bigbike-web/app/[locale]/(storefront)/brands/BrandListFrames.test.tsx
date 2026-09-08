@@ -2,7 +2,13 @@ import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/image", () => ({
-  default: ({ src, alt, fill, preload, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+  default: ({
+    src,
+    alt,
+    fill,
+    preload,
+    ...props
+  }: React.ImgHTMLAttributes<HTMLImageElement> & { fill?: boolean; preload?: boolean }) => {
     void fill;
     void preload;
     return (
@@ -19,7 +25,9 @@ vi.mock("next-intl/server", () => ({ getTranslations: async () => (key: string) 
 vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a href={String(href)} {...props}>{children}</a>
+    <a href={String(href)} {...props}>
+      {children}
+    </a>
   ),
 }));
 vi.mock("@tanstack/react-query", () => ({
@@ -38,7 +46,9 @@ import { BrandListClient } from "./BrandListClient";
 import { BrandListDefault } from "./BrandListDefault";
 import type { Brand } from "@/lib/contracts/public";
 
-const brands = [{ id: "agv", name: "AGV", slug: "agv", logo: { url: "/media/brands/agv.png" } }] as Brand[];
+const brands = [
+  { id: "agv", name: "AGV", slug: "agv", logo: { url: "/media/brands/agv.png" } },
+] as Brand[];
 
 function frame(container: HTMLElement) {
   const value = container.querySelector('[data-brand-list-grid] [data-brand-logo="true"]');

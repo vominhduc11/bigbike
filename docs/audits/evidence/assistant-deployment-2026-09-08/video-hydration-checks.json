@@ -1,0 +1,29 @@
+[
+  {
+    "command": [
+      "npx",
+      "eslint",
+      "components/home/FloatingChat.tsx",
+      "components/home/FloatingChat.test.tsx"
+    ],
+    "exitCode": 0
+  },
+  {
+    "command": [
+      "npx",
+      "prettier",
+      "--check",
+      "components/home/FloatingChat.tsx",
+      "components/home/FloatingChat.test.tsx"
+    ],
+    "exitCode": 0
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "check:no-runtime-business-data"
+    ],
+    "exitCode": 0
+  }
+]

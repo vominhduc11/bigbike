@@ -11,5 +11,8 @@ public record AdminChatStatsResponse(
         int limit,
         long remaining,
         long conversations,
-        AdminChatQualityStatsResponse quality
-) {}
+        AdminChatQualityStatsResponse quality,
+        ImageUsage images
+) {
+    public record ImageUsage(long used, int limit, long remaining) {}
+}

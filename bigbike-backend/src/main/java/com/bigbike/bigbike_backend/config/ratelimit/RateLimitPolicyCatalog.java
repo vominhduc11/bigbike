@@ -60,6 +60,7 @@ public class RateLimitPolicyCatalog {
             }
             if ("/api/v1/chat/messages".equals(path)
                     || "/api/v1/chat/images".equals(path)
+                    || "/api/v1/chat/videos".equals(path)
                     || "/api/v1/chat/leads".equals(path)
                     || "/api/v1/chat/leads/decline".equals(path)) {
                 return Optional.of(RateLimitTier.CHAT);

@@ -1,0 +1,29 @@
+{
+  "at": "2026-09-08",
+  "auditUsedBeforeDeployment": {
+    "text": 92,
+    "images": 5,
+    "videos": 8
+  },
+  "deploymentAdditional": {
+    "text": 0,
+    "images": 0,
+    "videos": 1
+  },
+  "combinedUsed": {
+    "text": 92,
+    "images": 5,
+    "videos": 9
+  },
+  "combinedTotal": 106,
+  "shopCountersAfter": {
+    "date": "2026-09-08",
+    "text": 93,
+    "images": 5,
+    "videos": 9,
+    "auditDayVideos": 9
+  },
+  "shopTextBeforeAudit": 1,
+  "auditVideosKeptOnDate": "2026-09-08",
+  "counterResetPerformed": false
+}

@@ -308,6 +308,9 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
         return { ...previous, items: (previous?.items || []).map((s) => updated.get(s.key) || s) }
       })
       queryClient.invalidateQueries({ queryKey: ['settings'] })
+      if (dirty.some((setting) => setting.key === 'ai_assistant_image_daily_limit')) {
+        queryClient.invalidateQueries({ queryKey: ['chat-stats'] })
+      }
       // Clear drafts for saved keys
       const savedKeys = dirty.map((s) => s.key)
       const dropSaved = (obj) => {

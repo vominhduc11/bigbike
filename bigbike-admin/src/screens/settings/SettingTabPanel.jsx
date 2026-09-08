@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { fetchChatStats } from '@/lib/adminApi'
+import { useHasPermission } from '@/lib/auth'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, CheckCircle2, Loader2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -36,6 +39,16 @@ export function SettingTabPanel({
   isSuperAdmin = false,
 }) {
   const { t } = useTranslation()
+  const hasPermission = useHasPermission()
+  const canReadChat = hasPermission('chat.read') || hasPermission('settings.read')
+  const showsImageLimit = items.some((setting) => setting.key === 'ai_assistant_image_daily_limit')
+  const imageStats = useQuery({
+    queryKey: ['chat-stats', 'today-images'],
+    queryFn: () => fetchChatStats(),
+    enabled: showsImageLimit && canReadChat,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
+  })
   const isDirtyField = (setting) => isSettingDirty(setting, drafts, draftsEn)
   const dirtyCount = items.filter(isDirtyField).length
   const hasError = items.some((setting) => errors[setting.key])
@@ -113,6 +126,37 @@ export function SettingTabPanel({
 
   return (
     <>
+      {showsImageLimit && (
+        <DetailSection title={t('chatAdmin.imageQuota.title')}>
+          {!canReadChat ? (
+            <p className="text-sm text-muted-foreground">{t('chatAdmin.imageQuota.permission')}</p>
+          ) : imageStats.isPending ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              {t('chatAdmin.imageQuota.loading')}
+            </p>
+          ) : imageStats.isError || !imageStats.data?.images ? (
+            <div role="alert" className="flex items-center gap-3 text-sm text-danger">
+              {t('chatAdmin.imageQuota.error')}
+              <Button
+                variant="secondary"
+                disabled={imageStats.isFetching}
+                onClick={() => imageStats.refetch()}
+              >
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-foreground">
+              {t('chatAdmin.imageQuota.usage', {
+                used: imageStats.data.images.used,
+                limit: imageStats.data.images.limit,
+                remaining: imageStats.data.images.remaining,
+                date: imageStats.data.date,
+              })}
+            </p>
+          )}
+        </DetailSection>
+      )}
       <DetailSection
         className="!overflow-visible !border-0 !bg-transparent !shadow-none"
         headingLevel={3}

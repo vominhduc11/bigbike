@@ -4,6 +4,7 @@ import type {
   ChatClarificationSelection,
   ChatProductCard,
   ChatImage,
+  ChatVideo,
   ChatNextStep,
   ChatSalesStage,
 } from "@/lib/api/client-api";
@@ -38,6 +39,7 @@ export type ChatPersistenceMessage = {
   requestId?: string;
   failed?: boolean;
   images?: ChatImage[];
+  videos?: ChatVideo[];
 };
 
 export type ChatPersistenceSnapshot = {
@@ -151,6 +153,45 @@ function readImage(value: unknown): ChatImage | undefined {
   };
 }
 
+function readVideo(value: unknown): ChatVideo | undefined {
+  if (!isRecord(value)) return undefined;
+  const id = boundedString(value.id, 120);
+  const status = boundedString(value.status, 40);
+  const createdAt = boundedString(value.createdAt, 80);
+  const expiresAt = boundedString(value.expiresAt, 80);
+  if (
+    !id ||
+    !status ||
+    !createdAt ||
+    !expiresAt ||
+    !Number.isFinite(Date.parse(expiresAt)) ||
+    value.mimeType !== "video/mp4" ||
+    typeof value.hasAudio !== "boolean" ||
+    typeof value.durationSeconds !== "number" ||
+    !Number.isFinite(value.durationSeconds) ||
+    value.durationSeconds <= 0 ||
+    value.durationSeconds > 15 ||
+    typeof value.sizeBytes !== "number" ||
+    !Number.isSafeInteger(value.sizeBytes) ||
+    value.sizeBytes <= 0 ||
+    value.sizeBytes > 40 * 1024 * 1024
+  )
+    return undefined;
+  const path = `/api/v1/chat/videos/${id}/content`;
+  if (value.contentPath != null && value.contentPath !== path) return undefined;
+  return {
+    id,
+    status,
+    createdAt,
+    expiresAt,
+    mimeType: "video/mp4",
+    hasAudio: value.hasAudio,
+    durationSeconds: value.durationSeconds,
+    sizeBytes: value.sizeBytes,
+    contentPath: value.contentPath == null ? null : path,
+  };
+}
+
 function readClarification(value: unknown): ChatClarification | undefined {
   if (!isRecord(value)) return undefined;
   const id = boundedString(value.id, 120);
@@ -165,6 +206,7 @@ function readClarification(value: unknown): ChatClarification | undefined {
     "MEASUREMENT",
     "REFERENCE",
     "INTERPRETATION",
+    "IMAGE",
   ]);
   if (
     !id ||
@@ -297,8 +339,15 @@ function readMessage(value: unknown): ChatPersistenceMessage | undefined {
     if (typeof value.failed !== "boolean") return undefined;
     message.failed = value.failed;
   }
+  if (value.videos != null) {
+    if (!Array.isArray(value.videos) || value.videos.length > 1) return undefined;
+    const videos = value.videos.map(readVideo);
+    if (videos.some((video) => !video)) return undefined;
+    message.videos = videos as ChatVideo[];
+    if (videos.length && Array.isArray(value.images) && value.images.length) return undefined;
+  }
   if (value.images != null) {
-    if (!Array.isArray(value.images) || value.images.length > 1) return undefined;
+    if (!Array.isArray(value.images) || value.images.length > 3) return undefined;
     const images = value.images.map(readImage);
     if (images.some((image) => !image)) return undefined;
     message.images = images as ChatImage[];

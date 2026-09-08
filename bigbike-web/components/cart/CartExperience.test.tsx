@@ -21,10 +21,12 @@ vi.mock("next-intl", () => ({
   useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) => {
     const messages = (locale === "vi" ? viMessages : enMessages) as Record<
       string,
-      Record<string, string>
+      Record<string, unknown>
     >;
-    return (messages[namespace]?.[key] ?? key).replace(/\{(\w+)\}/g, (_, name: string) =>
-      String(values?.[name] ?? ""),
+    const template = messages[namespace]?.[key];
+    return (typeof template === "string" ? template : key).replace(
+      /\{(\w+)\}/g,
+      (_, name: string) => String(values?.[name] ?? ""),
     );
   },
 }));

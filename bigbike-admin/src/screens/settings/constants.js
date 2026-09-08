@@ -148,6 +148,7 @@ export function validateValue(key, value) {
     k.includes('amount') ||
     k.includes('min_amount') ||
     k === 'ai_assistant_daily_limit' ||
+    k === 'ai_assistant_image_daily_limit' ||
     k === 'ai_assistant_recent_turn_pairs'
   ) {
     const n = Number(value)
@@ -329,6 +330,7 @@ export const KEY_LABELS_VI = {
   // ai_assistant (Trợ lý BigBike — CHAT_RULE_001..024)
   ai_assistant_enabled: 'Bật Trợ lý BigBike',
   ai_assistant_daily_limit: 'Số lượt gọi AI tối đa mỗi ngày',
+  ai_assistant_image_daily_limit: 'Số ảnh đọc tối đa mỗi ngày',
   ai_assistant_recent_turn_pairs: 'Số cặp hỏi–đáp gần nhất Trợ lý BigBike được đọc',
   ai_assistant_search_ai_interpretation_enabled:
     'Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng',
@@ -372,6 +374,8 @@ export const KEY_LABELS_VI = {
 }
 
 export const KEY_HINTS_VI = {
+  ai_assistant_image_daily_limit:
+    'Dùng chung cho mọi khách, tính theo ngày giờ Việt Nam. Nhập 0 để tạm dừng đọc ảnh.',
   inventory_out_of_stock_digest_enabled:
     'Tắt để hệ thống im lặng hoàn toàn. Khi bật, mỗi ngày chỉ có một bản tin gộp nếu thực sự có hàng hết.',
   inventory_out_of_stock_digest_time:
@@ -559,6 +563,10 @@ export const KEY_GUIDE = {
   review_moderation_banned_words: ['review_moderation_words', 'danh sách từ cấm tự quản'],
   ai_assistant_enabled: ['ai_assistant_switch', 'bật/tắt Trợ lý BigBike trên toàn website'],
   ai_assistant_daily_limit: ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
+  ai_assistant_image_daily_limit: [
+    'ai_assistant_switch',
+    'hạn mức ảnh dùng chung theo ngày giờ Việt Nam',
+  ],
   ai_assistant_recent_turn_pairs: ['ai_assistant_switch', '0–12 cặp gần nhất để hiểu câu nối'],
   ai_assistant_search_ai_interpretation_enabled: [
     'ai_assistant_switch',

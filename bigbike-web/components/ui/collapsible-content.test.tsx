@@ -6,8 +6,7 @@ import { ClampableHtmlSection } from "@/components/catalog/ClampableHtmlSection"
 import { CollapsibleContent } from "@/components/ui/collapsible-content";
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) =>
-    key === "showLess" ? "Thu gọn" : "Xem thêm",
+  useTranslations: () => (key: string) => (key === "showLess" ? "Thu gọn" : "Xem thêm"),
 }));
 
 type ObservedTarget = {
@@ -29,9 +28,7 @@ class ResizeObserverMock implements ResizeObserver {
   }
 
   disconnect() {
-    observedTargets = observedTargets.filter(
-      (entry) => entry.callback !== this.callback,
-    );
+    observedTargets = observedTargets.filter((entry) => entry.callback !== this.callback);
   }
 }
 
@@ -57,7 +54,7 @@ beforeEach(() => {
   vi.stubGlobal("ResizeObserver", ResizeObserverMock);
   Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
     configurable: true,
-    get() {
+    get(this: HTMLElement) {
       const measuredChild = this.querySelector<HTMLElement>("[data-content-height]");
       return Number(measuredChild?.dataset.contentHeight ?? 0);
     },

@@ -42,6 +42,12 @@ public class AdminChatService {
     private final ChatAssistantSettings assistantSettings;
     private final ChatAiQuotaService chatAiQuotaService;
     private final ChatImageService chatImageService;
+    private com.bigbike.bigbike_backend.service.chat.ChatVideoService chatVideoService;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setChatVideoService(com.bigbike.bigbike_backend.service.chat.ChatVideoService service) {
+        this.chatVideoService = service;
+    }
+
     private final ChatMapper chatMapper;
 
     public PageResult<AdminChatConversationResponse> list(
@@ -82,10 +88,13 @@ public class AdminChatService {
         Map<UUID, List<com.bigbike.bigbike_backend.api.chat.dto.ChatImageResponse>> imagesByMessage =
                 chatImageService.referencesByMessageIds(entities.stream()
                         .map(ChatMessageEntity::getId).toList());
+        var videosByMessage = chatVideoService == null ? java.util.Map.<UUID, List<com.bigbike.bigbike_backend.api.chat.dto.ChatVideoResponse>>of()
+                : chatVideoService.referencesByMessageIds(entities.stream().map(ChatMessageEntity::getId).toList());
         List<AdminChatMessageResponse> messages = entities.stream()
                 .map(entity -> withImages(
                         chatMapper.toMessage(entity),
-                        imagesByMessage.getOrDefault(entity.getId(), List.of())))
+                        imagesByMessage.getOrDefault(entity.getId(), List.of()),
+                        videosByMessage.getOrDefault(entity.getId(), List.of())))
                 .toList();
         return new AdminChatConversationDetailResponse(
                 conversation.getId(), conversation.getCustomerId(), conversation.getLocale(),
@@ -110,6 +119,8 @@ public class AdminChatService {
         Instant toExclusive = toDate.plusDays(1).atStartOfDay(VN_ZONE).toInstant();
         int limit = assistantSettings.load("vi").dailyLimit();
         long used = chatAiQuotaService.usedOn(date);
+        int imageLimit = assistantSettings.imageSettings().dailyLimit();
+        long imageUsed = chatImageService.imageUsageOn(date);
         ChatMessageJpaRepository.QualitySummary quality = messageRepo.summarizeQualityBetween(from, toExclusive);
         return new AdminChatStatsResponse(
                 date, fromDate, toDate, used, limit, Math.max(0, limit - used),
@@ -117,7 +128,8 @@ public class AdminChatService {
                 new AdminChatQualityStatsResponse(
                         value(quality.getAnswers()), value(quality.getProductResults()),
                         value(quality.getClarifications()), value(quality.getOutOfScope()),
-                        value(quality.getRefusals())));
+                        value(quality.getRefusals())),
+                new AdminChatStatsResponse.ImageUsage(imageUsed, imageLimit, Math.max(0, imageLimit - imageUsed)));
     }
 
     private AdminChatConversationResponse toListItem(ChatConversationEntity conversation) {
@@ -132,12 +144,13 @@ public class AdminChatService {
 
     private static AdminChatMessageResponse withImages(
             AdminChatMessageResponse message,
-            List<com.bigbike.bigbike_backend.api.chat.dto.ChatImageResponse> images
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatImageResponse> images,
+            List<com.bigbike.bigbike_backend.api.chat.dto.ChatVideoResponse> videos
     ) {
         return new AdminChatMessageResponse(
                 message.id(), message.sequenceNo(), message.role(), message.content(), message.source(),
                 message.aiCalled(), message.answerFormat(), message.resultKind(), message.productsJson(),
-                message.createdAt(), images);
+                message.createdAt(), images, videos);
     }
 
     private static DateRange normalizedRange(LocalDate from, LocalDate to) {

@@ -1,0 +1,15 @@
+{"caseId": "V_OWNER_READ", "http": 500}
+{"caseId": "V_ANONYMOUS_READ", "http": 404}
+{"caseId": "V_OTHER_VISITOR_READ", "http": 404}
+{"caseId": "V_EXPIRED_TURN_DEADLINE", "http": 200, "answer": "Em xin lỗi, em chưa xem xong video trong 60 giây. Anh/chị vui lòng gửi ảnh chụp các chi tiết cần hỏi để em hỗ trợ."}
+{"caseId": "V_TIMEOUT_REPLAY", "http": 200, "sameAnswer": true}
+{"caseId": "V_IMAGE_VIDEO_EXCLUSIVE", "http": 400, "error": {"code": "VALIDATION_ERROR", "message": "Validation failed.", "details": [{"field": "videoIds", "code": "CHAT_MEDIA_EXCLUSIVE", "message": "Mỗi lượt anh/chị vui lòng gửi một ảnh hoặc một video."}]}}
+{"caseId": "V_UPLOAD_REPLAY", "http": 200, "sameVideo": true}
+{"caseId": "V_SEVEN_DAY_ACCESS_CUTOFF", "http": 404}
+{"caseId": "V_RETENTION_JOB", "http": 200, "storedStatus": "DELETED", "quotaBefore": {"date": "2026-09-08", "text": 77, "images": 5, "videos": 2}, "quotaAfter": {"date": "2026-09-08", "text": 77, "images": 5, "videos": 2}}
+{"caseId": "V_OWNER_READ_RETEST_0", "http": 200, "bytes": 2348104, "cache": "no-store"}
+{"caseId": "V_OWNER_READ_RETEST_1", "http": 200, "bytes": 2348104, "cache": "no-store"}
+{"caseId": "V_OWNER_READ_RETEST_2", "http": 200, "bytes": 2348104, "cache": "no-store"}
+{"caseId": "V_FORMAT_MOV", "http": 200, "seconds": 7.181, "media": {"status": "PENDING", "mimeType": "video/mp4", "sizeBytes": 1136685, "durationSeconds": 12.005, "hasAudio": true, "createdAt": "2026-09-08T07:10:13.648984937Z", "expiresAt": "2026-09-15T07:10:06.545705307Z"}, "error": null}
+{"caseId": "V_FORMAT_WEBM", "http": 400, "seconds": 0.088, "media": {}, "error": {"code": "VALIDATION_ERROR", "message": "Validation failed.", "details": [{"field": "videoIds", "code": "CHAT_VIDEO_UNSUPPORTED_TYPE", "message": "Anh/chị vui lòng gửi video MP4, MOV hoặc WebM."}]}}
+{"caseId": "V_FORMAT_TOO_LONG", "http": 400, "seconds": 0.382, "media": {}, "error": {"code": "VALIDATION_ERROR", "message": "Validation failed.", "details": [{"field": "videoIds", "code": "CHAT_VIDEO_TOO_LONG", "message": "Please choose a video no longer than 15 seconds."}]}}

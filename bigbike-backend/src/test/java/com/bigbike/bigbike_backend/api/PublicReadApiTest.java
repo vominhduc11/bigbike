@@ -44,6 +44,9 @@ class PublicReadApiTest {
     @Autowired
     private BrandJpaRepository brandRepo;
 
+    @Autowired
+    private com.bigbike.bigbike_backend.repository.catalog.PublishedProductListingCache listingCache;
+
     @BeforeEach
     void setup() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
@@ -298,7 +301,8 @@ class PublicReadApiTest {
         seedProduct("facet-pr3-" + suffix, "Facet Price 3 " + suffix, cat, PublishStatus.PUBLISHED, 9_500_000L);
         ProductEntity discounted = productRepo.findBySlug("facet-pr1-" + suffix).orElseThrow();
         discounted.setSalePrice(BigDecimal.valueOf(400_000L));
-        productRepo.save(discounted);
+        productRepo.saveAndFlush(discounted);
+        listingCache.invalidate();
 
         mockMvc.perform(get("/api/v1/catalog/facets")
                         .param("category", catSlug)
@@ -407,7 +411,8 @@ class PublicReadApiTest {
         Instant now = Instant.now();
         p.setCreatedAt(now);
         p.setUpdatedAt(now);
-        productRepo.save(p);
+        productRepo.saveAndFlush(p);
+        listingCache.invalidate();
     }
 
     private BrandEntity seedBrand(String slug, String name) {
@@ -447,7 +452,8 @@ class PublicReadApiTest {
         Instant now = Instant.now();
         p.setCreatedAt(now);
         p.setUpdatedAt(now);
-        productRepo.save(p);
+        productRepo.saveAndFlush(p);
+        listingCache.invalidate();
 
         // Must return 200 — previously would return 400 (Pattern rejected underscore)
         mockMvc.perform(get("/api/v1/products/" + productId + "/snapshot"))
@@ -545,6 +551,7 @@ class PublicReadApiTest {
         Instant now = Instant.now();
         p.setCreatedAt(now);
         p.setUpdatedAt(now);
-        productRepo.save(p);
+        productRepo.saveAndFlush(p);
+        listingCache.invalidate();
     }
 }

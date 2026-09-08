@@ -1,0 +1,15 @@
+{"at":"2026-09-08T09:48:02.929Z","case":"english-video-controls-and-size-error","pass":true,"pageErrors":[]}
+{"at":"2026-09-08T09:48:04.836Z","case":"video-permission-owner","status":200,"cacheControl":"no-store","bytes":2212722}
+{"at":"2026-09-08T09:48:04.978Z","case":"video-permission-anonymous","status":404,"cacheControl":"no-cache, no-store, max-age=0, must-revalidate","bytes":179}
+{"at":"2026-09-08T09:48:05.102Z","case":"video-permission-other-visitor","status":404,"cacheControl":"no-cache, no-store, max-age=0, must-revalidate","bytes":179}
+{"at":"2026-09-08T09:48:05.753Z","case":"admin-anonymous-video-permission","status":401}
+{"at":"2026-09-08T09:48:06.537Z","case":"privacy-policy-vi","status":200,"videoAudioDisclosure":true,"sevenDayRetention":true}
+{"at":"2026-09-08T09:49:03.621Z","case":"english-video-controls-and-size-error","pass":true,"pageErrors":[]}
+{"at":"2026-09-08T09:49:05.359Z","case":"video-permission-owner","status":200,"cacheControl":"no-store","bytes":2212722}
+{"at":"2026-09-08T09:49:05.497Z","case":"video-permission-anonymous","status":404,"cacheControl":"no-cache, no-store, max-age=0, must-revalidate","bytes":179}
+{"at":"2026-09-08T09:49:05.637Z","case":"video-permission-other-visitor","status":404,"cacheControl":"no-cache, no-store, max-age=0, must-revalidate","bytes":179}
+{"at":"2026-09-08T09:49:06.297Z","case":"admin-anonymous-video-permission","status":401}
+{"at":"2026-09-08T09:49:07.090Z","case":"privacy-policy-vi","status":200,"videoAudioDisclosure":true,"sevenDayRetention":true}
+{"at":"2026-09-08T09:49:07.746Z","case":"privacy-policy-en","status":200,"videoAudioDisclosure":true,"sevenDayRetention":true}
+{"at":"2026-09-08T09:49:12.693Z","case":"admin-video-playback","duration":12.00161,"controls":true,"privateBlob":true,"played":true,"pageErrors":[]}
+{"at":"2026-09-08T09:49:13.869Z","case":"admin-authorized-video-permission","status":200,"cacheControl":"no-store"}

@@ -1,0 +1,24 @@
+{
+  "at": "2026-09-08T10:04:37.373309+00:00",
+  "imageId": "sha256:9895177fda3276f98426d1b1466999659a348dfbcc1b157de086b787f7876002",
+  "reloadPlayback": {
+    "at": "2026-09-08T10:04:25.790Z",
+    "case": "production-reload-playback",
+    "duration": 12.00161,
+    "controls": true,
+    "privateBlob": true,
+    "played": true
+  },
+  "runtime": {
+    "at": "2026-09-08T10:04:28.457Z",
+    "case": "production-browser-health",
+    "pageErrors": [],
+    "apiErrors": [],
+    "applicationConsoleErrors": [],
+    "externalConsoleWarnings": [
+      "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+      "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+    ]
+  },
+  "externalWarningAlreadyRecordedIn": "docs/audits/WEB_HEADER_UI_2026_09_07.md:61"
+}

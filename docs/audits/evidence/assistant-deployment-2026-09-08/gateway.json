@@ -1,0 +1,9 @@
+{
+  "at": "2026-09-08T09:40:33.488200+00:00",
+  "testExit": 0,
+  "reloadExit": 0,
+  "sha256": "9e7a2b7ec126b20d3ef83b889d419f3984934b93b796b2670e646c4e2505eacc",
+  "exactVideoLimit": "45m",
+  "otherLocationsUnchanged": true,
+  "forwardingHeaderOnNewRoute": "X-Forwarded-For: $remote_addr"
+}

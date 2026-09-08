@@ -1,0 +1,52 @@
+[
+  {
+    "fixture": "audio-muted-09.mp4",
+    "bytes": 157004,
+    "sha256": "2f0e0c616e0b174b32f425e41abdf40ae0e72cd31d64b2df9dd46552cdba4495"
+  },
+  {
+    "fixture": "audio-only-09.mp4",
+    "bytes": 311315,
+    "sha256": "305afbee58d278cba48261034017d674b763967ac781bcf8b9cb1adda59e98f1"
+  },
+  {
+    "fixture": "clip-01.mp4",
+    "bytes": 1750814,
+    "sha256": "a7aacf10ca4d8f090556f1c784a7c53eb68965cc969e3487648e002918a430b8"
+  },
+  {
+    "fixture": "clip-02.mp4",
+    "bytes": 2292826,
+    "sha256": "c5d805363a5d5360b0c948448ea1768f8d3e72fe57cfa5d2f564415177fc05d7"
+  },
+  {
+    "fixture": "clip-04.mp4",
+    "bytes": 1003741,
+    "sha256": "8b37b869531f93c2a113586c75d57ec7d74e11ed16884b6d4320640529c1ec5c"
+  },
+  {
+    "fixture": "clip-08.mp4",
+    "bytes": 1306918,
+    "sha256": "baf553f9bbc310a059d43b95093bffe7d06728d7b843ec707158c5d10bc81f03"
+  },
+  {
+    "fixture": "clip-09.mp4",
+    "bytes": 1166943,
+    "sha256": "c2e3f69c991ee7baea486deb47d8b01b5d99c05f51b9bc44b8ba2e7c6fad9c67"
+  },
+  {
+    "fixture": "clip-10.mp4",
+    "bytes": 2187588,
+    "sha256": "70cd129681e2e8a75cd960c70ef03d0c588ac3f5575c97ced9acf83bf68ae38b"
+  },
+  {
+    "fixture": "operation-04.mp4",
+    "bytes": 1296459,
+    "sha256": "40fa020c7592ac5188e50631be26a2c0ffc6a09a4cc7a7c5b0b673a4395798ce"
+  },
+  {
+    "fixture": "operation-08.mp4",
+    "bytes": 1522644,
+    "sha256": "8a5c462fca1d13ef5531f703b60a0c3ecd40768a7261e5236937337349f9c5d4"
+  }
+]

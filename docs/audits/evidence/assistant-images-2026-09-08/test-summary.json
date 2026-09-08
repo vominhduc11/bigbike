@@ -1,0 +1,32 @@
+{
+  "backend": {
+    "run": 1755,
+    "failures": 0,
+    "errors": 0,
+    "skipped": [
+      {
+        "class": "com.bigbike.bigbike_backend.api.PublicReadApiTest",
+        "test": "shouldReturnCategoryAndBrandDetailBySlug",
+        "reason": "Requires V1000 catalog seed (disabled) — data not available in H2 test context"
+      }
+    ],
+    "focusedAfterSchemaFix": {
+      "tests": 57,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "postgresHibernateValidationAndEntityRoundTrip": true
+    }
+  },
+  "web": {
+    "files": 104,
+    "tests": 687,
+    "focusedAfterCopyChange": 38
+  },
+  "admin": {
+    "files": 120,
+    "tests": 1148,
+    "focusedAfterDeepLinkChange": 22
+  },
+  "migrationToolTests": 7
+}

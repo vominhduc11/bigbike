@@ -1,0 +1,26 @@
+{
+  "startedAt": "2026-09-08T09:29:02.050312+00:00",
+  "baseCommit": "1e5bb99dc4f64a6fa3d5208cac9ce7213d92e095",
+  "services": {
+    "bigbike-backend": {
+      "imageId": "sha256:986bf283f3da1b7b221af3bc8ca69624f34d1c7318430decba2427a5638611df",
+      "rollbackTag": "bigbike-assistant-rollback-backend:20260908",
+      "containerId": "d445dc3ae35bd5892781d71ea205dfa41ee6a645e05db4bf5bc4cf091fcee3dc",
+      "health": "healthy"
+    },
+    "bigbike-web": {
+      "imageId": "sha256:4e9e15fbe133a4802a9052d13ad9d0602a616dc1375615a035e57f931a2a2f47",
+      "rollbackTag": "bigbike-assistant-rollback-web:20260908",
+      "containerId": "e3d04e031ab73a812fc97ab43ca69e349ed3a479e13272bae3fa7d8f51e356bb",
+      "health": "healthy"
+    },
+    "bigbike-admin": {
+      "imageId": "sha256:077885551933ebd008090febecd449948a4e00eba57a7f1eba3f50ec44c2f41e",
+      "rollbackTag": "bigbike-assistant-rollback-admin:20260908",
+      "containerId": "00bddd0e7883ed57f62e41ccf1536f2f62d222e88c7b25ff23b476793d5595ed",
+      "health": "healthy"
+    }
+  },
+  "gatewaySha256": "2c8eacf50c8f9433bb0fb651472accce1010b5240bc740ca3c7473143974373e",
+  "environmentSha256": "1d1d6ba0a6d12fec3cd13b993329624139b1f8b29f723db647aa4d5c2a9bd19a"
+}

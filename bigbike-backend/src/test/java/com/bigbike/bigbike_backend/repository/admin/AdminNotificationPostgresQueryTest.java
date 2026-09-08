@@ -97,6 +97,22 @@ class AdminNotificationPostgresQueryTest {
     }
 
     @Test
+    void receiptScopeNeverLeaksIntoOrderOrInventoryInboxes() {
+        Instant now = Instant.now();
+        persist("NEW_ORDER", now);
+        persist("INVENTORY_OUT_OF_STOCK_DIGEST", now);
+        persist("CHAT_BANK_TRANSFER_RECEIPT", now);
+        var chatOnly = service.inboxFor(UUID.randomUUID(), false, false, true);
+        assertThat(chatOnly.items()).isNotEmpty().allSatisfy(item ->
+                assertThat(item.notification().getType()).isEqualTo("CHAT_BANK_TRANSFER_RECEIPT"));
+        assertThat(service.inboxFor(UUID.randomUUID(), true, true, false).items()).noneMatch(item ->
+                item.notification().getType().equals("CHAT_BANK_TRANSFER_RECEIPT"));
+        assertThat(notificationRepository.countScopedAfter(false, false, true, now.minusSeconds(1))).isEqualTo(1);
+        notificationRepository.deleteOlderThanBatch(now.plusSeconds(1), 500);
+        assertThat(notificationRepository.countScoped(false, false, true)).isEqualTo(1);
+    }
+
+    @Test
     void retentionDeletesExpiredRowsWithoutChangingPerAdminReadMarker() {
         ZoneId vietnam = ZoneId.of("Asia/Ho_Chi_Minh");
         ZonedDateTime now = ZonedDateTime.now(vietnam);

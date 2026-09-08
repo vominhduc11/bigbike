@@ -1,0 +1,104 @@
+{
+  "checkedAt": "2026-09-08T16:04:58.916655+00:00",
+  "composeCommand": "docker compose --env-file .env.vps --parallel 1 up -d --build --wait --wait-timeout 240",
+  "services": [
+    {
+      "name": "bigbike-backend",
+      "health": "healthy",
+      "startedAt": "2026-09-08T16:02:45.443645797Z",
+      "image": "sha256:f6b90543edfe99a05eeb28fa1b40dda9018e2421376cf3d12be66ce3beca1340",
+      "recreated": true,
+      "memoryLimitUnchanged": true,
+      "restartCount": 0
+    },
+    {
+      "name": "bigbike-web",
+      "health": "healthy",
+      "startedAt": "2026-09-08T16:03:44.860324809Z",
+      "image": "sha256:ded3b4afe4c2551bed591df94f8c67c41f2d727fc6818f786895ff907a0f6504",
+      "recreated": true,
+      "memoryLimitUnchanged": true,
+      "restartCount": 0
+    },
+    {
+      "name": "bigbike-admin",
+      "health": "healthy",
+      "startedAt": "2026-09-08T16:03:44.853847886Z",
+      "image": "sha256:1634ae7787696e55ab7784508592c2949a20b19dd86b05d60c538a2b5839763a",
+      "recreated": true,
+      "memoryLimitUnchanged": true,
+      "restartCount": 0
+    },
+    {
+      "name": "bigbike-postgres",
+      "health": "healthy",
+      "startedAt": "2026-09-06T13:11:55.84558863Z",
+      "image": "sha256:108b27c919e6e7bc124350fb265deea9adac58e118eade428c6d1ad44b90debe",
+      "recreated": false,
+      "memoryLimitUnchanged": true,
+      "restartCount": 0
+    },
+    {
+      "name": "bigbike-redis",
+      "health": "healthy",
+      "startedAt": "2026-09-06T13:11:55.829381147Z",
+      "image": "sha256:2a51817f79255c8b69f86a974459c2e0359aff81417d80158f2b9e541e6f4b33",
+      "recreated": false,
+      "memoryLimitUnchanged": true,
+      "restartCount": 0
+    },
+    {
+      "name": "bigbike-minio",
+      "health": "healthy",
+      "startedAt": "2026-09-06T13:11:55.900833164Z",
+      "image": "sha256:9d668e47f1fc60ea49af4203deee87a657eb1aa0e2761fee2c7c2d1df282c880",
+      "recreated": false,
+      "memoryLimitUnchanged": true,
+      "restartCount": 0
+    }
+  ],
+  "database": {
+    "migration": {
+      "version": "1082",
+      "success": true
+    },
+    "imageLimit": 60,
+    "imageSettingPrivate": true,
+    "textLimit": 400,
+    "date": "2026-09-08",
+    "imagesUsed": 8,
+    "oldSingleImageConstraintGone": true,
+    "orderedImageIndexPresent": true
+  },
+  "before": {
+    "textLimit": 400,
+    "date": "2026-09-08",
+    "imagesUsed": 8
+  },
+  "availability": {
+    "vi": {
+      "enabled": true,
+      "maxBytes": 8388608,
+      "maxPerTurn": 3,
+      "maxPerConversation": 9,
+      "dailyLimit": 60
+    },
+    "en": {
+      "enabled": true,
+      "maxBytes": 8388608,
+      "maxPerTurn": 3,
+      "maxPerConversation": 9,
+      "dailyLimit": 60
+    }
+  },
+  "privateImageSettingAbsentFromPublicSettings": true,
+  "httpStatus": {
+    "https://bigbike.vn/": 200,
+    "https://bigbike.vn/en/": 200,
+    "https://admin.bigbike.vn/": 200,
+    "https://api.bigbike.vn/actuator/health": 200
+  },
+  "realAiCallsByThisVerification": 0,
+  "customerConversationsRead": 0,
+  "customerImagesRead": 0
+}

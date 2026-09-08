@@ -1,0 +1,10 @@
+{
+  "activePath": "/etc/nginx/sites-available/api.bigbike.vn",
+  "activeSha256": "2c8eacf50c8f9433bb0fb651472accce1010b5240bc740ca3c7473143974373e",
+  "candidateSha256": "05b218164e882fd38480be57bfecab09234447486175d2469a55224d12390273",
+  "candidateSyntaxExitCode": 0,
+  "activeConfigChanged": false,
+  "nginxReloaded": false,
+  "currentGeneralLimit": "10m",
+  "proposedExactVideoRouteLimit": "45m"
+}

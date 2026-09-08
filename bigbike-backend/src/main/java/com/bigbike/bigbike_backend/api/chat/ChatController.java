@@ -50,6 +50,12 @@ public class ChatController {
     private final ChatService chatService;
     private final ChatVisitorService chatVisitorService;
     private final ChatImageService chatImageService;
+    private com.bigbike.bigbike_backend.service.chat.ChatVideoService chatVideoService;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setChatVideoService(com.bigbike.bigbike_backend.service.chat.ChatVideoService service) {
+        this.chatVideoService = service;
+    }
+
     private final ApiResponseFactory apiResponseFactory;
     private final RateLimitService rateLimitService;
 
@@ -150,6 +156,38 @@ public class ChatController {
             @RequestHeader(value = "X-Chat-Visitor-Token", required = false) String visitorToken
     ) {
         var content = chatImageService.customerContent(
+                id, currentCustomerId(), resolveVisitorId(visitorToken));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(MediaType.parseMediaType(content.mimeType()))
+                .body(content.bytes());
+    }
+
+    @PostMapping(path = "/videos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiDataResponse<com.bigbike.bigbike_backend.api.chat.dto.ChatVideoUploadResponse> uploadVideo(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam UUID requestId,
+            @RequestParam(required = false) UUID conversationId,
+            @RequestParam(defaultValue = "vi")
+            @Pattern(regexp = "^(vi|en)$", message = "Ngôn ngữ phải là vi hoặc en.") String lang,
+            @RequestHeader(value = "X-Chat-Visitor-Token", required = false) String visitorToken,
+            HttpServletRequest request
+    ) {
+        java.time.Instant receivedAt = java.time.Instant.now();
+        UUID scopeId = conversationId == null ? requestId : conversationId;
+        rateLimitService.checkOrThrow(
+                RateLimitTier.CHAT, RateLimitScope.CONVERSATION, scopeId.toString());
+        return apiResponseFactory.data(chatVideoService.upload(
+                requestId, conversationId, lang, file, currentCustomerId(),
+                resolveVisitorId(visitorToken), receivedAt), request);
+    }
+
+    @GetMapping("/videos/{id}/content")
+    public ResponseEntity<byte[]> videoContent(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Chat-Visitor-Token", required = false) String visitorToken
+    ) {
+        var content = chatVideoService.customerContent(
                 id, currentCustomerId(), resolveVisitorId(visitorToken));
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())

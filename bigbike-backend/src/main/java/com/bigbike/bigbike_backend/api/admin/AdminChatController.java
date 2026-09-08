@@ -34,6 +34,12 @@ public class AdminChatController extends AdminControllerSupport {
 
     private final AdminChatService adminChatService;
     private final ChatImageService chatImageService;
+    private com.bigbike.bigbike_backend.service.chat.ChatVideoService chatVideoService;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setChatVideoService(com.bigbike.bigbike_backend.service.chat.ChatVideoService service) {
+        this.chatVideoService = service;
+    }
+
     private final DevAdminAuthService devAdminAuthService;
     private final ApiResponseFactory apiResponseFactory;
 
@@ -78,6 +84,16 @@ public class AdminChatController extends AdminControllerSupport {
     ) {
         devAdminAuthService.requirePermission(request, "chat.read");
         return apiResponseFactory.data(adminChatService.get(id), request);
+    }
+
+    @GetMapping("/videos/{id}/content")
+    public ResponseEntity<byte[]> videoContent(@PathVariable UUID id, HttpServletRequest request) {
+        devAdminAuthService.requirePermission(request, "chat.read");
+        var content = chatVideoService.adminContent(id);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(MediaType.parseMediaType(content.mimeType()))
+                .body(content.bytes());
     }
 
     @GetMapping("/images/{id}/content")

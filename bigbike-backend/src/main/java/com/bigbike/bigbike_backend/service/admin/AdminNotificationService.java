@@ -112,6 +112,17 @@ public class AdminNotificationService {
         return new InboxView(items, unreadCount);
     }
 
+    @Transactional(readOnly = true)
+    public InboxView inboxFor(UUID adminId, boolean orders, boolean inventory, boolean chat) {
+        if (!chat) return inboxFor(adminId, orders, inventory);
+        Instant lastReadAt = readRepo.findById(adminId).map(AdminNotificationReadEntity::getLastReadAt).orElse(null);
+        var items = notificationRepo.findScoped(orders, inventory, true, PageRequest.of(0, MAX_FETCH)).stream()
+                .map(notification -> new NotificationView(notification, isReadForAdmin(notification, lastReadAt))).toList();
+        long unread = lastReadAt == null ? notificationRepo.countScoped(orders, inventory, true)
+                : notificationRepo.countScopedAfter(orders, inventory, true, lastReadAt);
+        return new InboxView(items, unread);
+    }
+
     private long countVisible(boolean includeOrders, boolean includeInventory, Instant lastReadAt) {
         if (includeOrders && includeInventory) {
             return lastReadAt == null

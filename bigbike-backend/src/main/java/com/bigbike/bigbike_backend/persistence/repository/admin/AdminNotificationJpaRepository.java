@@ -83,12 +83,39 @@ public interface AdminNotificationJpaRepository extends JpaRepository<AdminNotif
             """)
     long countAllVisibleAfter(@Param("since") Instant since);
 
+    @Query("""
+            select n from AdminNotificationEntity n where ((:orders = true and (n.type like 'ORDER_%' or n.type = 'NEW_ORDER'))
+               or (:inventory = true and n.type = 'INVENTORY_OUT_OF_STOCK_DIGEST')
+               or (:chat = true and n.type = 'CHAT_BANK_TRANSFER_RECEIPT'))
+            order by n.createdAt desc
+            """)
+    List<AdminNotificationEntity> findScoped(@Param("orders") boolean orders,
+            @Param("inventory") boolean inventory, @Param("chat") boolean chat, Pageable pageable);
+
+    @Query("""
+            select count(n) from AdminNotificationEntity n where ((:orders = true and (n.type like 'ORDER_%' or n.type = 'NEW_ORDER'))
+               or (:inventory = true and n.type = 'INVENTORY_OUT_OF_STOCK_DIGEST')
+               or (:chat = true and n.type = 'CHAT_BANK_TRANSFER_RECEIPT'))
+            """)
+    long countScoped(@Param("orders") boolean orders, @Param("inventory") boolean inventory,
+            @Param("chat") boolean chat);
+
+    @Query("""
+            select count(n) from AdminNotificationEntity n where ((:orders = true and (n.type like 'ORDER_%' or n.type = 'NEW_ORDER'))
+               or (:inventory = true and n.type = 'INVENTORY_OUT_OF_STOCK_DIGEST')
+               or (:chat = true and n.type = 'CHAT_BANK_TRANSFER_RECEIPT'))
+              and n.createdAt > :since
+            """)
+    long countScopedAfter(@Param("orders") boolean orders, @Param("inventory") boolean inventory,
+            @Param("chat") boolean chat, @Param("since") Instant since);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = """
             with candidates as (
                 select id
                 from admin_notifications
                 where created_at < :cutoff
+                  and type <> 'CHAT_BANK_TRANSFER_RECEIPT'
                 order by created_at, id
                 limit :batchSize
                 for update skip locked

@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, Bell, Check, Clock, PackageX, ShoppingCart } from 'lucide-react'
+import {
+  AlertCircle,
+  Bell,
+  Check,
+  Clock,
+  PackageX,
+  ShoppingCart,
+  MessageSquare,
+} from 'lucide-react'
 import { registerAdminWsReconnectListener, subscribeAdminWs } from '../lib/adminWebSocket'
 import { fetchAdminNotifications, markAllAdminNotificationsRead } from '../lib/adminApi'
 import { useAuth, useHasPermission } from '../lib/auth'
@@ -42,7 +50,9 @@ function keyOf(it) {
 function loadStored(storageKey) {
   try {
     const raw = JSON.parse(localStorage.getItem(storageKey))
-    return Array.isArray(raw) ? raw.slice(0, MAX_ITEMS) : []
+    return Array.isArray(raw)
+      ? raw.filter((item) => item.type !== 'CHAT_BANK_TRANSFER_RECEIPT').slice(0, MAX_ITEMS)
+      : []
   } catch {
     return []
   }
@@ -62,7 +72,10 @@ function loadClearedAt(storageKey) {
 
 function persist(storageKey, items) {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(items))
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify(items.filter((item) => item.type !== 'CHAT_BANK_TRANSFER_RECEIPT')),
+    )
   } catch {
     /* quota / private mode — keep working from memory */
   }
@@ -277,9 +290,14 @@ export function NotificationBell({ navigate }) {
   const hasPermission = useHasPermission()
   const canViewOrders = hasPermission('orders.read')
   const canViewInventory = hasPermission('inventory.read')
-  const canViewNotifications = canViewOrders || canViewInventory
+  const canViewChat = hasPermission('chat.read')
+  const canViewNotifications = canViewOrders || canViewInventory || canViewChat
   const scopes =
-    [canViewOrders ? 'orders' : null, canViewInventory ? 'inventory' : null]
+    [
+      canViewOrders ? 'orders' : null,
+      canViewInventory ? 'inventory' : null,
+      canViewChat ? 'chat' : null,
+    ]
       .filter(Boolean)
       .join('+') || 'none'
   const storageKey = storageKeyFor(user?.email, scopes)
@@ -372,7 +390,7 @@ export function NotificationBell({ navigate }) {
               ? fetchedUnreadCount
               : null,
           )
-          if (serverItems.length === 0) return
+          if (serverItems.length === 0 && !canViewChat) return
           setItems((prev) => {
             const prevByKey = new Map(prev.map((it) => [keyOf(it), it]))
             const merged = new Map()
@@ -385,7 +403,8 @@ export function NotificationBell({ navigate }) {
             }
             // keep local items the server did not return (live WS not yet persisted, read history)
             for (const it of prev) {
-              if (!merged.has(keyOf(it))) merged.set(keyOf(it), it)
+              if (it.type !== 'CHAT_BANK_TRANSFER_RECEIPT' && !merged.has(keyOf(it)))
+                merged.set(keyOf(it), it)
             }
             const next = [...merged.values()].sort((a, b) => b.at - a.at).slice(0, MAX_ITEMS)
             persist(storageKey, next)
@@ -403,11 +422,17 @@ export function NotificationBell({ navigate }) {
     // realtime, nên chỉ nghe tiếp là mất luôn phần đó cho tới lần tải lại trang. Nối lại
     // được thì nạp lại kho thông báo để bắt kịp (cùng cách useAdminPresence đang dùng).
     const removeReconnectListener = registerAdminWsReconnectListener(hydrate)
+    const interval = canViewChat
+      ? window.setInterval(() => {
+          if (document.visibilityState !== 'hidden') hydrate()
+        }, 30000)
+      : null
     return () => {
+      if (interval !== null) window.clearInterval(interval)
       active = false
       removeReconnectListener()
     }
-  }, [canViewNotifications, storageKey, refreshToken])
+  }, [canViewNotifications, canViewChat, storageKey, refreshToken])
 
   const localUnread = items.reduce((n, it) => n + (it.read ? 0 : 1), 0)
   // Once the server has answered, its count is authoritative even when the local
@@ -466,7 +491,11 @@ export function NotificationBell({ navigate }) {
   }
 
   function openNotification(item) {
-    if (item.type === 'INVENTORY_OUT_OF_STOCK_DIGEST') {
+    if (item.type === 'CHAT_BANK_TRANSFER_RECEIPT' && canViewChat && item.conversationId) {
+      navigate(
+        `/admin/chat/${encodeURIComponent(item.conversationId)}?message=${encodeURIComponent(item.messageId)}`,
+      )
+    } else if (item.type === 'INVENTORY_OUT_OF_STOCK_DIGEST') {
       setSelectedDigest(item)
     } else if (item.type === 'ORDER_OVERDUE_DIGEST') {
       navigate('/admin/orders?orderScope=OPERATIONAL&orderStatus=PENDING&attention=OVERDUE')
@@ -540,6 +569,7 @@ export function NotificationBell({ navigate }) {
             ) : (
               items.map((item) => {
                 const fresh = seenUnread.has(item.id)
+                const isReceipt = item.type === 'CHAT_BANK_TRANSFER_RECEIPT'
                 const isOverdueDigest = item.type === 'ORDER_OVERDUE_DIGEST'
                 const isInventoryDigest = item.type === 'INVENTORY_OUT_OF_STOCK_DIGEST'
                 return (
@@ -552,7 +582,9 @@ export function NotificationBell({ navigate }) {
                     )}
                   >
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-surface-selected text-primary">
-                      {isInventoryDigest ? (
+                      {isReceipt ? (
+                        <MessageSquare size={15} aria-hidden="true" />
+                      ) : isInventoryDigest ? (
                         <PackageX size={15} aria-hidden="true" />
                       ) : isOverdueDigest ? (
                         <Clock size={15} aria-hidden="true" />
@@ -563,13 +595,15 @@ export function NotificationBell({ navigate }) {
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2">
                         <span className="block text-sm font-semibold text-foreground">
-                          {isInventoryDigest
-                            ? t('notifications.inventoryDigest')
-                            : isOverdueDigest
-                              ? t('notifications.overdueDigestTitle')
-                              : item.type === 'NEW_ORDER'
-                                ? t('notifications.newOrder')
-                                : t('notifications.orderUpdate')}
+                          {isReceipt
+                            ? t('notifications.transferReceipt')
+                            : isInventoryDigest
+                              ? t('notifications.inventoryDigest')
+                              : isOverdueDigest
+                                ? t('notifications.overdueDigestTitle')
+                                : item.type === 'NEW_ORDER'
+                                  ? t('notifications.newOrder')
+                                  : t('notifications.orderUpdate')}
                         </span>
                         {fresh && (
                           <>
@@ -582,7 +616,9 @@ export function NotificationBell({ navigate }) {
                         )}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {isInventoryDigest ? (
+                        {isReceipt ? (
+                          t('notifications.transferReceiptDescription')
+                        ) : isInventoryDigest ? (
                           t('notifications.inventoryDigestSummary', {
                             full: Number(item.digest?.counts?.fullyOutOfStockProducts) || 0,
                             partial: Number(item.digest?.counts?.partiallyOutOfStockProducts) || 0,

@@ -136,6 +136,15 @@ class ChatImageChainedTurnTest {
         assertThat(response.resultKind()).isEqualTo("PRODUCT_RESULTS");
     }
 
+    @Test
+    void photoSimilarityDoesNotReintroduceProductsOutsideTheCustomersFilter() {
+        Fixture fixture = fixture();
+        fixture.imageResult(imageResult(true, card("over-budget")));
+        fixture.fastPathAnswer("Mẫu phù hợp đang bán giá 6.100.000 ₫.", List.of(card("within-budget")));
+        var response = fixture.send("Tìm mũ tương tự dưới 7 triệu.");
+        assertThat(response.products()).extracting(ChatProductCardResponse::slug).containsExactly("within-budget");
+    }
+
     private static ChatImageService.ImageTurnResult imageResult(
             boolean continuesToText, ChatProductCardResponse... cards) {
         return new ChatImageService.ImageTurnResult(
@@ -199,6 +208,9 @@ class ChatImageChainedTurnTest {
                 // which keeps these assertions about the chaining itself.
                 new ChatResponseGuard(), quota, null, null,
                 images);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "visitorService", mock(ChatVisitorService.class));
+        when(images.deadline(any(), any(), any(), any(), any())).thenReturn(java.time.Instant.now().plusSeconds(65));
+        when(tools.imageContextForQuestion(any(), any(), any(), any())).thenAnswer(call -> call.getArgument(2));
         return new Fixture(service, tools, images, conversation, conversationId, saved);
     }
 

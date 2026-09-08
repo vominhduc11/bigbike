@@ -28,6 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -54,9 +55,9 @@ public class ChatToolService {
     private static final Pattern PRODUCT_URL = Pattern.compile(
             "/(?:product|san-pham|sp)/([a-z0-9-]+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern COLOR_REQUEST = Pattern.compile(
-            "\\b(?:mau sac|mau|color|colour)\\s+([a-z0-9]+)\\b");
+            "\\b(?:mau sac|mau|color|colour|in)\\s+([a-z0-9]+)\\b");
     private static final Pattern SIZE_REQUEST = Pattern.compile(
-            "\\b(?:size|kich co)\\s*[:：-]?\\s*([a-z0-9]+)\\b");
+            "\\b(?:(?:size|kich co)\\s*[:：-]?\\s*([a-z0-9]+)|in\\s+(xxs|xs|s|m|l|xl|xxl|xxxl|2xl|3xl))\\b");
     private static final Pattern RAW_OPTION_SLUG = Pattern.compile(
             "^[a-z0-9]+(?:[-_][a-z0-9]+)+$", Pattern.CASE_INSENSITIVE);
     private static final Pattern UNSAFE_OPTION_VALUE = Pattern.compile(
@@ -161,7 +162,7 @@ public class ChatToolService {
      */
     private static final String ATTRIBUTE_QUESTION_WORDS =
             "(?iU)\\b(?:gia|price|cost|bao nhieu|how much|trong luong|can nang|nang|weight|"
-                    + "gram|gam|kg|khoi luong|nhe khong|nang khong|how heavy|"
+                    + "grams?|gam|kg|khoi luong|nhe khong|nang khong|how heavy|weighs?|how long|how many days|bao lau|may thang|"
                     + "thong so ky thuat|thong so|ky thuat|chuan an toan|safety standards?|"
                     + "technical details?|chi tiet|"
                     + "specifications?|specs?|size|sizes|kich co|bang size|bang co|"
@@ -170,14 +171,15 @@ public class ChatToolService {
     private static final int POLICY_EXCERPT_SENTENCES = 4;
     private static final int POLICY_EXCERPT_CHARS = 700;
     private static final Set<String> NON_CATEGORY_WORDS = Set.of(
-            "cho", "di", "do", "va", "voi", "de", "cac", "khi", "theo", "tren", "duoi",
+            "cho", "di", "do", "va", "voi", "de", "cac", "khi", "theo", "tren", "duoi", "khong", "co", "con",
             "cua", "ma", "moi", "hay", "hoac", "tu", "den", "ve", "ra", "vao", "len",
             "xuong", "trong", "ngoai", "sau", "truoc", "boi", "bang", "mua", "xe", "may",
             "dau", "nay", "kia", "day", "gi", "sao", "nao", "bao", "duoc",
             "moto", "phu", "kien", "loai", "hang", "san", "pham", "and", "or", "for",
             "with", "the", "a", "an", "of", "to", "in", "on", "by", "from", "all",
             "your", "my", "me", "bike", "motorcycle", "accessories", "accessory",
-            "products", "product", "items", "item");
+            "products", "product", "items", "item", "gear", "riding", "protective", "wear", "thao", "lat",
+            "summer", "touring", "waterproof", "mesh", "adventure", "phuot", "mo", "he", "ho");
     /**
      * An approved product-type text filter prevents a product merely co-categorized with
      * headsets (for example a camera) from being counted or shown as a headset. This is an
@@ -199,6 +201,10 @@ public class ChatToolService {
     private final OrderReadService orderReadService;
     private final ContentReadRepository contentReadRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private ChatAssistantSettings assistantSettings;
+
+    @Autowired
+    void setAssistantSettings(ChatAssistantSettings settings) { this.assistantSettings = settings; }
 
     @Autowired
     public ChatToolService(
@@ -293,6 +299,68 @@ public class ChatToolService {
                 clarificationSelection);
     }
 
+    /** A new explicit catalog target supersedes a photo; generic follow-ups keep its scope. */
+    public ConversationContext imageContextForQuestion(String question, String lang,
+            ConversationContext context, ChatClarificationSelectionRequest selection) {
+        ChatImageEvidence evidence = context.imageEvidence();
+        if (evidence == null) return context;
+        if (evidence.ambiguous()) {
+            if (selection != null && evidence.clarificationId() != null
+                    && evidence.clarificationId().equals(selection.clarificationId())) {
+                return context.withImageEvidence(evidence.select(selection.optionId()));
+            }
+            // A new, explicit request can replace the pending photo selection.
+        }
+        CatalogIntent direct = resolveCatalogIntent(question, lang);
+        if (direct.brand() != null && !direct.brand().equals(evidence.brand())) return ConversationContext.empty();
+        if (direct.category() != null && evidence.group() != null && !direct.category().equals(evidence.group())) {
+            return ConversationContext.empty();
+        }
+        if (evidence.brand() == null && evidence.brandName() != null
+                && hasWord(normalizeIntent(question), "tuong duong", "hang khac", "similar", "alternatives", "other brands")) {
+            return new ConversationContext(evidence.group(), null, null, null, List.of(), false);
+        }
+        return context;
+    }
+
+    private Optional<ToolOutcome> imageScopeOutcome(String question, String lang, ConversationContext context) {
+        ChatImageEvidence evidence = context.imageEvidence();
+        if (evidence == null) return Optional.empty();
+        boolean en = "en".equals(lang);
+        if (evidence.ambiguous()) {
+            return Optional.of(new ToolOutcome(false, en
+                    ? "The images show different items. Which image would you like help with first?"
+                    : "Các ảnh đang chỉ tới những món khác nhau. Anh/chị muốn em tìm theo ảnh nào trước?",
+                    ChatMessageSource.TOOL, "{}", List.of(), false, false, List.of(), Set.of(), false,
+                    null, List.of(), null, evidence.clarification(lang), null));
+        }
+        if (!evidence.hasScope()) return Optional.empty();
+        String normalized = normalizeIntent(question);
+        boolean findSuitable = Set.of("tim san pham phu hop", "find suitable products").contains(padWords(normalized).trim());
+        boolean broad = findSuitable || isNeedPrompt(normalized) || hasWord(normalized, "thuong hieu nay", "hang nay", "san pham nay",
+                "loai nay", "this brand", "this item", "these products", "these images", "this image");
+        // Unknown manufacturers never turn into a category bestseller list.
+        if (evidence.brandName() != null && evidence.brand() == null && broad) {
+            return Optional.of(ToolOutcome.local(en
+                    ? "BigBike does not currently sell " + evidence.brandName() + ". Would you like similar products from the brands we carry?"
+                    : "Hiện BigBike chưa kinh doanh " + evidence.brandName() + ". Anh/chị muốn xem sản phẩm tương đương từ các hãng bên em đang bán không?",
+                    ChatMessageSource.TOOL, false, false));
+        }
+        if (!broad || extractPriceIntent(normalized).hasBounds()
+                || isPersonalSizeQuestion(normalized) || (!findSuitable && asksForProductDetail(normalized))) return Optional.empty();
+        List<Product> matching = catalogReadService.listAssistantDecisionProducts(lang).stream()
+                .filter(product -> evidence.brand() == null || product.brand() != null && evidence.brand().equals(product.brand().slug()))
+                .filter(product -> evidence.group() == null
+                        || productBelongsTo(product, Set.of(evidence.group())))
+                .filter(ChatToolService::isDecisionCardEligible).sorted(decisionProductComparator()).toList();
+        List<ChatProductCardResponse> cards = matching.stream().limit(8).map(ChatToolService::toCard).toList();
+        String answer = cards.isEmpty() ? (en ? "These items are currently out of stock. The shop can help you check alternatives."
+                : "Các mẫu này hiện đang tạm hết hàng. Shop có thể giúp anh/chị tìm lựa chọn phù hợp khác.")
+                : (en ? "You can browse the available models below." : "Anh/chị xem các mẫu đang có hàng bên dưới nhé.");
+        return Optional.of(ToolOutcome.decided(answer, cards,
+                new SearchScope(evidence.group(), evidence.brand(), context.minPrice(), context.maxPrice()), null));
+    }
+
     private Optional<ToolOutcome> resolveFastPathActive(
             String question,
             String lang,
@@ -304,10 +372,46 @@ public class ChatToolService {
         String normalized = normalizeIntent(question);
         boolean english = "en".equals(lang);
 
+        Optional<ToolOutcome> imageOutcome = imageScopeOutcome(question, lang, conversationContext);
+        if (imageOutcome.isPresent()) return imageOutcome;
+
         if (isLoginAcknowledgement(normalized)
                 && conversationContext.awaitingOrderLogin()
                 && customerId != null) {
             return Optional.of(orderOutcome(customerId, english, OrderScope.LATEST));
+        }
+
+        if (!isKnownOffTopic(normalized) && isPriceNegotiationRequest(normalized)) {
+            ToolOutcome commitment = priceNegotiationOutcome(english);
+            List<Product> candidates = recentProductSelection(question, normalized, lang, english,
+                    conversationContext, false).orElse(List.of());
+            if (candidates.size() != 1) {
+                candidates = catalogReadService.listAssistantDecisionProducts(lang).stream()
+                        .filter(product -> product.brand() != null
+                                && hasWord(normalized, normalize(product.brand().name())))
+                        .filter(product -> ProductSearchTerms.tokens(product.name()).stream()
+                                .anyMatch(token -> token.matches("(?=.*[a-z])(?=.*\\d)[a-z0-9]+")
+                                        && !token.equals(normalize(product.brand().name()))
+                                        && hasWord(normalized, token)))
+                        .filter(ChatToolService::isDecisionCardEligible).toList();
+            }
+            if (candidates.size() == 1) {
+                String answer = commitment.localAnswer().replaceAll(english
+                        ? " I can also show you.*$" : " Em cũng có thể giới thiệu.*$", "");
+                return Optional.of(ToolOutcome.local(answer, ChatMessageSource.RULE, false, true,
+                        List.of(), List.of(toCard(candidates.get(0)))));
+            }
+            return Optional.of(commitment);
+        }
+
+        if ((hasWord(normalized, "lightweight") || question.toLowerCase(Locale.ROOT).contains("nhẹ"))
+                && hasWord(normalized, "mu", "helmet", "helmets")
+                && !hasWord(normalized, "nhe nhat", "lightest")
+                && !extractProductQuery(question).hasSpecificIdentifier()) {
+            return Optional.of(ToolOutcome.local(english
+                    ? "What maximum weight would you prefer for the helmet? Weight varies by model and size, so I need that detail before recommending a lightweight option."
+                    : "Anh/chị muốn mũ nặng tối đa khoảng bao nhiêu gram? Cân nặng phụ thuộc mẫu và size, nên em cần biết mức mong muốn trước khi gợi ý mũ nhẹ.",
+                    ChatMessageSource.RULE, false, false));
         }
 
         // Product cards are verified server state, so a demonstrative/comparison follow-up is
@@ -321,6 +425,23 @@ public class ChatToolService {
         Optional<ToolOutcome> namedComparison = namedComparisonOutcome(
                 question, normalized, lang, english);
         if (namedComparison.isPresent()) return namedComparison;
+
+        if (asksForProductDetail(normalized)) {
+            CatalogIntent namedScope = resolveCatalogIntent(question, lang);
+            ProductQuery namedQuery = extractProductQuery(question, namedScope.metadataTokens());
+            if (namedQuery.hasSpecificIdentifier()) {
+                List<Product> named = catalogReadService.searchProductsForAssistant(
+                        namedQuery.identifiers(), null, namedScope.brand(),
+                        null, null, "createdAt:desc", 10, lang).stream()
+                        .filter(product -> productMatchesIdentifiers(product, namedQuery.identifiers())).toList();
+                if (named.size() == 1 && isDecisionCardEligible(named.get(0))) {
+                    Product detailProduct = catalogReadService.getProductBySlug(named.get(0).slug(), lang);
+                    DeterministicAnswer detail = productDetailAnswer(question, normalized, english, detailProduct);
+                    if (detail != null) return Optional.of(ToolOutcome.local(detail.answer(),
+                            ChatMessageSource.TOOL, false, false, List.of(), List.of(toCard(detailProduct))));
+                }
+            }
+        }
 
         // "Cái mũ đó còn không?" points at something the assistant cannot see. Asking one short
         // question is the honest answer; guessing turned a helmet question into a list of bags.
@@ -361,8 +482,8 @@ public class ChatToolService {
         if (isAmbiguousBudget(normalized)) {
             return Optional.of(ToolOutcome.local(
                     english
-                            ? "I can filter products once I know your budget. What price range would you like me to check?"
-                            : "Anh/chị muốn xem trong tầm giá nào để em lọc sản phẩm theo ngân sách ạ?",
+                            ? "What price range would you like me to check?"
+                            : "Anh/chị muốn xem sản phẩm trong tầm giá nào ạ?",
                     ChatMessageSource.RULE, false, false));
         }
         if (isLightestQuestion(normalized)) {
@@ -380,6 +501,9 @@ public class ChatToolService {
         }
         if (isPromotionLookup(normalized)) {
             return Optional.of(promotionOutcome(lang, english));
+        }
+        if (!isKnownOffTopic(normalized) && isPriceNegotiationRequest(normalized)) {
+            return Optional.of(priceNegotiationOutcome(english));
         }
         if (isDirectContactRequest(normalized)) {
             return Optional.of(ToolOutcome.local(
@@ -411,7 +535,7 @@ public class ChatToolService {
                     english
                             ? "I can only help with products currently sold by BigBike, store policies and your signed-in orders. I can’t advise on motorcycles, politics or topics outside the shop. Please contact BigBike through Hotline, Zalo or Messenger for other shop support."
                             : "Em hỗ trợ về sản phẩm BigBike đang bán, chính sách cửa hàng và đơn của tài khoản đã đăng nhập. Nội dung này ngoài phần em phụ trách. Anh/chị liên hệ BigBike qua Hotline, Zalo hoặc Messenger để được hỗ trợ.",
-                    ChatMessageSource.RULE, true, false));
+                    ChatMessageSource.OUT_OF_SCOPE, true, false));
         }
         // Deliberately last, and after the off-topic gate: a bargaining phrase such as "có giảm
         // không" also appears in questions about gold prices. Reaching here means the question is
@@ -436,7 +560,7 @@ public class ChatToolService {
     ) {
         ConversationContext context = conversationContext == null
                 ? ConversationContext.empty() : conversationContext;
-        boolean restartNeeds = isNeedPrompt(normalized);
+        boolean restartNeeds = isNeedPrompt(normalized) && context.imageEvidence() == null;
         ConversationContext decisionContext = restartNeeds
                 ? ConversationContext.empty() : context;
         ProductDecisionContext prior = decisionContext.productDecision() == null
@@ -505,6 +629,8 @@ public class ChatToolService {
             if (!directGroup.equals(group)) {
                 useCase = null;
                 typeCategory = null;
+                size = null;
+                color = null;
             }
             group = directGroup;
             if (isSpecificTypeCategory(directCatalog.category(), directGroup)) {
@@ -525,6 +651,8 @@ public class ChatToolService {
         }
         String directUseCase = pendingSelection.structured()
                 ? null : matchUseCaseAnswer(normalized, group);
+        // A group ride does not tell us whether there are two riders or four or more.
+        if (hasWord(normalized, "nhom", "group") && !hasWord(normalized, "bon", "4", "four")) directUseCase = null;
         if (directUseCase != null) useCase = directUseCase;
 
         LinkedHashSet<String> asked = new LinkedHashSet<>(prior.askedCriteria());
@@ -536,6 +664,15 @@ public class ChatToolService {
         List<Product> active = filterDecisionProducts(
                 catalog.products(), catalog, group, useCase, typeCategory,
                 brand, price, size, color, lang);
+        // A short follow-up changes the price/size of the requested headset, not its product kind.
+        // The public category also contains standalone cameras and accessory kits.
+        if ("headset".equals(group) && "headset".equals(prior.group()) && directGroup == null
+                && !hasWord(normalized, "camera", "phu kien", "accessory", "accessories")) {
+            active = active.stream().filter(product -> matchesExplicitProductNoun(product, "headset")).toList();
+        }
+        if (!pendingSelection.structured()) {
+            active = active.stream().filter(product -> matchesExplicitProductNoun(product, normalized)).toList();
+        }
         List<Product> sellable = active.stream()
                 .filter(ChatToolService::isDecisionCardEligible)
                 .sorted(decisionProductComparator())
@@ -565,6 +702,17 @@ public class ChatToolService {
                 || color != null
                 || useCase != null
                 || typeCategory != null;
+        if ("headset".equals(group) && useCase == null && !asked.contains("USE_CASE")
+                && hasWord(normalized, "nhom", "group")
+                && hasWord(normalized, "noi chuyen", "talking", "intercom")) {
+            List<PendingClarificationOption> riderOptions = useCaseOptions(group, active, english).stream()
+                    .filter(option -> Set.of("use-pair", "use-group").contains(option.id())).toList();
+            return Optional.of(knownGroupClarification(group, active.size(), List.of(), scope,
+                    decidedState, asked, "USE_CASE", english
+                            ? "How many riders need to talk together? This determines which intercom connection to check."
+                            : "Nhóm mình có bao nhiêu người cần nói chuyện cùng lúc ạ? Em cần biết số người để kiểm tra khả năng kết nối phù hợp.",
+                    riderOptions, english));
+        }
         if (hasRecognizedConstraint && sellable.size() <= CLARIFICATION_STOP_THRESHOLD) {
             // The customer has already answered something and several models still qualify. Ask
             // one more concrete question with real choices instead of closing on a vague
@@ -600,12 +748,13 @@ public class ChatToolService {
                         group, active.size(), sellable, scope, decidedState, asked,
                         "PRICE", english
                                 ? "Which price range would you like me to use?"
-                                : "Anh/chị muốn em lọc tiếp theo tầm giá nào ạ?",
+                                : "Anh/chị muốn xem trong tầm giá nào ạ?",
                         options, english));
             }
         }
 
-        if (useCase == null && !asked.contains("USE_CASE")) {
+        if (useCase == null && !asked.contains("USE_CASE")
+                && !hasWord(normalized, "mua he", "summer", "thoang khi", "breathable")) {
             List<PendingClarificationOption> options = useCaseOptions(group, active, english);
             if (filterOptionCount(options) >= 2) {
                 return Optional.of(knownGroupClarification(
@@ -621,7 +770,7 @@ public class ChatToolService {
                         group, active.size(), sellable, scope, decidedState, asked,
                         "PRICE", english
                                 ? "Which price range would you like me to use?"
-                                : "Anh/chị muốn em lọc tiếp theo tầm giá nào ạ?",
+                                : "Anh/chị muốn xem trong tầm giá nào ạ?",
                         options, english));
             }
         }
@@ -633,8 +782,8 @@ public class ChatToolService {
                 return Optional.of(knownGroupClarification(
                         group, active.size(), sellable, scope, decidedState, asked,
                         "TYPE", english
-                                ? "Which product type would you like to narrow this to?"
-                                : "Anh/chị muốn thu hẹp theo kiểu sản phẩm nào ạ?",
+                                ? "Which product type do you need?"
+                                : "Anh/chị cần kiểu sản phẩm nào ạ?",
                         options, english));
             }
         }
@@ -645,8 +794,8 @@ public class ChatToolService {
                 return Optional.of(knownGroupClarification(
                         group, active.size(), sellable, scope, decidedState, asked,
                         "SIZE", english
-                                ? "Which available size should I filter by?"
-                                : "Anh/chị cần lọc theo size nào ạ?",
+                                ? "Which size would you like?"
+                                : "Anh/chị cần size nào ạ?",
                         options, english));
             }
         }
@@ -813,11 +962,17 @@ public class ChatToolService {
         return pending.options().stream()
                 .filter(option -> {
                     String label = normalizeIntent(option.label());
-                    return !label.isBlank()
+                    boolean useCaseAnswer = "USE_CASE".equals(pending.criterion())
+                            && "FILTER".equals(option.kind())
+                            && USE_CASE_CHOICES.values().stream().flatMap(List::stream)
+                            .filter(choice -> choice.key().equals(option.value()))
+                            .anyMatch(choice -> choice.customerAliases().stream()
+                                    .anyMatch(keyword -> phraseMatches(normalized, keyword)));
+                    return useCaseAnswer || !label.isBlank()
                             && (normalized.equals(label) || phraseMatches(normalized, label));
                 })
                 .findFirst()
-                .map(option -> new PendingSelection(option, false))
+                .map(option -> new PendingSelection(option, "USE_CASE".equals(pending.criterion())))
                 .orElse(PendingSelection.none());
     }
 
@@ -980,10 +1135,10 @@ public class ChatToolService {
         String groupLabel = decisionGroupLabel(group, english);
         String answer = english
                 ? "In " + groupLabel + " there are " + activeCount
-                        + " current choices. Here are a few of them below. "
+                        + " current choices. " + (preview.isEmpty() ? "" : "Here are a few of them below. ")
                         + question
                 : "Trong nhóm " + groupLabel + " hiện có " + activeCount
-                        + " lựa chọn đang bán, anh/chị xem thử vài mẫu bên dưới. "
+                        + " lựa chọn đang bán. " + (preview.isEmpty() ? "" : "Anh/chị xem thử vài mẫu bên dưới. ")
                         + question;
         return ToolOutcome.clarification(answer, preview, scope, next);
     }
@@ -1043,7 +1198,7 @@ public class ChatToolService {
                 return Optional.of(knownGroupClarification(
                         group, active.size(), sellable, scope, state, asked, "PRICE",
                         english ? "Which price range would you like me to use?"
-                                : "Anh/chị muốn em lọc tiếp theo tầm giá nào ạ?",
+                                : "Anh/chị muốn xem trong tầm giá nào ạ?",
                         options, english));
             }
         }
@@ -1052,8 +1207,8 @@ public class ChatToolService {
             if (filterOptionCount(options) >= 2) {
                 return Optional.of(knownGroupClarification(
                         group, active.size(), sellable, scope, state, asked, "SIZE",
-                        english ? "Which available size should I filter by?"
-                                : "Anh/chị cần lọc theo size nào ạ?",
+                        english ? "Which size would you like?"
+                                : "Anh/chị cần size nào ạ?",
                         options, english));
             }
         }
@@ -1107,7 +1262,8 @@ public class ChatToolService {
             // recognises, so this sentence is never mistaken for a warehouse total.
             String highlights = namedHighlights(cards, english);
             answer = (english
-                    ? "Here are " + cards.size() + " matching products below, and they are in stock."
+                    ? (cards.size() == 1 ? "Here is 1 matching product below, currently in stock."
+                            : "Here are " + cards.size() + " matching products below, and they are in stock.")
                     : "Có " + cards.size() + " mẫu phù hợp bên dưới, các mẫu này đang còn hàng.")
                     + (highlights.isBlank() ? "" : " " + highlights);
         }
@@ -1404,7 +1560,7 @@ public class ChatToolService {
                 && effectiveSellingPrice(product).signum() > 0;
     }
 
-    private static Comparator<Product> decisionProductComparator() {
+    static Comparator<Product> decisionProductComparator() {
         return Comparator
                 .comparing((Product product) -> effectiveSellingPrice(product),
                         Comparator.nullsLast(Comparator.naturalOrder()))
@@ -1617,6 +1773,8 @@ public class ChatToolService {
 
     private static boolean isGeneralProductAdviceRequest(String normalized) {
         if (normalized == null || normalized.isBlank()) return false;
+        if (hasWord(normalized, "gear", "do di phuot", "do bao ho", "do di tour")
+                && matchKeyword(normalized, CATEGORY_KEYWORDS) == null) return true;
         String compact = normalized.replaceAll("[^\\p{Alnum}]+", " ").trim();
         return Set.of(
                 "tu van giup toi", "tu van giup toi voi", "tu van giup minh",
@@ -1645,6 +1803,18 @@ public class ChatToolService {
                 question, normalized, lang, english, context, false);
         if (selection.isEmpty()) return Optional.empty();
         List<Product> matches = selection.get();
+        PriceIntent requestedPrice = extractPriceIntent(normalized);
+        if (requestedPrice.hasBounds()) {
+            List<ChatProductCardResponse> cards = matches.stream().limit(8).map(ChatToolService::toCard).toList();
+            return Optional.of(ToolOutcome.decided(cards.isEmpty()
+                    ? (english ? "The models we just discussed are outside this budget. Would you like to change the budget or look at other models?"
+                            : "Các mẫu vừa trao đổi nằm ngoài tầm giá này. Anh/chị muốn đổi ngân sách hay xem thêm mẫu khác ạ?")
+                    : (english ? "These previously discussed models are within your stated budget."
+                            : "Các mẫu vừa trao đổi bên dưới nằm trong tầm giá anh/chị yêu cầu."), cards,
+                    new SearchScope(context.category(), context.brand(), requestedPrice.min(), requestedPrice.max()),
+                    clearPendingDecision(context.productDecision())));
+        }
+        if (matches.isEmpty()) return Optional.empty();
         if (matches.size() > 1) {
             return Optional.of(isCollectiveComparisonRequest(normalized)
                     ? comparisonProductOutcome(matches, english, normalized)
@@ -1656,6 +1826,12 @@ public class ChatToolService {
         String answer = detail == null
                 ? referencedAvailabilityAnswer(product, english)
                 : detail.answer();
+        if (hasWord(normalized, "re hon", "cheaper") && minimumEffectivePrice(product) != null
+                && context.productSlugs().size() > 1 && !isAmbiguousPriceConfirmation(normalized)) {
+            answer = english
+                    ? product.name() + " is the lower-priced model among the models just discussed, starting at " + money(minimumEffectivePrice(product), true) + "."
+                    : product.name() + " có giá thấp hơn trong các mẫu vừa trao đổi, từ " + money(minimumEffectivePrice(product), false) + ".";
+        }
         ProductDecisionContext cleared = clearPendingDecision(context.productDecision());
         return Optional.of(ToolOutcome.decided(
                 answer,
@@ -1674,11 +1850,13 @@ public class ChatToolService {
             boolean modelSelectedReference
     ) {
         if (context == null || context.rememberedProductSlugs().isEmpty()) return Optional.empty();
+        if (hasWord(normalized, "chuyen sang", "doi sang", "switch to", "change to")) return Optional.empty();
         List<String> identifiers = isCollectiveComparisonRequest(normalized)
                 ? List.of()
                 : referenceIdentifiers(normalized);
         boolean explicitReference = hasProductReference(question, normalized, english)
-                || isProductConfirmation(normalized);
+                || isProductConfirmation(normalized)
+                || hasWord(normalized, "quay lai", "dau tien", "thu hai", "first", "second", "go back", "return to", "compared", "cheaper");
         boolean productSignal = modelSelectedReference
                 || explicitReference
                 || isComparisonRequest(normalized)
@@ -1711,6 +1889,14 @@ public class ChatToolService {
         // the identifier filter. Narrow by the type first: the customer said helmet, so gloves
         // must not be offered back as candidates.
         List<Product> scoped = narrowByProductNoun(recent, normalized);
+        if (scoped.isEmpty()) return Optional.empty();
+        PriceIntent budget = extractPriceIntent(normalized);
+        if (budget.hasBounds()) return Optional.of(scoped.stream().filter(product -> matchesSellingPrice(product, budget)).toList());
+        if (hasWord(normalized, "re hon", "cheaper") && !isAmbiguousPriceConfirmation(normalized)
+                && scoped.size() > 1) {
+            return Optional.of(scoped.stream().filter(product -> minimumEffectivePrice(product) != null)
+                    .min(Comparator.comparing(ChatToolService::minimumEffectivePrice)).map(List::of).orElse(scoped));
+        }
         Optional<List<Product>> ordinal = ordinalSelection(scoped, normalized);
         if (ordinal.isPresent()) return ordinal;
 
@@ -1722,6 +1908,12 @@ public class ChatToolService {
                 .filter(product -> productMatchesIdentifiers(product, identifiers))
                 .toList();
         return matches.isEmpty() ? Optional.empty() : Optional.of(matches);
+    }
+
+    private static boolean isAmbiguousPriceConfirmation(String normalized) {
+        return hasWord(normalized, "re hon", "cheaper")
+                && hasWord(normalized, "cai kia", "cai do", "mau do", "that one", "this one")
+                && !hasWord(normalized, "chon", "lay", "choose", "pick", "select");
     }
 
     /** True when the sentence points at something older than the reply just shown. */
@@ -1737,7 +1929,7 @@ public class ChatToolService {
     /** Keeps only the remembered products whose group matches the noun in the sentence. */
     private List<Product> narrowByProductNoun(List<Product> recent, String normalized) {
         String category = matchKeyword(normalized, CATEGORY_KEYWORDS);
-        if (category == null || recent.size() <= 1) return recent;
+        if (category == null) return recent;
         DecisionCatalog catalog;
         try {
             catalog = decisionCatalog("vi");
@@ -1750,7 +1942,7 @@ public class ChatToolService {
         List<Product> scoped = recent.stream()
                 .filter(product -> productBelongsTo(product, groupSlugs))
                 .toList();
-        return scoped.isEmpty() ? recent : scoped;
+        return scoped;
     }
 
     /** "mẫu đầu tiên", "2 mẫu đầu tiên", "mẫu thứ hai" pick by position, oldest shown last. */
@@ -1761,7 +1953,8 @@ public class ChatToolService {
         boolean second = hasWord(normalized, "thu hai", "thu 2", "the second", "second one");
         boolean third = hasWord(normalized, "thu ba", "thu 3", "the third");
         boolean pairOfFirst = hasWord(normalized, "2 mau dau tien", "hai mau dau tien",
-                "2 mau dau", "hai mau dau", "first two", "first 2");
+                "2 mau dau", "hai mau dau", "hai mu dau", "2 mu dau", "first two", "first 2")
+                || Pattern.compile("\\b(?:hai|2) (?:mau )?(?:mu|gang tay|ao|giay) dau(?: tien)?\\b").matcher(normalized).find();
         if (pairOfFirst) {
             return Optional.of(recent.stream().limit(2).toList());
         }
@@ -1772,8 +1965,10 @@ public class ChatToolService {
 
     private static List<String> referenceIdentifiers(String normalized) {
         if (normalized == null || normalized.isBlank()) return List.of();
-        String withoutProperties = normalized.replaceAll(ATTRIBUTE_QUESTION_WORDS, " ");
-        return ProductSearchTerms.tokens(withoutProperties).stream()
+        String withoutProperties = normalized.replaceAll(ATTRIBUTE_QUESTION_WORDS, " ")
+                .replaceAll("\\b(?:quay lai|luc nay|ban dau|dau tien|thu nhat|thu hai|thu ba|"
+                        + "go back|you showed|you mentioned|first|second|third|earlier|before|initially|dung khong|dung roi)\\b", " ");
+        return extractProductQuery(withoutProperties).identifiers().stream()
                 // Short grammar/deictic words are not model identifiers; short alphanumeric
                 // codes such as K3/MF5 remain eligible because they contain a digit.
                 .filter(token -> token.length() > 3 || token.matches(".*\\d.*"))
@@ -1964,10 +2159,11 @@ public class ChatToolService {
         return sellable(page.items()).stream()
                 .filter(product -> productMatchesIdentifiers(product, tokens))
                 .findFirst()
+                .map(product -> catalogReadService.getProductBySlug(product.slug(), lang))
                 .orElse(null);
     }
 
-    private static ToolOutcome comparisonProductOutcome(
+    private ToolOutcome comparisonProductOutcome(
             List<Product> products,
             boolean english,
             String normalizedQuestion
@@ -1983,7 +2179,8 @@ public class ChatToolService {
                 .map(ChatToolService::toCard)
                 .toList();
         return ToolOutcome.local(
-                comparisonAnswer(selected, english), ChatMessageSource.TOOL, false, false, List.of(), cards);
+                localizedOptionCopy(comparisonAnswer(selected, english), english,
+                        selected.stream().map(Product::name).toList()), ChatMessageSource.TOOL, false, false, List.of(), cards);
     }
 
     /**
@@ -2046,21 +2243,22 @@ public class ChatToolService {
                 .limit(8).toList();
         List<String> prices = availableVariantPriceLabels(product, english).stream()
                 .limit(4).toList();
-        List<String> facts = technicalFacts(product).stream().limit(2).toList();
-        List<String> warnings = safetyWarnings(product).stream().limit(1).toList();
+        List<String> facts = technicalFacts(product).stream()
+                .filter(fact -> !english || !Pattern.compile("[à-ỹÀ-ỸđĐ]").matcher(fact).find()).limit(2).toList();
+        List<String> warnings = safetyWarnings(product).stream()
+                .filter(fact -> !english || !Pattern.compile("[à-ỹÀ-ỸđĐ]").matcher(fact).find()).limit(1).toList();
         return new ComparisonView(name, prices, sizes, colors, facts, warnings);
     }
 
     private static BigDecimal minimumEffectivePrice(Product product) {
         List<BigDecimal> prices = new ArrayList<>();
-        BigDecimal main = effectivePrice(product.price());
-        if (main != null) prices.add(main);
         if (product.variants() != null) product.variants().stream()
-                .filter(variant -> variant != null && variant.isAvailable())
+                .filter(variant -> variant != null && variant.isAvailable()
+                        && variant.stockState() == com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK)
                 .map(variant -> effectivePrice(variant.price()))
                 .filter(java.util.Objects::nonNull)
                 .forEach(prices::add);
-        return prices.stream().min(BigDecimal::compareTo).orElse(null);
+        return prices.stream().min(BigDecimal::compareTo).orElse(effectivePrice(product.price()));
     }
 
     private record ComparisonView(
@@ -2083,7 +2281,7 @@ public class ChatToolService {
     }
 
     private static boolean hasProductReference(String question, String normalized, boolean english) {
-        if (hasWord(normalized, "san pham nay", "mau nay", "cai nay", "this one", "this model", "it")) {
+        if (hasWord(normalized, "san pham nay", "mau nay", "cai nay", "this one", "this model", "that one", "that model", "that helmet", "that jacket", "it")) {
             return true;
         }
         if (english) return false;
@@ -2286,6 +2484,8 @@ public class ChatToolService {
                     ChatMessageSource.TOOL, false, false);
         }
 
+        matchingProducts = matchingProducts.stream()
+                .filter(product -> matchesExplicitProductNoun(product, normalizeIntent(question))).toList();
         List<Product> orderedProducts = used.priceDropped()
                 ? matchingProducts
                 : prioritizePreviouslyShown(matchingProducts, conversationContext);
@@ -2538,8 +2738,24 @@ public class ChatToolService {
             case ChatToolRegistry.SEARCH_ARTICLES -> executeArticleSearch(call, context);
             default -> throw new IllegalArgumentException("Unsupported chat tool");
         };
+        if (context.conversationContext().imageEvidence() != null && context.conversationContext().imageEvidence().hasScope()
+                && !result.products().isEmpty()) {
+            Set<String> allowed = imageScopedSlugs(context.conversationContext(), context.lang());
+            if (result.products().stream().anyMatch(product -> !allowed.contains(product.slug())))
+                throw new IllegalArgumentException("Tool products conflict with the image scope");
+        }
         session.complete(call.name(), result.products());
         return result;
+    }
+
+    public Set<String> imageScopedSlugs(ConversationContext context, String lang) {
+        ChatImageEvidence evidence = context.imageEvidence();
+        if (evidence == null || !evidence.hasScope()) return Set.of();
+        if (evidence.brandName() != null && evidence.brand() == null) return Set.of();
+        return catalogReadService.listAssistantDecisionProducts(lang).stream()
+                .filter(product -> evidence.brand() == null || product.brand() != null && evidence.brand().equals(product.brand().slug()))
+                .filter(product -> evidence.group() == null || productBelongsTo(product, Set.of(evidence.group())))
+                .map(Product::slug).collect(java.util.stream.Collectors.toSet());
     }
 
     private ToolExecution executeListCategories(ToolContext context) {
@@ -2733,7 +2949,7 @@ public class ChatToolService {
         String retainedPriceScope = outcome.inheritedPrice()
                 ? (english
                 ? " I am still using the price range from your previous product request."
-                : " Em vẫn lọc theo tầm giá anh/chị đã nêu trước đó.")
+                : " Em vẫn giữ tầm giá anh/chị đã nêu trước đó.")
                 : "";
         String answer = english
                 ? "The inherited filter from your previous product request returned no matches, so I removed only that older filter and searched this request again."
@@ -2762,7 +2978,10 @@ public class ChatToolService {
 
         boolean english = "en".equals(context.lang());
         boolean priceScoped = totals.priceRangeTotalItems() != null;
-        String group = catalogGroupLabel(outcome.effectiveSearchScope(), context.lang());
+        boolean namedLookup = extractProductQuery(context.question()).hasSpecificIdentifier();
+        String group = namedLookup
+                ? (english ? totals.currentTotalItems() == 1 ? "product" : "products" : "sản phẩm")
+                : catalogGroupLabel(outcome.effectiveSearchScope(), context.lang());
         String total = Long.toString(totals.currentTotalItems());
         String first = english
                 ? (priceScoped
@@ -2781,12 +3000,13 @@ public class ChatToolService {
                     .map(product -> product.name() + " (" + cardPrice(product, english) + ")")
                     .toList();
             sentences.add(english
-                    ? "The matching models are " + String.join(", ", namedPrices) + "."
+                    ? (displayed == 1 ? "The matching model is " : "The matching models are ") + String.join(", ", namedPrices) + "."
                     : "Các mẫu phù hợp gồm " + String.join(", ", namedPrices) + ".");
         }
         sentences.add(english
                 ? (totals.currentTotalItems() > displayed
                 ? "I am showing " + displayed + " representative products below from those " + total + " matches."
+                : displayed == 1 ? "I am showing the matching product below."
                 : "I am showing all " + displayed + " matching products below.")
                 : (totals.currentTotalItems() > displayed
                 ? "Em đang hiển thị " + displayed + " mẫu tiêu biểu bên dưới trong tổng " + total + " mẫu phù hợp."
@@ -2798,7 +3018,43 @@ public class ChatToolService {
                 : (names != null && names.size() > 1
                 ? "Anh/chị muốn em kiểm tra chi tiết mẫu nào ạ?"
                 : "Anh/chị có thể mở sản phẩm bên dưới để xem thông tin và lựa chọn hiện có nhé."));
+        // These sentences contain names and prices, not variant colour values.
         return new DeterministicAnswer(String.join(" ", sentences), false, false);
+    }
+
+    /** Convert the Vietnamese thousands separator only when the same weight is saved in Vietnamese. */
+    private String englishRecordedWeight(String text, Product product) {
+        Product vietnamese = catalogReadService.getProductBySlug(product.slug(), "vi");
+        String source = readableTechnicalProductText(String.join(" ", nullToEmpty(vietnamese.specifications()),
+                nullToEmpty(vietnamese.specStats()), nullToEmpty(vietnamese.description()),
+                nullToEmpty(vietnamese.shortDescription()), nullToEmpty(vietnamese.quickAnswerSummary())));
+        Matcher quantities = Pattern.compile("\\b(\\d{1,3})\\.(\\d{3})(\\s*g)\\b").matcher(text);
+        StringBuffer formatted = new StringBuffer();
+        while (quantities.find()) {
+            String number = quantities.group(1) + "." + quantities.group(2);
+            boolean recorded = Pattern.compile(Pattern.quote(number) + "\\s*g\\b").matcher(source).find();
+            quantities.appendReplacement(formatted, Matcher.quoteReplacement(recorded
+                    ? quantities.group(1) + "," + quantities.group(2) + quantities.group(3) : quantities.group()));
+        }
+        quantities.appendTail(formatted);
+        return formatted.toString();
+    }
+
+    private String localizedOptionCopy(String answer, boolean english, List<String> verifiedNames) {
+        if (!english) return answer;
+        List<String> names = verifiedNames.stream().filter(java.util.Objects::nonNull)
+                .filter(name -> !name.isBlank()).distinct()
+                .sorted(Comparator.comparingInt(String::length).reversed()).toList();
+        String protectedCopy = answer;
+        for (int index = 0; index < names.size(); index++) {
+            protectedCopy = protectedCopy.replace(names.get(index), "__BB_PRODUCT_" + index + "__");
+        }
+        String localized = catalogReadService.assistantLocalizedColorLabel(protectedCopy, "en");
+        if (localized == null) return answer;
+        for (int index = 0; index < names.size(); index++) {
+            localized = localized.replace("__BB_PRODUCT_" + index + "__", names.get(index));
+        }
+        return localized;
     }
 
     private String catalogGroupLabel(SearchScope currentScope, String lang) {
@@ -2890,7 +3146,7 @@ public class ChatToolService {
                             ? "Em chưa tìm thấy sản phẩm đang bán trong tầm giá anh/chị hỏi. "
                             : inheritedScope + " nhưng chưa tìm thấy sản phẩm đang bán phù hợp. ")
                                     + boundaryDisclosure
-                                    + " Anh/chị cho em biết tầm giá khác nếu muốn em lọc tiếp nhé."
+                                    + " Anh/chị có thể cho em biết tầm giá khác nếu muốn xem thêm."
                                     + (broadened
                                     ? " Danh sách này cũng rộng hơn cách hỏi ban đầu; anh/chị cho em tên hoặc loại hàng cụ thể hơn để em thu hẹp lại nhé."
                                     : ""),
@@ -3022,8 +3278,8 @@ public class ChatToolService {
         if (price == null || !price.hasBounds()) return null;
         String scope = priceScopeLabel(price, english);
         return english
-                ? "I am filtering by " + scope + " from your previous product request"
-                : "Em đang lọc theo " + scope + " mà anh/chị đã nêu trước đó";
+                ? "I am keeping " + scope + " from your previous product request"
+                : "Em đang giữ " + scope + " mà anh/chị đã nêu trước đó";
     }
 
     private static String priceScopeLabel(PriceIntent price, boolean english) {
@@ -3091,6 +3347,21 @@ public class ChatToolService {
         List<String> sizes = sortSizes(options.getOrDefault("size", List.of())).stream().limit(8).toList();
         String name = plain(product.name(), 160);
         List<String> sentences = new ArrayList<>();
+        if (hasWord(normalized, "trong luong", "can nang", "nang bao", "nang khong", "weight", "weigh", "weighs", "gram", "grams", "gam")) {
+            String stored = readableTechnicalProductText(String.join(" ",
+                    nullToEmpty(product.specifications()), nullToEmpty(product.specStats()),
+                    nullToEmpty(product.description()), nullToEmpty(product.shortDescription()),
+                    nullToEmpty(product.quickAnswerSummary()), String.join("; ", highlights(product, true))));
+            List<String> weights = java.util.Arrays.stream(stored.split("(?<=[.!?;])\\s+"))
+                    .filter(fact -> Pattern.compile("(?i)\\b\\d[\\d.,]*\\s*(?:g|kg|grams?|gam)\\b").matcher(fact).find())
+                    .filter(fact -> !english || !Pattern.compile("[à-ỹÀ-ỸđĐ]").matcher(fact).find())
+                    .map(fact -> plain(fact, 400).replaceAll("[.!?;]+$", ""))
+                    .map(fact -> english ? englishRecordedWeight(fact, product) : fact).distinct().limit(2).toList();
+            return new DeterministicAnswer(weights.isEmpty()
+                    ? (english ? "BigBike has not published a confirmed weight for " + name + ". Please contact the shop to check the weight of the specific size you need."
+                            : "Shop chưa ghi cân nặng đã xác nhận của " + name + ". Anh/chị vui lòng liên hệ shop để kiểm tra cân nặng của đúng size cần mua.")
+                    : (english ? "The product page records: " : "Trang sản phẩm ghi: ") + String.join("; ", weights) + ".", false, false);
+        }
         if (detailIntent.technical()) {
             List<String> facts = technicalFacts(product);
             List<String> warnings = safetyWarnings(product);
@@ -3115,16 +3386,21 @@ public class ChatToolService {
         // combination. Listing available sizes and available colours separately let the assistant
         // imply a pairing that does not exist, and the customer only found out after ordering.
         String requestedSizeCombo = extractRequestedOption(normalized, SIZE_REQUEST);
-        String requestedColorCombo = matchedProductColor(
-                product, extractRequestedColor(normalized));
+        String requestedColor = extractRequestedColor(question);
+        String requestedColorCombo = matchedProductColor(product, requestedColor);
+        if (detailIntent.size() && requestedSizeCombo != null && requestedColor != null && requestedColorCombo == null) {
+            return new DeterministicAnswer(english
+                    ? name + " does not currently have a sellable variant in the requested colour and size. Please choose another listed option or contact BigBike."
+                    : name + " hiện không có lựa chọn đang bán theo đúng màu và size anh/chị yêu cầu. Anh/chị vui lòng chọn lựa chọn khác trên trang sản phẩm hoặc liên hệ BigBike.", false, false);
+        }
         boolean answeredCombination = false;
-        if (detailIntent.size() && detailIntent.color()
+        if (detailIntent.size()
                 && requestedColorCombo != null && requestedSizeCombo != null) {
             answeredCombination = true;
             String requestedSizeLabel = requestedSizeCombo.toUpperCase(Locale.ROOT);
             List<String> sizesForColor = availableSizesForColor(product, requestedColorCombo);
             if (sizesForColor.stream().anyMatch(size -> size.equalsIgnoreCase(requestedSizeLabel))) {
-                BigDecimal comboPrice = availableVariantPrice(product, "size", requestedSizeLabel);
+                BigDecimal comboPrice = availableCombinationPrice(product, requestedSizeLabel, requestedColorCombo);
                 sentences.add(english
                         ? name + " in " + requestedColorCombo + ", size " + requestedSizeLabel
                                 + ", is currently available"
@@ -3234,14 +3510,15 @@ public class ChatToolService {
                     : "Theo hướng dẫn trên trang sản phẩm: " + String.join("; ", advice) + "."));
         }
         if (detailIntent.warranty()) {
+            if (assistantSettings != null) {
+                return new DeterministicAnswer(policyOutcome(normalized + " " + normalize(name),
+                        english, assistantSettings.load(english ? "en" : "vi")).localAnswer(), false, false);
+            }
             List<String> warranty = warrantyFacts(product);
-            sentences.add(english
-                    ? (warranty.isEmpty()
-                    ? "This product page does not currently state an exact saved warranty period, so I will not infer one."
-                    : "The saved warranty information is: " + String.join("; ", warranty) + ".")
-                    : (warranty.isEmpty()
-                    ? "Trang sản phẩm hiện chưa ghi thời hạn bảo hành cụ thể, nên em không tự suy đoán."
-                    : "Thông tin bảo hành của mẫu này: " + String.join("; ", warranty) + "."));
+            sentences.add(warranty.isEmpty()
+                    ? (english ? "Please check the published warranty policy or contact BigBike for this model's terms."
+                            : "Anh/chị vui lòng xem chính sách bảo hành đã công bố hoặc liên hệ BigBike để kiểm tra điều kiện của mẫu này.")
+                    : String.join("; ", warranty));
         }
         if (detailIntent.comparison()) {
             sentences.add(english
@@ -3253,20 +3530,13 @@ public class ChatToolService {
         if (sentences.size() > 4) {
             sentences = new ArrayList<>(sentences.subList(0, 4));
         }
-        boolean exactSizeRequested = detailIntent.size()
-                && extractRequestedOption(normalized, SIZE_REQUEST) != null;
-        sentences.add(english
-                ? (exactSizeRequested
-                ? "Choose Buy if this size suits you, or contact BigBike through Hotline, Zalo or Messenger if you would like a fit check."
-                : detailIntent.size()
-                ? "Measure your head circumference first, then contact BigBike through Hotline, Zalo or Messenger if you would like size advice."
-                : "Open the product page for the complete saved information, or contact BigBike through Hotline, Zalo or Messenger if you need confirmation.")
-                : (exactSizeRequested
-                ? "Anh/chị có thể bấm Chọn mua nếu size này phù hợp, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu muốn shop kiểm tra độ vừa đầu nhé."
-                : detailIntent.size()
-                ? "Anh/chị nên đo vòng đầu trước, rồi liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu cần tư vấn chọn cỡ nhé."
-                : "Anh/chị có thể mở trang sản phẩm để xem đầy đủ thông tin, hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu cần shop xác nhận thêm nhé."));
-        return new DeterministicAnswer(String.join(" ", sentences), false, false);
+        if (!detailIntent.size()) {
+            sentences.add(english
+                    ? "Please see the product page for the full information, or contact BigBike for confirmation."
+                    : "Anh/chị có thể xem trang sản phẩm để biết đầy đủ thông tin, hoặc liên hệ BigBike để xác nhận thêm.");
+        }
+        return new DeterministicAnswer(localizedOptionCopy(String.join(" ", sentences), english,
+                List.of(product.name())), false, false);
     }
 
     private static boolean isDetailConfirmation(String normalized) {
@@ -3279,11 +3549,11 @@ public class ChatToolService {
 
     private static ProductDetailIntent productDetailIntent(String normalized) {
         return new ProductDetailIntent(
-                hasWord(normalized, "thong so", "trong luong", "can nang", "nang", "weight", "spec", "specs",
+                hasWord(normalized, "thong so", "trong luong", "can nang", "nang", "weight", "weigh", "grams", "gram", "spec", "specs",
                         "dot", "ece", "chuan an toan", "thong gio"),
                 hasWord(normalized, "size", "sizes", "kich co", "bang size", "bang co", "chon co",
-                        "size guide"),
-                hasWord(normalized, "mau", "mau sac", "color", "colour"),
+                        "size guide") || SIZE_REQUEST.matcher(normalized).find(),
+                hasWord(normalized, "mau sac", "mau nao", "mau gi", "may mau", "color", "colors", "colour", "colours"),
                 hasWord(normalized, "gia", "gia bao nhieu", "price", "cost", "how much"),
                 hasWord(normalized, "phu hop", "hop voi ai", "nen mua", "danh cho ai", "suitable",
                         "who is it for", "should i buy"),
@@ -3457,6 +3727,21 @@ public class ChatToolService {
                     });
         }
         return sortSizes(sizes);
+    }
+
+    private BigDecimal availableCombinationPrice(Product product, String size, String color) {
+        if (product.variants() == null) return null;
+        return product.variants().stream()
+                .filter(variant -> variant != null && variant.isAvailable()
+                        && variant.stockState() == com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK
+                        && variant.options() != null)
+                .filter(variant -> variant.options().stream().anyMatch(option -> option != null
+                        && "size".equals(canonicalAttribute(option.name())) && size.equalsIgnoreCase(option.value())))
+                .filter(variant -> variant.options().stream().anyMatch(option -> option != null
+                        && "color".equals(canonicalAttribute(option.name()))
+                        && colorValueMatches(normalize(option.value()), normalize(color))))
+                .map(variant -> effectivePrice(variant.price()))
+                .filter(java.util.Objects::nonNull).min(BigDecimal::compareTo).orElse(null);
     }
 
     private static BigDecimal availableVariantPrice(
@@ -3719,6 +4004,17 @@ public class ChatToolService {
             catalogIntent = catalogIntentForTargets(category, brand);
             query = sanitizeModelProductQuery(
                     arguments.get("query"), catalogIntent, context.question());
+        }
+
+        if (previous.imageEvidence() != null) {
+            if (previous.imageEvidence().brandName() != null && previous.imageEvidence().brand() == null) {
+                throw new IllegalArgumentException("The observed manufacturer is not in the catalog");
+            }
+            brand = previous.brand();
+            category = previous.category() == null ? category : previous.category();
+            inheritedBrand = false;
+            catalogIntent = catalogIntentForTargets(category, brand);
+            query = sanitizeModelProductQuery(arguments.get("query"), catalogIntent, context.question());
         }
 
         PriceIntent directPrice = extractPriceIntent(normalized);
@@ -4080,7 +4376,7 @@ public class ChatToolService {
         CatalogIntent direct = resolveCatalogIntent(question, lang);
         ConversationContext context = conversationContext == null
                 ? ConversationContext.empty() : conversationContext;
-        if (!shouldApplyConversationCatalogScope(question, direct, context)) {
+        if (context.imageEvidence() == null && !shouldApplyConversationCatalogScope(question, direct, context)) {
             return direct;
         }
         Set<String> tokens = new LinkedHashSet<>(direct.metadataTokens());
@@ -4115,7 +4411,7 @@ public class ChatToolService {
                 && !isPriceScopeReset(normalized)
                 && hasConversationPrice(context)
                 && shouldApplyConversationPriceScope(normalized, catalogIntent, query, context);
-        boolean inheritedBrand = directCatalog.brand() == null
+        boolean inheritedBrand = context.imageEvidence() == null && directCatalog.brand() == null
                 && context.brand() != null
                 && catalogIntent.brand() != null
                 && catalogIntent.brand().equalsIgnoreCase(context.brand())
@@ -4127,7 +4423,7 @@ public class ChatToolService {
                 appliedPrice,
                 inheritedPrice,
                 inheritedBrand,
-                extractRequestedColor(normalized),
+                extractRequestedColor(question),
                 extractRequestedOption(normalized, SIZE_REQUEST));
     }
 
@@ -4267,7 +4563,7 @@ public class ChatToolService {
             ProductDecisionContext nextProductDecision
     ) {
         ConversationContext prior = previous == null ? ConversationContext.empty() : previous;
-        if (isNeedPrompt(normalizeIntent(question)) && nextProductDecision == null) {
+        if (isNeedPrompt(normalizeIntent(question)) && nextProductDecision == null && prior.imageEvidence() == null) {
             return ConversationContext.empty();
         }
         boolean verifiedSearch = acceptedSearchScope != null
@@ -4296,7 +4592,8 @@ public class ChatToolService {
                 ? nextProductDecision
                 : verifiedSearch ? null : prior.productDecision();
         return new ConversationContext(
-                category, brand, minPrice, maxPrice, slugs, awaitingOrderLogin, productDecision);
+                category, brand, minPrice, maxPrice, slugs, awaitingOrderLogin, productDecision,
+                prior.recentProductSlugs(), prior.imageEvidence());
     }
 
     private static void addCategoryAliases(
@@ -4340,6 +4637,7 @@ public class ChatToolService {
             for (int start = 0; start + size <= tokens.length; start++) {
                 String alias = String.join(" ", List.of(tokens).subList(start, start + size));
                 if (alias.isBlank() || alias.equals(phrase)) continue;
+                if (java.util.Arrays.stream(alias.split("\\s+")).allMatch(NON_CATEGORY_WORDS::contains)) continue;
                 if (size == 1 && !isUsableSingleWordAlias(alias, start)) continue;
                 aliases.add(new CatalogAlias(target, alias, size, false));
             }
@@ -4407,6 +4705,8 @@ public class ChatToolService {
                         " ", List.of(questionTokens).subList(start, start + alias.wordCount()));
                 String compactCustomerPhrase = customerPhrase.replace(" ", "");
                 if (compactCustomerPhrase.length() < 4 || !compactCustomerPhrase.matches("[a-z]+")) continue;
+                if (java.util.Arrays.stream(customerPhrase.split("\\s+"))
+                        .allMatch(token -> NON_CATEGORY_WORDS.contains(token) || CONVERSATIONAL_FILLER_TOKENS.contains(token))) continue;
                 if (oneCharacterAway(compactCustomerPhrase, normalizedAlias)) {
                     matchedTargets.putIfAbsent(alias.target(), customerPhrase);
                 }
@@ -4457,8 +4757,7 @@ public class ChatToolService {
         if (alias.indexOf(' ') < 0) return false;
         String compactAlias = alias.replace(" ", "");
         if (compactAlias.length() < 3) return false;
-        String compactQuestion = normalizedQuestion.replaceAll("[^\\p{Alnum}]+", "");
-        return compactQuestion.contains(compactAlias);
+        return question.contains(" " + compactAlias + " ");
     }
 
     private ToolExecution executeGetProduct(
@@ -4544,13 +4843,14 @@ public class ChatToolService {
             default -> throw new IllegalArgumentException("Unsupported policy topic");
         };
         ToolOutcome policy = policyOutcome(
-                policyQuestion, "en".equals(context.lang()), context.settings());
+                normalizedQuestion + " " + policyQuestion, "en".equals(context.lang()), context.settings());
         return new ToolExecution(
                 ChatToolRegistry.GET_POLICY,
                 toJson(Map.of("tool", ChatToolRegistry.GET_POLICY,
                         "topic", topic, "policy", policy.localAnswer())),
-                List.of(),
-                List.of());
+                List.of(), List.of(), Set.of(),
+                new DeterministicAnswer(policy.localAnswer(), false, policy.directContactRecommended()),
+                null, null);
     }
 
     private ToolExecution executeShopInfo(ToolContext context) {
@@ -4978,7 +5278,25 @@ public class ChatToolService {
             return true;
         }
         String name = normalize(product == null ? "" : product.name());
-        return !hasWord(name, "bo phu kien", "accessory kit", "accessory set");
+        return hasWord(name, "tai nghe", "headset", "headsets", "intercom")
+                && !hasWord(name, "bo phu kien", "accessory kit", "accessory set");
+    }
+
+    /** A broad shared category must not turn an explicit jacket/headset request into pants/cameras. */
+    private static boolean matchesExplicitProductNoun(Product product, String question) {
+        String name = normalize(product == null ? "" : product.name());
+        if (hasWord(question, "mua he", "summer", "thoang khi", "breathable")
+                && !hasWord(name, "mua he", "summer", "mesh", "thoang", "breathable")) return false;
+        if (hasWord(question, "jacket", "jackets", "ao giap", "ao khoac", "ao mua he", "ao moto")
+                && !hasWord(question, "quan ao", "ao quan", "pants")) {
+            return hasWord(name, "ao", "jacket", "jackets");
+        }
+        if (hasWord(question, "tai nghe", "intercom", "headset", "headsets")
+                && !hasWord(question, "phu kien", "accessory", "camera")) {
+            return hasWord(name, "tai nghe", "intercom", "headset", "headsets")
+                    && !hasWord(name, "bo phu kien", "accessory kit", "accessories kits", "accessories kit");
+        }
+        return true;
     }
 
     private static BigDecimal effectiveSellingPrice(Product product) {
@@ -5091,7 +5409,8 @@ public class ChatToolService {
                     attempt.sort(),
                     DISCOVERY_CANDIDATE_LIMIT,
                     lang);
-            return new AttemptSearchResult(products, null);
+            return new AttemptSearchResult(products.stream()
+                    .filter(product -> matchesCompoundIdentifiers(product, attempt.identifierTokens())).toList(), null);
         }
         PageResult<Product> page = searchProducts(
                 attempt.query(),
@@ -5116,7 +5435,8 @@ public class ChatToolService {
                     null,
                     attempt.sort(),
                     DISCOVERY_CANDIDATE_LIMIT,
-                    lang);
+                    lang).stream()
+                    .filter(product -> matchesCompoundIdentifiers(product, attempt.identifierTokens())).toList();
         }
         PageResult<Product> page = searchProductsWide(
                 attempt.query(),
@@ -5276,19 +5596,22 @@ public class ChatToolService {
                     ChatMessageSource.TOOL, false, false);
         }
 
+        List<String> recordedItemNames = orders.stream().flatMap(order -> order.items().stream())
+                .flatMap(item -> java.util.stream.Stream.of(item.productName(), item.variantName()))
+                .filter(java.util.Objects::nonNull).filter(name -> !name.isBlank()).distinct().toList();
         if (scope == OrderScope.LATEST) {
             OrderReadService.CustomerOrderSummary order = orders.get(0);
             String answer = english
                     ? "Your most recent BigBike order is " + safeOrderNumber(order) + ". Status: "
                             + statusLabel(order.status(), true) + ". Order date: " + dateLabel(order, true)
-                            + ". Items: " + orderItemsLabel(order, true) + ". Total: "
+                            + ". Items (names as recorded): " + orderItemsLabel(order, true) + ". Total: "
                             + amountLabel(order, true) + ". Open your account orders to see more."
                     : "Dạ, em đã kiểm tra: đơn hàng gần đây nhất của anh/chị là " + safeOrderNumber(order) + ". Trạng thái: "
                             + statusLabel(order.status(), false) + ". Ngày đặt: " + dateLabel(order, false)
                             + ". Sản phẩm: " + orderItemsLabel(order, false) + ". Tổng tiền: "
                             + amountLabel(order, false) + ". Anh/chị mở mục Đơn hàng trong tài khoản để xem thêm.";
             return ToolOutcome.local(answer, ChatMessageSource.TOOL, false, false,
-                    List.of(new ChatActionResponse("ORDER_HISTORY")));
+                    List.of(new ChatActionResponse("ORDER_HISTORY"))).withRecordedItemNames(recordedItemNames);
         }
 
         List<String> lines = orders.stream().map(order ->
@@ -5301,7 +5624,7 @@ public class ChatToolService {
                 : "Đây là các đơn hàng gần đây của tài khoản đang đăng nhập: " + String.join("; ", lines)
                         + ". Em chỉ hiển thị mã đơn, trạng thái, ngày đặt và tổng tiền. Anh/chị mở mục Đơn hàng trong tài khoản để xem thêm.";
         return ToolOutcome.local(answer, ChatMessageSource.TOOL, false, false,
-                List.of(new ChatActionResponse("ORDER_HISTORY")));
+                List.of(new ChatActionResponse("ORDER_HISTORY"))).withRecordedItemNames(recordedItemNames);
     }
 
     private static String safeOrderNumber(OrderReadService.CustomerOrderSummary order) {
@@ -5459,23 +5782,28 @@ public class ChatToolService {
     private static String policyExcerpt(
             ChatAssistantSettings.PolicyText policy, String normalized, boolean english) {
         String body = policySectionText(policy, normalized);
+        if (body.contains("Được chấp nhận") || body.contains("Accepted")) {
+            body = body.replace("\n", "; ").replaceAll(";\\s*;", ";");
+        }
         String excerpt = firstSentences(
-                body.isBlank() ? policy.text() : body, POLICY_EXCERPT_SENTENCES, POLICY_EXCERPT_CHARS);
-        String pointer = english
-                ? "The full \u201C" + policy.title() + "\u201D page has every case in detail; tell me"
-                        + " your situation and I will point at the right part."
-                : "Trang \u201C" + policy.title() + "\u201D có đầy đủ từng trường hợp; anh/chị cho em"
-                        + " biết tình huống cụ thể để em chỉ đúng mục nhé.";
-        String opening = english
-                ? policy.title() + ": "
-                : policy.title() + ": ";
-        return plain(opening + excerpt + " " + pointer, 1800);
+                body.isBlank() ? policy.text() : body, POLICY_EXCERPT_SENTENCES - 1, POLICY_EXCERPT_CHARS);
+        return plain(policy.title() + ": " + excerpt + (english
+                ? " Please see the full policy page for details."
+                : " Anh/chị xem trang chính sách đầy đủ để biết chi tiết."), 1800);
     }
 
     /** Picks the published heading that answers the customer's sub-question. */
     private static String policySectionText(
             ChatAssistantSettings.PolicyText policy, String normalized) {
         if (policy.sections().isEmpty()) return "";
+        String brand = matchKeyword(normalized, BRAND_KEYWORDS);
+        if (brand != null && hasWord(normalized, "bao hanh", "warranty")
+                && !hasWord(normalized, "dieu kien", "condition", "process", "procedure", "quy trinh", "thu tuc")
+                && !hasWord(normalized, "ao", "jacket", "glove", "gloves", "giay", "boot", "boots")) {
+            List<String> rows = policy.sections().stream().flatMap(section -> java.util.Arrays.stream(section.text().split("\\n+")))
+                    .filter(row -> normalize(row).startsWith(brand + " ")).toList();
+            if (!rows.isEmpty()) return String.join("\n", rows);
+        }
         List<String> wanted = policySectionKeywords(normalized);
         if (!wanted.isEmpty()) {
             for (var section : policy.sections()) {
@@ -5493,12 +5821,13 @@ public class ChatToolService {
     /** Keeps whole sentences up to the given budget. */
     private static String firstSentences(String value, int limit, int maxChars) {
         if (value == null || value.isBlank()) return "";
-        String[] parts = value.trim().split("(?<=[.!?])\\s+");
+        String[] parts = value.trim().split("\\n+|(?<=[.!?])\\s+");
         List<String> selected = new ArrayList<>();
         int length = 0;
         for (String part : parts) {
             if (selected.size() >= limit || length + part.length() > maxChars) break;
-            selected.add(part.trim());
+            if (part.isBlank()) continue;
+            selected.add(part.trim().replaceAll("[✓✗]", "").trim().replaceAll("[.!?]+$", "") + ".");
             length += part.length();
         }
         if (selected.isEmpty()) {
@@ -5508,6 +5837,8 @@ public class ChatToolService {
     }
 
     private static List<String> policySectionKeywords(String normalized) {
+        if (hasWord(normalized, "hang sale", "hang giam gia", "khuyen mai", "sale item", "discounted",
+                "promotional", "on sale")) return List.of("sale", "khuyen mai");
         if (hasWord(normalized, "ai chiu", "ai tra", "phi ship", "phi van chuyen", "phi gui",
                 "who pays", "shipping fee", "return shipping")) {
             return List.of("phi van chuyen", "phi", "shipping");
@@ -5524,7 +5855,7 @@ public class ChatToolService {
                 "how do i", "process", "steps", "procedure")) {
             return List.of("quy trinh", "process");
         }
-        if (hasWord(normalized, "hang sale", "hang giam gia", "khuyen mai", "sale item",
+        if (hasWord(normalized, "hang sale", "hang giam gia", "khuyen mai", "sale item", "discounted",
                 "promotional", "on sale")) {
             return List.of("sale", "khuyen mai");
         }
@@ -5537,7 +5868,8 @@ public class ChatToolService {
             ChatAssistantSettings.Snapshot settings
     ) {
         String answer;
-        if (hasWord(normalized, "doi tra", "return", "returns", "exchange")) {
+        if (policyTopicMatchesQuestion(normalized, "return_exchange")
+                && !hasWord(normalized, "bao hanh", "warranty")) {
             ChatAssistantSettings.PolicyText policy = settings == null
                     ? ChatAssistantSettings.PolicyText.empty() : settings.returnExchangePolicy();
             answer = policy.available()
@@ -5546,6 +5878,17 @@ public class ChatToolService {
                     ? "Please open BigBike’s Returns and Exchanges Policy or contact BigBike through Hotline, Zalo or Messenger before sending a product back."
                     : "Anh/chị vui lòng mở Chính sách đổi trả của BigBike hoặc liên hệ BigBike qua Hotline, Zalo hoặc Messenger trước khi gửi sản phẩm về nhé.");
         } else if (hasWord(normalized, "bao hanh", "warranty")) {
+            if (hasWord(normalized, "ai chiu", "ai tra", "who pays", "shipping")) {
+                return ToolOutcome.local(english
+                        ? "The published warranty policy does not state who pays shipping for every warranty case. Please contact BigBike through Hotline, Zalo or Messenger before sending the item so the shop can confirm the cost for your case."
+                        : "Chính sách bảo hành đang công bố chưa nêu bên chịu phí gửi hàng cho từng trường hợp. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger trước khi gửi để shop xác nhận chi phí cho trường hợp của mình.", ChatMessageSource.RULE, false, true);
+            }
+            if (hasWord(normalized, "bao lau", "how long", "period", "thoi han")
+                    && matchKeyword(normalized, BRAND_KEYWORDS) == null) {
+                return ToolOutcome.local(english
+                        ? "Warranty periods vary by brand and component. Which helmet brand or model would you like me to check?"
+                        : "Thời hạn bảo hành phụ thuộc thương hiệu và từng linh kiện. Anh/chị muốn hỏi mũ của hãng hoặc mẫu nào ạ?", ChatMessageSource.RULE, false, false);
+            }
             ChatAssistantSettings.PolicyText policy = settings == null
                     ? ChatAssistantSettings.PolicyText.empty() : settings.warrantyPolicy();
             answer = policy.available()
@@ -5561,7 +5904,8 @@ public class ChatToolService {
             answer = english
                     ? "Please use the helmet or protective-clothing size guide and compare your actual measurement with the product’s own size table when available. Some products do not yet have a size table, so I won’t infer a size from height or weight alone. Contact BigBike through Hotline, Zalo or Messenger if you want the shop to confirm the fit."
                     : "Anh/chị dùng hướng dẫn đo size mũ hoặc trang phục và đối chiếu số đo thật với bảng size riêng của sản phẩm nếu có. Một số sản phẩm chưa nhập bảng size nên em không suy ra size chỉ từ chiều cao/cân nặng. Anh/chị liên hệ BigBike qua Hotline, Zalo hoặc Messenger nếu muốn shop xác nhận thêm nhé.";
-        } else if (hasWord(normalized, "thanh toan", "payment")) {
+        } else if (policyTopicMatchesQuestion(normalized, "payment")
+                && !policyTopicMatchesQuestion(normalized, "shipping")) {
             answer = english
                     ? "BigBike currently supports two manual payment methods: cash on delivery (COD) and bank transfer. BigBike Assistant cannot take payment or place an order on your behalf. Please continue through the cart to choose a method and review the order before confirming."
                     : "BigBike hiện hỗ trợ hai hình thức thanh toán thủ công: nhận hàng trả tiền (COD) và chuyển khoản ngân hàng. Em không nhận tiền và không chốt đơn thay anh/chị. Anh/chị vui lòng đi qua Giỏ hàng để chọn hình thức và kiểm tra lại trước khi xác nhận.";
@@ -5569,6 +5913,17 @@ public class ChatToolService {
             answer = english
                     ? "BigBike provides free delivery for purchase orders. Delivery time depends on the destination; contact BigBike through Hotline, Zalo or Messenger and share the delivery area if you need an estimate. Return or exchange shipping follows the separate Returns and Exchanges Policy."
                     : "BigBike miễn phí giao hàng cho đơn mua. Thời gian giao tùy khu vực; anh/chị liên hệ BigBike qua Hotline, Zalo hoặc Messenger và cho biết nơi nhận nếu cần shop ước tính. Phí gửi hàng đổi/trả áp dụng theo Chính sách đổi trả riêng.";
+        }
+        if (!hasWord(normalized, "bao hanh", "warranty")
+                && policyTopicMatchesQuestion(normalized, "shipping") && policyTopicMatchesQuestion(normalized, "payment")) {
+            answer = english
+                    ? "BigBike offers free delivery for purchase orders and accepts cash on delivery (COD) or bank transfer."
+                    : "BigBike miễn phí giao hàng cho đơn mua và nhận thanh toán khi nhận hàng (COD) hoặc chuyển khoản ngân hàng.";
+        }
+        if (hasWord(normalized, "kiem hang", "inspect", "inspection", "open the parcel")) {
+            answer += english
+                    ? " I do not have a published confirmation that you may open the parcel before paying. Please contact BigBike through Hotline, Zalo or Messenger to confirm this before ordering."
+                    : " Em chưa có thông tin công bố xác nhận việc mở kiện kiểm hàng trước khi trả tiền. Anh/chị vui lòng liên hệ BigBike qua Hotline, Zalo hoặc Messenger để xác nhận trước khi đặt.";
         }
         return ToolOutcome.local(answer, ChatMessageSource.RULE, false, false);
     }
@@ -5829,9 +6184,9 @@ public class ChatToolService {
                 // A concrete option is a product constraint, not a model code. Option extraction
                 // still reads the unmodified normalized question in productOutcome().
                 .replaceAll(SIZE_REQUEST.pattern(), " ")
-                .replaceAll(COLOR_REQUEST.pattern(), " ")
-                .replaceAll("(?iU)(toi muon|minh muon|toi can|cho toi|cho em|giup em|tim|tu van|tham khao"
-                        + "|please|find|find me|search|show me|i want|i need|looking for|can you|could you)", " ")
+                .replaceAll("(?iU)\\b(?:toi muon|minh muon|toi can|cho toi|cho em|giup em|tim|tu van|tham khao"
+                        + "|please|find me|find|search|show me|i want|i need|i would like|looking for|can you|could you"
+                        + "|do you (?:have|sell|stock|carry)|how much does|what does|are there|is there)\\b", " ")
                 .replaceAll("(?iU)\\b(thuong hieu|brand|danh muc|category)\\b", " ")
                 // Shared with referenceIdentifiers on purpose: when the two lists disagreed, a
                 // question such as "nặng bao nhiêu gram?" kept "gram" as if it were a model code,
@@ -5868,21 +6223,45 @@ public class ChatToolService {
         // becomes an identifier and the search returns nothing.
         Set<String> excluded = new LinkedHashSet<>(
                 metadataTokens == null ? Set.<String>of() : metadataTokens);
-        String colorPhrase = catalogColorTermIn(normalizeIntent(question));
-        if (colorPhrase != null) {
-            for (String token : colorPhrase.split("\\s+")) {
-                if (!token.isBlank()) excluded.add(token);
+        String colorText = normalizeIntent(colorQuestionText(question));
+        if (catalogReadService != null) {
+            for (String term : catalogReadService.assistantColorVocabulary()) {
+                String phrase = term.replace('-', ' ').trim();
+                if (phrase.length() >= 3 && !NON_VALUE_OPTION_TOKENS.contains(phrase)
+                        && phraseMatches(colorText, phrase)) addPhraseTokens(excluded, phrase);
             }
         }
-        if (excluded.isEmpty() || parsed.tokens().isEmpty()) return parsed;
+        if (parsed.tokens().isEmpty()) return parsed;
         List<String> tokens = parsed.tokens().stream()
                 .filter(token -> !excluded.contains(token))
                 .toList();
-        List<String> identifiers = tokens.stream()
+        List<String> identifiers = new ArrayList<>(tokens.stream()
                 .filter(token -> !GENERIC_PRODUCT_TOKENS.contains(token))
                 .filter(token -> !extractPriceIntent(normalizeIntent(question)).hasBounds() || !token.matches("\\d+"))
-                .toList();
-        return new ProductQuery(String.join(" ", tokens), tokens, identifiers);
+                .toList());
+        Matcher compound = Pattern.compile("[a-z0-9]+(?:-[a-z0-9]+)+").matcher(normalizeIntent(question));
+        while (compound.find()) {
+            String value = compound.group();
+            boolean modelPart = Arrays.stream(value.split("-"))
+                    .anyMatch(part -> part.length() >= 2 && !part.matches("\\d+")
+                            && !GENERIC_PRODUCT_TOKENS.contains(part)
+                            && !CONVERSATIONAL_FILLER_TOKENS.contains(part));
+            if (modelPart && !colorQuestionText(value).equals(value) && !identifiers.contains(value)) {
+                identifiers.add(value);
+            }
+        }
+        return new ProductQuery(String.join(" ", tokens), tokens, List.copyOf(identifiers));
+    }
+
+    private static boolean matchesCompoundIdentifiers(Product product, List<String> identifiers) {
+        String searchable = normalize(nullToEmpty(product.name()) + " " + nullToEmpty(product.slug())
+                + " " + nullToEmpty(product.sku()));
+        return identifiers.stream().filter(value -> value.contains("-")).allMatch(value -> {
+            String expression = Arrays.stream(value.split("-"))
+                    .map(Pattern::quote).collect(java.util.stream.Collectors.joining("[-\\s]*"));
+            return Pattern.compile("(?<![a-z0-9])" + expression + "(?![a-z0-9])")
+                    .matcher(searchable).find();
+        });
     }
 
     private static ProductQuery productQuery(String value) {
@@ -6097,7 +6476,7 @@ public class ChatToolService {
      * model such as {@code V2}.
      */
     static String normalizeIntent(String value) {
-        String normalized = normalize(value)
+        String normalized = normalize(value == null ? null : value.replaceAll("(?iu)\\bđó\\b", "này"))
                 // Preserve price separators for CHAT_RULE_015; product tokenization performs
                 // its own punctuation cleanup after price/option extraction.
                 .replaceAll("[^\\p{Alnum}/.,~\\-–—]+", " ")
@@ -6114,6 +6493,9 @@ public class ChatToolService {
         if (contextual.matches(".*\\b(?:co|con|con hang|duoc|phai|khong)\\b.*\\bhong(?:\\s+(?:shop|ad|anh chi))?$")
                 && !contextual.matches(".*\\b(?:mau|deo|giap)\\s+hong(?:\\s+(?:shop|ad|anh chi))?$")) {
             contextual = contextual.replaceFirst("\\bhong(?=(?:\\s+(?:shop|ad|anh chi))?$)", "khong");
+        }
+        if (contextual.matches(".*\\b(?:co|con|duoc)\\b.*\\s+k$")) {
+            contextual = contextual.replaceFirst("\\bk$", "khong");
         }
         return contextual;
     }
@@ -6134,7 +6516,8 @@ public class ChatToolService {
 
     private static boolean asksForProductAvailability(String value) {
         return hasWord(value,
-                "co", "con hang", "con ban", "ton kho", "available", "in stock", "still available");
+                "co", "con hang", "con ban", "ton kho", "available", "in stock", "still available",
+                "do you sell", "do you have", "do you stock", "do you carry");
     }
 
     private static boolean isOrderQuestion(String value) {
@@ -6179,11 +6562,36 @@ public class ChatToolService {
      * for a colour the catalogue actually knows, so "còn đen không?" and "đen xanh lá" are read as
      * colour requests instead of being dropped or mistaken for a model code.
      */
-    private String extractRequestedColor(String normalized) {
+    String extractRequestedColor(String question) {
+        // Match literal catalogue labels before stripping Vietnamese accents: đỏ is a colour,
+        // đó is a reference, and đồ is a generic noun. The catalogue owns the translations.
+        String colorText = colorQuestionText(question);
+        String labels = catalogReadService == null ? colorText
+                : catalogReadService.assistantLocalizedColorLabel(colorText, "en");
+        String normalized = normalizeIntent(labels == null ? colorText : labels);
         String keyed = extractRequestedOption(normalized, COLOR_REQUEST);
-        if (keyed != null) return keyed;
+        if (keyed != null && catalogReadService != null
+                && !catalogReadService.assistantColorFacets(keyed).isEmpty()) return keyed;
         String bare = catalogColorTermIn(normalized);
         return bare == null ? null : normalize(bare);
+    }
+
+    /** Keep model identifiers and the camera noun out of colour-only interpretation. */
+    private String colorQuestionText(String question) {
+        if (question == null) return "";
+        String text = question.replaceAll("(?iu)\\bdash\\s+cam\\b", " ");
+        Set<String> vocabulary = catalogReadService == null
+                ? Set.of() : catalogReadService.assistantColorVocabulary();
+        Matcher identifiers = Pattern.compile("[\\p{L}\\d]+(?:-[\\p{L}\\d]+)+").matcher(text);
+        StringBuilder clean = new StringBuilder();
+        while (identifiers.find()) {
+            String compound = identifiers.group();
+            boolean onlyColors = Arrays.stream(compound.split("-"))
+                    .allMatch(part -> vocabulary.contains(normalize(part)));
+            identifiers.appendReplacement(clean, Matcher.quoteReplacement(onlyColors ? compound : " "));
+        }
+        identifiers.appendTail(clean);
+        return clean.toString();
     }
 
     /** Longest catalogue colour spelling present in the question, or null. */
@@ -6210,6 +6618,7 @@ public class ChatToolService {
         Matcher matcher = pattern.matcher(normalized);
         while (matcher.find()) {
             String value = matcher.group(1);
+            if (value == null && matcher.groupCount() > 1) value = matcher.group(2);
             String normalizedValue = value == null ? "" : normalize(value);
             if (normalizedValue.isBlank()
                     || NON_VALUE_OPTION_TOKENS.contains(normalizedValue)) {
@@ -6300,13 +6709,13 @@ public class ChatToolService {
      * CHAT_RULE_008. Bargaining is a normal sales moment, not a system failure. This path answers
      * without a provider call so it can never end in an apology about an unfinished lookup.
      */
-    private static boolean isPriceNegotiationRequest(String value) {
+    static boolean isPriceNegotiationRequest(String value) {
         boolean bargaining = hasWord(value,
                 "giam gia cho toi", "giam gia khong", "giam cho minh", "giam duoc bao nhieu",
                 "bot cho minh", "bot chut", "bot gia", "gia tot hon", "gia mem hon",
                 "co giam khong", "sale khong", "mua 2 cai", "mua nhieu co giam",
                 "khach quen", "uu dai gi", "mac ca", "tra gia",
-                "discount for me", "any discount", "give me a discount", "better price",
+                "giam them", "xin giam gia", "giam duoc khong", "discount", "discount for me", "any discount", "give me a discount", "better price",
                 "lower price", "bulk discount", "deal for two", "price match");
         boolean comparison = hasWord(value, "shop khac", "ben kia", "cho khac", "noi khac",
                 "another shop", "other shop", "elsewhere", "somewhere else")
@@ -6353,9 +6762,9 @@ public class ChatToolService {
     }
 
     private static boolean isPolicyQuestion(String value) {
-        return hasWord(value, "bao hanh", "doi tra", "doi hang", "tra hang", "phi ship", "ship",
+        return hasWord(value, "bao hanh", "doi tra", "doi hang", "tra hang", "doi lai", "tra lai", "phi ship", "ship", "cod", "kiem hang", "inspect",
                 "giao hang", "van chuyen", "thanh toan", "chon size", "do size", "kich co",
-                "warranty", "return", "returns", "exchange", "shipping", "delivery", "payment",
+                "warranty", "return", "returns", "returned", "exchange", "exchanged", "shipping", "delivery", "payment",
                 "size guide", "rieng tu", "du lieu ca nhan", "privacy", "personal data");
     }
 
@@ -6382,7 +6791,7 @@ public class ChatToolService {
                     value, "doi tra", "doi hang", "tra hang", "doi size", "doi lai", "tra lai",
                     "hoan tra", "hoan tien", "doi mau", "doi san pham", "doi trong",
                     "hang loi", "bi loi", "san pham loi", "loi san pham", "khong vua",
-                    "return", "returns", "exchange", "refund", "faulty", "defective");
+                "return", "returns", "returned", "exchange", "exchanged", "refund", "faulty", "defective");
             case "payment" -> hasWord(
                     value, "thanh toan", "payment", "pay", "cod", "chuyen khoan", "tra tien",
                     "tien mat", "quet the", "chuyen tien", "bank transfer", "cash on delivery");
@@ -6414,7 +6823,7 @@ public class ChatToolService {
                 "motorbikes");
         boolean productContext = matchKeyword(value, CATEGORY_KEYWORDS) != null
                 || matchKeyword(value, BRAND_KEYWORDS) != null
-                || hasWord(value, "san pham", "product", "products", "phu kien", "accessory");
+                || hasWord(value, "san pham", "product", "products", "phu kien", "accessory", "gear", "jacket", "helmets", "gloves", "boots");
         // Measured 2026-09-06: gold prices, football fixtures, medicine and arithmetic were only
         // ever declined because the model chose to decline. That made the shop's scope boundary
         // depend on model wording, and it did not hold on every run. These are now shop rules.
@@ -6429,7 +6838,8 @@ public class ChatToolService {
         // Split into verb + object so ordinary wording ("giải giúp tôi bài toán…") still matches.
         boolean schoolwork = hasWord(value, "giai", "tinh", "solve", "calculate", "compute")
                 && hasWord(value, "bai toan", "phuong trinh", "phep tinh", "bai tap", "giai thua",
-                        "equation", "homework", "factorial", "math problem");
+                        "equation", "homework", "factorial", "math problem")
+                || hasWord(value, "solve", "calculate", "compute", "giai") && value.contains("=");
         return hasWord(value, "chinh tri", "politic", "politics", "bau cu", "election", "elections",
                 "tu van xe", "mua xe nao", "sua xe", "engine repair")
                 || money || sport || medical || schoolwork
@@ -6455,7 +6865,7 @@ public class ChatToolService {
         return hasWord(compact,
                 "so sanh", "so sanh cac mau", "so sanh san pham", "so sanh giup em",
                 "hai mau nay", "2 mau nay", "ba mau nay", "3 mau nay", "ca hai", "ca ba",
-                "compare", "compare products", "compare models", "compare these models",
+                "compare", "compared", "compare products", "compare models", "compare these models",
                 "compare these products", "both models", "all three models");
     }
 
@@ -6512,7 +6922,7 @@ public class ChatToolService {
     private static String plain(String html, int max) {
         if (html == null || html.isBlank()) return "";
         if (max <= 0) return "";
-        String text = html
+        String text = org.jsoup.parser.Parser.unescapeEntities(html, false)
                 .replaceAll("(?i)<br\\s*/?>", ". ")
                 .replaceAll("(?i)</(?:p|li|h[1-6]|div|tr|td|section)>", ". ")
                 .replaceAll("<[^>]+>", " ")
@@ -6685,7 +7095,7 @@ public class ChatToolService {
                         List.of("solo", "nghe nhac", "chi duong", "music", "navigation")),
                 use("pair", "Nói chuyện với một bạn", "Talk with one companion",
                         List.of("mot ban", "hai nguoi", "2 nguoi", "cap doi", "one companion", "two riders"),
-                        List.of("2 nguoi", "hai nguoi", "cap doi", "pair", "rider to passenger", "two riders")),
+                        List.of("2 nguoi", "hai nguoi", "cap doi", "pair", "couples", "rider to passenger", "two riders")),
                 use("group", "Đi nhóm từ bốn người", "Group of four or more",
                         List.of("nhom bon", "4 nguoi", "di doan", "group of four", "group ride"),
                         List.of("4 nguoi", "6 nguoi", "8 nguoi", "mesh", "group", "conference")),
@@ -6739,6 +7149,7 @@ public class ChatToolService {
         Map<String, String> map = new LinkedHashMap<>();
         map.put("fullface", "mu-bao-hiem-fullface");
         map.put("full face", "mu-bao-hiem-fullface");
+        map.put("open face", "mu-bao-hiem-3-4");
         map.put("lat ham", "mu-bao-hiem-lat-ham-thao-ham");
         map.put("thao ham", "mu-bao-hiem-lat-ham-thao-ham");
         map.put("dual sport", "mu-bao-hiem-dual-sport");
@@ -6762,6 +7173,7 @@ public class ChatToolService {
         map.put("mu bao hiem", "mu-bao-hiem");
         map.put("non bao hiem", "mu-bao-hiem");
         map.put("helmet", "mu-bao-hiem");
+        map.put("helmets", "mu-bao-hiem");
         map.put("mu", "mu-bao-hiem");
         map.put("non", "mu-bao-hiem");
         map.put("gang tay touring", "gang-tay-touring");
@@ -6791,6 +7203,7 @@ public class ChatToolService {
         map.put("ao khoac", "ao-quan-bao-ho");
         map.put("quan ao", "ao-quan-bao-ho");
         map.put("jacket", "ao-quan-bao-ho");
+        map.put("jackets", "ao-quan-bao-ho");
         map.put("ao", "ao-quan-bao-ho");
         map.put("giap tay", "giap-bao-ho-tay-chan");
         map.put("giap chan", "giap-bao-ho-tay-chan");
@@ -6902,7 +7315,7 @@ public class ChatToolService {
     /** Terms that describe a generic catalogue/brand context rather than a product model. */
     private static Set<String> genericProductTokens() {
         Set<String> tokens = new LinkedHashSet<>(List.of(
-                "san", "pham", "hang", "hoa", "product", "products", "item", "items",
+                "san", "pham", "hang", "hoa", "product", "products", "item", "items", "model", "models",
                 "shop", "bigbike", "gia", "price", "con", "hang", "available",
                 "toi", "minh", "em", "anh", "chi", "ban", "muon", "can", "dang", "xin",
                 "tim", "find", "show", "please", "giup", "gium", "tu", "van",
@@ -6910,7 +7323,9 @@ public class ChatToolService {
                 "size", "mau", "sac",
                 "cao", "cap", "premium", "xin", "tot", "nhat", "re", "tiet", "kiem",
                 "binh", "dan", "cheap", "cheapest", "new", "newest", "best",
-                "di", "phuot",
+                "di", "phuot", "moto", "motorcycle", "gear", "trip", "tour", "touring", "nhom", "group", "riding", "rides", "city", "pho",
+                "ngay", "daily", "summer", "he", "thoang", "khi", "mat", "nhe", "doi", "lightweight", "breathable", "hot", "weather",
+                "gan", "de", "noi", "chuyen", "talking", "during", "which",
                 "thuong", "hieu", "brand", "danh", "muc", "category",
                 "how", "much", "any", "from", "under", "below", "above", "over",
                 "tu", "den", "toi", "tren", "duoi", "hon", "khoang", "tam"));
@@ -6932,7 +7347,8 @@ public class ChatToolService {
                 "thoi", "luon", "size", "mau", "ok",
                 "then", "so", "what", "about", "also", "else", "another", "other", "same",
                 "similar", "previous", "earlier", "please", "thanks", "thank", "okay", "show",
-                "see");
+                "see", "you", "have", "sell", "that", "this", "would", "like", "i", "am", "looking", "stock", "carry", "does", "is", "it", "are", "there", "for", "of", "on", "in", "to",
+                "chiec", "mot", "muon", "can", "minh", "toi", "em", "recommend", "suggest", "need", "those", "we", "one", "shown", "discussed");
     }
 
     private static void addPhraseTokens(Set<String> target, String phrase) {
@@ -7172,7 +7588,8 @@ public class ChatToolService {
             List<String> productSlugs,
             boolean awaitingOrderLogin,
             ProductDecisionContext productDecision,
-            List<String> recentProductSlugs
+            List<String> recentProductSlugs,
+            ChatImageEvidence imageEvidence
     ) {
         /** CHAT_RULE_005 window: every model shown across the last twelve exchanges. */
         public static final int RECENT_PRODUCT_MEMORY = 40;
@@ -7199,6 +7616,20 @@ public class ChatToolService {
         ) {
             this(category, brand, minPrice, maxPrice, productSlugs, awaitingOrderLogin,
                     productDecision, List.of());
+        }
+
+        public ConversationContext(String category, String brand, Long minPrice, Long maxPrice,
+                List<String> productSlugs, boolean awaitingOrderLogin, ProductDecisionContext productDecision,
+                List<String> recentProductSlugs) {
+            this(category, brand, minPrice, maxPrice, productSlugs, awaitingOrderLogin,
+                    productDecision, recentProductSlugs, null);
+        }
+
+        public ConversationContext withImageEvidence(ChatImageEvidence evidence) {
+            return new ConversationContext(evidence == null ? category : evidence.group(),
+                    evidence == null ? brand : evidence.brand(), minPrice, maxPrice,
+                    evidence == null ? productSlugs : evidence.matchedSlugs(), awaitingOrderLogin,
+                    null, recentProductSlugs, evidence);
         }
 
         public ConversationContext {
@@ -7541,6 +7972,13 @@ public class ChatToolService {
             return new ToolOutcome(false, answer, source, "{}",
                     products == null ? List.of() : List.copyOf(products), offTopic, directContact,
                     List.copyOf(actions), Set.of(), false, null, List.of(), null, null, null);
+        }
+
+        ToolOutcome withRecordedItemNames(List<String> names) {
+            return new ToolOutcome(aiRequired, localAnswer, source, toolJson, products, offTopic,
+                    directContactRecommended, actions, requiredDisclosures, inheritedPrice,
+                    catalogTotals, List.copyOf(names), effectiveSearchScope, clarification,
+                    nextProductDecision);
         }
 
         static ToolOutcome clarification(

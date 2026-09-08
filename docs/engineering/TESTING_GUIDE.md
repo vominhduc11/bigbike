@@ -159,7 +159,7 @@ GitHub Actions currently runs:
 - Backend: setting registry chỉ còn các key được giữ; review moderation không bị ảnh hưởng; migration V1070 assert dữ liệu handoff đã được dọn trước khi bỏ cấu trúc.
 - Web/admin: không render/call/mocking cho model chooser/evaluation/cost/fallback, lead/form liên hệ, feedback, proactive, attribution, unanswered/data gaps, template/abbreviation editor; đầy đủ VI/EN và không mojibake.
 - Web: action lỗi mở đúng panel Hotline/Zalo/Messenger mà không tạo request; không có lối gọi người thật; add cart/variant vẫn có hậu kiểm; memory v2 xoay token cũ và quyền tắt/xóa vẫn đúng.
-- Image: khi AI service có cấu hình thì luôn bật, 1 ảnh/lượt, 3/hội thoại, 20/ngày, 8 MB, private ownership/retention; `availability` không còn trả `disclosure` và khung chat không còn dòng công bố ảnh (owner decision 2026-09-06); thiếu service thì nút tự ẩn; image intent tiếp tục dùng fixture, không chạy bulk provider thật.
+- Image: khi AI service có cấu hình thì luôn bật, 3 ảnh/lượt, 9/hội thoại, 8 MB/ảnh; hạn mức ngày chỉnh ở quản trị, khởi điểm 60, giữ bộ đếm; private ownership/retention; `availability` không còn trả `disclosure` và khung chat không còn dòng công bố ảnh (owner decision 2026-09-06); thiếu service thì nút tự ẩn; image intent tiếp tục dùng fixture, không chạy bulk provider thật.
 - Image (owner decision 2026-09-07): phải có bài kiểm cho từng câu đã đo hỏng ngày 07/09 — ảnh sản phẩm kèm “muốn đặt đơn hàng”, kèm “có size nào”, kèm “bảo hành bao lâu” đều **không** được rơi sang tra đơn/từ chối đoán size; ảnh mà model nhận là hoá đơn hoặc ảnh đầu/người thì **vẫn** dừng lượt. Lượt ghép phải lưu **đúng một** dòng trợ lý (unique index `(request_id, role)`), nội dung dòng lưu và nội dung trả về phải bằng nhau, và tin nhắn khách chỉ được lưu một lần kể cả khi client không gửi `requestId` (`ChatImageChainedTurnTest`).
 - Image WebP: fixture WebP thật nằm ở `src/test/resources/chat/` vì Java **không encode được WebP** (backend chỉ mang bộ đọc). Fixture bắt buộc là **ảnh nhiễu**: bộ đọc từ chối ảnh giãn quá 2048:1 nên ảnh một màu trơn bị coi là ảnh bom và bài kiểm sẽ đo nhầm thứ khác. Cách sinh lại ghi ở `src/test/resources/chat/README.md`. Phải giữ cả ca WebP hỏng/không giải mã được vẫn không vượt được chốt 1.600 px.
 - Backend (owner decision 2026-09-06): mọi câu hỏi trong phạm vi phải có bài kiểm chứng minh **không** ra thông báo lỗi kỹ thuật — chính sách bảo hành, quy định đội mũ, hai câu mặc cả giá (`ChatAnsweredQuestionsTest`).
@@ -189,3 +189,27 @@ Các context PostgreSQL profile `tc` chạy toàn bộ migration từ kho trốn
 | Admin unit/component tests run through the dedicated `npm run test` script. | `RESOLVED_2026-08-28` | `bigbike-admin/package.json` |
 | Web unit tests exist locally but are not run in CI. | `CONFIRMED_FROM_CONFIG` | `bigbike-web/package.json`, `.github/workflows/ci.yml` |
 | Live redirect quality | Two sequential scans of the 241-row owner URL list, 0.5s/request/pass; the live scan is evidence, not a unit-test substitute. | `REQUIRED_FOR_AUDIT_2026-08-14` |
+
+
+### Xác nhận trợ lý và video bằng dữ liệu thật — đợt 08/09/2026
+
+Chỉ chạy provider thật khi owner đã duyệt ngân sách, đếm trước/sau từng đợt và tách slot chữ/ảnh/video. Đợt này: tối đa 160 slot chữ, tám ảnh, tám video; không reset bộ đếm. So câu trả lời với hàng/biến thể/chính sách đang công bố, kiểm Việt/Anh và chuỗi đổi chủ đề/quay lại nhiều mẫu. Test giả lập kiểm giới hạn/quyền/lỗi, không thay bằng chứng chất lượng AI.
+
+Video cần tệp có hình/tiếng thật: nhiều góc sản phẩm; thao tác; lời nhắn; không lời nhắn; câu nói trong âm thanh; hành động cuối đoạn. Kiểm thêm MP4/MOV/WebM, tệp hỏng/giả MIME/quá 15 giây/quá 40 MB, một video/lượt, hai/hội thoại, mười/ngày, ảnh XOR video, retry không tính lại, đồng hồ chung tối đa 60 giây, hết hạn bảy ngày/khách xóa lịch sử, ownership và `chat.read`, lịch sử web/admin, nội dung Việt/Anh. Mọi dữ liệu thử có manifest riêng; không gọi công cụ dọn E2E toàn hệ thống.
+<!-- 2026-09-08: Preflight giữ kiểm tra TypeScript của các test web. Vitest globals phải có khai báo kiểu trong setup; test double của Next Image khai báo rõ các prop riêng. Không dùng ignoreBuildErrors hoặc loại test khỏi bước kiểm kiểu để che lỗi. -->
+
+### Image assistant regression — 2026-09-08
+
+Bắt buộc kiểm fixture Việt–Anh: logo hãng có/không kinh doanh/hết hàng; screenshot găng tay có logo shop; không rõ mẫu; JSON bị cắt/rỗng/sai schema rồi retry; nhiều ảnh/thứ tự/xung đột/quota một phần; cạnh tranh PostgreSQL/reset ngày/idempotency; ghi nhớ ảnh không có chữ và hỏi tiếp; notification biên lai đúng quyền/không trùng/không đổi thanh toán/xóa theo transcript. CLI phải có dry-run/apply/resume/verify/rollback trên dữ liệu thử riêng, không dữ liệu khách. Kiểm PostgreSQL cho ảnh phải dựng Hibernate SessionFactory với `hbm2ddl.auto=validate` trên schema migration và đọc/ghi entity thật; kiểm SQL bằng JDBC đơn thuần không bắt được lệch kiểu entity/cột. Browser kiểm 1440/768/375, lỗi tải, Việt–Anh; provider giả chỉ trong test, không vào runtime. Không gọi Gemini thật để chạy bộ đề; ghi Not run cho kiểm trên production chưa chạy.
+
+Khi chạy toàn bộ backend trên VPS ít RAM, các Spring context thử phải dùng H2 riêng, tránh context bị loại khỏi cache xóa schema của context khác. Không lấy DB/MinIO/Gemini từ `.env.vps` cho kiểm thử. Lệnh kiểm toàn bộ có giới hạn tài nguyên (PostgreSQL Testcontainers vẫn tự tạo DB riêng):
+
+```bash
+cd bigbike-backend
+JAVA_TOOL_OPTIONS='-XX:ActiveProcessorCount=2 -Xmx1100m' GEMINI_API_KEY= \
+./mvnw -B clean verify -Dspring.test.context.cache.maxSize=2 \
+  '-Dspring.datasource.url=jdbc:h2:mem:bigbike-image-${random.uuid};MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;NON_KEYWORDS=VALUE' \
+  -Dbigbike.minio.endpoint=http://127.0.0.1:1 -Dbigbike.ai.gemini-api-key=
+```
+
+Kiểm giao diện khung chọn ảnh mà không ghi dữ liệu khách/tiêu AI: `PW_BASE_URL=https://bigbike.vn npx playwright test assistant-images.e2e.ts --workers=1` từ `bigbike-web`. Ca này đọc availability thật, chặn và trả phiên giả chỉ trong trình duyệt, không gửi ảnh/tin nhắn; kiểm Việt–Anh ở 375/768/1440 và lưu ảnh chụp trong artifact Playwright. Đây là kiểm composer, không thay phép kiểm nhận diện bằng AI hoặc kiểm quyền server.

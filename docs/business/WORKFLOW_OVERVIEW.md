@@ -48,7 +48,7 @@ Staff with orders.write check the bank account externally, then confirm full rec
 | 2 | System | Mỗi lượt cần AI dùng duy nhất Gemini 3.7 Flash, trong trần 400 lượt/ngày và 40 lượt/hội thoại cố định. Fast-path không dùng AI; chạm trần thì mở hội thoại nối tiếp. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_006`, `009`, `010`, `019` |
 | 3 | System | Nếu Gemini lỗi/quá tải, hệ thống thử lại chính model trong deadline 65 giây và tối đa bốn lần gọi. Vẫn lỗi thì trả lời xin lỗi kèm các kênh liên hệ trực tiếp; không đổi model và không tạo yêu cầu người thật. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_011`, `019` |
 | 4 | Guest/Customer | Khách gặp giới hạn, thiếu dữ liệu hoặc cần trao đổi ngoài phạm vi được mời tự liên hệ qua Hotline, Zalo hoặc Messenger. Bấm liên hệ chỉ mở thẻ/kênh shop, không tạo hàng chờ. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_008`, `011`, `034`–`039` |
-| 5 | Guest/Customer | Khách có thể gửi tối đa một ảnh/lượt, ba ảnh/hội thoại, 20 ảnh/ngày, tối đa 8MB và chỉ JPG/PNG/WebP. Khi dịch vụ AI chưa khai báo, nút ảnh tự ẩn. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_057`–`059` |
+| 5 | Guest/Customer | Khách có thể gửi tối đa ba ảnh/lượt, chín ảnh/hội thoại; hạn mức ngày mặc định 60, chỉnh ở quản trị, tối đa 8MB và chỉ JPG/PNG/WebP. Khi dịch vụ AI chưa khai báo, nút ảnh tự ẩn. | `OWNER_CONFIRMED_2026-09-08` | `CHAT_RULE_057`–`059` |
 | 5a | Guest/Customer | Gõ câu hỏi kèm ảnh thì được trả lời cả hai trong một tin nhắn: câu nhận diện ảnh rồi câu trả lời như chat chữ. Ảnh hoá đơn, ảnh đầu/người, hàng hỏng và ảnh ngoài phạm vi vẫn dừng ở câu hướng dẫn của mình. | `OWNER_CONFIRMED_2026-09-07` | `CHAT_RULE_058` |
 | 6 | Guest/Customer | Khách bấm thẻ sản phẩm, chọn biến thể còn hàng và thêm vào giỏ; backend hậu kiểm giá, tồn và biến thể trước khi thêm. | `OWNER_CONFIRMED_2026-08-30` | `CHAT_RULE_014`, `052` |
 | 7 | Guest/Customer | Ngữ cảnh chỉ được nối trong phiên trình duyệt đang mở; tải lại trang vẫn thấy đoạn chat, đóng trình duyệt là hết. Khách vẫn xoá được cuộc trò chuyện. | `OWNER_CONFIRMED_2026-09-05` | `CHAT_RULE_049` |
@@ -177,3 +177,12 @@ API địa chỉ backend (`GET /api/v1/address/provinces[...]`) đã gỡ 2026-0
 Không còn workflow bật/tắt hoặc khóa trang quản trị thủ công. Từ 30/08/2026, nhân viên dùng admin bình thường; tài khoản kỹ thuật `vominhduc760@gmail.com` mang vai trò `ADMIN` sau migration `V1071`.
 
 Khách hàng không bị ảnh hưởng: duyệt web, thêm giỏ và đặt hàng vẫn đi qua workflow thương mại hiện hành. Khi upstream thật sự không phản hồi, Nginx vẫn tự phục vụ trang lỗi tĩnh trong `deploy/maintenance/`; đây là fallback hạ tầng độc lập, không phải workflow nghiệp vụ.
+
+
+### Trợ lý nhận video ngắn — 08/09/2026
+
+Khách chọn một video thay cho ảnh, có thể gõ câu hỏi, chỉ nói trong video hoặc không nói gì. Trợ lý xem/nghe trọn đoạn, tìm mẫu tương tự hoặc làm rõ thao tác khách đang hỏi; dữ kiện mua hàng/chính sách vẫn lấy từ shop. Mỗi video tối đa 15 giây/40 MB, hai video/hội thoại và mười/toàn shop/ngày. Trả lời trong 60 giây từ khi nhận xong; quá giờ mời gửi ảnh. Nhân viên có quyền xem Hội thoại đọc được video riêng tư trong bảy ngày, sau đó thấy dấu hết hạn. Khách xóa lịch sử cũng xóa tệp (`CHAT_RULE_062`–`065`).
+
+### Khách gửi ảnh cho Trợ lý — 2026-09-08
+
+Chọn 1–3 ảnh → tải riêng tư vào cùng hội thoại → xác minh quyền và giữ quota cho phần còn đủ → đọc ảnh theo lô, thử lại khi lỗi kỹ thuật → tra hãng/nhóm/mẫu theo bằng chứng riêng → trả một tin tự nhiên Việt–Anh và giữ ngữ cảnh cho lượt sau. Biên lai chuyển khoản → thông báo chuông quản trị có chat.read → nhân viên mở Hội thoại, đối chiếu và xác nhận ở Đơn hàng bằng orders.write. Các giới hạn theo CHAT_RULE_057, hành vi theo CHAT_RULE_066–069.

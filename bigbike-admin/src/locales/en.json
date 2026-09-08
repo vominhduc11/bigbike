@@ -149,7 +149,9 @@
     "unread": "Unread",
     "syncError": "Couldn't sync read status.",
     "loadError": "Couldn't load notifications. Please try again.",
-    "unknownOrder": "Order"
+    "unknownOrder": "Order",
+    "transferReceipt": "Transfer receipt in chat",
+    "transferReceiptDescription": "Open the customer’s images and verify the bank records before confirming payment."
   },
   "search": {
     "open": "Open quick search",
@@ -3026,6 +3028,9 @@
       "noMessages": "No conversation content",
       "noMessagesDescription": "This conversation has no stored messages, or its content has passed the retention period.",
       "customer": "Customer",
+      "customerVideoAlt": "Video sent by the customer",
+      "customerVideoLoadError": "The customer video could not be loaded.",
+      "videoExpired": "The video file has expired or is no longer available.",
       "customerImageAlt": "Image sent by the customer in this conversation",
       "customerImageLoadError": "The image could not be loaded. The account needs conversation-view permission and the image must still be within its retention period.",
       "bigbike": "BigBike Assistant",
@@ -3054,6 +3059,13 @@
         "disabled": "Automated support is off",
         "closed": "Closed"
       }
+    },
+    "imageQuota": {
+      "title": "Today’s image allowance",
+      "permission": "You need chat viewing permission to see usage.",
+      "loading": "Loading image usage…",
+      "error": "Image usage is unavailable. Please try again.",
+      "usage": "{{date}} (Vietnam time): {{used}}/{{limit}} images used; {{remaining}} remaining."
     }
   },
   "settings": {
@@ -3133,7 +3145,8 @@
       "ai_assistant_enabled": "Enable BigBike Assistant",
       "ai_assistant_daily_limit": "Maximum AI calls per day",
       "ai_assistant_recent_turn_pairs": "Recent question-answer pairs BigBike Assistant may read",
-      "ai_assistant_search_ai_interpretation_enabled": "Let BigBike Assistant interpret natural product requests"
+      "ai_assistant_search_ai_interpretation_enabled": "Let BigBike Assistant interpret natural product requests",
+      "ai_assistant_image_daily_limit": "Daily image allowance"
     },
     "keyHint": {
       "inventory_out_of_stock_digest_enabled": "Disable this for complete silence. When enabled, a bulletin is sent only when stock is actually out.",
@@ -3143,7 +3156,8 @@
       "ai_assistant_enabled": "When disabled, customers still see the chat button and get the Hotline, Zalo and Messenger contact panel.",
       "ai_assistant_daily_limit": "The limit follows Vietnam time and defaults to 400 AI calls per day. When it is reached, BigBike Assistant automatically falls back to the contact panel.",
       "ai_assistant_recent_turn_pairs": "Choose 0 to 12, defaulting to 12. Set 0 to send no history; private details are redacted and every message is shortened.",
-      "ai_assistant_search_ai_interpretation_enabled": "When enabled, BigBike Assistant can understand shorthand and natural wording while the system still verifies every result. Disable it to return to the previous search behaviour immediately."
+      "ai_assistant_search_ai_interpretation_enabled": "When enabled, BigBike Assistant can understand shorthand and natural wording while the system still verifies every result. Disable it to return to the previous search behaviour immediately.",
+      "ai_assistant_image_daily_limit": "Shared by all customers, resetting at midnight Vietnam time. Start at 60; enter 0 to pause image reading. Retries do not use another image slot."
     },
     "keyWhere": {
       "inventory_out_of_stock_digest_enabled": "enable or disable the admin-bell and internal-email digest",
@@ -3151,7 +3165,8 @@
       "ai_assistant_enabled": "enable or disable BigBike Assistant across the website",
       "ai_assistant_daily_limit": "daily AI-call cap in Vietnam time",
       "ai_assistant_recent_turn_pairs": "0–12 recent pairs for follow-up context",
-      "ai_assistant_search_ai_interpretation_enabled": "switch between the new and previous product-search interpretation"
+      "ai_assistant_search_ai_interpretation_enabled": "switch between the new and previous product-search interpretation",
+      "ai_assistant_image_daily_limit": "shared daily image allowance, Vietnam time"
     },
     "section": {
       "inventory_digest": "Daily out-of-stock digest",

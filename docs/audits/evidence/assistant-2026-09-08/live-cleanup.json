@@ -1,0 +1,339 @@
+{
+  "environment": "live shop; only audit manifests",
+  "before": {
+    "date": "2026-09-08",
+    "text": 89,
+    "images": 5
+  },
+  "after": {
+    "date": "2026-09-08",
+    "text": 89,
+    "images": 5
+  },
+  "deletedSessions": [
+    {
+      "run": "baseline",
+      "caseOrThread": "S01-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S01-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S02-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S02-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S03-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S03-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S04-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S04-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S05-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S05-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S06-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S06-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S07-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S07-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S08-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S08-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S09-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S09-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S10-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S10-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S11-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S11-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S12-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S12-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S13-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S13-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S14-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S14-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S15-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S15-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S16-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S16-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S17-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S17-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S18-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S18-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S19-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S19-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S20-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S20-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S21-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S21-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S22-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S22-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S23-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S23-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S24-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "S24-en",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "chain-vi-a",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "chain-en-a",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "chain-vi-b",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "baseline",
+      "caseOrThread": "chain-en-b",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "image-baseline",
+      "caseOrThread": "I01-vi",
+      "http": 200,
+      "deleted": true
+    },
+    {
+      "run": "image-baseline",
+      "caseOrThread": "I02-en",
+      "http": 200,
+      "deleted": true
+    }
+  ]
+}
