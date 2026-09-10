@@ -4,6 +4,8 @@ import Link from "@/i18n/StorefrontLink";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { trackAddToCart } from "@/lib/analytics";
 import { addCartItem } from "@/lib/api/client-api";
 import { useCartQuery } from "@/lib/query/hooks";
@@ -36,6 +38,7 @@ const CartContext = createContext<CartContextValue | null>(null);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const t = useTranslations("Cart");
+  const common = useTranslations("Common");
   const locale = useLocale() as Locale;
   const qc = useQueryClient();
   // Single shared cache for the whole app (queryKeys.cart()) — the same query
@@ -43,8 +46,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // ở bất kỳ đâu (mutation gọi qc.setQueryData(queryKeys.cart(), ...)) tự động
   // cập nhật số ở đây, không cần refreshCount() riêng của từng nơi nữa.
   const cartQuery = useCartQuery();
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [toast, setToast] = useState<Toast | null>(null);
   const nextId = useRef(0);
+  const toastTimerRef = useRef<number | null>(null);
 
   const cartCount = cartQuery.data
     ? cartQuery.data.items.reduce((sum, item) => sum + item.quantity, 0)
@@ -61,21 +65,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     refreshCount();
   }, [auth.status, refreshCount]);
 
+  const dismissToast = useCallback(() => {
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = null;
+    setToast(null);
+  }, []);
+
   const showToast = useCallback((title: string, message: string) => {
     const id = ++nextId.current;
-    setToasts((prev) => [...prev, { id, title, message }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+    setToast({ id, title, message });
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
     }, 4000);
   }, []);
 
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+    },
+    [],
+  );
+
   const addToCart = useCallback(
-    async (
-      productId: string,
-      quantity: number,
-      variantId?: string,
-      suppressToast = false,
-    ) => {
+    async (productId: string, quantity: number, variantId?: string, suppressToast = false) => {
       const previous = qc.getQueryData<Cart>(queryKeys.cart());
       const updated = await addCartItem(productId, quantity, variantId);
       qc.setQueryData(queryKeys.cart(), updated);
@@ -93,8 +107,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         .map((line) => ({ line, delta: line.quantity - (previousQuantities.get(line.id) ?? 0) }))
         .filter((entry) => entry.delta > 0)
         .sort((a, b) => b.delta - a.delta)[0];
-      const addedLine =
-        grown?.line ?? updated.items.find((line) => line.productId === productId);
+      const addedLine = grown?.line ?? updated.items.find((line) => line.productId === productId);
       if (addedLine) trackAddToCart(addedLine, grown?.delta ?? quantity);
       if (!suppressToast) showToast(t("toastAddedTitle"), t("toastAddedBody"));
       return updated;
@@ -105,22 +118,41 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   return (
     <CartContext.Provider value={{ cartCount, addToCart, showToast, refreshCount }}>
       {children}
-      {toasts.map((toast) => (
+      {toast ? (
         <div
           key={toast.id}
-          className="bb-cart-toast"
+          className="bb-cart-toast grid! grid-cols-[minmax(0,1fr)_auto_auto]! items-center! gap-2! px-3! py-2!"
           role="status"
           aria-live="polite"
+          aria-atomic="true"
         >
-          <div>
-            <b className="mb-0.5 block font-body text-a5-meta font-bold text-brand">{toast.title}</b>
-            <span className="text-a5-meta text-muted-foreground">{toast.message}</span>
+          <div className="min-w-0">
+            <b className="mb-0.5 block font-body text-a5-meta font-bold text-brand">
+              {toast.title}
+            </b>
+            <span className="text-a5-meta text-muted-foreground max-md:hidden">
+              {toast.message}
+            </span>
           </div>
-          <Link href={toCartPath(locale)} className="text-a5-meta font-bold text-brand no-underline whitespace-nowrap tracking-wide shrink-0 hover:text-brand-hover">
+          <Link
+            href={toCartPath(locale)}
+            className="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap px-1 font-body text-a5-meta font-bold tracking-wide text-brand no-underline hover:text-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            onClick={dismissToast}
+          >
             {t("toastViewCart")}
           </Link>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-11 shrink-0 rounded-none text-foreground hover:bg-muted hover:text-foreground max-md:text-white max-md:hover:bg-white/10 max-md:hover:text-white"
+            aria-label={common("close")}
+            onClick={dismissToast}
+          >
+            <X className="size-5" aria-hidden />
+          </Button>
         </div>
-      ))}
+      ) : null}
     </CartContext.Provider>
   );
 }

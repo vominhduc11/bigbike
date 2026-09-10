@@ -1090,6 +1090,17 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   }
 }
 
+@keyframes bb-toast-in-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Toast "đã thêm vào giỏ" (lib/cart-context.tsx). Desktop: nổi góc phải ngay dưới
    header. Block mobile-shell phía dưới (@media, `.bb-cart-toast` !important) override
    xuống đáy màn hình phía trên bottom-nav. */
@@ -1098,11 +1109,7 @@ body .sidebar-wrap-product .wrapper .widget:last-child {
   top: calc(var(--bb-header-stack) + var(--bb-space-2));
   right: var(--bb-space-5);
   z-index: var(--bb-z-toast);
-  display: flex;
-  align-items: center;
-  gap: var(--bb-space-3);
   max-width: 22.5rem;
-  padding: 0.875rem 1.125rem;
   border: 1px solid var(--bb-border-brand);
   border-left-width: 3px;
   background: var(--bb-bg-surface);
@@ -2996,6 +3003,9 @@ body .banner-ads > .container > .row {
 @media (max-width: 767px) {
   :root {
     --bb-mobile-nav-height: 3.75rem;
+    --bb-mobile-bottom-surface-height: calc(
+      var(--bb-mobile-nav-height) + env(safe-area-inset-bottom)
+    );
     --bb-mobile-shell-bg: var(--bb-bg-surface-dark-2);
     --bb-mobile-shell-surface: var(--bb-bg-surface-dark);
     --bb-mobile-shell-surface-2: var(--bb-bg-surface-dark-3);
@@ -3023,7 +3033,21 @@ body .banner-ads > .container > .row {
      Chừa đúng chiều cao thanh + 12px thở để không che. Thanh luôn mount trên PDP
      nên :has đóng vai marker; media query đã giới hạn ≤767px. */
   body:has(.bb-pdp-sticky-cta) .bb-main {
-    padding-bottom: calc(69px + max(8px, env(safe-area-inset-bottom)) + 12px);
+    padding-bottom: calc(
+      var(--bb-pdp-sticky-height, calc(69px + max(8px, env(safe-area-inset-bottom)))) +
+        var(--bb-space-3)
+    );
+  }
+
+  body:has(.bb-pdp-sticky-cta.is-visible) {
+    --bb-mobile-bottom-surface-height: var(
+      --bb-pdp-sticky-height,
+      calc(69px + max(8px, env(safe-area-inset-bottom)))
+    );
+    --bb-floating-chat-bottom: calc(var(--bb-mobile-bottom-surface-height) + var(--bb-space-4));
+    --bb-floating-scroll-top-bottom: calc(
+      var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-floating-action-gap)
+    );
   }
 
   .bb-site-header {
@@ -3037,17 +3061,27 @@ body .banner-ads > .container > .row {
   .bb-cart-toast {
     top: auto !important;
     right: 14px !important;
-    bottom: calc(var(--bb-mobile-nav-height) + env(safe-area-inset-bottom) + 12px) !important;
+    bottom: calc(var(--bb-mobile-bottom-surface-height) + var(--bb-space-3)) !important;
     left: 14px !important;
     max-width: none !important;
     border-color: var(--bb-border-brand) !important;
     border-left-width: 3px !important;
     background: var(--bb-mobile-shell-surface) !important;
     color: var(--bb-text-inverse) !important;
+    animation-name: bb-toast-in-mobile;
   }
 
   .bb-cart-toast span {
     color: var(--bb-text-inverse-muted) !important;
+  }
+
+  /* Thông báo giỏ hàng là phản hồi trực tiếp cho thao tác vừa thực hiện. Trong
+     bốn giây hiển thị, ẩn các nút nổi phụ để mọi chữ và hành động luôn bấm được. */
+  body:has(.bb-cart-toast) .bb-floating-chat-anchor,
+  body:has(.bb-cart-toast) .bb-scroll-top-anchor {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
   }
 
   /* MOBILE HOME DARK SHELL — overridden back to light mode by the later

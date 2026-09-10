@@ -165,7 +165,7 @@ export async function Footer({ locale }: { locale: Locale }) {
                     <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                     <a
                       href={telHref(phone)}
-                      className="min-w-0 text-white! no-underline! [overflow-wrap:anywhere]"
+                      className="min-w-0 normal-case text-white! no-underline! [overflow-wrap:anywhere]"
                     >
                       {phone}
                     </a>
@@ -177,14 +177,14 @@ export async function Footer({ locale }: { locale: Locale }) {
                     className="flex min-w-0 items-start gap-3 text-white! no-underline! sm:gap-[29px]"
                   >
                     <Mail className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                    <span data-footer-email className="min-w-0 [overflow-wrap:anywhere]">
+                    <span data-footer-email className="min-w-0 normal-case [overflow-wrap:anywhere]">
                       {FOOTER_EMAIL}
                     </span>
                   </a>
                 </p>
                 <p className="m-0! flex min-w-0 items-start gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]">
                   <MapPin className="mt-1 h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                  <span className="min-w-0 [overflow-wrap:anywhere]">
+                  <span className="min-w-0 normal-case [overflow-wrap:anywhere]">
                     <Tr ns="Footer" k="address" />
                   </span>
                 </p>

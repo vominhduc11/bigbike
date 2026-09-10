@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { zaloHref } from "@/lib/utils/format";
 import { ZaloIcon } from "@/components/ui/ZaloIcon";
@@ -25,7 +25,36 @@ export function MobileStickyPurchaseBar({
 }: MobileStickyPurchaseBarProps) {
   const [visible, setVisible] = useState(false);
   const [addToCartDisabled, setAddToCartDisabled] = useState(false);
+  const stickyBarRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Toast giỏ hàng và các nút nổi dùng chiều cao thực này để luôn nằm trọn phía
+  // trên thanh mua hàng, kể cả khi có safe-area, đổi ngôn ngữ hoặc phóng lớn chữ.
+  useLayoutEffect(() => {
+    const bar = stickyBarRef.current;
+    if (!bar) return;
+
+    const root = document.documentElement;
+    const heightProperty = "--bb-pdp-sticky-height";
+    const previousHeight = root.style.getPropertyValue(heightProperty);
+    const syncHeight = () => {
+      const height = bar.getBoundingClientRect().height;
+      if (height > 0) root.style.setProperty(heightProperty, `${Math.ceil(height)}px`);
+    };
+
+    syncHeight();
+    const resizeObserver =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(syncHeight);
+    resizeObserver?.observe(bar, { box: "border-box" });
+    window.addEventListener("resize", syncHeight);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", syncHeight);
+      if (previousHeight) root.style.setProperty(heightProperty, previousHeight);
+      else root.style.removeProperty(heightProperty);
+    };
+  }, []);
 
   useEffect(() => {
     const target = document.querySelector<HTMLElement>("[data-purchase-actions]");
@@ -95,6 +124,7 @@ export function MobileStickyPurchaseBar({
 
   return (
     <div
+      ref={stickyBarRef}
       className={cn(
         // bb-pdp-sticky-cta + is-visible kept as markers: the body:has(.bb-pdp-sticky-cta.is-visible)
         // coordination rules (bottom-nav / floating-chat) can't be expressed inline.
