@@ -254,16 +254,17 @@ Historical classification adds no permission. `orders.read` covers the operation
 `/api/internal/**` (redirect lookup, consumed only by `bigbike-web/proxy.ts` over the Docker-internal network) is `permitAll` in Spring Security — auth is handled manually inside `InternalRedirectController.isAuthorized()` instead of the normal RBAC/JWT flow used by `/api/v1/admin/**`.
 
 - **Shared-secret header:** requests must carry `X-Internal-Token` matching `bigbike.internal.token` (env `BIGBIKE_INTERNAL_TOKEN` on the backend, must equal `INTERNAL_API_TOKEN` on `bigbike-web`). Deny-by-default (`401`) when the token is blank, **except** when `bigbike.internal.allow-open=true` — a flag set **only** in `application-dev.properties` (local dev convenience) and never in staging/prod profiles.
-- **Infra-level restriction:** `deploy/nginx/api.bigbike.vn.conf` blocks `/api/internal/` from the public internet (`403`), the same pattern used for `/actuator/**`. This is defense-in-depth on top of the token check, since `bigbike-web` never calls this path over the public domain anyway (it uses the internal Docker hostname `http://bigbike-backend:8080`).
+- **Ingress reality:** the active `api.bigbike.vn` vhost does not block `/api/internal/**`; a public request reaches the application-level token check above. `bigbike-web` still uses the Docker-internal hostname `http://bigbike-backend:8080`, not the public domain. The `admin.bigbike.vn` vhost returns `404` for this path because it is outside the five explicitly allowed admin-host API groups. No Nginx defense-in-depth claim is made for the API hostname.
 
-Status: `CONFIRMED_FROM_CONFIG`
+Status: `CONFIRMED_FROM_LIVE_CONFIG_AND_CODE_2026-09-12`
 
 Evidence:
 
 - `SecurityConfig.java`
 - `InternalRedirectController.java` (`isAuthorized`)
 - `application.properties` / `application-dev.properties`
-- `deploy/nginx/api.bigbike.vn.conf`
+- `/etc/nginx/sites-available/api.bigbike.vn` and the synchronized `deploy/nginx/api.bigbike.vn.conf`
+- `/etc/nginx/sites-available/admin.bigbike.vn` and the synchronized `deploy/nginx/admin.bigbike.vn.conf`
 
 ## Reports Permissions
 

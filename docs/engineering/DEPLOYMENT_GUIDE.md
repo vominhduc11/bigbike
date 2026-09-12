@@ -34,6 +34,35 @@ so a raw `http://<server-ip>:<port>` value would both bypass nginx and be unreac
 passed from the env-file through Compose build args; the extra-origin list defaults to empty and
 must never contain a retired host implicitly. `CONFIRMED_FROM_CONFIG`
 
+### Production hostname boundary (`api.bigbike.vn` vs `admin.bigbike.vn`)
+
+The two public hostnames are separate ingress boundaries even though they ultimately reach the
+same backend. Nginx must reject a request on the wrong hostname with `404` before proxying it; a
+backend `401`, `403` or validation error is not proof that the hostname boundary is closed.
+
+| Host | API paths served | API paths hidden with `404` |
+|---|---|---|
+| `api.bigbike.vn` | Storefront/customer APIs, including products, customer auth, cart, checkout, content and public settings | `/api/v1/admin`, `/api/v1/admin/**`, `/api/v1/auth`, `/api/v1/auth/**` |
+| `admin.bigbike.vn` | `/api/v1/admin/**`, `/api/v1/auth/**`, `/api/v1/catalog/facets`, `/api/v1/settings/public`, `/api/v1/articles` and `/api/v1/articles/**` | Every other `/api` or `/api/**` path |
+
+The admin hostname restriction applies only to `/api`. Its SPA at `/`, order-notification
+WebSocket at `/ws`, product media at `/media/` and `/media-proxy/`, and category background assets
+at `/wp/` remain available. The admin request limiter is the coarse `general_limit` policy
+(30 requests/second with burst 30) on ordinary HTTP/UI and allowed API proxy locations. `/ws` is
+deliberately exempt: Nginx sees the Cloudflare edge address rather than the employee address, so a
+connection cap could group unrelated staff sessions and interrupt notifications. Do not add
+Nginx `allow`/`deny`, `real_ip`, or trust a Cloudflare forwarding header as part of this boundary;
+the employee network allowlist remains owned by Cloudflare. `OWNER_CONFIRMED_2026-09-12`
+
+On production, `/etc/nginx/sites-available/api.bigbike.vn` and
+`/etc/nginx/sites-available/admin.bigbike.vn` are always the deployment baseline. Before the
+2026-09-12 boundary rollout, the handoff measured the repository copies as 121 and 102 diff lines
+away from those active files; the active copies contained the real WebSocket and outage behavior.
+Always copy the active files to candidates, add the intended delta, run `nginx -t`, reload only
+after it passes, and then mirror the accepted live files back to `deploy/nginx/` and
+`deploy/nginx/live-reference/`. A repository mirror is evidence and rollback context, never
+permission to overwrite a newer active file without a fresh diff. `CONFIRMED_FROM_LIVE_CONFIG_2026-09-12`
+
 > **Build-time bake:** every `NEXT_PUBLIC_*` and `VITE_*` value is compiled into the web/admin
 > bundle at build time. After changing any of them you MUST rebuild (`--build`); a plain
 > restart keeps the old links. `CONFIRMED_FROM_CONFIG`

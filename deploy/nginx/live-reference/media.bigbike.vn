@@ -1,0 +1,72 @@
+# ==============================================================================
+# Nginx Configuration for media.bigbike.vn (MinIO object storage — public read)
+# Uses the wildcard *.bigbike.vn certificate. Proxies to MinIO on 127.0.0.1:9000.
+# Public access is read-only (GET/HEAD); admin uploads go via api.bigbike.vn.
+# ==============================================================================
+
+# HTTP → HTTPS redirect
+server {
+    listen 80;
+    listen [::]:80;
+    server_name media.bigbike.vn;
+
+    access_log /var/log/nginx/media.bigbike.vn-http-access.log;
+    error_log  /var/log/nginx/media.bigbike.vn-http-error.log;
+
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS — MinIO public media proxy
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name media.bigbike.vn;
+
+    # ==================== SSL (wildcard *.bigbike.vn) ====================
+    ssl_certificate     /etc/ssl/bigbike.vn/fullchain.crt;
+    ssl_certificate_key /etc/ssl/bigbike.vn/private.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache   shared:MediaSSL:10m;
+    ssl_session_tickets off;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_stapling        on;
+    ssl_stapling_verify on;
+    resolver            8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout    5s;
+
+    # ==================== Security Headers ====================
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    # ==================== Logs ====================
+    access_log /var/log/nginx/media.bigbike.vn-access.log;
+    error_log  /var/log/nginx/media.bigbike.vn-error.log warn;
+
+    client_max_body_size 1m;
+
+    # ==================== Public read-only proxy to MinIO ====================
+    location / {
+        # Public is read-only; writes happen server-side via the backend.
+        limit_except GET HEAD OPTIONS { deny all; }
+
+        proxy_pass http://127.0.0.1:9000;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection        "";
+
+        proxy_connect_timeout 30s;
+        proxy_send_timeout    60s;
+        proxy_read_timeout    60s;
+
+        # Cache images at browser/CDN.
+        proxy_buffering on;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+}

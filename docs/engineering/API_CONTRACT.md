@@ -2012,7 +2012,12 @@ Not wrapped in the standard `{data}` envelope (bare JSON, optimized for the hot 
 | `GET` | `/redirects/active` | `200 [...]` bulk dump of enabled redirects (`id`, `sourcePattern`, `targetUrl`, `statusCode`) | Called by `bigbike-web` as a single-flight snapshot with a 30-second TTL. A failed snapshot is not treated as an empty rule set; the proxy falls back to the single lookup endpoint. |
 | `POST` | `/redirects/hit/{redirectId}` | `204` | Fire-and-forget hit-count increment, called by the proxy after a successful redirect. |
 
-Consumed only by `bigbike-web/proxy.ts` over the Docker-internal network (`http://bigbike-backend:8080`) — never over the public `api.bigbike.vn` domain. `deploy/nginx/api.bigbike.vn.conf` blocks `/api/internal/**` from the public internet as a second layer of defense (see DEPLOYMENT_GUIDE.md).
+Consumed by `bigbike-web/proxy.ts` over the Docker-internal network
+(`http://bigbike-backend:8080`). The public `api.bigbike.vn` door intentionally does not add an
+Nginx block for `/api/internal/**`; requests without the matching `X-Internal-Token` still fail at
+the application check above. The employee door returns `404` because this path is outside its five
+allowed API groups. See `DEPLOYMENT_GUIDE.md` “Production hostname boundary” and
+`PERMISSION_MATRIX.md` “Internal Redirect Caveat”.
 
 Status: `CONFIRMED_FROM_CODE`
 
