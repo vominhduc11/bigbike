@@ -249,6 +249,19 @@ Historical classification adds no permission. `orders.read` covers the operation
 | `/user/queue/admin/access` | Authenticated admin's own user queue only. The server sends the minimal access-change signal (`reason`, `forceReauthentication`) after the access transaction commits; the client calls `GET /api/v1/auth/me` rather than trusting a permission payload from the message. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminAccessChangeService.java`, `adminWebSocket.js` |
 | Admin presence topics | `/topic/admin/presence/order/{orderId}` requires `orders.read`; `/topic/admin/presence/product/{productId}` requires `products.read`. The same current-access checks apply on SUBSCRIBE and outbound delivery; join/leave commands are accepted only from the authenticated admin session and are not persisted. | `OWNER_CONFIRMED_2026-07-31` | `WebSocketConfig.java`, `AdminPresenceController.java`, `AdminPresenceService.java` |
 
+## Ranh giới cửa khách và cửa nhân viên
+
+Quyền nghiệp vụ ở trên chỉ được xét sau khi yêu cầu đi đúng cửa. Backend trả `404` trước đăng nhập
+và trước giới hạn truy cập nếu `/api/v1/admin/**`, `/api/v1/auth/**` hoặc `/ws` đi qua cửa khách
+(`api.bigbike.vn` hay tên Docker `bigbike-backend`). Qua `admin.bigbike.vn`, backend chỉ nhận năm
+nhóm đã chốt: `admin`, `auth`, `articles`, đúng `/api/v1/catalog/facets` và đúng
+`/api/v1/settings/public`, cộng `/ws` cho chuông báo. Mọi API khách đi qua cửa nhân viên trả `404`.
+Host phát triển/kiểm thử `localhost`, `127.0.0.1`, `::1` được dùng chung; host khác đóng mặc định.
+
+Chốt này không thay đổi vai trò hay quyền chi tiết trong từng nhóm. Nó ngăn một phiên đăng nhập hợp
+lệ vượt cửa sai, kể cả khi đường dẫn viết hoa hoặc có tham số `;` sau đoạn bảo vệ.
+`OWNER_CONFIRMED_2026-09-12`
+
 ## Internal Redirect Caveat
 
 `/api/internal/**` (redirect lookup, consumed only by `bigbike-web/proxy.ts` over the Docker-internal network) is `permitAll` in Spring Security — auth is handled manually inside `InternalRedirectController.isAuthorized()` instead of the normal RBAC/JWT flow used by `/api/v1/admin/**`.

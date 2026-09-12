@@ -8,6 +8,22 @@
 | `bigbike-admin` | `npm run check:i18n`, `npm run lint`, `npm run test`, `npm run build` | `CONFIRMED_FROM_CONFIG` | `bigbike-admin/package.json` |
 | `bigbike-backend` | `./mvnw test`, `./mvnw package` | `CONFIRMED_FROM_CONFIG` | `bigbike-backend/pom.xml` |
 
+## Kiểm hồi quy ranh giới ba cửa
+
+`bash deploy/nginx/tests/domain-boundary-config-test.sh --self-test` là cổng bắt buộc trước commit
+khi thay đổi Nginx, lớp phân loại host hoặc tài liệu triển khai. Bài kiểm chỉ dùng Bash cùng
+`grep`/`awk`/`sed` có sẵn trên máy chủ. Nó phải cho bộ cấu hình nguyên vẹn đạt, tạo bản sao tạm,
+gỡ cố ý một chốt rồi chứng minh bản hỏng bị báo sai; tuyệt đối không sửa file active.
+
+Bộ kiểm backend phải phủ cửa khách, cửa nhân viên, tên Docker nội bộ, ba host local và host lạ;
+đường viết hoa, dấu `;`/mã hoá, phiên nhân viên hợp lệ đi sai cửa, năm nhóm được mở, API khách,
+`/ws` và `/api/internal/**`. Sau khi owner kích hoạt, kiểm đọc thật trang chủ, một sản phẩm, admin,
+chuông báo và một số ảnh đang dùng; không tạo đơn hoặc sửa dữ liệu.
+
+Cửa ảnh phải trả `200` và đúng content type cho object thật, `404` cho gốc bucket/đường lạ/kho chat,
+và giữ nguyên lỗi object không tồn tại của MinIO. Chỉ mô phỏng MinIO mất kết nối trong Nginx tạm;
+không dừng MinIO production để thử trang xin lỗi. `OWNER_CONFIRMED_2026-09-12`
+
 ## E2E test-data safety
 
 ### Google Merchant source and landing pages

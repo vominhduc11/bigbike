@@ -279,6 +279,14 @@ Redis service. `OWNER_CONFIRMED_2026-08-20`
 
 ## Media Integration Policy
 
+- `media.bigbike.vn` chỉ công khai object dưới `/bigbike-media/<object-key>` bằng
+  `GET`/`HEAD`/`OPTIONS`. Gốc bucket, đường MinIO khác, API quản trị và bucket
+  `bigbike-chat-private` trả `404` ngay tại Nginx; không có chức năng liệt kê kho qua host này.
+- Không thêm giới hạn tốc độ tại cửa ảnh khi Nginx chưa nhận diện được IP khách thật. Mọi phương
+  thức ghi vẫn bị chặn; luồng tải lên tiếp tục đi qua backend có đăng nhập và quyền tương ứng.
+- Trang xin lỗi có thương hiệu chỉ thay lỗi kết nối do Nginx tự sinh khi MinIO không phản hồi.
+  Không bật `proxy_intercept_errors`; `404`, `403` hoặc lỗi hợp lệ khác từ MinIO phải đi nguyên vẹn
+  tới caller. `OWNER_CONFIRMED_2026-09-12`
 - Public media URLs are validated against configured public base URL rules. `CONFIRMED_FROM_CODE`
 - Server-side content detection uses Apache Tika. `CONFIRMED_FROM_CODE`
 - New Admin Media uploads accept only JPEG/PNG/WebP images and MP4 video. Apache Tika content detection must match the declared MIME exactly; filename extensions are not trusted, so GIF/SVG content and renamed GIF/SVG files are rejected. Customer review/avatar/chat upload paths retain their separate JPEG/PNG/WebP contracts. `OWNER_CONFIRMED_2026-08-28`

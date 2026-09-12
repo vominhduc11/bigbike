@@ -154,6 +154,11 @@ services:
       # compose network CIDR lets the backend trust the web/admin bridge hop in local dev.
       # Production must explicitly override it with verified ingress/container source CIDRs.
       BIGBIKE_TRUSTED_PROXIES: "${BIGBIKE_TRUSTED_PROXIES:-127.0.0.1,::1,172.20.0.0/24}"
+      # Lớp chặn thứ hai trong backend; giữ tên Docker để storefront gọi nội bộ không bị ngắt.
+      BIGBIKE_INGRESS_BOUNDARY_ENABLED: "${BIGBIKE_INGRESS_BOUNDARY_ENABLED:-true}"
+      BIGBIKE_INGRESS_ADMIN_HOSTS: "${BIGBIKE_INGRESS_ADMIN_HOSTS:-admin.bigbike.vn}"
+      BIGBIKE_INGRESS_PUBLIC_HOSTS: "${BIGBIKE_INGRESS_PUBLIC_HOSTS:-api.bigbike.vn,bigbike-backend}"
+      BIGBIKE_INGRESS_SHARED_HOSTS: "${BIGBIKE_INGRESS_SHARED_HOSTS:-localhost,127.0.0.1,::1}"
       # Local Compose may use the service above. A prod profile rejects this non-TLS
       # service name even if a secret is set; production must use managed rediss:// Redis.
       # Targets the Redis health indicator at the Compose service; without it the

@@ -22,6 +22,7 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomerSessionFilter customerSessionFilter;
     private final CustomerCsrfFilter customerCsrfFilter;
+    private final IngressBoundaryFilter ingressBoundaryFilter;
     private final RateLimitingFilter rateLimitingFilter;
     private final AuthenticatedRateLimitingFilter authenticatedRateLimitingFilter;
     private final SecurityHeadersFilter securityHeadersFilter;
@@ -100,8 +101,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/settings/public").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/policies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/menus/**").permitAll()
-                        // Internal redirect endpoints consumed by bigbike-web middleware.
-                        // No PII; lock down at infra layer (private network / IP allowlist) for prod.
+                        // Đường redirect nội bộ có khóa riêng; cửa khách cố ý không chặn thêm.
                         .requestMatchers(HttpMethod.GET, "/api/internal/redirect").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/internal/redirects/active").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/internal/redirects/hit/**").permitAll()
@@ -137,6 +137,8 @@ public class SecurityConfig {
                 .addFilterBefore(rateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
                 // Security response headers applied to every request
                 .addFilterBefore(securityHeadersFilter, RateLimitingFilter.class)
+                // Ranh giới hostname chạy trước mọi đăng nhập, phân quyền và giới hạn truy cập.
+                .addFilterBefore(ingressBoundaryFilter, SecurityHeadersFilter.class)
                 // JWT filter runs first: sets AdminPrincipal from Bearer token when present
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 // Customer session runs after JWT — skipped when JWT already set the principal

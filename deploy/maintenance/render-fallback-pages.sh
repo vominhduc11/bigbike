@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Renders the static OUTAGE pages that nginx serves via `error_page 502 503 504`
-# when an upstream container is genuinely unreachable.
+# Sinh các trang xin lỗi tĩnh mà Nginx chỉ dùng khi upstream thật sự không phản hồi.
 #
 # This is NOT a maintenance switch. Since V374 the maintenance lock covers the admin
 # panel only, lives in the database, and is toggled from the admin UI by the DEVELOPER
@@ -29,15 +28,15 @@ die() {
 
 usage() {
   cat <<'USAGE'
-Usage:
+Cách dùng:
   render-fallback-pages.sh
 
-Reads public contact settings from the running backend and regenerates the static
-outage pages (storefront + admin) into $BIGBIKE_MAINTENANCE_STATIC_ROOT.
+Đọc thông tin liên hệ công khai từ backend đang chạy và sinh các trang xin lỗi
+(trang bán hàng + quản trị + kho ảnh) vào $BIGBIKE_MAINTENANCE_STATIC_ROOT.
 
-Env:
-  BIGBIKE_MAINTENANCE_STATIC_ROOT  Output dir (default /var/www/bigbike-static/maintenance)
-  BIGBIKE_MAINTENANCE_API_URL      Backend base URL   (default http://127.0.0.1:8080)
+Biến môi trường:
+  BIGBIKE_MAINTENANCE_STATIC_ROOT  Thư mục đầu ra (mặc định /var/www/bigbike-static/maintenance)
+  BIGBIKE_MAINTENANCE_API_URL      URL gốc backend (mặc định http://127.0.0.1:8080)
 USAGE
 }
 
@@ -68,7 +67,7 @@ from pathlib import Path
 payload = json.loads(os.environ["MAINTENANCE_SETTINGS_JSON"])
 settings = payload.get("data", payload)
 if not isinstance(settings, list):
-    raise SystemExit("public settings response không hợp lệ")
+    raise SystemExit("phản hồi cài đặt công khai không hợp lệ")
 values = {str(item.get("settingKey")): item.get("settingValue") or "" for item in settings if isinstance(item, dict)}
 
 # Fail loudly rather than shipping an outage page with a blank contact line: this page is
@@ -78,7 +77,7 @@ values = {str(item.get("settingKey")): item.get("settingValue") or "" for item i
 required = {"contact_address", "hotline", "facebook_url", "zalo_url", "opening_hours_weekday"}
 missing = sorted(key for key in required if not values.get(key, "").strip())
 if missing:
-    raise SystemExit("contact settings trống: " + ", ".join(missing))
+    raise SystemExit("cài đặt liên hệ bị trống: " + ", ".join(missing))
 
 repo = Path(os.environ["MAINTENANCE_REPO_ROOT"])
 template_root = Path(os.environ["MAINTENANCE_TEMPLATE_ROOT"])
@@ -98,8 +97,8 @@ if stamp.exists() and brand_logo.exists():
     recorded = stamp.read_text(encoding="utf-8").split()[0]
     actual = hashlib.sha256(brand_logo.read_bytes()).hexdigest()
     if recorded != actual:
-        print("render-fallback-pages: CANH BAO — logo thuong hieu da doi, logo-outage.png co the "
-              "da cu. Xem DEPLOYMENT_GUIDE muc 'Static outage pages' de sinh lai.", file=sys.stderr)
+        print("render-fallback-pages: CẢNH BÁO — logo thương hiệu đã đổi, logo-outage.png có thể "
+              "đã cũ. Xem DEPLOYMENT_GUIDE mục 'Static outage pages' để sinh lại.", file=sys.stderr)
 token_source = (repo / "bigbike-web" / "styles" / "brand-tokens.css").read_text(encoding="utf-8")
 token_pattern = re.compile(r"--([a-z0-9-]+)\s*:\s*([^;]+);")
 tokens = dict(token_pattern.findall(token_source))
@@ -147,7 +146,7 @@ replacements = {
     "ADDRESS": html.escape(values["contact_address"].strip()),
     "OPENING_HOURS": html.escape(opening_hours),
 }
-for name in ("maintenance-web.html", "maintenance-admin.html"):
+for name in ("maintenance-web.html", "maintenance-admin.html", "maintenance-media.html"):
     source = (template_root / name).read_text(encoding="utf-8")
     for key, value in replacements.items():
         source = source.replace("{{" + key + "}}", value)
@@ -156,7 +155,7 @@ for name in ("maintenance-web.html", "maintenance-admin.html"):
         raise SystemExit(f"{name}: token chưa được thay: " + ", ".join(leftover))
     (output_root / name).write_text(source, encoding="utf-8")
 PY
-  printf 'render-fallback-pages: đã sinh trang web/admin tại %s\n' "$STATIC_ROOT"
+  printf 'render-fallback-pages: đã sinh trang web/admin/kho ảnh tại %s\n' "$STATIC_ROOT"
 }
 
 main() {

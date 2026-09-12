@@ -26,6 +26,17 @@ Gộp output, phân loại theo prefix path:
 
 Chỉ chạy gate cho sub-project **thật sự có file đổi**. Đừng build cả 3 nếu chỉ sửa 1.
 
+## Bước 1.5 — Cổng ranh giới cửa truy cập (bắt buộc)
+
+Luôn chạy trước commit, không phụ thuộc app nào thay đổi:
+
+```bash
+bash deploy/nginx/tests/domain-boundary-config-test.sh --self-test
+```
+
+Bài kiểm phải báo đạt cho cấu hình nguyên vẹn và báo đã phát hiện cả hai bản cố tình bỏ chốt.
+Không dùng `rg`/`jq` thay cho các lệnh chuẩn đã có trên máy chủ.
+
 ## Bước 2 — Chạy đúng gate cho từng sub-project đã đổi
 
 Bộ check khác nhau giữa các app — **không nhầm**:

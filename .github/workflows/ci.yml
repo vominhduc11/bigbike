@@ -30,6 +30,16 @@ jobs:
             gitleaks detect --source . --verbose
           fi
 
+  # ── Ranh giới các cửa truy cập ─────────────────────────────────────────────
+  ingress-boundary:
+    name: Ranh giới cửa khách / nhân viên / ảnh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Kiểm cấu hình nguyên vẹn và bản cố tình tháo chốt
+        run: bash deploy/nginx/tests/domain-boundary-config-test.sh --self-test
+
   # ── Backend ──────────────────────────────────────────────────────────────────
   backend:
     name: Backend (Java 17 / Maven)

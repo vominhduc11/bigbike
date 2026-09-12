@@ -2019,7 +2019,7 @@ the application check above. The employee door returns `404` because this path i
 allowed API groups. See `DEPLOYMENT_GUIDE.md` “Production hostname boundary” and
 `PERMISSION_MATRIX.md` “Internal Redirect Caveat”.
 
-Status: `CONFIRMED_FROM_CODE`
+Status: `OWNER_CONFIRMED_2026-09-12`
 
 Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `InternalRedirectController.java`, `bigbike-web/proxy.ts`, `V4__create_media_redirect_menu_tables.sql`, `V58__add_redirect_permissions.sql`, `V80__add_redirect_source_pattern_unique.sql`, `V376__normalize_redirects_to_http_301.sql`, `V379__drop_redirect_notes_legacy_id.sql`.
 

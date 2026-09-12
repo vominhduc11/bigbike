@@ -45,6 +45,27 @@ backend `401`, `403` or validation error is not proof that the hostname boundary
 | `api.bigbike.vn` | Storefront/customer APIs, including products, customer auth, cart, checkout, content and public settings | `/api/v1/admin`, `/api/v1/admin/**`, `/api/v1/auth`, `/api/v1/auth/**` |
 | `admin.bigbike.vn` | `/api/v1/admin/**`, `/api/v1/auth/**`, `/api/v1/catalog/facets`, `/api/v1/settings/public`, `/api/v1/articles` and `/api/v1/articles/**` | Every other `/api` or `/api/**` path |
 
+Nginx là chốt ngoài, còn backend là chốt độc lập thứ hai và phải chặn ngay khi khởi động; không
+có chế độ chỉ ghi nhận. Backend phân loại theo `Host` do Nginx ghi đè, không tin
+`X-Forwarded-Host`, bỏ cổng và dấu chấm cuối rồi so sánh không phân biệt hoa/thường:
+
+| Nhóm backend | Host mặc định | Phạm vi |
+|---|---|---|
+| Cửa khách | `api.bigbike.vn`, `bigbike-backend` | Chặn `/api/v1/admin`, `/api/v1/auth` và `/ws`; giữ nguyên API khách và `/api/internal/**` |
+| Cửa nhân viên | `admin.bigbike.vn` | Chỉ năm nhóm API trong bảng trên và `/ws` |
+| Phát triển/kiểm thử chung | `localhost`, `127.0.0.1`, `::1` | Cho cả hai phía để không làm hỏng Vite, Maven và health-check |
+
+Host thiếu hoặc không thuộc ba nhóm trả `404`. Các biến triển khai là
+`BIGBIKE_INGRESS_BOUNDARY_ENABLED`, `BIGBIKE_INGRESS_ADMIN_HOSTS`,
+`BIGBIKE_INGRESS_PUBLIC_HOSTS` và `BIGBIKE_INGRESS_SHARED_HOSTS`; mặc định an toàn là bật. Danh
+sách production phải giữ `bigbike-backend`, vì web gọi API bằng tên Docker này thay vì tên miền
+công khai. `OWNER_CONFIRMED_2026-09-12`
+
+Tại cửa khách, Nginx và backend đều nhận diện đoạn bảo vệ không phân biệt hoa/thường và coi dấu
+`;` sau `admin`/`auth` là tham số đường dẫn cần chặn. Quy tắc phải neo ngay sau
+`/api/v1/`, không được chặn nhầm `/api/v1/customer/auth/**`. Khai báo riêng cho
+`/api/v1/admin/media` phải được giữ vì đường tải ảnh từng có proxy riêng. `OWNER_CONFIRMED_2026-09-12`
+
 The admin hostname restriction applies only to `/api`. Its SPA at `/`, order-notification
 WebSocket at `/ws`, product media at `/media/` and `/media-proxy/`, and category background assets
 at `/wp/` remain available. The admin request limiter is the coarse `general_limit` policy
@@ -62,6 +83,20 @@ Always copy the active files to candidates, add the intended delta, run `nginx -
 after it passes, and then mirror the accepted live files back to `deploy/nginx/` and
 `deploy/nginx/live-reference/`. A repository mirror is evidence and rollback context, never
 permission to overwrite a newer active file without a fresh diff. `CONFIRMED_FROM_LIVE_CONFIG_2026-09-12`
+
+### Cửa ảnh công khai (`media.bigbike.vn`)
+
+Cửa ảnh chỉ chuyển tiếp `GET`, `HEAD`, `OPTIONS` dưới `/bigbike-media/<object-key>`. Hai đường gốc
+`/bigbike-media` và `/bigbike-media/` cùng mọi đường khác phải trả `404` tại Nginx, nhờ đó không
+chuyển yêu cầu liệt kê kho, đường quản trị MinIO hoặc kho `bigbike-chat-private` vào MinIO. Các
+phương thức ghi dưới đường ảnh công khai tiếp tục bị `limit_except` từ chối. Không đặt
+`limit_req`/`limit_conn` trên host này cho tới khi lớp trung gian cung cấp địa chỉ khách đáng tin.
+
+Khi Nginx tự sinh `502`/`504` vì MinIO không phản hồi, host trả trang
+`maintenance-media.html` với mã `503`, `Retry-After: 60` và `Cache-Control: no-store`.
+`proxy_intercept_errors` phải để `off`, nên phản hồi hợp lệ từ MinIO như ảnh không tồn tại vẫn giữ
+nguyên. Bản ứng viên nằm ở `deploy/nginx/media.bigbike.vn.conf`; bản chụp production trước khi
+owner kích hoạt nằm ở `deploy/nginx/live-reference/media.bigbike.vn`. `OWNER_CONFIRMED_2026-09-12`
 
 > **Build-time bake:** every `NEXT_PUBLIC_*` and `VITE_*` value is compiled into the web/admin
 > bundle at build time. After changing any of them you MUST rebuild (`--build`); a plain
@@ -370,9 +405,16 @@ From 30/08/2026, BigBike has no manual maintenance switch, admin lock, maintenan
 
 ### Static outage pages (unrelated to the lock)
 
-Nginx serves `deploy/maintenance/templates/maintenance-web.html` and `maintenance-admin.html` via `error_page 502 503 504 =503` when a container is genuinely unreachable — a crash or a deploy restart, nobody switches it on. Those pages return `503` with `Retry-After: 60`, never `200` and never a redirect; the API host returns JSON `503` instead of HTML.
+Nginx dùng `maintenance-web.html`, `maintenance-admin.html` và `maintenance-media.html` trong
+`deploy/maintenance/templates/` khi upstream tương ứng thật sự không phản hồi. Các trang trả
+`503` cùng `Retry-After: 60`, không trả `200` hoặc chuyển hướng; cửa API trả JSON `503` thay vì
+HTML. Riêng cửa ảnh không thay phản hồi lỗi hợp lệ do MinIO trả về.
 
-Regenerate them with `deploy/maintenance/render-fallback-pages.sh` **on every deploy and whenever contact settings change**. The script reads `contact_address`, `hotline`, `facebook_url`, `zalo_url` and `opening_hours_*` from the public settings endpoint and inlines them, because a static file cannot read the database at the moment it is served — which is exactly when the stack is down. It fails loudly if any of those settings is blank, and it never touches Docker or reloads nginx. Configure `BIGBIKE_MAINTENANCE_STATIC_ROOT` and `BIGBIKE_MAINTENANCE_API_URL`.
+Sinh lại cả ba trang bằng `deploy/maintenance/render-fallback-pages.sh` trong mỗi lần triển khai và
+khi thông tin liên hệ thay đổi. Script đọc `contact_address`, `hotline`, `facebook_url`, `zalo_url`
+và `opening_hours_*` từ cài đặt công khai rồi nhúng vào file tĩnh. Nếu dữ liệu bắt buộc trống, script
+dừng thay vì phát hành trang thiếu thông tin; nó không đụng Docker hoặc nạp lại Nginx. Cấu hình bằng
+`BIGBIKE_MAINTENANCE_STATIC_ROOT` và `BIGBIKE_MAINTENANCE_API_URL`.
 
 **Logo.** The page inlines `deploy/maintenance/templates/logo-outage.png` (320px, ~70 KB), **not** `bigbike-web/public/brand/logo-primary.png`. The brand original is 2000×2000 / 6.5 MB, and base64-inlining it produced an **8.6 MB** outage page — served exactly when the system is already struggling and the customer is most likely on mobile data. The derivative keeps the page under 100 KB while still covering 2x retina (CSS caps display width at 160px).
 
