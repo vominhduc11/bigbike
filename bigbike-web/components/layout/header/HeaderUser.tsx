@@ -71,7 +71,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
 
   if (variant === "mobile") {
     return (
-      <div className="border-b border-white/20 px-[25px] py-7.5">
+      <div className="border-b border-white/20 px-[25px] py-7.5" data-clarity-mask="true">
         {isAuthed ? (
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -128,6 +128,7 @@ export function HeaderUser({ variant }: { variant: "desktop" | "mobile" }) {
   return (
     <div
       className="relative h-full"
+      data-clarity-mask="true"
       onMouseEnter={openMenu}
       onMouseLeave={scheduleCloseMenu}
       onFocus={openMenu}

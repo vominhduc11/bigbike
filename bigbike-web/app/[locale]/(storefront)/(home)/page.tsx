@@ -39,11 +39,7 @@ import {
   buildWebSiteJsonLd,
   serializeJsonLd,
 } from "@/lib/seo/json-ld";
-import {
-  isSafeHomeVideoUrl,
-  resolveMediaUrl,
-  toLegacyWpMediaUrl,
-} from "@/lib/utils/format";
+import { isSafeHomeVideoUrl, resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { pickSetting } from "@/lib/utils/settings";
 import { toHomePath, toProductListPath, toProductPath, translatePath } from "@/lib/utils/routes";
@@ -67,14 +63,15 @@ const PROMO_ALT = `${PROMO_TITLE} — ${PROMO_OFF}`;
 type HomePageProps = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: HomePageProps): Promise<Metadata> {
-  const { locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const { locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   const tHome = await getTranslations({ locale, namespace: "Home" });
   const settingsResult = await listPublicSettings(locale);
   const settings = settingsResult.data ?? [];
   const siteName = pickSetting(settings, ["site_name"]) || DEFAULT_SITE_NAME;
   const homeTitle = pickSetting(settings, ["seo_home_title"]) || siteName;
-  const homeDescription = pickSetting(settings, ["seo_home_description"]) || tHome("metaDescription");
+  const homeDescription =
+    pickSetting(settings, ["seo_home_description"]) || tHome("metaDescription");
 
   return buildPublicMetadata({
     title: homeTitle,
@@ -94,7 +91,7 @@ function isRenderableHomeVideo(video: HomeVideo): boolean {
 }
 
 export default async function HomePage({ params }: HomePageProps) {
-  const { locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const { locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   const tHome = await getTranslations({ locale, namespace: "Home" });
   const [
@@ -117,7 +114,13 @@ export default async function HomePage({ params }: HomePageProps) {
       lang: locale,
     }),
     // "Góc trải nghiệm": ưu tiên các bài admin chọn tay (homeExperience=true), tối đa 3, mới nhất trước.
-    listArticles({ page: 1, homeExperience: true, size: 3, sort: "publishedAt:desc", lang: locale }),
+    listArticles({
+      page: 1,
+      homeExperience: true,
+      size: 3,
+      sort: "publishedAt:desc",
+      lang: locale,
+    }),
     // Dự phòng khi admin chưa chọn bài nào: 3 bài viết mới nhất (sau khi gộp nhóm còn 1 "Tin tức").
     listArticles({ page: 1, size: 3, sort: "publishedAt:desc", lang: locale }),
     listBrands({ page: 1, size: 12, sort: "name:asc", showOnHomepage: true, lang: locale }),
@@ -175,13 +178,23 @@ export default async function HomePage({ params }: HomePageProps) {
   const homeHighlights = homeHighlightsResult.data ?? [];
   const homeVideos = (homeVideosResult.data ?? []).filter(isRenderableHomeVideo);
 
-  const aboutMarkup = sanitizeRichHtml(tHome.raw("aboutHtml"), { allowInlineStyles: true, rewriteMediaUrls: true, locale });
+  const aboutMarkup = sanitizeRichHtml(tHome.raw("aboutHtml"), {
+    allowInlineStyles: true,
+    rewriteMediaUrls: true,
+    locale,
+  });
   const homeContentBottomMarkup = homeContentBottomHtml
-    ? sanitizeRichHtml(homeContentBottomHtml, { allowInlineStyles: true, rewriteMediaUrls: true, locale })
+    ? sanitizeRichHtml(homeContentBottomHtml, {
+        allowInlineStyles: true,
+        rewriteMediaUrls: true,
+        locale,
+      })
     : "";
 
   const jsonLdOrg = serializeJsonLd(buildOrganizationJsonLd(siteName, HOME_ORG_LOGO, locale));
-  const jsonLdWeb = serializeJsonLd(buildWebSiteJsonLd(siteName, translatePath("/tim-kiem/", locale), locale));
+  const jsonLdWeb = serializeJsonLd(
+    buildWebSiteJsonLd(siteName, translatePath("/tim-kiem/", locale), locale),
+  );
   // Hồ sơ chính thức (sameAs) lấy từ settings công khai — không hardcode.
   const sameAsProfiles = [
     pickSetting(settings, ["facebook_url"]),
@@ -213,7 +226,10 @@ export default async function HomePage({ params }: HomePageProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdOrg }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdWeb }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdLocalBusiness }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdLocalBusiness }}
+      />
 
       {/* ===== 1. Main banner ===== */}
       <HeroSlider slides={slides} />
@@ -227,30 +243,54 @@ export default async function HomePage({ params }: HomePageProps) {
                 const img = toLegacyWpMediaUrl(resolveMediaUrl(h.productImageUrl));
                 const href = toProductPath(h.productSlug, locale);
                 return (
-                  <article className="relative h-75 overflow-hidden border border-border bg-card p-8 uppercase" key={h.slot}>
-                      <div className="absolute bottom-0 right-8">
-                        <div data-home-highlight-image className="relative size-45">
-                          <Link href={href} className="block size-full">
-                            {img ? (
-                              <MediaImage
-                                image={{ url: img }}
-                                altFallback={h.productName}
-                                width={360}
-                                height={360}
-                                fill
-                                sizes="180px"
-                                className="object-contain"
-                              />
-                            ) : null}
-                          </Link>
-                        </div>
+                  <article
+                    className="relative h-75 overflow-hidden border border-border bg-card p-8 uppercase"
+                    key={h.slot}
+                  >
+                    <div className="absolute bottom-0 right-8">
+                      <div data-home-highlight-image className="relative size-45">
+                        <Link
+                          href={href}
+                          className="block size-full"
+                          data-analytics-promotion-id={`highlight-${h.slot}`}
+                          data-analytics-promotion-name={h.productName}
+                          data-analytics-location="homepage_highlight"
+                        >
+                          {img ? (
+                            <MediaImage
+                              image={{ url: img }}
+                              altFallback={h.productName}
+                              width={360}
+                              height={360}
+                              fill
+                              sizes="180px"
+                              className="object-contain"
+                            />
+                          ) : null}
+                        </Link>
                       </div>
-                      <h3 className="relative z-[1] mb-10 line-clamp-2 w-full font-body text-a4-content font-semibold leading-5 text-foreground">
-                        <Link href={href} className="text-foreground hover:text-brand">{h.productName}</Link>
-                      </h3>
-                      <Link className="relative z-[1] inline-flex items-center gap-1 font-body text-a4-content font-semibold text-brand" href={href}>
-                        <Tr ns="Home" k="buyNow" />
+                    </div>
+                    <h3 className="relative z-[1] mb-10 line-clamp-2 w-full font-body text-a4-content font-semibold leading-5 text-foreground">
+                      <Link
+                        href={href}
+                        className="text-foreground hover:text-brand"
+                        data-analytics-promotion-id={`highlight-${h.slot}`}
+                        data-analytics-promotion-name={h.productName}
+                        data-analytics-location="homepage_highlight"
+                      >
+                        {h.productName}
                       </Link>
+                    </h3>
+                    <Link
+                      className="relative z-[1] -mx-2 inline-flex min-h-11 items-center gap-1 px-2 font-body text-a4-content font-semibold text-brand"
+                      href={href}
+                      data-home-highlight-buy
+                      data-analytics-promotion-id={`highlight-${h.slot}`}
+                      data-analytics-promotion-name={h.productName}
+                      data-analytics-location="homepage_highlight"
+                    >
+                      <Tr ns="Home" k="buyNow" />
+                    </Link>
                   </article>
                 );
               })}
@@ -283,7 +323,14 @@ export default async function HomePage({ params }: HomePageProps) {
       {/* ===== 5. Banner ads ===== */}
       <section className="pt-15">
         <Container>
-          <Link href={toProductListPath(locale)} title={PROMO_TITLE} className="block">
+          <Link
+            href={toProductListPath(locale)}
+            title={PROMO_TITLE}
+            className="block"
+            data-analytics-promotion-id="homepage-static-promo"
+            data-analytics-promotion-name={PROMO_TITLE}
+            data-analytics-location="homepage_promo_banner"
+          >
             <MediaImage
               image={{ url: PROMO_IMAGE_SRC, alt: PROMO_ALT, width: 1170, height: 501 }}
               altFallback={PROMO_ALT}
@@ -324,7 +371,10 @@ export default async function HomePage({ params }: HomePageProps) {
 
       {/* ===== 8. Videos slide ===== */}
       {homeVideos.length > 0 && (
-        <section data-bb-full-bleed className="relative overflow-hidden bg-surface-dark py-24 max-md:py-15">
+        <section
+          data-bb-full-bleed
+          className="relative overflow-hidden bg-surface-dark py-24 max-md:py-15"
+        >
           <div
             aria-hidden
             className="absolute inset-0 bg-cover bg-center bg-no-repeat [background-image:url('/wp/video-bg.jpg')] [filter:brightness(1.2)]"
@@ -344,7 +394,7 @@ export default async function HomePage({ params }: HomePageProps) {
 
       {/* ===== 10. Content bottom (SEO wyswyg) — client localizer ===== */}
       <div data-bb-focus="seo_home">
-      <HomeContentBottom html={homeContentBottomMarkup} />
+        <HomeContentBottom html={homeContentBottomMarkup} />
       </div>
     </>
   );

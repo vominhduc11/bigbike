@@ -7,7 +7,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/lib/toast'
 import {
   ChevronRight,
-  Copy,
   ExternalLink,
   Eye,
   EyeOff,
@@ -34,7 +33,6 @@ import { DetailSection } from '../components/DetailSection'
 import { RecentItemsChips } from '../components/RecentItemsChips'
 import {
   fetchCategories,
-  fetchCategoryDetail,
   fetchCategoryTree,
   updateCategory,
   softDeleteCategory,
@@ -56,13 +54,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
 import { TableCell, TableRow } from '@/components/ui/table'
-import {
-  DUPLICATE_SESSION_KEY,
-  EMPTY_ITEMS,
-  INITIAL_QUERY,
-  STOREFRONT_BASE,
-  buildTree,
-} from './category-list/constants'
+import { EMPTY_ITEMS, INITIAL_QUERY, STOREFRONT_BASE, buildTree } from './category-list/constants'
 import { CategoryEmptyState } from './category-list/CategoryEmptyState'
 import { ResponsiveFilterBar, Screen, ScreenHeader } from '../components/layout'
 import { AdminTable } from '../components/AdminTable'
@@ -560,33 +552,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
     setExpandedIds(new Set())
   }
 
-  // F11: Nhân bản danh mục — tải chi tiết đầy đủ, ghi tạm vào sessionStorage rồi
-  // điều hướng sang màn tạo mới; CategoryDetailScreen đọc bản nháp đó khi mount
-  // (cùng cơ chế "Sao chép" đã có ở Sản phẩm).
-  const handleDuplicate = async (category) => {
-    if (rowActionBusy || bulkProgress) return
-    setRowActionBusy(`duplicate:${category.id}`)
-    try {
-      const result = await fetchCategoryDetail(category.id)
-      const item = result?.item
-      if (!item) return
-      try {
-        sessionStorage.setItem(DUPLICATE_SESSION_KEY, JSON.stringify(item))
-      } catch {
-        /* quota */
-      }
-      navigate('/admin/categories/new')
-    } catch {
-      toast.error(
-        t('categories.dupLoadError', {
-          defaultValue: 'Không thể tải dữ liệu danh mục để sao chép.',
-        }),
-      )
-    } finally {
-      setRowActionBusy(null)
-    }
-  }
-
   const handleSoftDelete = async (category) => {
     if (rowActionBusy || bulkProgress) return
     const confirmed = await showConfirm(
@@ -815,15 +780,6 @@ export function CategoryListScreen({ navigate, canUpdate }) {
             target: '_blank',
             rel: 'noopener noreferrer',
           },
-          canUpdate &&
-            !isSystemCategory &&
-            !query.deleted && {
-              key: 'duplicate',
-              label: t('categories.duplicate'),
-              icon: Copy,
-              disabled: rowBusy,
-              onSelect: () => handleDuplicate(category),
-            },
           canUpdate &&
             !isSystemCategory &&
             !query.deleted && {

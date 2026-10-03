@@ -1,5 +1,4 @@
 "use client";
-import { BankTransferStatus } from "@/components/checkout/BankTransferStatus";
 import { orderPaymentMethod } from "@/lib/utils/orders";
 
 import Link from "@/i18n/StorefrontLink";
@@ -226,7 +225,6 @@ export function OrderDetailContent({ orderId }: { orderId: string }) {
         </p>
       </div>
 
-      <BankTransferStatus order={order} />
       {canCancel && (
         <div className="mt-8 border-t border-border pt-6">
           <p className="mb-3 text-a4-content text-muted-foreground">{t("cancelDescription")}</p>

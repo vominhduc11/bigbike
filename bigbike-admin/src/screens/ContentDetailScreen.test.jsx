@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   mapValidationErrors: vi.fn(() => ({})),
   showConfirm: vi.fn(),
   setContentLang: vi.fn(),
+  useUnsavedChanges: vi.fn(),
   contentLang: 'vi',
   toast: { success: vi.fn(), error: vi.fn() },
   // Quyền riêng cho ô "cho Google hiển thị" (V372 `seo.index`). Mặc định là có, để các
@@ -43,7 +44,7 @@ vi.mock('../lib/contentLang', () => ({
   setContentLang: mocks.setContentLang,
 }))
 vi.mock('../lib/auth', () => ({ useHasPermission: () => mocks.hasPermission }))
-vi.mock('../lib/useUnsavedChanges', () => ({ useUnsavedChanges: vi.fn() }))
+vi.mock('../lib/useUnsavedChanges', () => ({ useUnsavedChanges: mocks.useUnsavedChanges }))
 vi.mock('../lib/navigationGuard', () => ({ clearNavGuard: vi.fn() }))
 vi.mock('../lib/useRecentItems', () => ({ recordRecentItem: vi.fn() }))
 vi.mock('../components/AdminShell', () => ({ useAutoHideSidebar: vi.fn() }))
@@ -109,7 +110,6 @@ const baseArticle = {
   slug: 'bai-viet',
   slugEn: 'article',
   title: 'Bài viết',
-  excerpt: 'Tóm tắt',
   body: '<p>Nội dung tiếng Việt</p>',
   bodyBlocks: null,
   publishStatus: 'DRAFT',
@@ -118,7 +118,6 @@ const baseArticle = {
   translations: {
     en: {
       title: 'Article',
-      excerpt: 'Summary',
       body: '',
       seoTitle: '',
       seoDescription: '',
@@ -167,6 +166,26 @@ beforeEach(() => {
 })
 
 describe('ContentDetailScreen', () => {
+  it('không hiển thị ô tóm tắt hoặc tên tác giả', async () => {
+    renderScreen()
+
+    await screen.findByText('content.detail.sectionCore')
+    expect(screen.queryByText('content.detail.excerpt')).not.toBeInTheDocument()
+    expect(screen.queryByText('content.detail.authorName')).not.toBeInTheDocument()
+    expect(screen.queryByText('content.detail.authorNameHint')).not.toBeInTheDocument()
+  })
+
+  it('cho phép chọn bài viết nổi bật thủ công', async () => {
+    const user = userEvent.setup()
+    renderScreen()
+
+    await screen.findByText('content.detail.sectionPublish')
+    const featured = screen.getByRole('checkbox', { name: 'content.detail.featured' })
+    expect(featured).not.toBeChecked()
+    await user.click(featured)
+    expect(featured).toBeChecked()
+  })
+
   it('khóa biểu mẫu, hiện banner và không tạo yêu cầu xem trước trong chế độ chỉ đọc', async () => {
     renderScreen({ canUpdate: false })
 
@@ -200,6 +219,52 @@ describe('ContentDetailScreen', () => {
       expect(within(container).getByRole('combobox')).toHaveTextContent('status.publish.PUBLISHED')
     })
   })
+
+  it('giữ nguyên trạng thái đã xuất bản khi mở bài, xem trước và lưu chỉnh sửa', async () => {
+    const user = userEvent.setup()
+    const publishedArticle = { ...baseArticle, publishStatus: 'PUBLISHED' }
+    mocks.fetchContentDetail.mockResolvedValue({ item: publishedArticle })
+    mocks.updateContent.mockResolvedValue({
+      item: { ...publishedArticle, title: 'Bài viết đã sửa' },
+    })
+    const { container } = renderScreen()
+
+    const statusSelect = await within(container).findByRole('combobox')
+    expect(statusSelect).toHaveTextContent('status.publish.PUBLISHED')
+    expect(container.querySelector('.bb-badge-success')).toHaveTextContent(
+      'status.publish.PUBLISHED',
+    )
+    expect(screen.getByText('content.detail.saveClean')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(mocks.useUnsavedChanges).toHaveBeenLastCalledWith(
+        false,
+        'content.detail.unsavedChangesConfirm',
+      )
+    })
+
+    await user.click(screen.getByRole('button', { name: 'content.detail.preview.open' }))
+    await waitFor(() => {
+      expect(mocks.previewArticle).toHaveBeenCalledWith(
+        expect.objectContaining({ publishStatus: 'PUBLISHED' }),
+        'vi',
+      )
+    })
+
+    const title = screen.getByLabelText(/content\.detail\.title/)
+    await user.clear(title)
+    await user.type(title, 'Bài viết đã sửa')
+    expect(screen.getByText('content.detail.saveDirty')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'content.detail.saveBtn' }))
+    await waitFor(() => {
+      expect(mocks.updateContent).toHaveBeenCalledWith(
+        'ARTICLE',
+        'article-1',
+        expect.objectContaining({ publishStatus: 'PUBLISHED' }),
+      )
+    })
+    expect(screen.getByRole('combobox')).toHaveTextContent('status.publish.PUBLISHED')
+  }, 15_000)
 
   // Bản trước của test này (commit 578c2961, 2026-07-29) khẳng định ô "cho Google hiển thị"
   // phải KHÔNG tồn tại, để tab SEO tin tức trông giống tab SEO sản phẩm. Mục tiêu đồng bộ

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AlertTriangle,
@@ -28,6 +28,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -39,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { getMediaFolderLabel, getSystemFolderDeleteWarning } from '@/lib/mediaFolderUtils'
 
@@ -98,6 +100,8 @@ export function MediaFolderSidebar({
   const [nameDialog, setNameDialog] = useState(null)
   const [moveFolder, setMoveFolder] = useState(null)
   const [systemDeleteFolder, setSystemDeleteFolder] = useState(null)
+  const mobileToggleRef = useRef(null)
+  const contentId = useId()
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
@@ -131,6 +135,12 @@ export function MediaFolderSidebar({
       active = false
     }
   }, [])
+
+  function closeMobileNavigation() {
+    if (!mobileOpen) return
+    setMobileOpen(false)
+    mobileToggleRef.current?.focus()
+  }
 
   function toggleExpanded(folderId) {
     setExpandedIds((current) => {
@@ -211,12 +221,17 @@ export function MediaFolderSidebar({
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-4 self-start rounded-[var(--admin-radius-card)] border border-border bg-surface p-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-var(--admin-space-8))] lg:w-56 lg:overflow-y-auto">
+    <aside
+      aria-label={t('media.folders')}
+      className="flex min-w-0 w-full flex-col gap-4 self-start rounded-[var(--admin-radius-card)] border border-border bg-surface p-3 lg:sticky lg:top-[calc(var(--bb-topbar-h)+var(--admin-space-4))] lg:max-h-[calc(100dvh-var(--bb-topbar-h)-var(--admin-space-8))] lg:overflow-y-auto"
+    >
       <Button
+        ref={mobileToggleRef}
         type="button"
         variant="ghost"
         className="min-h-11 w-full justify-between lg:hidden"
         aria-expanded={mobileOpen}
+        aria-controls={contentId}
         onClick={() => setMobileOpen((open) => !open)}
       >
         <span className="inline-flex items-center gap-2">
@@ -229,30 +244,26 @@ export function MediaFolderSidebar({
         />
       </Button>
 
-      <div className={cn('flex flex-col gap-4', !mobileOpen && 'max-lg:hidden')}>
+      <div id={contentId} className={cn('flex flex-col gap-4', !mobileOpen && 'max-lg:hidden')}>
         <section className="flex flex-col gap-2">
           <p className="m-0 text-xs font-bold uppercase tracking-wide text-muted-foreground">
             {t('media.folders')}
           </p>
-          <ul
-            className="m-0 flex list-none flex-col gap-1 p-0"
-            role="tree"
-            aria-label={t('media.folders')}
-          >
+          <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label={t('media.folders')}>
             <li>
               <Button
                 variant="ghost"
                 onClick={() => {
                   onSelectFolder('')
-                  setMobileOpen(false)
+                  closeMobileNavigation()
                 }}
                 aria-current={!folderFilter ? 'true' : undefined}
                 className={cn(
-                  'w-full justify-start px-3 text-sm',
+                  'h-auto min-h-12 w-full justify-start whitespace-normal px-3 py-2 text-sm',
                   !folderFilter && 'bg-surface-selected text-primary',
                 )}
               >
-                <FolderOpen size={14} />
+                <FolderOpen size={16} className="shrink-0" aria-hidden="true" />
                 <span>{t('media.allFolders')}</span>
               </Button>
             </li>
@@ -261,15 +272,15 @@ export function MediaFolderSidebar({
                 variant="ghost"
                 onClick={() => {
                   onSelectFolder('NONE')
-                  setMobileOpen(false)
+                  closeMobileNavigation()
                 }}
                 aria-current={folderFilter === 'NONE' ? 'true' : undefined}
                 className={cn(
-                  'w-full justify-start px-3 text-sm',
+                  'h-auto min-h-12 w-full justify-start whitespace-normal px-3 py-2 text-sm',
                   folderFilter === 'NONE' && 'bg-surface-selected text-primary',
                 )}
               >
-                <Inbox size={14} />
+                <Inbox size={16} className="shrink-0" aria-hidden="true" />
                 <span>{t('media.uncategorized')}</span>
               </Button>
             </li>
@@ -277,15 +288,15 @@ export function MediaFolderSidebar({
         </section>
 
         <section className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="m-0 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          <div className="flex flex-col items-start gap-2">
+            <p className="m-0 whitespace-nowrap text-xs font-bold uppercase tracking-wide text-muted-foreground">
               {t('media.myFolders')}
             </p>
             {canUpdate ? (
               <Button
                 variant="outline"
                 size="sm"
-                className="min-h-9 shrink-0"
+                className="min-h-9 shrink-0 max-lg:min-h-11"
                 onClick={() => setNameDialog({ mode: 'create', parentId: null })}
               >
                 <Plus size={14} aria-hidden="true" />
@@ -296,26 +307,28 @@ export function MediaFolderSidebar({
           {folders.length === 0 ? (
             <p className="my-1 text-xs text-muted-foreground">{t('media.foldersEmpty')}</p>
           ) : null}
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            <FolderTree
-              foldersByParent={buildFolderTree(folders)}
-              parentId={null}
-              expandedIds={expandedIds}
-              folderFilter={folderFilter}
-              canUpdate={canUpdate}
-              onToggleExpanded={toggleExpanded}
-              onSelectFolder={(id) => {
-                onSelectFolder(id)
-                setMobileOpen(false)
-              }}
-              onRename={(folder) => setNameDialog({ mode: 'rename', folder })}
-              onCreateChild={(folder) =>
-                setNameDialog({ mode: 'create', parentId: folder.id, parent: folder })
-              }
-              onMove={setMoveFolder}
-              onDelete={requestDelete}
-            />
-          </ul>
+          <TooltipProvider delayDuration={250}>
+            <ul className="m-0 flex list-none flex-col gap-1 p-0" aria-label={t('media.myFolders')}>
+              <FolderTree
+                foldersByParent={buildFolderTree(folders)}
+                parentId={null}
+                expandedIds={expandedIds}
+                folderFilter={folderFilter}
+                canUpdate={canUpdate}
+                onToggleExpanded={toggleExpanded}
+                onSelectFolder={(id) => {
+                  onSelectFolder(id)
+                  closeMobileNavigation()
+                }}
+                onRename={(folder) => setNameDialog({ mode: 'rename', folder })}
+                onCreateChild={(folder) =>
+                  setNameDialog({ mode: 'create', parentId: folder.id, parent: folder })
+                }
+                onMove={setMoveFolder}
+                onDelete={requestDelete}
+              />
+            </ul>
+          </TooltipProvider>
         </section>
 
         {tagsStatus !== 'ready' || tags.length > 0 ? (
@@ -340,10 +353,10 @@ export function MediaFolderSidebar({
                     key={tagValue}
                     onClick={() => {
                       onSelectTag(tag === tagValue ? '' : tagValue)
-                      setMobileOpen(false)
+                      closeMobileNavigation()
                     }}
                     aria-pressed={tag === tagValue}
-                    className="h-7 px-2 text-xs"
+                    className="h-auto min-h-7 px-2 text-xs max-lg:min-h-11 max-lg:min-w-11"
                   >
                     <Hash size={11} aria-hidden="true" /> {tagValue}
                   </Button>
@@ -358,14 +371,14 @@ export function MediaFolderSidebar({
         key={
           nameDialog
             ? `${nameDialog.mode}-${nameDialog.folder?.id ?? nameDialog.parentId ?? 'root'}`
-            : 'closed'
+            : 'name-closed'
         }
         dialog={nameDialog}
         onClose={() => setNameDialog(null)}
         onSave={saveFolderName}
       />
       <FolderMoveDialog
-        key={moveFolder?.id ?? 'closed'}
+        key={moveFolder ? `move-${moveFolder.id}` : 'move-closed'}
         folder={moveFolder}
         folders={folders}
         onClose={() => setMoveFolder(null)}
@@ -394,73 +407,96 @@ function FolderTree({
   onDelete,
 }) {
   const { t } = useTranslation()
+  const labelRefs = useRef(new Map())
+  const [tooltipFolderId, setTooltipFolderId] = useState(null)
   const folders = foldersByParent.get(parentId) || []
   return folders.map((folder) => {
     const children = foldersByParent.get(folder.id) || []
     const hasChildren = children.length > 0
     const expanded = expandedIds.has(folder.id)
+    const selected = folderFilter === folder.id
+    const label = getMediaFolderLabel(folder, t)
     return (
-      <li
-        key={folder.id}
-        role="treeitem"
-        aria-level={folder.depth + 1}
-        aria-expanded={hasChildren ? expanded : undefined}
-      >
+      <li key={folder.id}>
         <div
           className={cn(
             'flex items-center rounded-[var(--admin-radius-control)]',
-            folderFilter === folder.id && 'bg-surface-selected text-primary',
+            selected && 'bg-surface-selected text-primary',
           )}
         >
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="ml-1 h-8 w-7 shrink-0"
-            onClick={() => hasChildren && onToggleExpanded(folder.id)}
-            disabled={!hasChildren}
-            aria-label={
-              hasChildren
-                ? expanded
-                  ? t('media.collapseFolder')
-                  : t('media.expandFolder')
-                : t('media.folderNoChildren')
-            }
-            aria-expanded={hasChildren ? expanded : undefined}
-          >
-            {hasChildren ? (
-              expanded ? (
-                <ChevronDown size={14} />
-              ) : (
-                <ChevronRight size={14} />
-              )
-            ) : (
-              <span className="size-3" aria-hidden="true" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => onSelectFolder(folder.id)}
-            aria-current={folderFilter === folder.id ? 'true' : undefined}
-            className={cn('min-w-0 flex-1 justify-start px-2 text-sm', folder.depth > 0 && 'pl-1')}
-          >
-            {expanded ? (
-              <FolderOpen size={14} aria-hidden="true" />
-            ) : (
-              <Folder size={14} aria-hidden="true" />
-            )}
-            <span className="min-w-0 flex-1 truncate text-left">
-              {getMediaFolderLabel(folder, t)}
-            </span>
-            <span
+          {hasChildren ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
               className={cn(
-                'rounded-full bg-surface-muted px-2 text-xs text-muted-foreground',
-                folderFilter === folder.id && 'bg-primary text-primary-foreground',
+                'shrink-0 text-muted-foreground max-lg:h-11 max-lg:w-11',
+                selected && 'text-primary',
               )}
+              onClick={() => onToggleExpanded(folder.id)}
+              aria-label={`${t(expanded ? 'media.collapseFolder' : 'media.expandFolder')}: ${label}`}
+              aria-expanded={expanded}
             >
-              {folder.mediaCount}
-            </span>
-          </Button>
+              {expanded ? (
+                <ChevronDown size={16} aria-hidden="true" />
+              ) : (
+                <ChevronRight size={16} aria-hidden="true" />
+              )}
+            </Button>
+          ) : (
+            <span className="w-9 shrink-0 max-lg:w-11" aria-hidden="true" />
+          )}
+          <Tooltip
+            open={tooltipFolderId === folder.id}
+            onOpenChange={(open) => {
+              const element = labelRefs.current.get(folder.id)
+              const clipped =
+                element &&
+                (element.scrollHeight > element.clientHeight ||
+                  element.scrollWidth > element.clientWidth)
+              setTooltipFolderId((current) =>
+                open ? (clipped ? folder.id : null) : current === folder.id ? null : current,
+              )
+            }}
+          >
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                onClick={() => onSelectFolder(folder.id)}
+                aria-current={selected ? 'true' : undefined}
+                className={cn(
+                  'h-auto min-h-12 min-w-0 flex-1 self-stretch justify-start whitespace-normal px-1 py-2 text-sm font-medium',
+                  selected && 'font-semibold text-primary',
+                )}
+              >
+                {expanded ? (
+                  <FolderOpen size={16} className="shrink-0" aria-hidden="true" />
+                ) : (
+                  <Folder size={16} className="shrink-0" aria-hidden="true" />
+                )}
+                <span
+                  ref={(element) => {
+                    if (element) labelRefs.current.set(folder.id, element)
+                    else labelRefs.current.delete(folder.id)
+                  }}
+                  className="line-clamp-2 min-w-0 flex-1 wrap-anywhere text-left leading-5"
+                >
+                  {label}
+                </span>
+                <span
+                  className={cn(
+                    'min-w-8 shrink-0 text-right text-xs tabular-nums text-muted-foreground',
+                    selected && 'text-primary',
+                  )}
+                >
+                  {folder.mediaCount}
+                </span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-80 whitespace-normal wrap-anywhere leading-relaxed">
+              {label}
+            </TooltipContent>
+          </Tooltip>
           {canUpdate ? (
             <FolderActions
               folder={folder}
@@ -472,7 +508,7 @@ function FolderTree({
           ) : null}
         </div>
         {hasChildren && expanded ? (
-          <ul className="m-0 flex list-none flex-col gap-1 p-0 pl-4" role="group">
+          <ul className="my-1 mr-0 ml-4 flex list-none flex-col gap-1 border-l border-border p-0">
             <FolderTree
               foldersByParent={foldersByParent}
               parentId={folder.id}
@@ -502,30 +538,34 @@ function FolderActions({ folder, onRename, onCreateChild, onMove, onDelete }) {
           type="button"
           variant="ghost"
           size="icon"
-          className="mr-1 shrink-0"
+          className="shrink-0 text-muted-foreground max-lg:h-11 max-lg:w-11"
           aria-label={t('media.folderActions', { name: getMediaFolderLabel(folder, t) })}
         >
           <MoreHorizontal size={16} aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => onRename(folder)}>
+      <DropdownMenuContent align="end" className="w-72 max-w-[calc(100vw-var(--admin-space-8))]">
+        <DropdownMenuLabel className="whitespace-normal wrap-anywhere text-sm">
+          {getMediaFolderLabel(folder, t)}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="max-lg:min-h-11" onSelect={() => onRename(folder)}>
           <Pencil aria-hidden="true" />
           {t('common.edit')}
         </DropdownMenuItem>
         {!folder.parentId ? (
-          <DropdownMenuItem onSelect={() => onCreateChild(folder)}>
+          <DropdownMenuItem className="max-lg:min-h-11" onSelect={() => onCreateChild(folder)}>
             <Plus aria-hidden="true" />
             {t('media.folderAddChild')}
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem onSelect={() => onMove(folder)}>
+        <DropdownMenuItem className="max-lg:min-h-11" onSelect={() => onMove(folder)}>
           <Waypoints aria-hidden="true" />
           {t('media.folderMove')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="text-danger focus:text-danger"
+          className="text-danger focus:text-danger max-lg:min-h-11"
           onSelect={() => onDelete(folder)}
         >
           <Trash2 aria-hidden="true" />

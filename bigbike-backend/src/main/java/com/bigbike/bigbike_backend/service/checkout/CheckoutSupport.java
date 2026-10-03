@@ -20,7 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.Set;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -33,7 +33,6 @@ final class CheckoutSupport {
     private CheckoutSupport() {}
 
     static final String PAYMENT_METHOD_COD = "COD";
-    static final String PAYMENT_METHOD_BANK_TRANSFER = "BANK_TRANSFER";
     private static final String ANONYMOUS_SCOPE = "anonymous";
 
     // ── Validation helpers ────────────────────────────────────────────────────
@@ -72,21 +71,22 @@ final class CheckoutSupport {
     }
 
     static void validatePaymentMethod(String method) {
-        // Storefront customers choose COD or the new manual BANK_TRANSFER code (PAY_RULE_001).
-        // BACS remains legacy-only: it must not enter the old BACS auto-mark-paid path. Omitted
-        // values are normalised to COD by normalizePaymentMethod; other explicit values reject.
+        // New checkout accepts COD (or omission for compatibility) only. Historical payment
+        // method values remain readable on old orders but cannot create a new order.
         if (method == null || method.isBlank()) {
             return;
         }
-        if (!Set.of(PAYMENT_METHOD_COD, PAYMENT_METHOD_BANK_TRANSFER).contains(method)) {
+        if (!PAYMENT_METHOD_COD.equalsIgnoreCase(method.trim())) {
             throw ValidationException.fromField("paymentMethod", "UNSUPPORTED",
-                    "Payment method must be COD or BANK_TRANSFER.");
+                    "Payment method must be COD.");
         }
     }
 
     /** Omitted checkout payment method preserves the established COD default. */
     static String normalizePaymentMethod(String method) {
-        return (method == null || method.isBlank()) ? PAYMENT_METHOD_COD : method;
+        return (method == null || method.isBlank())
+                ? PAYMENT_METHOD_COD
+                : method.trim().toUpperCase(Locale.ROOT);
     }
 
     static String normalizeIdempotencyKey(String rawIdempotencyKey) {

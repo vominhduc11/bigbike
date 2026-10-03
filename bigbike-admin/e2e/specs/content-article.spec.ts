@@ -130,7 +130,7 @@ async function filterStatus(page: Page, status: 'Nháp' | 'Đã xuất bản' | 
 }
 
 async function findArticleRow(page: Page, title: string) {
-  await page.getByPlaceholder(/Tên hoặc (slug|đường dẫn)/).fill(title)
+  await page.getByPlaceholder('Tên bài viết').fill(title)
   const row = page.locator('tbody tr').filter({ hasText: title })
   await expect(row, `Không tìm thấy bài thử nghiệm ${title}`).toHaveCount(1, { timeout: 15_000 })
   await expect(page.locator('tbody tr'), `Bộ lọc phải chỉ còn bài thử nghiệm ${title}`).toHaveCount(
@@ -144,6 +144,37 @@ async function confirmDialog(page: Page, label: string | RegExp) {
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: label, exact: true }).click()
+}
+
+async function openArticlePreview(page: Page, expectedPublishStatus: 'DRAFT' | 'PUBLISHED') {
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (candidate) =>
+        candidate.request().method() === 'POST' &&
+        new URL(candidate.url()).pathname.endsWith('/api/v1/admin/content/articles/preview'),
+    ),
+    page.getByRole('button', { name: 'Xem trước', exact: true }).click(),
+  ])
+  expect(response.ok(), `API xem trước bài ${expectedPublishStatus} phải trả 2xx`).toBeTruthy()
+  expect(response.request().postDataJSON().publishStatus).toBe(expectedPublishStatus)
+  const article = (await response.json())?.data as {
+    title: string
+    body?: string | null
+    excerpt?: unknown
+    authorName?: unknown
+  }
+  expect(article).not.toHaveProperty('excerpt')
+  expect(article).not.toHaveProperty('authorName')
+
+  const panel = page.getByRole('complementary', { name: 'Xem trước bài viết' })
+  await expect(panel).toBeVisible()
+  await expect(panel.getByText(/Chưa xem trước được/)).toHaveCount(0)
+  const frame = page.frameLocator('aside[aria-label="Xem trước bài viết"] iframe')
+  await expect(frame.getByText(article.title, { exact: true }).first()).toBeVisible({
+    timeout: 20_000,
+  })
+  await expect(frame.locator('#main-content img').first()).toBeVisible()
+  return { article, panel }
 }
 
 async function captureResponsive(
@@ -213,8 +244,16 @@ test.describe('content-article lifecycle', () => {
         .fill(title)
       await addParagraphBlock(adminPage, BODY)
       await fillEnglishTitle(adminPage, titleEn)
+      await sectionCard(adminPage, 'Hiển thị')
+        .getByRole('checkbox', { name: 'Bài viết nổi bật', exact: true })
+        .check()
       const uploadedCover = await uploadCoverFromPicker(adminPage, coverFile)
       expect(uploadedCover.id, 'Không lấy được id ảnh bìa tải từ picker').toBeTruthy()
+
+      const unsavedPreview = await openArticlePreview(adminPage, 'DRAFT')
+      expect(unsavedPreview.article.title).toBe(title)
+      expect(unsavedPreview.article.body).toContain(BODY)
+      await unsavedPreview.panel.getByRole('button', { name: 'Đóng' }).click()
 
       const [response] = await Promise.all([
         adminPage.waitForResponse(
@@ -226,12 +265,25 @@ test.describe('content-article lifecycle', () => {
       ])
       expect(response.status(), 'API tạo bài phải trả 2xx').toBeLessThan(300)
       const requestPayload = response.request().postDataJSON()
+      expect(requestPayload).not.toHaveProperty('excerpt')
+      expect(requestPayload).not.toHaveProperty('authorName')
+      expect(requestPayload.translations?.en).not.toHaveProperty('excerpt')
+      expect(requestPayload.translations?.en).not.toHaveProperty('authorName')
       expect(requestPayload.coverImage).toMatchObject({ mimeType: 'image/svg+xml' })
       expect(requestPayload.coverImage.url).toContain('/media/')
       expect(requestPayload.coverImage.alt).toContain('E2E_MEDIA_CONTENT_')
+      expect(requestPayload.featured).toBe(true)
+      expect((await response.json())?.data?.featured).toBe(true)
       await expect(adminPage).toHaveURL(/\/admin\/content\/articles\/[^/]+$/, { timeout: 15_000 })
       articleId = adminPage.url().match(/\/admin\/content\/articles\/([^/?#]+)/)?.[1] ?? null
       expect(articleId, 'Không lấy được id bài E2E_CONTENT_ vừa tạo').toBeTruthy()
+    })
+
+    await test.step('bài Nháp vừa lưu xem trước được ngay ở lần bấm đầu', async () => {
+      const draftPreview = await openArticlePreview(adminPage, 'DRAFT')
+      expect(draftPreview.article.title).toBe(title)
+      expect(draftPreview.article.body).toContain(BODY)
+      await draftPreview.panel.getByRole('button', { name: 'Đóng' }).click()
     })
 
     await test.step('kiểm tra form chi tiết ở 1440×900, 768×1024 và 375×812', async () => {
@@ -255,6 +307,8 @@ test.describe('content-article lifecycle', () => {
         adminPage.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click(),
       ])
       expect(response.status(), 'API cập nhật bài phải trả 2xx').toBeLessThan(300)
+      expect(response.request().postDataJSON()).not.toHaveProperty('excerpt')
+      expect(response.request().postDataJSON()).not.toHaveProperty('authorName')
 
       await gotoAdmin(adminPage, `/admin/content/article/${articleId}`)
       await expect(
@@ -263,6 +317,25 @@ test.describe('content-article lifecycle', () => {
       await expect(sectionCard(adminPage, 'Nội dung chính').locator('.ProseMirror')).toContainText(
         BODY_EDITED,
       )
+      await expect(
+        sectionCard(adminPage, 'Hiển thị').getByRole('checkbox', {
+          name: 'Bài viết nổi bật',
+          exact: true,
+        }),
+      ).toBeChecked()
+      const core = sectionCard(adminPage, 'Thông tin chính')
+      await expect(core.getByText('Tóm tắt', { exact: true })).toHaveCount(0)
+      await expect(core.getByText('Tên tác giả', { exact: true })).toHaveCount(0)
+      await adminPage
+        .locator('.lang-switcher')
+        .getByRole('button', { name: 'EN', exact: true })
+        .click()
+      await expect(core.getByText('Excerpt', { exact: true })).toHaveCount(0)
+      await expect(core.getByText('Author name', { exact: true })).toHaveCount(0)
+      await adminPage
+        .locator('.lang-switcher')
+        .getByRole('button', { name: 'VI', exact: true })
+        .click()
     })
 
     await test.step('lọc danh sách theo Nháp, tìm kiếm và sắp xếp tiêu đề', async () => {
@@ -279,6 +352,24 @@ test.describe('content-article lifecycle', () => {
       await navigateSpa(adminPage, `/admin/content/article/${articleId}`)
       await savePublishStatus(adminPage, articleId!, 'Đã xuất bản')
       await expect(adminPage.locator('.bb-badge', { hasText: 'Đã xuất bản' }).first()).toBeVisible()
+
+      const titleInput = sectionCard(adminPage, 'Thông tin chính').getByLabel('Tiêu đề', {
+        exact: false,
+      })
+      await titleInput.fill(`${titleEdited} PUBLISHED`)
+      const [saveResponse] = await Promise.all([
+        adminPage.waitForResponse(
+          (candidate) =>
+            candidate.request().method() === 'PATCH' &&
+            new URL(candidate.url()).pathname.endsWith(`/admin/content/articles/${articleId}`),
+        ),
+        adminPage.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click(),
+      ])
+      expect(saveResponse.ok(), 'Lưu bài đã xuất bản phải trả 2xx').toBeTruthy()
+      expect(saveResponse.request().postDataJSON().publishStatus).toBe('PUBLISHED')
+      expect((await saveResponse.json())?.data?.publishStatus).toBe('PUBLISHED')
+      await expect(adminPage.locator('.bb-badge', { hasText: 'Đã xuất bản' }).first()).toBeVisible()
+
       await savePublishStatus(adminPage, articleId!, 'Nháp')
       await expect(adminPage.locator('.bb-badge', { hasText: 'Nháp' }).first()).toBeVisible()
     })
@@ -340,7 +431,7 @@ test.describe('content-article lifecycle', () => {
       })
       await installReadOnlyIdentity(adminPage)
       await gotoAdmin(adminPage, '/admin/content')
-      await adminPage.getByPlaceholder(/Tên hoặc (slug|đường dẫn)/).fill(titleEdited)
+      await adminPage.getByPlaceholder('Tên bài viết').fill(titleEdited)
       await expect(
         adminPage.getByRole('status').filter({ hasText: 'Bạn chỉ có quyền xem Tin tức.' }),
       ).toBeVisible()

@@ -14,6 +14,7 @@ import com.bigbike.bigbike_backend.persistence.entity.catalog.ProductEntity;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.analytics.Ga4EventOutboxJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
@@ -45,6 +46,7 @@ class Phase1GOrderReadApiTest {
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired OrderJpaRepository orderRepo;
     @Autowired com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository auditLogRepo;
+    @Autowired Ga4EventOutboxJpaRepository ga4EventOutboxRepo;
 
     private MockMvc mockMvc;
     private static String testCategoryId;
@@ -383,6 +385,12 @@ class Phase1GOrderReadApiTest {
         assertThat(reloaded.getStatus()).isEqualTo("CANCELLED");
         assertThat(reloaded.getCancelledAt()).isNotNull();
 
+        var refundEvent = ga4EventOutboxRepo.findByOrderIdAndEventName(
+                UUID.fromString(session.orderId), "refund").orElseThrow();
+        assertThat(refundEvent.getPayloadJson())
+                .contains(session.orderNumber, "\"name\":\"refund\"")
+                .doesNotContain(email, "0909123456", "123 Test St");
+
         // AUD-025: a customer cancel writes an audit-log record (actor = CUSTOMER).
         UUID orderUuid = UUID.fromString(session.orderId);
         assertThat(auditLogRepo.findAll()).anySatisfy(a -> {
@@ -390,6 +398,12 @@ class Phase1GOrderReadApiTest {
             assertThat(a.getActorType()).isEqualTo("CUSTOMER");
             assertThat(a.getResourceId()).isEqualTo(orderUuid);
         });
+
+        mockMvc.perform(patch("/api/v1/customer/orders/" + session.orderId + "/cancel")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+        assertThat(ga4EventOutboxRepo.findByOrderIdAndEventName(orderUuid, "refund")
+                .orElseThrow().getId()).isEqualTo(refundEvent.getId());
     }
 
     @Test

@@ -6,7 +6,6 @@ import com.bigbike.bigbike_backend.domain.content.AdminContentItem;
 import com.bigbike.bigbike_backend.domain.content.Article;
 import com.bigbike.bigbike_backend.repository.content.ContentReadRepository;
 import com.bigbike.bigbike_backend.service.common.PageResult;
-import com.bigbike.bigbike_backend.service.common.PaginationService;
 import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
@@ -46,7 +45,7 @@ public class AdminContentReadService {
         String normalizedType = normalizeType(type);
         return switch (normalizedType) {
             case "ARTICLE" -> contentReadRepository.findArticleById(id)
-                    .map(articleMapper::toAdminContentItem)
+                    .map(articleMapper::toEditableContentItem)
                     .orElseThrow(() -> new NotFoundException("Content not found."));
             default -> throw new NotFoundException("Content not found.");
         };

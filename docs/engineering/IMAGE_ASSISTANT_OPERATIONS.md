@@ -1,8 +1,11 @@
-# Bàn giao xử lý ảnh — 08/09/2026
+# Bàn giao xử lý ảnh — 09/09/2026
 
-Căn cứ: `BUSINESS_RULES.md` CHAT_RULE_057–059, CHAT_RULE_066–069; `API_CONTRACT.md` phần Trợ lý BigBike; `DATA_CONTRACT.md` phần Image reliability; `PERMISSION_MATRIX.md` phần Receipt image notifications.
 
-Owner đã chọn: nhận biên lai và báo trong chuông quản trị; khởi điểm 60 ảnh/ngày; 3 ảnh/lượt, 9 ảnh/hội thoại, 8 MB/ảnh; còn đủ lượt cho một phần thì đọc theo thứ tự gửi. 60 là mức khởi điểm đã chốt, gấp ba trần cũ 20; không phải dự báo lượng khách hay chi phí. Sau bảy ngày, đối chiếu sử dụng và hóa đơn nhà cung cấp rồi điều chỉnh. Không đổi hạn mức chữ đang vận hành.
+**Trợ lý đã gỡ 2026-10-02 theo `CHAT_RULE_070`.** Các bước dựng chỉ mục trợ lý dưới đây là lịch sử, không còn CLI Java hoặc cấu hình `BIGBIKE_IMAGE_INDEX_*`. Việc chuyển ảnh sản phẩm vào kho media là công việc riêng, không được tự chạy khi gỡ trợ lý.
+
+Căn cứ: `BUSINESS_RULES.md` CHAT_RULE_057–059, CHAT_RULE_066–069; `API_CONTRACT.md` phần Trợ lý BigBike; `DATA_CONTRACT.md` phần Image reliability; `PERMISSION_MATRIX.md` phần quyền ảnh và hội thoại.
+
+Owner đã chốt: thanh toán mới chỉ dùng COD; Trợ lý giữ khả năng nhận ảnh sản phẩm để tư vấn và không có luồng tài liệu thanh toán, thông báo nội bộ hoặc thao tác đối soát. Hạn mức ảnh là 60 ảnh/ngày; 3 ảnh/lượt, 9 ảnh/hội thoại, 8 MB/ảnh; còn đủ lượt cho một phần thì đọc theo thứ tự gửi. 60 là mức khởi điểm đã chốt, không phải dự báo lượng khách hay chi phí. Sau bảy ngày, đối chiếu sử dụng và hóa đơn nhà cung cấp rồi điều chỉnh. Không đổi hạn mức chữ đang vận hành.
 
 ## Mốc có sẵn do owner cung cấp
 
@@ -22,11 +25,11 @@ VPS này có dữ liệu thật (owner đã đính chính). Owner đã yêu cầ
 
 ## Khi đưa bản sửa vào sử dụng
 
-1. Bản giao ngày 08/09/2026 được owner yêu cầu agent dựng và triển khai bằng `docker compose --env-file .env.vps --parallel 1 up -d --build`, rồi đưa toàn bộ thay đổi lên GitHub. Những lần phát hành sau tiếp tục dùng quy trình triển khai của dự án. Kết quả lần này ghi trong [báo cáo bàn giao](../audits/FEATURE_TRO_LY_BIGBIKE_IMAGES_2026-09-08.md).
-2. Flyway áp dụng `V1082__chat_image_reliability_and_receipts.sql`. Migration thêm trường/chỉ mục, bỏ ràng buộc một ảnh/tin nhắn, giữ nguyên ảnh/hội thoại và bộ đếm đã dùng. Setting ảnh được đặt 60, không sửa setting hoặc bộ đếm chữ. Không sửa/xóa migration cũ.
+1. Bản sửa ảnh ngày 08/09/2026 và đợt COD-only ngày 09/09/2026 dùng quy trình phát hành của dự án. Kết quả đợt ảnh ghi trong [báo cáo bàn giao](../audits/FEATURE_TRO_LY_BIGBIKE_IMAGES_2026-09-08.md); kết quả đợt COD ghi trong [báo cáo COD-only](../audits/FEATURE_COD_ONLY_PAYMENT_2026-09-09.md).
+2. Flyway đã áp dụng `V1082__chat_image_reliability_and_receipts.sql` cho phần ảnh; `V1083__cod_only_payment_cutover.sql` gỡ cài đặt ngân hàng, dữ liệu thông báo thanh toán cũ và cột liên kết không còn dùng. Các migration cũ không sửa/xóa.
 3. Mở **Cài đặt → Trợ lý BigBike → Số ảnh đọc tối đa mỗi ngày**. Xác nhận 60 và ô đã dùng/còn lại theo giờ Việt Nam. Sửa hạn mức có hiệu lực cho lần giữ lượt tiếp theo; không đặt lại số đã dùng. Nhập 0 để tạm dừng cấp lượt đọc mới. Những lượt đã được giữ vẫn thuộc yêu cầu cũ.
-4. Nhân viên có `chat.read` mở chuông: biên lai mới dẫn tới đúng tin nhắn chứa ảnh. Chỉ nhân viên có quyền đơn hàng mới xác nhận thanh toán ở luồng Đơn hàng hiện có, sau khi đối chiếu ngân hàng. Trợ lý không xác nhận hoặc đổi trạng thái đơn. `settings.read` chỉ xem số tổng hợp, không xem ảnh.
-5. Ảnh khách tiếp tục nằm trong kho riêng tư và bị xóa theo thời hạn 90 ngày hiện có. Khi khách xóa hội thoại, thông báo dẫn tới biên lai cũng bị xóa. Chuông không ghi tham chiếu biên lai vào localStorage; làm mới khi trang đang mở để loại thông báo đã hết hạn/xóa.
+4. Nhân viên có `chat.read` tiếp tục xem được lịch sử và ảnh riêng tư; chuông quản trị chỉ phục vụ thông báo đơn hàng và tồn kho. Trợ lý không xác nhận hoặc đổi trạng thái đơn. `settings.read` chỉ xem số tổng hợp, không xem ảnh.
+5. Ảnh khách tiếp tục nằm trong kho riêng tư và bị xóa theo thời hạn 90 ngày hiện có. Khi khách xóa hội thoại, dữ liệu ảnh thuộc hội thoại cũng được xử lý theo quy tắc hiện hành.
 
 Nếu cần dừng xử lý ảnh trong lúc kiểm tra: đặt hạn mức ảnh 0, giữ nguyên dữ liệu và schema V1082. Không chạy lệnh DROP hoặc hoàn tác migration theo kiểu xóa dữ liệu ảnh.
 
@@ -127,8 +130,8 @@ FROM site_settings
 WHERE setting_key IN ('ai_assistant_image_daily_limit', 'ai_assistant_daily_limit');
 ```
 
-Đối chiếu với ô hạn mức ở quản trị và hóa đơn/số sử dụng trong tài khoản nhà cung cấp. Cùng một ảnh retry chỉ giữ một lượt ảnh, nhưng có thể có nhiều lần gọi provider; không dùng bộ đếm ảnh để suy ra số tiền. Log kỹ thuật `chat_image_analysis_failed` có số lần thử và loại lỗi, không chứa bytes/biên lai; dùng thống kê lỗi này cùng số lượt, không suy tỷ lệ lỗi từ mẫu bốn lần cũ.
+Đối chiếu với ô hạn mức ở quản trị và hóa đơn/số sử dụng trong tài khoản nhà cung cấp. Cùng một ảnh retry chỉ giữ một lượt ảnh, nhưng có thể có nhiều lần gọi provider; không dùng bộ đếm ảnh để suy ra số tiền. Log kỹ thuật `chat_image_analysis_failed` có số lần thử và loại lỗi, không chứa bytes hoặc nội dung khách gửi; dùng thống kê lỗi này cùng số lượt, không suy tỷ lệ lỗi từ mẫu bốn lần cũ.
 
-Owner kiểm trên bản đã triển khai bằng ảnh sản phẩm/logo công khai do shop quản lý, không dùng hội thoại riêng tư làm fixture: Caberg chỉ ra hàng Caberg; hãng không bán nói rõ chưa có; găng tay chưa rõ mẫu vẫn có gợi ý cùng loại; hỏi tiếp giữ nhóm; ba góc chụp nằm cùng một tin nhắn. Biên lai thử phải có dữ liệu giả rõ ràng và không dẫn tới xác nhận một khoản tiền thật. Mỗi lần đọc ảnh thật sẽ dùng hạn mức; chỉ chạy số ca cần thiết sau khi xem bộ kiểm thử tự động.
+Owner kiểm trên bản đã triển khai bằng ảnh sản phẩm/logo công khai do shop quản lý, không dùng hội thoại riêng tư làm fixture: Caberg chỉ ra hàng Caberg; hãng không bán nói rõ chưa có; găng tay chưa rõ mẫu vẫn có gợi ý cùng loại; hỏi tiếp giữ nhóm; ba góc chụp nằm cùng một tin nhắn. Mỗi lần đọc ảnh thật sẽ dùng hạn mức; chỉ chạy số ca cần thiết sau khi xem bộ kiểm thử tự động.
 
 Not run: chuyển 91 sản phẩm, reindex toàn bộ ảnh vận hành, kiểm catalog sau chuyển kho, đo lưu lượng/chi phí bảy ngày và đọc ảnh bằng AI thật — các việc này do owner chạy theo hướng dẫn trên; triển khai bản sửa theo yêu cầu bổ sung của owner chỉ áp dụng migration/setting đi cùng phiên bản, không chạy công cụ chuyển kho hoặc dùng dữ liệu khách để thử.

@@ -489,45 +489,45 @@ body {
   padding-bottom: 0;
 }
 
-/* Floating action group: one viewport dock for chat + scroll-to-top.
+/* Floating action group: one viewport dock for contact + scroll-to-top.
    Keep these offsets stable during page scroll; state-based UI may hide the dock,
    but must not rewrite bottom coordinates. */
 :root {
-  --bb-floating-chat-size: 3rem;
+  --bb-floating-contact-size: var(--bb-contact-fab-mobile-size);
   --bb-floating-action-gap: var(--bb-space-5);
   --bb-floating-action-right: max(var(--bb-space-4), env(safe-area-inset-right));
-  --bb-floating-chat-bottom: calc(
+  --bb-floating-contact-bottom: calc(
     var(--bb-mobile-nav-height, 3.75rem) + env(safe-area-inset-bottom) + var(--bb-space-6)
   );
-  --bb-floating-chat-panel-height: clamp(35rem, 80dvh, 47.5rem);
   --bb-floating-scroll-top-bottom: calc(
-    var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-floating-action-gap)
+    var(--bb-floating-contact-bottom) + var(--bb-floating-contact-size) +
+      var(--bb-floating-action-gap)
   );
 }
 
 @media (min-width: 768px) {
   :root {
-    --bb-floating-chat-size: 4.125rem;
+    --bb-floating-contact-size: var(--bb-contact-fab-desktop-size);
     --bb-floating-action-right: max(var(--bb-space-6), env(safe-area-inset-right));
-    --bb-floating-chat-bottom: max(var(--bb-space-6), env(safe-area-inset-bottom));
+    --bb-floating-contact-bottom: max(var(--bb-space-6), env(safe-area-inset-bottom));
   }
 }
 
 @media (max-width: 767px) {
-  /* Resolve both floating-action offsets at the root so chat and scroll-to-top
+  /* Resolve both floating-action offsets at the root so contact and scroll-to-top
      clear the cart's two-row action bar together, including the safe area. */
   :root:has([data-cart-mobile-checkout]) {
-    --bb-floating-chat-bottom: calc(9rem + env(safe-area-inset-bottom));
+    --bb-floating-contact-bottom: calc(9rem + env(safe-area-inset-bottom));
   }
 }
 
-.bb-floating-chat-anchor,
+.bb-floating-contact-anchor,
 .bb-scroll-top-anchor {
   right: var(--bb-floating-action-right);
 }
 
-.bb-floating-chat-anchor {
-  bottom: var(--bb-floating-chat-bottom);
+.bb-floating-contact-anchor {
+  bottom: var(--bb-floating-contact-bottom);
 }
 
 .bb-scroll-top-anchor {
@@ -2654,9 +2654,8 @@ body:has(.bb-home) {
   }
 }
 
-/* Pulsing "halo" rings radiating outward from the floating chat FAB to draw
-   attention. Two staggered rings (see FloatingChat.tsx) share this loop. */
-@keyframes bb-chat-halo {
+/* The two original contact FAB halo rings need transform/opacity keyframes. */
+@keyframes bb-contact-halo {
   0% {
     transform: scale(1);
     opacity: 0.32;
@@ -2669,6 +2668,7 @@ body:has(.bb-home) {
     opacity: 0;
   }
 }
+
 /* PDP type scale §điểm nhấn — tên sản phẩm (h1) = 32px, đồng bậc Display với giá.
    Theme WP gốc đặt `.title h1` khá lỏng; override scoped đặc hiệu hơn → THẮNG. */
 /* "Sản phẩm đã xem gần đây" (.block-title) — mobile 22px khớp .pdp-section-head. */
@@ -3044,9 +3044,10 @@ body .banner-ads > .container > .row {
       --bb-pdp-sticky-height,
       calc(69px + max(8px, env(safe-area-inset-bottom)))
     );
-    --bb-floating-chat-bottom: calc(var(--bb-mobile-bottom-surface-height) + var(--bb-space-4));
+    --bb-floating-contact-bottom: calc(var(--bb-mobile-bottom-surface-height) + var(--bb-space-4));
     --bb-floating-scroll-top-bottom: calc(
-      var(--bb-floating-chat-bottom) + var(--bb-floating-chat-size) + var(--bb-floating-action-gap)
+      var(--bb-floating-contact-bottom) + var(--bb-floating-contact-size) +
+        var(--bb-floating-action-gap)
     );
   }
 
@@ -3077,7 +3078,7 @@ body .banner-ads > .container > .row {
 
   /* Thông báo giỏ hàng là phản hồi trực tiếp cho thao tác vừa thực hiện. Trong
      bốn giây hiển thị, ẩn các nút nổi phụ để mọi chữ và hành động luôn bấm được. */
-  body:has(.bb-cart-toast) .bb-floating-chat-anchor,
+  body:has(.bb-cart-toast) .bb-floating-contact-anchor,
   body:has(.bb-cart-toast) .bb-scroll-top-anchor {
     visibility: hidden;
     pointer-events: none;
@@ -3348,11 +3349,11 @@ body > footer .bg-footer-top a:focus-visible {
   color: var(--bb-brand-primary-inverse);
 }
 
-html[data-bb-header-panel] .bb-floating-chat-anchor,
+html[data-bb-header-panel] .bb-floating-contact-anchor,
 html[data-bb-header-panel] .bb-scroll-top-anchor,
-html[data-bb-keyboard-focus] .bb-floating-chat-anchor,
+html[data-bb-keyboard-focus] .bb-floating-contact-anchor,
 html[data-bb-keyboard-focus] .bb-scroll-top-anchor,
-html[data-bb-nav-dropdown-open] .bb-floating-chat-anchor,
+html[data-bb-nav-dropdown-open] .bb-floating-contact-anchor,
 html[data-bb-nav-dropdown-open] .bb-scroll-top-anchor {
   display: none !important;
 }

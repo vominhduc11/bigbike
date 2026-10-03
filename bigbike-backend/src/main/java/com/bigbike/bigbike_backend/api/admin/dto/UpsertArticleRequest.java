@@ -29,12 +29,6 @@ public class UpsertArticleRequest {
     @Size(max = 255, message = "Title is too long.")
     private String title;
 
-    @Size(max = 5000, message = "Excerpt is too long.")
-    private String excerpt;
-
-    @Size(max = 255, message = "Author name is too long.")
-    private String authorName;
-
     private String body;
 
     @Valid
@@ -45,7 +39,7 @@ public class UpsertArticleRequest {
 
     private PublishStatus publishStatus;
 
-    /** Featured article flag (V222). Null = leave unchanged on update. */
+    /** Manual "Tin nổi bật" pick flag. Null = leave unchanged on update. */
     private Boolean featured;
 
     /** Homepage Experience carousel pick flag (V272). Null = leave unchanged on update. */
@@ -62,7 +56,7 @@ public class UpsertArticleRequest {
      * body_blocks and body columns. Key absent → leave both columns unchanged.
      */
     @Valid
-    @Size(max = 200, message = "bodyBlocks must not exceed 200 blocks.")
+    @Size(max = 400, message = "Bài viết không quá 400 khối nội dung.")
     private List<DescriptionBlock> bodyBlocks;
 
     @JsonIgnore

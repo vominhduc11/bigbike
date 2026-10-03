@@ -53,12 +53,6 @@ describe('permission dependency helpers', () => {
     expect(requiredBy('roles.read', active, catalog)).toEqual(['admin-users.write'])
   })
 
-  it('keeps chat history view-only with no reply permission', () => {
-    const chat = catalog.find((group) => group.moduleKey === 'chat')
-
-    expect(chat.permissions.map((permission) => permission.key)).toEqual(['chat.read'])
-  })
-
   it('normalizes old catalog entries into module metadata', () => {
     const grouped = groupCatalogByModule([
       { groupKey: 'legacy', permissions: [{ key: 'orders.read', sensitive: false }] },

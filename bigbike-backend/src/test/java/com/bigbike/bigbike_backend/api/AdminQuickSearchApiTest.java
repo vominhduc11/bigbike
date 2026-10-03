@@ -89,6 +89,25 @@ class AdminQuickSearchApiTest {
     }
 
     @Test
+    void searchesArticlesByTitleButNotBody() throws Exception {
+        mockMvc.perform(get("/api/v1/admin/quick-search")
+                        .param("q", "fullface")
+                        .header("X-Admin-Permissions", "content.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.groups.articles.state").value("READY"))
+                .andExpect(jsonPath("$.data.groups.articles.total").value(1))
+                .andExpect(jsonPath("$.data.groups.articles.items[0].title")
+                        .value("Chon mu bao hiem fullface phu hop"));
+
+        mockMvc.perform(get("/api/v1/admin/quick-search")
+                        .param("q", "Huong dan chon mu")
+                        .header("X-Admin-Permissions", "content.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.groups.articles.total").value(0))
+                .andExpect(jsonPath("$.data.groups.articles.items").isEmpty());
+    }
+
+    @Test
     void refusesCallWhenCallerHasNoSearchReadPermission() throws Exception {
         mockMvc.perform(get("/api/v1/admin/quick-search")
                         .param("q", "order")

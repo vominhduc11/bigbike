@@ -5,7 +5,7 @@
 Rate limiting protects BigBike across the whole request path: client → public nginx →
 storefront BFF/admin proxy → backend → database, MinIO, mail and external providers. It is a
 security and availability control; it never replaces authentication, authorization, CSRF,
-checkout idempotency, review ownership, chat turn limits, or state-machine validation.
+checkout idempotency, review ownership, or state-machine validation.
 
 Every public, customer, admin, internal and WebSocket entry point has one of the following
 explicit policies: an application tier, an nginx-only coarse tier, or a documented exemption
@@ -57,17 +57,18 @@ session token and API token are not written into rate-limit keys, metrics or app
 | `ORDER_LOOKUP` | Public order lookup | IP + normalized lookup identity HMAC when present | 20/minute |
 | `SEARCH` | `GET /api/v1/products?q=...` and `GET /api/v1/search-suggest`, direct or via BFF | IP | 60/minute |
 | `REVIEW` / `REVIEW_PHOTO` | Review submit/photo upload | IP + HMAC customer/review session | 5/minute / 30/minute |
-| `CHAT` | `POST /api/v1/chat/messages`, `/messages/stream`, `/images`, `/videos` | IP/customer + HMAC conversation hoặc request | 10/minute |
 | `OAUTH` | OAuth authorize/callback | IP + opaque state HMAC when present | 20/minute |
-| `ADMIN_MUTATION` | Admin write/default expensive command | Admin account + IP | 60/minute |
+| `ADMIN_MUTATION` | Admin writes, including product JSON import validate/commit | Admin account + IP | 60/minute |
 | `ADMIN_MEDIA` | Admin media upload and brand logo URL import | Admin account + IP | 30/minute, 2 concurrent/account, 10 global |
-| `ADMIN_IMPORT` | Product import validate/commit | Admin account + IP | validate 6/hour, commit 2/hour, 1 global |
 | `ADMIN_EXPORT` | Product/report export | Admin account + IP | 12/hour, 3 global |
 | `INTERNAL` | `/api/internal/**` | HMAC internal token + IP | 300/minute |
 | `WEBSOCKET` | `/ws` handshake and inbound admin commands | IP + admin account/session | handshake 10/minute/IP, 3 connections/account, commands 60/minute/account |
 
 Pure public reads and authenticated admin reads remain explicitly covered by nginx coarse limits.
-Chat media clients distinguish this temporary `RATE_LIMIT_EXCEEDED` rejection from a daily AI allowance. They invite retry; HTTP 429 alone must not claim the shop has exhausted its daily image/video quota.
+Product JSON import has no separate hourly allowance for validation or saving (owner decision
+2026-09-16). Both actions use the ordinary `ADMIN_MUTATION` policy; the independent one-import-at-a-time
+global lease still applies to validation and commit. A rejected concurrent import returns `429` with
+`Retry-After`, and the admin's `products.update` permission remains required.
 Product id is not a global deny key because a popular product must not make unrelated customers fail.
 Customer account lockout is intentionally not added: customer authentication uses the dual IP and
 HMAC identity controls; the existing admin-only lockout remains unchanged.
@@ -75,19 +76,26 @@ HMAC identity controls; the existing admin-only lockout remains unchanged.
 ### Nginx coarse protection
 
 These are deliberately coarse, per-Nginx-instance controls that absorb floods before an upstream
-connection is opened. They do not replace the Redis-backed application policy above and their
-burst is explicitly immediate (`nodelay`):
+connection is opened. They do not replace the Redis-backed application policy above. The table is
+the production host-level snapshot verified on 2026-09-12; configured bursts are immediate
+(`nodelay`):
 
 | Public host/surface | Request limit | Concurrent connection cap |
 |---|---:|---:|
-| `api.bigbike.vn` normal API | 10 requests/second/IP, burst 20 | 20/IP (4/IP for admin-media uploads) |
-| `api.bigbike.vn/ws` | 10 requests/second/IP, burst 10 | 5/IP |
-| `bigbike.vn` storefront/BFF | 30 requests/second/IP, burst 30 | 20/IP server, 12/IP route |
-| `admin.bigbike.vn` | 30 requests/second/IP, burst 30 | 12/IP server, 8/IP route |
+| `api.bigbike.vn` normal API | 10 requests/second/edge address, burst 20 | None at host Nginx |
+| `api.bigbike.vn/ws` | None at host Nginx | None at host Nginx |
+| `bigbike.vn` storefront/BFF | 30 requests/second/edge address, burst 30 | None at host Nginx |
+| `admin.bigbike.vn` ordinary HTTP and allowed API paths | 30 requests/second/edge address, burst 30 | None at host Nginx; `/ws` is exempt |
 
-Nginx sends `429`, `Retry-After: 1`, `Cache-Control: no-store` and the standard error envelope
-for its own rejection. Its key is the edge's direct remote address; do not enable `real_ip` or
-trust a CDN forwarding header without recording and testing every actual proxy hop.
+The admin host sends `429`, `Retry-After: 1`, `Cache-Control: no-store` and the standard error
+envelope for its own rejection. The active API and storefront hosts retain their older request
+limits and default Nginx rejection behavior; changing their response contract is a separate
+deployment. Every active zone is keyed by the edge's direct remote address. Do not enable
+`real_ip` or trust a CDN forwarding header without recording and testing every actual proxy hop.
+For the admin host, the owner chose request-rate protection without a host connection cap on
+2026-09-12 because all staff sessions appear behind Cloudflare edge addresses; `/ws` must remain
+outside that coarse limit so the order-notification channel is not interrupted.
+`CONFIRMED_FROM_LIVE_CONFIG_AND_OWNER_2026-09-12`
 
 ## Distributed store and failure behavior
 
@@ -98,7 +106,7 @@ do not reset limits. The local Docker Compose Redis service is development/test 
 and is not a production topology declaration.
 
 Redis timeout, authentication, capacity and connection errors are captured as limiter-store
-failures. Auth/email/OAuth/review/chat/admin/internal/WebSocket controls fail closed with a normal
+failures. Auth/email/OAuth/review/admin/internal/WebSocket controls fail closed with a normal
 `429` and `Retry-After: 60`; cart, checkout and public reads use a bounded TTL local emergency
 bucket to preserve selling/reading while immediately alerting operations. Fallback state is never
 shared between replicas and is not a substitute for Redis.

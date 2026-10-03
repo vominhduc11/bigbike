@@ -72,6 +72,7 @@ describe("buildProductJsonLd", () => {
     expect(ld["@type"]).toBe("ProductGroup");
     expect(ld.name).toBe("Áo giáp mô tô ABC");
     expect(ld.productGroupID).toBe("p1");
+    expect(ld.variesBy).toEqual(["https://schema.org/color"]);
     expect(ld.brand).toEqual({ "@type": "Brand", name: "ABC" });
     expect(ld.url).toContain("/product/ao-giap-moto-abc/");
 
@@ -88,6 +89,7 @@ describe("buildProductJsonLd", () => {
     expect(arr(ld.hasVariant)[0]).toMatchObject({
       "@type": "Product",
       sku: "SKU-RED",
+      color: "Đỏ",
       offers: {
         "@type": "Offer",
         price: 800_000,
@@ -159,6 +161,87 @@ describe("buildProductJsonLd", () => {
       availability: "https://schema.org/OutOfStock",
     });
     expect(JSON.stringify(ld)).not.toContain("LimitedAvailability");
+  });
+
+  it("khai màu và cỡ thật cho từng biến thể và URL chọn sẵn", () => {
+    const product = makeProduct({
+      variants: [
+        {
+          id: "black-m",
+          sku: "SKU-BLACK-M",
+          name: "Đen - M",
+          options: [
+            { name: "màu sắc", value: " ĐEN " },
+            { name: "Kích thước", value: "M" },
+          ],
+          stockState: "IN_STOCK",
+          isAvailable: true,
+        },
+        {
+          id: "red-l",
+          sku: "SKU-RED-L",
+          name: "Đỏ - L",
+          options: [
+            { name: "Color", value: "Red" },
+            { name: "Size", value: "L" },
+          ],
+          stockState: "IN_STOCK",
+          isAvailable: true,
+        },
+      ],
+    });
+
+    const group = obj(buildProductJsonLd(product));
+    expect(group.variesBy).toEqual(["https://schema.org/color", "https://schema.org/size"]);
+    expect(arr(group.hasVariant).map(({ color, size }) => ({ color, size }))).toEqual([
+      { color: "ĐEN", size: "M" },
+      { color: "Red", size: "L" },
+    ]);
+
+    const selected = obj(buildProductJsonLd(product, undefined, "black-m"));
+    expect(selected).toMatchObject({
+      "@type": "Product",
+      sku: "SKU-BLACK-M",
+      color: "ĐEN",
+      size: "M",
+      inProductGroupWithID: "p1",
+    });
+  });
+
+  it("không suy đoán màu hoặc cỡ khi lựa chọn không có giá trị", () => {
+    const group = obj(
+      buildProductJsonLd(
+        makeProduct({
+          variants: [
+            {
+              id: "v1",
+              name: "Đen - M",
+              options: [
+                { name: "Màu", value: "  " },
+                { name: "Kích cỡ", value: "" },
+              ],
+              stockState: "IN_STOCK",
+              isAvailable: true,
+            },
+            {
+              id: "v2",
+              name: "Đỏ - L",
+              options: [
+                { name: "Màu", value: "Đỏ" },
+                { name: "Kích cỡ", value: "L" },
+              ],
+              stockState: "IN_STOCK",
+              isAvailable: true,
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(group.variesBy).toBeUndefined();
+    expect(arr(group.hasVariant)[0]).not.toHaveProperty("color");
+    expect(arr(group.hasVariant)[0]).not.toHaveProperty("size");
+    expect(arr(group.hasVariant)[1]).toMatchObject({ color: "Đỏ", size: "L" });
   });
 
   it("KHÔNG khai aggregateRating khi chưa có review thật (chống khai khống #23)", () => {
@@ -253,19 +336,30 @@ describe("article and category structured data", () => {
     title: "Bài viết",
     body: "Nội dung",
     coverImage: { url: "/media/article-cover.jpg" },
-    authorName: "Nguyễn Văn A",
     publishStatus: "PUBLISHED",
     createdAt: "2026-06-01T00:00:00Z",
     updatedAt: "2026-06-01T00:00:00Z",
   } as Article;
 
-  it("chỉ khai author khi bài có tên tác giả và luôn dùng URL ảnh đầy đủ", () => {
-    const withAuthor = obj(buildArticleJsonLd(article, "BigBike"));
-    expect(withAuthor.author).toEqual({ "@type": "Person", name: "Nguyễn Văn A" });
-    expect(withAuthor.image).toEqual([expect.stringMatching(/^https?:\/\//)]);
-    expect(
-      obj(buildArticleJsonLd({ ...article, authorName: "  " }, "BigBike")).author,
-    ).toBeUndefined();
+  it("không khai báo tác giả và lấy mô tả từ nội dung khi SEO chưa có mô tả riêng", () => {
+    const structuredData = obj(buildArticleJsonLd(article, "BigBike"));
+    expect(structuredData.author).toBeUndefined();
+    expect(structuredData.description).toBe("Nội dung");
+    expect(structuredData.image).toEqual([expect.stringMatching(/^https?:\/\//)]);
+  });
+
+  it("ưu tiên mô tả SEO riêng nhưng vẫn không khai báo tác giả", () => {
+    const structuredData = obj(
+      buildArticleJsonLd(
+        {
+          ...article,
+          seo: { title: "Tiêu đề SEO", description: "  Mô tả SEO riêng  " },
+        },
+        "BigBike",
+      ),
+    );
+    expect(structuredData.description).toBe("Mô tả SEO riêng");
+    expect(structuredData.author).toBeUndefined();
   });
 
   it("chỉ liệt kê sản phẩm của trang hiện tại và tiếp tục vị trí qua trang", () => {

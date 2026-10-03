@@ -38,6 +38,9 @@ export type CatalogResultsProps = {
   searchRelevance?: boolean;
   /** Which product list this grid represents, for GA4 list attribution. Omit to skip tracking. */
   analyticsList?: Ga4List;
+  emptyRecommendations?: Product[];
+  emptyRecommendationsLabel?: string;
+  emptyRecommendationsAnalyticsList?: Ga4List;
 };
 
 export function CatalogResults({
@@ -56,6 +59,9 @@ export function CatalogResults({
   error = false,
   searchRelevance = false,
   analyticsList,
+  emptyRecommendations = [],
+  emptyRecommendationsLabel,
+  emptyRecommendationsAnalyticsList,
 }: CatalogResultsProps) {
   const t = useTranslations("Catalog");
   const showFiltersInNotice = !isLoading && notice != null && activeFilterCount > 0 && !error;
@@ -64,12 +70,19 @@ export function CatalogResults({
   // ids, which is exactly when GA4 should hear about a new impression; a quantity tweak or a
   // background refetch does not change the key and stays silent.
   const productIdsKey = products.map((p) => p.id).join(",");
+  const recommendationIdsKey = emptyRecommendations.map((p) => p.id).join(",");
   useEffect(() => {
     if (!analyticsList || isLoading || productIdsKey === "") return;
     trackViewItemList(products, analyticsList);
     // `products` is a fresh array on every render; the id list is the stable identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productIdsKey, isLoading, analyticsList?.id]);
+  useEffect(() => {
+    if (!emptyRecommendationsAnalyticsList || recommendationIdsKey === "") return;
+    trackViewItemList(emptyRecommendations, emptyRecommendationsAnalyticsList);
+    // The id list is the stable identity; a new array with the same products is not a new view.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recommendationIdsKey, emptyRecommendationsAnalyticsList?.id]);
   return (
     <div className="min-w-0">
       <div className="pb-10">
@@ -102,22 +115,50 @@ export function CatalogResults({
               ))}
             </div>
           ) : notice != null ? (
-            <div className="my-8 border border-border bg-secondary p-5" role="status">
-              <p className="m-0 font-semibold">
-                {activeFilterCount > 0 && !error ? t("noMatchingProducts") : notice}
-              </p>
-              {showFiltersInNotice ? (
-                <div className="mt-4" aria-label={t("activeFilters")}>{activeFilters}</div>
-              ) : null}
-              {emptyActionHref && emptyActionLabel && !(showFiltersInNotice && activeFilters) ? (
-                <Link
-                  href={emptyActionHref}
-                  className="mt-4 inline-flex min-h-11 items-center border border-brand bg-brand px-5 py-3 font-semibold text-primary-foreground no-underline!"
+            <>
+              <div className="my-8 border border-border bg-secondary p-5" role="status">
+                <p className="m-0 font-semibold">
+                  {activeFilterCount > 0 && !error ? t("noMatchingProducts") : notice}
+                </p>
+                {showFiltersInNotice ? (
+                  <div className="mt-4" aria-label={t("activeFilters")}>
+                    {activeFilters}
+                  </div>
+                ) : null}
+                {emptyActionHref && emptyActionLabel && !(showFiltersInNotice && activeFilters) ? (
+                  <Link
+                    href={emptyActionHref}
+                    className="mt-4 inline-flex min-h-11 items-center border border-brand bg-brand px-5 py-3 font-semibold text-primary-foreground no-underline!"
+                  >
+                    {emptyActionLabel}
+                  </Link>
+                ) : null}
+              </div>
+              {emptyRecommendations.length > 0 && emptyRecommendationsLabel ? (
+                <section
+                  className="border-t border-border pt-8"
+                  aria-labelledby="search-recommendations-heading"
+                  data-search-recommendations
                 >
-                  {emptyActionLabel}
-                </Link>
+                  <h2
+                    id="search-recommendations-heading"
+                    className="m-0 font-cta text-a3-section font-bold uppercase text-foreground"
+                  >
+                    {emptyRecommendationsLabel}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-x-5 md:grid-cols-4 md:gap-x-8">
+                    {emptyRecommendations.map((product, index) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        analyticsList={emptyRecommendationsAnalyticsList}
+                        analyticsIndex={index}
+                      />
+                    ))}
+                  </div>
+                </section>
               ) : null}
-            </div>
+            </>
           ) : (
             <div className="relative">
               <div

@@ -81,6 +81,16 @@ Header giữ nguyên fragment khi đổi ngôn ngữ cả hai chiều. Với URL
 
 **i18n cho DỮ LIỆU:** mọi request public/CMS truyền `lang` từ locale URL, gồm product, category, article, brand, menu, settings, slider và video. Backend giữ contract fallback EN→VI từng trường (`TRANSLATION_RULE_002` và các rule entity `_RULE_002`); web không thay cả record và không coi `slugEn` là điều kiện có nội dung EN. Lưới CSR đưa locale vào query key/request; nội dung ISR được server lấy sẵn theo locale, không refetch chỉ để đổi ngôn ngữ.
 
+**Storefront language audit (2026-09-14):** labels and messages owned by the web must exist in
+both message catalogs, including conditional errors and accessible image labels. Review upload
+failures use localized UI copy (a separate rate-limit message for HTTP 429), never a raw backend
+message; this does not change upload validation or the API error envelope. The shared URL helper
+must mirror the registered static VI/EN routes, including `/tu-choi-thu-moi-danh-gia/` ↔
+`/en/review-invitations/unsubscribe/`, and preserve query/hash. Navigating or switching language
+does not submit the opt-out; confirmation remains a separate explicit action.
+Internal banner product links and the opt-out page's Home action also retain the current URL
+locale. External links and shared banner artwork are not translated by this navigation correction.
+
 **Cấm:** dùng `force-dynamic` cho route không đọc dữ liệu theo request; với route đã được phân loại **Dynamic per request** ở trên thì đây là cấu hình bắt buộc. Không đọc `cookies()`/`headers()` để quyết định locale ở root layout hoặc trang cacheable. Dùng `useSearchParams()` trong component render ở trang tĩnh mà KHÔNG bọc `<Suspense>`.
 
 ## Documentation Architecture Rule

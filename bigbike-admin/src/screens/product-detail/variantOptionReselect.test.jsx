@@ -9,7 +9,6 @@
 // decisions (the exact logic in VariantEditors.jsx).
 import { describe, it, expect, vi } from 'vitest'
 
-const CREATE_NEW_ATTRIBUTE_VALUE = '__create_new_attribute__'
 const COLOR_ATTRIBUTE_KEYS = new Set([
   'color',
   'colour',
@@ -53,13 +52,9 @@ function isSameAttributeSelection(attributes, currentName, nextName) {
 }
 
 // Mirror of the attribute-NAME <Select> onValueChange in VariantOptionRow.
-function makeNameChange(opt, onUpdate, setCreateAttrOpen = () => {}, attributes = []) {
+function makeNameChange(opt, onUpdate, attributes = []) {
   return (val) => {
     if (!val) return
-    if (val === CREATE_NEW_ATTRIBUTE_VALUE) {
-      setCreateAttrOpen(true)
-      return
-    }
     if (isSameAttributeSelection(attributes, opt.name, val)) return
     onUpdate({ name: val, value: '', attributeValueId: null })
   }
@@ -89,7 +84,7 @@ describe('variant attribute-name reselect (idempotency)', () => {
     const opt = { name: 'màu sắc', value: 'Đen', attributeValueId: 'wp-attr-value-1767' }
     const onUpdate = vi.fn()
     const attributes = [{ id: 'attr-color', name: 'Màu sắc', code: 'color' }]
-    makeNameChange(opt, onUpdate, undefined, attributes)('Màu sắc')
+    makeNameChange(opt, onUpdate, attributes)('Màu sắc')
     expect(onUpdate).not.toHaveBeenCalled()
   })
 
@@ -97,7 +92,7 @@ describe('variant attribute-name reselect (idempotency)', () => {
     const opt = { name: 'pa_color', value: 'Đen', attributeValueId: 'wp-attr-value-1767' }
     const onUpdate = vi.fn()
     const attributes = [{ id: 'attr-color', name: 'Màu sắc', code: 'pa_color' }]
-    makeNameChange(opt, onUpdate, undefined, attributes)('Màu sắc')
+    makeNameChange(opt, onUpdate, attributes)('Màu sắc')
     expect(onUpdate).not.toHaveBeenCalled()
   })
 
@@ -113,15 +108,6 @@ describe('variant attribute-name reselect (idempotency)', () => {
     const onUpdate = vi.fn()
     makeNameChange(opt, onUpdate)('Size')
     expect(onUpdate).toHaveBeenCalledWith({ name: 'Size', value: '', attributeValueId: null })
-  })
-
-  it('opens the create-attribute modal for the sentinel and does not clear', () => {
-    const opt = { name: 'màu sắc', value: 'Đen', attributeValueId: 'wp-attr-value-1767' }
-    const onUpdate = vi.fn()
-    const setCreateAttrOpen = vi.fn()
-    makeNameChange(opt, onUpdate, setCreateAttrOpen)(CREATE_NEW_ATTRIBUTE_VALUE)
-    expect(setCreateAttrOpen).toHaveBeenCalledWith(true)
-    expect(onUpdate).not.toHaveBeenCalled()
   })
 })
 

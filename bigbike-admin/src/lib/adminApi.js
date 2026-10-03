@@ -986,30 +986,10 @@ export async function fetchAttributeValues(attributeId) {
   return Array.isArray(payload) ? payload : (payload?.data ?? [])
 }
 
-export async function updateAttribute(attributeId, { name, nameEn }) {
-  const payload = await requestJson(`/admin/attributes/${attributeId}`, {
-    method: 'PATCH',
-    body: { name, nameEn },
-  })
-  return payload?.data ?? payload
-}
-
-export async function createAttribute({ name, nameEn } = {}) {
-  const payload = await requestJson('/admin/attributes', {
-    method: 'POST',
-    body: { name, nameEn },
-  })
-  return payload?.data ?? payload
-}
-
-export async function deleteAttribute(attributeId) {
-  await requestJson(`/admin/attributes/${attributeId}`, { method: 'DELETE' })
-}
-
 export async function createAttributeValue(attributeId, { label, labelEn, slug } = {}) {
   const payload = await requestJson(`/admin/attributes/${attributeId}/values`, {
     method: 'POST',
-    body: { label, labelEn, ...(slug ? { slug } : {}) },
+    body: { label, ...(labelEn !== undefined ? { labelEn } : {}), ...(slug ? { slug } : {}) },
   })
   return payload?.data ?? payload
 }
@@ -1017,7 +997,7 @@ export async function createAttributeValue(attributeId, { label, labelEn, slug }
 export async function updateAttributeValueLabel(valueId, { label, labelEn }) {
   const payload = await requestJson(`/admin/attribute-values/${valueId}`, {
     method: 'PATCH',
-    body: { label, labelEn },
+    body: { label, ...(labelEn !== undefined ? { labelEn } : {}) },
   })
   return payload?.data ?? payload
 }
@@ -1199,13 +1179,6 @@ export async function updateOrderStatus(orderId, orderStatus, reason) {
   const payload = await requestJson(`/admin/orders/${orderId}/status`, {
     method: 'PATCH',
     body,
-  })
-  return parseDetailPayload(payload, normalizeOrder)
-}
-
-export async function confirmBankTransfer(orderId) {
-  const payload = await requestJson(`/admin/orders/${orderId}/confirm-bank-transfer`, {
-    method: 'POST',
   })
   return parseDetailPayload(payload, normalizeOrder)
 }
@@ -2020,184 +1993,6 @@ export async function bulkDeleteReviews(items) {
   return normalizeReviewBulkResult(payload)
 }
 
-// AI assistant conversations (read-only; CHAT_RULE_012).
-
-function safeChatString(value) {
-  return typeof value === 'string' ? value : ''
-}
-
-function safeChatCount(value) {
-  const number = Number(value)
-  return Number.isInteger(number) && number >= 0 ? number : 0
-}
-
-function normalizeChatConversation(input) {
-  const s = input && typeof input === 'object' ? input : {}
-  return {
-    id: safeChatString(s.id),
-    locale: s.locale === 'en' ? 'en' : 'vi',
-    customerDisplayName: safeChatString(s.customerDisplayName),
-    turnCount: safeChatCount(s.turnCount),
-    aiCallCount: safeChatCount(s.aiCallCount),
-    lastResultKind: safeChatString(s.lastResultKind),
-    startedAt: safeChatString(s.startedAt),
-    lastMessageAt: safeChatString(s.lastMessageAt),
-    endedReason: safeChatString(s.endedReason),
-  }
-}
-
-function normalizeChatMessage(input) {
-  const s = input && typeof input === 'object' ? input : {}
-  let products = []
-  if (Array.isArray(s.products)) products = s.products
-  else if (typeof s.productsJson === 'string' && s.productsJson.trim()) {
-    try {
-      const parsed = JSON.parse(s.productsJson)
-      products = Array.isArray(parsed) ? parsed : []
-    } catch {
-      products = []
-    }
-  }
-  return {
-    id: safeChatString(s.id),
-    sequenceNo: safeChatCount(s.sequenceNo),
-    role: ['USER', 'CUSTOMER', 'ASSISTANT', 'SYSTEM'].includes(s.role)
-      ? s.role === 'CUSTOMER'
-        ? 'USER'
-        : s.role
-      : 'ASSISTANT',
-    content: safeChatString(s.content),
-    source: safeChatString(s.source),
-    aiCalled: Boolean(s.aiCalled),
-    products: products.filter((item) => item && typeof item === 'object').slice(0, 8),
-    answerFormat: s.answerFormat === 'MARKDOWN' ? 'MARKDOWN' : 'PLAIN_TEXT',
-    resultKind: safeChatString(s.resultKind),
-    createdAt: safeChatString(s.createdAt),
-    videos: Array.isArray(s.videos)
-      ? s.videos
-          .map((video) => ({
-            id: safeChatString(video?.id),
-            contentPath: safeChatString(video?.contentPath),
-            status: safeChatString(video?.status),
-            expiresAt: safeChatString(video?.expiresAt),
-            durationSeconds: Number(video?.durationSeconds) || 0,
-          }))
-          .filter((video) => video.id)
-      : [],
-    images: Array.isArray(s.images)
-      ? s.images
-          .map((image) => ({
-            id: safeChatString(image?.id),
-            contentPath: safeChatString(image?.contentPath),
-            mimeType: safeChatString(image?.mimeType),
-            width: safeChatCount(image?.width),
-            height: safeChatCount(image?.height),
-            sizeBytes: safeChatCount(image?.sizeBytes),
-            status: safeChatString(image?.status),
-            createdAt: safeChatString(image?.createdAt),
-          }))
-          .filter((image) => image.id)
-          .slice(0, 3)
-      : [],
-  }
-}
-
-function normalizeChatDetail(input) {
-  const s = input && typeof input === 'object' ? input : {}
-  return {
-    ...normalizeChatConversation(s),
-    customerId: safeChatString(s.customerId),
-    messages: Array.isArray(s.messages) ? s.messages.map(normalizeChatMessage) : [],
-  }
-}
-
-export async function fetchChatConversations(query) {
-  try {
-    const payload = await requestJson('/admin/chat/conversations', {
-      query: {
-        page: query?.page,
-        size: query?.pageSize,
-        from: query?.from,
-        to: query?.to,
-      },
-    })
-    return withLiveData(parseListPayload(payload, normalizeChatConversation, 20))
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
-export async function fetchChatConversation(conversationId) {
-  try {
-    const payload = await requestJson(
-      `/admin/chat/conversations/${encodeURIComponent(conversationId)}`,
-    )
-    return withLiveData(parseDetailPayload(payload, normalizeChatDetail))
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
-export async function fetchAdminChatImageBlob(imageId) {
-  try {
-    const result = await requestBlob(
-      `/admin/chat/images/${encodeURIComponent(imageId)}/content`,
-      'chat-image',
-    )
-    return result.blob
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
-export async function fetchAdminChatVideoBlob(videoId) {
-  try {
-    const result = await requestBlob(
-      `/admin/chat/videos/${encodeURIComponent(videoId)}/content`,
-      'chat-video',
-    )
-    return result.blob
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
-export async function fetchChatStats(input) {
-  try {
-    const params = typeof input === 'string' ? { date: input } : input || {}
-    const payload = await requestJson('/admin/chat/stats', {
-      query: { date: params.date, from: params.from, to: params.to },
-    })
-    const data = payload?.data && typeof payload.data === 'object' ? payload.data : {}
-    return withLiveData({
-      date: safeChatString(data.date),
-      periodFrom: safeChatString(data.periodFrom),
-      periodTo: safeChatString(data.periodTo),
-      used: safeChatCount(data.used),
-      limit: safeChatCount(data.limit),
-      remaining: safeChatCount(data.remaining),
-      conversations: safeChatCount(data.conversations),
-      images:
-        data.images && typeof data.images === 'object'
-          ? {
-              used: safeChatCount(data.images.used),
-              limit: safeChatCount(data.images.limit),
-              remaining: safeChatCount(data.images.remaining),
-            }
-          : null,
-      quality: {
-        answers: safeChatCount(data.quality?.answers),
-        productResults: safeChatCount(data.quality?.productResults),
-        clarifications: safeChatCount(data.quality?.clarifications),
-        outOfScope: safeChatCount(data.quality?.outOfScope),
-        contentRefusals: safeChatCount(data.quality?.contentRefusals),
-      },
-    })
-  } catch (error) {
-    throw normalizeError(error)
-  }
-}
-
 // Audit Logs
 
 function normalizeAuditLog(input) {
@@ -2572,9 +2367,6 @@ function normalizeAdminNotification(input) {
     thresholdDays: Number(parsed.thresholdDays) || 0,
     cutoffAt: parsed.cutoffAt || undefined,
     digest: s.type === 'INVENTORY_OUT_OF_STOCK_DIGEST' ? parsed : undefined,
-    conversationId:
-      s.type === 'CHAT_BANK_TRANSFER_RECEIPT' ? safeChatString(parsed.conversationId) : '',
-    messageId: s.type === 'CHAT_BANK_TRANSFER_RECEIPT' ? safeChatString(parsed.messageId) : '',
     at: s.createdAt ? new Date(s.createdAt).getTime() : Date.now(),
     read: s.isRead === true,
     fromServer: true,

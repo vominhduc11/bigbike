@@ -322,6 +322,7 @@ export function ProductView({
       <div
         key="description"
         id="pdp-description"
+        data-analytics-section="description"
         className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
       >
         <ProductDescriptionBlocks
@@ -416,6 +417,7 @@ export function ProductView({
       <div
         key="specifications"
         id="pdp-specifications"
+        data-analytics-section="specifications"
         className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
       >
         <section>
@@ -446,6 +448,7 @@ export function ProductView({
       <div
         key="videos"
         id="pdp-videos"
+        data-analytics-section="video"
         className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
       >
         <section>
@@ -466,6 +469,7 @@ export function ProductView({
       <div
         key="trust"
         id="pdp-trust"
+        data-analytics-section="commitments"
         className={`scroll-mt-[var(--bb-header-height)] ${PDP_SECTION_SEP}`}
       >
         <section>{trustCard}</section>
@@ -515,7 +519,14 @@ export function ProductView({
   );
 
   const inner = (
-    <div id="main-content" className="bb-product-page bb-heroless">
+    <div
+      id="main-content"
+      className="bb-product-page bb-heroless"
+      data-analytics-product-id={product.id}
+      data-analytics-product-name={product.name}
+      data-analytics-product-brand={product.brand?.name || undefined}
+      data-analytics-product-category={product.category?.name || undefined}
+    >
       {/* Vạch tiến độ đọc — chỉ mobile (khớp mockup). Fixed top nên vị trí trong DOM
           không ảnh hưởng; đặt đầu khối cho dễ thấy. */}
       <ReadingProgressBar />

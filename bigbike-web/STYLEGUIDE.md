@@ -145,7 +145,7 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - Trang tổng hợp hướng dẫn chỉ dùng các thẻ chọn bài. Menu bên được giữ ở các bài hướng dẫn chi tiết.
 - Trang liên hệ và trang xác nhận đơn giữ một nút mở Zalo trong mỗi khối liên hệ; số Zalo bổ sung chỉ là thông tin đọc được.
 - Khối sản phẩm ngừng bán chỉ có một đường dẫn nhóm hàng: khi có gợi ý, dùng liên kết nhóm trong thông tin sản phẩm; khi không có gợi ý, nút chính “Xem cả nhóm hàng” dẫn tới nhóm đó và nhãn nhóm chỉ là chữ.
-- Được lặp có mục đích: ảnh/tên/nút chọn của cùng thẻ sản phẩm; menu dùng chung và nội dung trang; nút viết đánh giá ở đầu và cuối trang sản phẩm dài; nút mua nổi chỉ xuất hiện khi cụm mua chính ra khỏi màn hình. Hai lựa chọn chuyển khoản “Tiếp tục” / “Chuyển khoản sau” giữ theo `docs/engineering/API_FLOW_MAP.md` mục Manual transfer receipt.
+- Được lặp có mục đích: ảnh/tên/nút chọn của cùng thẻ sản phẩm; menu dùng chung và nội dung trang; nút viết đánh giá ở đầu và cuối trang sản phẩm dài; nút mua nổi chỉ xuất hiện khi cụm mua chính ra khỏi màn hình. Thanh toán mới chỉ dùng COD; tên các phương thức cũ chỉ xuất hiện khi đọc đơn lịch sử.
 
 ### Giỏ hàng nhanh trên điện thoại (2026-09-07)
 
@@ -173,6 +173,12 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - No approved reviews: use five neutral outline stars and `(0)`; never show a status label, `0/5`, or a default score.
 - Approved reviews: keep the one-decimal partial star fill when needed and show `(n)`; do not show the average as visible text.
 - Inconsistent count/score data: keep neutral stars and the safe count as `(n)`; do not invent a score. Preserve the full state-specific aria-label.
+
+### Ô chọn biến thể trên trang sản phẩm (owner chốt 2026-09-19)
+
+- Mỗi nhóm lựa chọn (size, màu, giới tính, nhóm tự đặt tên như "Cỡ ốc") luôn nằm **một hàng**; nhiều ô hơn bề ngang thì khách vuốt ngang để xem tiếp, không tự xuống dòng.
+- Ô chữ cao 52px, rộng tối thiểu 52px nên cỡ ngắn (S, XL, 42…) vẫn là ô vuông. Chữ dài hơn (vd "M8-3 thuận", "vải codura") thì ô nở ngang vừa chữ, lề hai bên 8px (ô giới tính 12px); chữ luôn một dòng, không tràn sang ô bên cạnh.
+- Ô màu là ảnh vuông 52px; tên màu chỉ dành cho trình đọc màn hình.
 
 ### Catalog filters
 
@@ -203,13 +209,14 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - Ảnh minh hoạ PageHero dùng khung desktop tối đa `451×400px`, không làm thay đổi chiều cao tổng banner.
 - Mọi `MediaImage` trong khung cố định phải khai báo `sizes` bằng kích thước CSS thực tế. Candidate tải về phải đạt tối thiểu `kích thước khung × DPR` nhưng không chọn candidate lớn hơn cần thiết.
 
-### Trợ lý BigBike — khung đọc mở rộng
+### Liên hệ trực tiếp — khôi phục 2026-10-02
 
-- Quyết định chủ shop 2026-09-07: trên máy tính (từ 768px), khung thường rộng 544px; nút “Mở rộng khung chat” mở khung rộng tối đa 928px, cao 90% màn hình. Cả hai kích thước phải nằm trong màn hình, chừa khoảng cách theo token ở các cạnh. Nút đổi thành “Thu gọn khung chat” khi mở rộng.
-- Đầu khung máy tính có bốn nút cùng kích thước: liên hệ, xoá, mở rộng/thu gọn, đóng. Điện thoại giữ toàn màn hình và ba nút liên hệ, xoá, đóng; không hiện nút đổi kích thước.
-- Khung thường và điện thoại hiển thị sản phẩm một cột. Khung mở rộng hiển thị hai cột, kể cả phụ kiện liên quan; tiêu đề nhóm và nút xem thêm chiếm trọn hàng. Giữ ba sản phẩm đầu và nút xem thêm cho danh sách dài.
-- Mở rộng/thu gọn không tạo hội thoại mới, không gửi lại câu hỏi, không làm mất câu đang nhập, ảnh chờ gửi hay lựa chọn sản phẩm. Giữ cơ chế bám đáy khi đang đọc tin mới; không kéo khách đang đọc tin cũ về cuối.
-- Tiếp tục dùng Arial, màu hỗ trợ cyan, các token khoảng cách/viền của web và nút thao tác tối thiểu 44px. Chỉ thay bố cục hiển thị, không cắt câu trả lời hay đổi quy tắc tư vấn.
+Theo `CHAT_RULE_070` và phản hồi chủ shop yêu cầu giống giao diện cũ, lấy `FloatingChat.tsx` tại Git `d7b8a1ec` (2026-08-02, trước khi thêm trợ lý) làm mốc. Giữ Arial, Dialog/Button shadcn và thông tin từ cài đặt contact; khôi phục toàn bộ hình thức của widget đó:
+
+- FAB cyan `--bb-chat-title-bg`, 48px mobile/66px từ 768px; bong bóng trắng đặc, hai vòng lan sóng 2.4s lệch nhau 1.2s, nhãn gợi ý “Bạn cần hỗ trợ?” / “Need help?” trên desktop. Khi mở, FAB ở cùng vị trí chuyển sang xám `--bb-contact-close-bg`, dấu X đen và hiệu ứng xoay cũ.
+- Bảng trắng `min(86vw, 320px)`, tối thiểu 300px, cách FAB 8px, padding dọc 8px, bo 8px và bóng/mũi tên đúng mốc Git. Ba dòng 56px, icon 40px, cách chữ 5px; nhãn và giá trị đậm nằm cùng dòng. Nhãn hiển thị `Hotline`, `Zalo`, `Messager` được giữ đúng bản cũ. Dùng PNG Hotline/Messenger có sẵn và SVG Zalo khôi phục từ Git. Không có thanh tiêu đề cyan, viền dòng, thẻ con hoặc đoạn mô tả hiện trên bảng.
+- Các kích thước 66/5/3px, bo 8px của bảng, bo 3px của nhãn gợi ý và màu/bóng riêng là ngoại lệ có nguồn Git cho widget này theo chỉ thị chủ shop; không áp dụng sang component khác. Token đặt trong `brand-tokens.css`, bố cục viết Tailwind trực tiếp; chỉ keyframes cần nằm trong `globals.css`.
+- Mobile có lớp nền tối 55% và blur 2px, desktop trong suốt. Bảng vừa màn 375/768/1440px; bấm ra ngoài, Escape hoặc FAB xám đóng và trả focus. Giữ dock tránh thanh thao tác và phần ẩn ở đặt hàng/sửa tài khoản/địa chỉ. Không có avatar trợ lý, ô nhập, lời chào AI, upload hay mở rộng khung chat.
 
 ### Video viewer — mobile và desktop (owner request 2026-09-07)
 
@@ -220,6 +227,13 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - Khi landscape và chiều cao ≤600px: player bên trái, tiêu đề / mô tả / điều hướng bên phải. Khung nhúng tối thiểu 200×200px; màn quá nhỏ cho toàn bộ nội dung được cuộn thay vì cắt nút. Chiều rộng khung có thể lớn hơn tỷ lệ 9:16 để giữ điều khiển đọc được; nội dung video vẫn giữ tỷ lệ gốc.
 - Có trạng thái tải, tải chậm, lỗi nguồn / thiếu nguồn, thử lại; nguồn hợp lệ có đường mở video gốc. YouTube dùng sự kiện player để phân biệt đã sẵn sàng với iframe chỉ vừa tải; không che điều khiển/branding khi player sẵn sàng. TikTok/Facebook cũ giữ khả năng nhúng; lỗi bên trong iframe do nền tảng hiển thị, có lối mở nguồn gốc.
 - Giữ focus trong Dialog, đóng bằng Escape/nút đóng, trả focus về video vừa mở và trả lại trạng thái cuộn của trang. Phím trái/phải chuyển video khi focus ở phần điều khiển BigBike, không cướp phím của player. Không tự chuyển carousel phía sau khi viewer đang mở.
+
+### Bảng trong nội dung rich text (owner request 2026-09-17)
+
+- Bảng trong bài viết, mô tả sản phẩm, trang danh mục/thương hiệu/chính sách dùng chung `.bb-richtext table`.
+- **Chỉ hàng tiêu đề** đặt trong `<thead>` với ô `<th>`: in đậm, nền `--bb-bg-surface-raised`, căn giữa. Mọi hàng dữ liệu đặt trong `<tbody>` với ô `<td>`: chữ thường, căn trái.
+- Không đặt nhiều hơn một `<tr>` trong `<thead>`; nhiều hàng tiêu đề làm cả bảng in đậm và nền xám.
+- Bảng cỡ size tự khai báo `style` inline được giữ nguyên định dạng riêng, không chịu quy tắc căn giữa này.
 
 ### Inputs
 
@@ -255,8 +269,10 @@ Cấm dùng cỡ Tailwind mặc định (`text-sm`, `text-lg`, `text-xl`, `text-
 - Bottom bar nền `#000000`.
 - Heading trắng, link `#CECECE`, hover đỏ.
 - Divider `#333333`.
-- Nội dung pháp lý trên nền xám dùng token `--bb-text-footer-legal`.
-- Các nhóm “Thông tin” và “Mạng xã hội” khi xếp dọc (`<992px`) dùng đệm dưới 16px và khoảng cách giữa nhóm 16px. Tiêu đề giữ vùng bấm tối thiểu 44px; chỉ chừa khoảng cách 16px trước nội dung khi nhóm đang mở, bỏ khoảng cách này khi thu gọn.
+- Thông tin hộ kinh doanh trên nền tối dùng token chữ trắng `--bb-text-inverse` để đọc rõ.
+- Khối hộ kinh doanh theo `POLICY_PAGE_RULE_004` có năm dòng: tên pháp lý (chữ đậm, token đỏ trên nền tối), địa chỉ đầy đủ, GPKD/ngày cấp/nơi cấp, hotline/email, người đại diện/chức vụ. Các dòng thông tin chữ trắng. Khối này có đủ cả địa chỉ và hotline/email, không phụ thuộc nhóm liên hệ phía trên. Không hiển thị logo/nhãn hoặc liên kết Bộ Công Thương cho đến khi chủ shop cho phép, theo `POLICY_PAGE_RULE_010` (2026-10-02).
+- Mục “Thông tin” có đúng bảy liên kết theo thứ tự của `POLICY_PAGE_RULE_002`. Bảo hành và hai hướng dẫn size có nhóm riêng mang tiêu đề “Bảo hành và hướng dẫn” / “Warranty and guides”, với vùng mở/thu độc lập. Trên desktop nhóm này nằm dưới Thông tin cùng cột, cách 16px và có đường phân cách; không chỉ đặt cả mười liên kết dưới một tiêu đề.
+- Các nhóm “Thông tin”, “Bảo hành và hướng dẫn” và “Mạng xã hội” khi xếp dọc (`<992px`) dùng đệm dưới 16px và khoảng cách giữa nhóm 16px. Tiêu đề giữ vùng bấm tối thiểu 44px; chỉ chừa khoảng cách 16px trước nội dung khi nhóm đang mở, bỏ khoảng cách này khi thu gọn.
 
 ### Hero / Impact Sections
 

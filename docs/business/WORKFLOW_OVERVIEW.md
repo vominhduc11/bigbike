@@ -12,11 +12,11 @@
 | 6 | System | Push admin order event (no quantity decrement — boolean availability, V261) and, when configured, dispatch one optional Telegram new-order alert after commit | `OWNER_CONFIRMED_2026-09-05` | `CheckoutService.java`, `AdminOrderWsService.java`, Telegram notification service |
 | 7 | Customer/Guest | Track the order from the signed-in order detail or confirmation link: refresh the existing order read every 15 seconds while visible, refresh on tab focus, and stop at `COMPLETED` or `CANCELLED`; no customer WebSocket is used | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `OrderLookupController.java`, `bigbike-web` order query hooks and confirmation client |
 
-## Manual bank-transfer flow (owner decision 2026-09-07)
+## COD-only payment flow (owner decision 2026-09-09)
 
-After checkout has created the order, COD goes directly to confirmation; BANK_TRANSFER first shows bank details, persisted total and BIGBIKE {orderNumber}. Both Continue and Pay later lead to confirmation without changing payment status. Persist checkout attempt/result in the browser session so retries/reloads do not create another order, including the price-change acknowledgement branch. Confirmation and account detail show the current transfer status; COD instructions stay separate.
+Checkout revalidates the cart, creates the order and payment snapshot with `COD`, then opens the normal confirmation page. The confirmation page and customer email contain no bank-account instructions or transfer action. Existing browser sessions and old confirmation URLs render the normal confirmation page without creating a payment step.
 
-Staff with orders.write check the bank account externally, then confirm full receipt for an operational PENDING/PROCESSING BANK_TRANSFER order. This writes payment/audit only. They separately confirm successful delivery from PROCESSING to COMPLETED; backend rejects completion before full receipt. Cancelled/completed/historical orders cannot receive a new confirmation. No reversal, partial payment or automatic refund is added.
+Admin continues to manage the ordinary order lifecycle and may read historical payment records. No new receipt-confirmation command, transfer notification or bank-account setting exists. Existing historical method names and payment details remain available for accounting.
 
 ## Post-purchase Review Invitation Workflow
 
@@ -41,6 +41,9 @@ Staff with orders.write check the bank account externally, then confirm full rec
 | 6 | Owner | Khi cần hoàn tác, tắt đợt phân loại bằng batch key; membership/audit giữ nguyên, toàn bộ đơn hàng tiếp tục không bị sửa | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, `ORDER_RULE_014` |
 
 ## Trợ lý BigBike — tư vấn và tự liên hệ shop (owner decision 2026-08-30)
+
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
 
 | Step | Actor | Current flow | Status | Evidence |
 |---|---|---|---|---|
@@ -181,8 +184,14 @@ Khách hàng không bị ảnh hưởng: duyệt web, thêm giỏ và đặt hà
 
 ### Trợ lý nhận video ngắn — 08/09/2026
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 Khách chọn một video thay cho ảnh, có thể gõ câu hỏi, chỉ nói trong video hoặc không nói gì. Trợ lý xem/nghe trọn đoạn, tìm mẫu tương tự hoặc làm rõ thao tác khách đang hỏi; dữ kiện mua hàng/chính sách vẫn lấy từ shop. Mỗi video tối đa 15 giây/40 MB, hai video/hội thoại và mười/toàn shop/ngày. Trả lời trong 60 giây từ khi nhận xong; quá giờ mời gửi ảnh. Nhân viên có quyền xem Hội thoại đọc được video riêng tư trong bảy ngày, sau đó thấy dấu hết hạn. Khách xóa lịch sử cũng xóa tệp (`CHAT_RULE_062`–`065`).
 
 ### Khách gửi ảnh cho Trợ lý — 2026-09-08
 
-Chọn 1–3 ảnh → tải riêng tư vào cùng hội thoại → xác minh quyền và giữ quota cho phần còn đủ → đọc ảnh theo lô, thử lại khi lỗi kỹ thuật → tra hãng/nhóm/mẫu theo bằng chứng riêng → trả một tin tự nhiên Việt–Anh và giữ ngữ cảnh cho lượt sau. Biên lai chuyển khoản → thông báo chuông quản trị có chat.read → nhân viên mở Hội thoại, đối chiếu và xác nhận ở Đơn hàng bằng orders.write. Các giới hạn theo CHAT_RULE_057, hành vi theo CHAT_RULE_066–069.
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
+Chọn 1–3 ảnh → tải riêng tư vào cùng hội thoại → xác minh quyền và giữ quota cho phần còn đủ → đọc ảnh theo lô, thử lại khi lỗi kỹ thuật → tra hãng/nhóm/mẫu theo bằng chứng riêng → trả một tin tự nhiên Việt–Anh và giữ ngữ cảnh cho lượt sau. Ảnh không phải ảnh sản phẩm không tạo thông báo hoặc thao tác thanh toán. Các giới hạn theo CHAT_RULE_057, hành vi theo CHAT_RULE_066–069.

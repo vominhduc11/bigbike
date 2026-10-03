@@ -2,7 +2,15 @@
 
 import { useState, useEffect, type ReactNode } from "react";
 import { useLocale } from "next-intl";
-import { Store, Clock, Phone, MapPin, MessageSquare, ChevronRight, ExternalLink } from "lucide-react";
+import {
+  Store,
+  Clock,
+  Phone,
+  MapPin,
+  MessageSquare,
+  ChevronRight,
+  ExternalLink,
+} from "lucide-react";
 import { Container } from "@/components/layout/Container";
 import { telHref } from "@/lib/utils/format";
 import { SOCIAL_LINK_LABELS } from "@/lib/content/social-links";
@@ -87,8 +95,7 @@ function getZaloDisplayPhone(zaloUrl: string): string {
   if (match && match[1]) {
     let phone = match[1];
     if (phone.startsWith("84")) phone = "0" + phone.slice(2);
-    if (phone.length === 10)
-      return `${phone.slice(0, 4)} ${phone.slice(4, 7)} ${phone.slice(7)}`;
+    if (phone.length === 10) return `${phone.slice(0, 4)} ${phone.slice(4, 7)} ${phone.slice(7)}`;
     return phone;
   }
   return "";
@@ -171,18 +178,22 @@ function SocialLink({
   icon,
   name,
   sub,
+  analyticsChannel,
 }: {
   href: string;
   bg: string;
   icon: ReactNode;
   name: string;
   sub?: string;
+  analyticsChannel?: "zalo" | "messenger";
 }) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      data-analytics-contact-channel={analyticsChannel}
+      data-analytics-location="contact_page"
       style={{
         display: "flex",
         alignItems: "center",
@@ -211,16 +222,26 @@ function SocialLink({
         {icon}
       </span>
       <span style={{ minWidth: 0, flex: 1 }}>
-        <span className="text-a4-content" style={{ display: "block", fontWeight: 700, color: COLORS.text }}>
+        <span
+          className="text-a4-content"
+          style={{ display: "block", fontWeight: 700, color: COLORS.text }}
+        >
           {name}
         </span>
         {sub && (
-          <span className="text-a5-meta" style={{ display: "block", color: COLORS.faint, marginTop: 2 }}>
+          <span
+            className="text-a5-meta"
+            style={{ display: "block", color: COLORS.faint, marginTop: 2 }}
+          >
             {sub}
           </span>
         )}
       </span>
-      <ChevronRight size={14} color={COLORS.borderDefault} style={{ flexShrink: 0, marginLeft: "auto" }} />
+      <ChevronRight
+        size={14}
+        color={COLORS.borderDefault}
+        style={{ flexShrink: 0, marginLeft: "auto" }}
+      />
     </a>
   );
 }
@@ -258,10 +279,7 @@ export function ContactMap({ contact }: { contact: ContactInfo }) {
   if (!mapUrl) return null;
 
   return (
-    <div
-      data-bb-full-bleed
-      className="relative mb-7.5 h-105 w-full overflow-hidden bg-secondary"
-    >
+    <div data-bb-full-bleed className="relative mb-7.5 h-105 w-full overflow-hidden bg-secondary">
       <iframe
         src={mapUrl}
         title={vi ? "Bản đồ vị trí Shop Bảo Hộ Bigbike.vn" : "BigBike store location map"}
@@ -273,9 +291,7 @@ export function ContactMap({ contact }: { contact: ContactInfo }) {
       <div className="pointer-events-none absolute inset-0">
         <Container className="relative h-full">
           {mainAddr && (
-            <div
-              className="pointer-events-auto absolute right-4 top-18 z-[var(--bb-z-overlay)] flex max-w-[min(270px,calc(100%_-_32px))] items-center gap-2.5 border border-border bg-background px-3 py-2 shadow-md md:right-0"
-            >
+            <div className="pointer-events-auto absolute right-4 top-18 z-[var(--bb-z-overlay)] flex max-w-[min(270px,calc(100%_-_32px))] items-center gap-2.5 border border-border bg-background px-3 py-2 shadow-md md:right-0">
               <span className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-brand">
                 <MapPin size={16} color={COLORS.inverse} />
               </span>
@@ -378,19 +394,25 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                   {contact.hoursWeekday && (
                     <>
                       <span style={{ color: COLORS.muted }}>{vi ? "T2 – T7" : "Mon – Sat"}</span>
-                      <span style={{ color: COLORS.text, fontWeight: 700 }}>{contact.hoursWeekday}</span>
+                      <span style={{ color: COLORS.text, fontWeight: 700 }}>
+                        {contact.hoursWeekday}
+                      </span>
                     </>
                   )}
                   {contact.hoursWeekend && (
                     <>
                       <span style={{ color: COLORS.muted }}>{vi ? "Chủ nhật" : "Sunday"}</span>
-                      <span style={{ color: COLORS.text, fontWeight: 700 }}>{contact.hoursWeekend}</span>
+                      <span style={{ color: COLORS.text, fontWeight: 700 }}>
+                        {contact.hoursWeekend}
+                      </span>
                     </>
                   )}
                   {contact.hoursHoliday && (
                     <>
                       <span style={{ color: COLORS.muted }}>{vi ? "Lễ / Tết" : "Holidays"}</span>
-                      <span style={{ color: COLORS.text, fontWeight: 700 }}>{contact.hoursHoliday}</span>
+                      <span style={{ color: COLORS.text, fontWeight: 700 }}>
+                        {contact.hoursHoliday}
+                      </span>
                     </>
                   )}
                 </div>
@@ -423,8 +445,8 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                         ? "Đang mở cửa"
                         : "Open now"
                       : vi
-                      ? "Đang đóng cửa"
-                      : "Closed now"}
+                        ? "Đang đóng cửa"
+                        : "Closed now"}
                   </div>
                 )}
               </InfoRow>
@@ -454,7 +476,11 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
             {contact.hotline && (
               <InfoRow icon={<Phone size={16} color={COLORS.red} />} label="Hotline">
                 <div className="text-a4-content" style={{ color: COLORS.text, fontWeight: 700 }}>
-                  <a href={telHref(contact.hotline)} style={{ color: COLORS.text, textDecoration: "none" }}>
+                  <a
+                    href={telHref(contact.hotline)}
+                    style={{ color: COLORS.text, textDecoration: "none" }}
+                    data-analytics-location="contact_page"
+                  >
                     {contact.hotline}
                   </a>
                   {contact.hotline2 && (
@@ -463,6 +489,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                       <a
                         href={telHref(contact.hotline2)}
                         style={{ color: COLORS.text, textDecoration: "none" }}
+                        data-analytics-location="contact_page"
                       >
                         {contact.hotline2}
                       </a>
@@ -474,6 +501,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                       <a
                         href={telHref(contact.hotline3)}
                         style={{ color: COLORS.text, textDecoration: "none" }}
+                        data-analytics-location="contact_page"
                       >
                         {contact.hotline3}
                       </a>
@@ -483,9 +511,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 {zaloPhone && contact.zaloUrl && (
                   <div className="text-a5-meta" style={{ marginTop: 4, color: COLORS.muted }}>
                     {vi ? "Zalo: " : "Zalo: "}
-                    <span className="font-semibold text-foreground">
-                      {zaloPhone} · Mrs. Thư
-                    </span>
+                    <span className="font-semibold text-foreground">{zaloPhone} · Mrs. Thư</span>
                   </div>
                 )}
               </InfoRow>
@@ -507,6 +533,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
                 icon={<span>Z</span>}
                 name="Zalo · Mrs. Thư"
                 sub={vi ? "Tư vấn nhanh nhất" : "Fastest response"}
+                analyticsChannel="zalo"
               />
             )}
             {contact.facebookUrl && (
@@ -560,7 +587,10 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
         }}
       >
         {stats.map((stat) => (
-          <div key={stat.label} style={{ background: COLORS.surface, padding: "16px 8px", textAlign: "center" }}>
+          <div
+            key={stat.label}
+            style={{ background: COLORS.surface, padding: "16px 8px", textAlign: "center" }}
+          >
             <div
               className="font-body text-a2-page leading-title"
               style={{

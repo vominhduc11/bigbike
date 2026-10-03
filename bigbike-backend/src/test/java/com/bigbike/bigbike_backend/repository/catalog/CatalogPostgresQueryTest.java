@@ -89,12 +89,6 @@ class CatalogPostgresQueryTest {
 
         SortSpec byName = new SortSpec("name", SortDirection.ASC);
 
-        assertThat(catalogReadRepository.searchPublishedProductsForAssistant(
-                List.of("of600"), category.getSlug(), null, null, null,
-                byName, "vi", 10))
-                .extracting(item -> item.slug())
-                .contains(product.getSlug());
-
         assertThat(catalogReadRepository.findPublishedProductsPaged(
                 category.getSlug(), null, null, List.of(), null, null, null,
                 null, byName, 1, 10, "vi").items())
@@ -172,13 +166,6 @@ class CatalogPostgresQueryTest {
                 .contains(nameMatch.getId(), skuMatch.getId())
                 .doesNotContain(descriptionOnly.getId());
 
-        assertThat(catalogReadRepository.searchPublishedProductsForAssistant(
-                List.of("lót"), null, null, null, null,
-                new SortSpec("name", SortDirection.ASC), "vi", 100))
-                .extracting(Product::id)
-                .contains(nameMatch.getId(), skuMatch.getId())
-                .doesNotContain(descriptionOnly.getId());
-
         // English identifiers are searched lexically as documented. "Underwear" must find the
         // English field even in the Vietnamese view; it is not a semantic translation of "lót".
         assertThat(catalogReadRepository.findProductsFiltered(
@@ -200,12 +187,6 @@ class CatalogPostgresQueryTest {
                 .doesNotContain(descriptionOnly.getId());
         assertThat(catalogReadRepository.searchPublishedProducts(
                 List.of("underwear"), "vi", 100))
-                .extracting(Product::id)
-                .contains(englishNameMatch.getId())
-                .doesNotContain(descriptionOnly.getId());
-        assertThat(catalogReadRepository.searchPublishedProductsForAssistant(
-                List.of("underwear"), null, null, null, null,
-                new SortSpec("name", SortDirection.ASC), "vi", 100))
                 .extracting(Product::id)
                 .contains(englishNameMatch.getId())
                 .doesNotContain(descriptionOnly.getId());

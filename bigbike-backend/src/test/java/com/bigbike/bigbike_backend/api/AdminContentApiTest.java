@@ -29,10 +29,10 @@ class AdminContentApiTest {
 
     @Test
     void shouldListArticlesAsAdminWithPagination() throws Exception {
-        // "trai-nghiem" matches slugs of article_trai_nghiem_2 and article_trai_nghiem_3 (2 items)
+        // The two seeded article titles contain both words "trai nghiem" (2 items).
         mockMvc.perform(get("/api/v1/admin/content")
                         .param("type", "ARTICLE")
-                        .param("q", "trai-nghiem")
+                        .param("q", "trai nghiem")
                         .param("page", "1")
                         .param("size", "1")
                         .param("sort", "createdAt:desc")
@@ -59,11 +59,11 @@ class AdminContentApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pagination.totalItems").value(1));
 
-        // "trai-nghiem" matches slugs of 2 seeded PUBLISHED articles
+        // "trai nghiem" matches titles of 2 seeded PUBLISHED articles
         mockMvc.perform(get("/api/v1/admin/content")
                         .param("type", "ARTICLE")
                         .param("publishStatus", "PUBLISHED")
-                        .param("q", "trai-nghiem")
+                        .param("q", "trai nghiem")
                         .param("size", "20")
                         .header("X-Admin-Permissions", "content.read"))
                 .andExpect(status().isOk())
@@ -72,21 +72,21 @@ class AdminContentApiTest {
 
     @Test
     @Sql(
-            statements = "INSERT INTO articles (id, slug, title, body, publish_status, created_at, updated_at, featured, seo_no_index, home_experience) VALUES ('article_trash_contract', 'article-trash-contract', 'Article trash contract', '<p>Trash.</p>', 'TRASH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false)",
+            statements = "INSERT INTO articles (id, slug, title, body, publish_status, created_at, updated_at, seo_no_index, featured, home_experience) VALUES ('article_trash_contract', 'article-trash-contract', 'Article trash contract', '<p>Trash.</p>', 'TRASH', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, false, false, false)",
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @Sql(
             statements = "DELETE FROM articles WHERE id = 'article_trash_contract'",
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
     void shouldExcludeTrashByDefaultAndReturnItWhenExplicitlyFiltered() throws Exception {
         mockMvc.perform(get("/api/v1/admin/content")
-                        .param("q", "article-trash-contract")
+                        .param("q", "trash contract")
                         .header("X-Admin-Permissions", "content.read"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pagination.totalItems").value(0));
 
         mockMvc.perform(get("/api/v1/admin/content")
                         .param("publishStatus", "TRASH")
-                        .param("q", "article-trash-contract")
+                        .param("q", "trash contract")
                         .header("X-Admin-Permissions", "content.read"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pagination.totalItems").value(1))

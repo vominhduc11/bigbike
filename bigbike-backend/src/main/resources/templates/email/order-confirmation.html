@@ -61,16 +61,6 @@
               </p>
             </div>
 
-            <!-- BACS note -->
-            <div th:if="${isBacs}"
-                 style="background-color:#eff6ff;border-left:4px solid #3b82f6;padding:14px 16px;border-radius:0 6px 6px 0;margin-bottom:24px;">
-              <p style="margin:0;font-size:13px;color:#1e40af;line-height:1.5;">
-                <strong>Chuyển khoản ngân hàng:</strong> Vui lòng chuyển khoản trong vòng 24h với nội dung
-                <strong th:text="'BIGBIKE ' + ${orderNumber}">BIGBIKE #BB-2024-001</strong>.
-                Đơn hàng sẽ được xử lý sau khi xác nhận thanh toán.
-              </p>
-            </div>
-
             <p style="margin:0 0 24px 0;font-size:14px;color:#4b5563;line-height:1.6;">
               Chúng tôi sẽ liên hệ xác nhận và thông báo thời gian giao hàng trong vòng <strong>1–2 giờ làm việc</strong>.
             </p>

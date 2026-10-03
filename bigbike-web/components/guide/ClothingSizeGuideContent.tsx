@@ -20,7 +20,10 @@ const COPY = {
   s2Title: { vi: "2. Cách đo size giày bảo hộ", en: "2. How to measure riding boots size" },
   s3Title: { vi: "3. Cách đo size áo giáp", en: "3. How to measure riding jacket size" },
   s4Title: { vi: "4. Cách đo size quần giáp", en: "4. How to measure riding pants size" },
-  s5Title: { vi: "Không chắc size? Liên hệ BigBike", en: "Not sure about your size? Contact BigBike" },
+  s5Title: {
+    vi: "Không chắc size? Liên hệ BigBike",
+    en: "Not sure about your size? Contact BigBike",
+  },
   colSize: { vi: "Size", en: "Size" },
   colSizeEu: { vi: "Size EU", en: "Size EU" },
   colHand: { vi: "Vòng bàn tay (cm)", en: "Hand (cm)" },
@@ -67,14 +70,20 @@ const COPY = {
   hotline: { vi: "Hotline", en: "Hotline" },
   zalo: { vi: "Zalo", en: "Zalo" },
   workingTimeLabel: { vi: "Giờ làm việc", en: "Working hours" },
-  workingTimeValue: { vi: "Thứ 2 – Thứ 7: 9:00 – 21:00 · Chủ nhật: 9:00 – 18:00", en: "Mon – Sat: 9:00 AM – 9:00 PM · Sun: 9:00 AM – 6:00 PM" },
+  workingTimeValue: {
+    vi: "Thứ 2 – Thứ 7: 9:00 – 21:00 · Chủ nhật: 9:00 – 18:00",
+    en: "Mon – Sat: 9:00 AM – 9:00 PM · Sun: 9:00 AM – 6:00 PM",
+  },
 } satisfies Record<string, Bi>;
 
 type Step = { title: Bi; body: Bi };
 
 const GLOVE_STEPS: Step[] = [
   {
-    title: { vi: "Dùng thước dây đo vòng bàn tay", en: "Measure hand circumference with soft tape" },
+    title: {
+      vi: "Dùng thước dây đo vòng bàn tay",
+      en: "Measure hand circumference with soft tape",
+    },
     body: {
       vi: "Đặt thước dây quanh phần rộng nhất của bàn tay — qua gốc 4 ngón, không tính ngón cái. Bàn tay xòe tự nhiên, không căng.",
       en: "Wrap the tape around the widest part of your hand — across knuckles of 4 fingers, excluding thumb. Hold hand naturally relaxed.",
@@ -150,11 +159,31 @@ const JACKET_STEPS: Step[] = [
 ];
 
 const JACKET_ROWS = [
-  { size: "S", chest: "86 – 90", waist: "72 – 76", fit: { vi: "Nam / nữ vóc nhỏ", en: "Petite men/women" } },
-  { size: "M", chest: "91 – 96", waist: "77 – 82", fit: { vi: "Nam trung bình", en: "Average men" } },
+  {
+    size: "S",
+    chest: "86 – 90",
+    waist: "72 – 76",
+    fit: { vi: "Nam / nữ vóc nhỏ", en: "Petite men/women" },
+  },
+  {
+    size: "M",
+    chest: "91 – 96",
+    waist: "77 – 82",
+    fit: { vi: "Nam trung bình", en: "Average men" },
+  },
   { size: "L", chest: "97 – 102", waist: "83 – 88", fit: { vi: "Nam to con", en: "Large men" } },
-  { size: "XL", chest: "103 – 108", waist: "89 – 94", fit: { vi: "Nam to lớn", en: "Very large men" } },
-  { size: "XXL", chest: "109 – 114", waist: "95 – 100", fit: { vi: "Đặc biệt", en: "Special size" } },
+  {
+    size: "XL",
+    chest: "103 – 108",
+    waist: "89 – 94",
+    fit: { vi: "Nam to lớn", en: "Very large men" },
+  },
+  {
+    size: "XXL",
+    chest: "109 – 114",
+    waist: "95 – 100",
+    fit: { vi: "Đặc biệt", en: "Special size" },
+  },
   { size: "XXXL", chest: "115+", waist: "101+", fit: { vi: "Đặc biệt", en: "Special size" } },
 ];
 
@@ -183,11 +212,31 @@ const PANTS_STEPS: Step[] = [
 ];
 
 const PANTS_ROWS = [
-  { size: "S", hips: "82 – 86", thighs: "50 – 54", fit: { vi: "Nam / nữ vóc nhỏ", en: "Petite men/women" } },
-  { size: "M", hips: "87 – 92", thighs: "55 – 59", fit: { vi: "Nam trung bình", en: "Average men" } },
+  {
+    size: "S",
+    hips: "82 – 86",
+    thighs: "50 – 54",
+    fit: { vi: "Nam / nữ vóc nhỏ", en: "Petite men/women" },
+  },
+  {
+    size: "M",
+    hips: "87 – 92",
+    thighs: "55 – 59",
+    fit: { vi: "Nam trung bình", en: "Average men" },
+  },
   { size: "L", hips: "93 – 98", thighs: "60 – 64", fit: { vi: "Nam to con", en: "Large men" } },
-  { size: "XL", hips: "99 – 104", thighs: "65 – 69", fit: { vi: "Nam to lớn", en: "Very large men" } },
-  { size: "XXL", hips: "105 – 110", thighs: "70 – 74", fit: { vi: "Đặc biệt", en: "Special size" } },
+  {
+    size: "XL",
+    hips: "99 – 104",
+    thighs: "65 – 69",
+    fit: { vi: "Nam to lớn", en: "Very large men" },
+  },
+  {
+    size: "XXL",
+    hips: "105 – 110",
+    thighs: "70 – 74",
+    fit: { vi: "Đặc biệt", en: "Special size" },
+  },
   { size: "XXXL", hips: "111+", thighs: "75+", fit: { vi: "Đặc biệt", en: "Special size" } },
 ];
 
@@ -214,7 +263,9 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {GLOVE_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">
+              {i + 1}
+            </span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -227,9 +278,15 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
-              <th className="w-1/6 border border-border p-3 text-left font-bold">{t(lang, COPY.colSize)}</th>
-              <th className="w-1/3 border border-border p-3 text-left font-bold">{t(lang, COPY.colHand)}</th>
-              <th className="border border-border p-3 text-left font-bold">{t(lang, COPY.colFit)}</th>
+              <th className="w-1/6 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colSize)}
+              </th>
+              <th className="w-1/3 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colHand)}
+              </th>
+              <th className="border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colFit)}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -243,7 +300,9 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
           </tbody>
         </table>
       </div>
-      <p className="mb-8 text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.gloveNote)}</p>
+      <p className="mb-8 text-a5-meta leading-snug text-muted-foreground">
+        {t(lang, COPY.gloveNote)}
+      </p>
 
       <hr className="border-none border-t border-border my-6" />
 
@@ -252,7 +311,9 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {BOOT_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">
+              {i + 1}
+            </span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -265,9 +326,15 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
-              <th className="w-1/5 border border-border p-3 text-left font-bold">{t(lang, COPY.colSizeEu)}</th>
-              <th className="w-2/5 border border-border p-3 text-left font-bold">{t(lang, COPY.colFoot)}</th>
-              <th className="border border-border p-3 text-left font-bold">{t(lang, COPY.colFitVn)}</th>
+              <th className="w-1/5 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colSizeEu)}
+              </th>
+              <th className="w-2/5 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colFoot)}
+              </th>
+              <th className="border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colFitVn)}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -282,9 +349,7 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         </table>
       </div>
       <div className="mb-8 border border-border border-l-4 border-l-brand bg-white p-4">
-        <p className="m-0 leading-body font-body text-a5-meta">
-          {t(lang, COPY.bootNote)}
-        </p>
+        <p className="m-0 leading-body font-body text-a5-meta">{t(lang, COPY.bootNote)}</p>
       </div>
 
       <hr className="border-none border-t border-border my-6" />
@@ -295,7 +360,9 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {JACKET_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">
+              {i + 1}
+            </span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -308,10 +375,18 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
-              <th className="w-1/6 border border-border p-3 text-left font-bold">{t(lang, COPY.colSize)}</th>
-              <th className="w-1/4 border border-border p-3 text-left font-bold">{t(lang, COPY.colChest)}</th>
-              <th className="w-1/4 border border-border p-3 text-left font-bold">{t(lang, COPY.colWaist)}</th>
-              <th className="border border-border p-3 text-left font-bold">{t(lang, COPY.colFit)}</th>
+              <th className="w-1/6 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colSize)}
+              </th>
+              <th className="w-1/4 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colChest)}
+              </th>
+              <th className="w-1/4 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colWaist)}
+              </th>
+              <th className="border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colFit)}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -326,7 +401,9 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
           </tbody>
         </table>
       </div>
-      <p className="mb-8 text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.jacketNote)}</p>
+      <p className="mb-8 text-a5-meta leading-snug text-muted-foreground">
+        {t(lang, COPY.jacketNote)}
+      </p>
 
       <hr className="border-none border-t border-border my-6" />
 
@@ -336,7 +413,9 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-4 space-y-3">
         {PANTS_STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">
+              {i + 1}
+            </span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -349,10 +428,18 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
         <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
-              <th className="w-1/6 border border-border p-3 text-left font-bold">{t(lang, COPY.colSize)}</th>
-              <th className="w-1/4 border border-border p-3 text-left font-bold">{t(lang, COPY.colHip)}</th>
-              <th className="w-1/4 border border-border p-3 text-left font-bold">{t(lang, COPY.colThigh)}</th>
-              <th className="border border-border p-3 text-left font-bold">{t(lang, COPY.colFit)}</th>
+              <th className="w-1/6 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colSize)}
+              </th>
+              <th className="w-1/4 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colHip)}
+              </th>
+              <th className="w-1/4 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colThigh)}
+              </th>
+              <th className="border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colFit)}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -367,10 +454,14 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
           </tbody>
         </table>
       </div>
-      <p className="mb-4 text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.pantsNote)}</p>
+      <p className="mb-4 text-a5-meta leading-snug text-muted-foreground">
+        {t(lang, COPY.pantsNote)}
+      </p>
       <div className="mb-8 border border-border border-l-4 border-l-brand bg-white p-4">
         <p className="m-0 leading-body font-body text-a5-meta">
-          <strong className="text-brand">{t(lang, { vi: "Mặc thử trước khi mua:", en: "Try on before buying:" })}</strong>{" "}
+          <strong className="text-brand">
+            {t(lang, { vi: "Mặc thử trước khi mua:", en: "Try on before buying:" })}
+          </strong>{" "}
           {t(lang, COPY.pantsHighlight)}
         </p>
       </div>
@@ -387,14 +478,24 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
           </span>
           <span>
             {t(lang, COPY.zalo)}:{" "}
-            <a href={ZALO_URL} target="_blank" rel="noopener noreferrer" className="font-bold text-brand no-underline">
+            <a
+              href={ZALO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-brand no-underline"
+              data-analytics-location="clothing_size_guide"
+            >
               {ZALO}
             </a>{" "}
             <span className="text-muted-foreground">(Mrs. Thư)</span>
           </span>
           <span>
             {t(lang, COPY.hotline)}:{" "}
-            <a href={telHref(HOTLINE)} className="font-bold text-brand no-underline">
+            <a
+              href={telHref(HOTLINE)}
+              className="font-bold text-brand no-underline"
+              data-analytics-location="clothing_size_guide"
+            >
               {HOTLINE}
             </a>
           </span>

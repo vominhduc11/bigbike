@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MediaFolderSidebar } from './MediaFolderSidebar'
@@ -63,7 +63,7 @@ beforeEach(() => {
   mocks.deleteMediaFolder.mockResolvedValue()
 })
 
-function renderSidebar() {
+function renderSidebar(props = {}) {
   return render(
     <MediaFolderSidebar
       folderFilter=""
@@ -73,6 +73,7 @@ function renderSidebar() {
       onFoldersChanged={vi.fn()}
       onSelectFolder={mocks.onSelectFolder}
       onSelectTag={vi.fn()}
+      {...props}
     />,
   )
 }
@@ -91,11 +92,11 @@ describe('MediaFolderSidebar — cây thư mục', () => {
     const user = userEvent.setup()
     renderSidebar()
 
-    await user.click(screen.getByRole('button', { name: 'media.collapseFolder' }))
+    await user.click(screen.getByRole('button', { name: 'media.collapseFolder: Sản phẩm' }))
     expect(screen.queryByText('LS2')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'media.expandFolder' }))
-    await user.click(screen.getByRole('button', { name: /Sản phẩm/ }))
+    await user.click(screen.getByRole('button', { name: 'media.expandFolder: Sản phẩm' }))
+    await user.click(screen.getByRole('button', { name: /^Sản phẩm/ }))
     expect(mocks.onSelectFolder).toHaveBeenCalledWith('products')
   })
 
@@ -150,5 +151,65 @@ describe('MediaFolderSidebar — cây thư mục', () => {
 
     expect(screen.getByText('media.systemFolderDeleteTitle')).toBeInTheDocument()
     expect(screen.getByText('media.systemFolderDeleteImpact.productBrand')).toBeInTheDocument()
+  })
+
+  it('mở nhánh và menu bằng bàn phím không chọn nhầm thư mục', async () => {
+    const user = userEvent.setup()
+    renderSidebar()
+
+    act(() => screen.getByRole('button', { name: 'media.collapseFolder: Sản phẩm' }).focus())
+    await user.keyboard('{Enter}')
+    expect(screen.queryByText('LS2')).not.toBeInTheDocument()
+    expect(mocks.onSelectFolder).not.toHaveBeenCalled()
+
+    const menuButton = screen.getAllByRole('button', { name: 'media.folderActions' })[0]
+    act(() => menuButton.focus())
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('menu')).toHaveTextContent('Sản phẩm')
+    expect(mocks.onSelectFolder).not.toHaveBeenCalled()
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(menuButton).toHaveFocus())
+
+    const selectButton = screen.getByRole('button', { name: /^Sản phẩm/ })
+    act(() => selectButton.focus())
+    await user.keyboard('{Enter}')
+    expect(mocks.onSelectFolder).toHaveBeenCalledExactlyOnceWith('products')
+  })
+
+  it('người chỉ đọc vẫn chọn và mở nhánh được, không có thao tác quản lý', async () => {
+    const user = userEvent.setup()
+    renderSidebar({ canUpdate: false })
+
+    expect(screen.queryByRole('button', { name: 'media.folderAdd' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'media.folderActions' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'media.folderNoChildren' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'media.collapseFolder: Sản phẩm' }))
+    await user.click(screen.getByRole('button', { name: /^Sản phẩm/ }))
+    expect(mocks.onSelectFolder).toHaveBeenCalledWith('products')
+  })
+
+  it('chỉ mở tooltip cho tên bị cắt và đọc được tên đầy đủ khi focus hoặc hover', async () => {
+    const user = userEvent.setup()
+    const longName = 'Ảnh minh hoạ sản phẩm và hướng dẫn sử dụng cho khách hàng tại cửa hàng'
+    renderSidebar({ folders: [{ ...folders[2], name: longName }] })
+    const label = screen.getByText(longName)
+    const button = screen.getByRole('button', { name: new RegExp(`^${longName}`) })
+
+    act(() => button.focus())
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+    act(() => button.blur())
+    Object.defineProperties(label, {
+      clientHeight: { configurable: true, value: 40 },
+      scrollHeight: { configurable: true, value: 60 },
+    })
+    act(() => button.focus())
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(longName)
+    expect(mocks.onSelectFolder).not.toHaveBeenCalled()
+
+    await user.keyboard('{Escape}')
+    act(() => button.blur())
+    await user.hover(button)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(longName)
   })
 })

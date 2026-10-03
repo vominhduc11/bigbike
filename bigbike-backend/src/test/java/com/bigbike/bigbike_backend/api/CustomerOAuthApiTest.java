@@ -224,13 +224,98 @@ class CustomerOAuthApiTest {
     }
 
     @Test
-    void facebookWithoutAnEmailStillGetsAnAccount() {
+    void socialLoginWithoutAnEmailIsRefusedAndCreatesNothing() {
         String subject = "fb-" + UUID.randomUUID();
-        CustomerEntity created = registerSocialIdentity("facebook", info(subject, null, false, null));
+        long before = customerRepo.count();
 
-        assertThat(created.getEmail()).isNull();
-        assertThat(created.getDisplayName()).isEqualTo("Khách BigBike");
-        assertThat(linkRepo.findByProviderAndSubject("facebook", subject)).isPresent();
+        assertThatThrownBy(() -> registerSocialIdentity("facebook", info(subject, null, false, null)))
+                .isInstanceOfSatisfying(CustomerOAuthService.OAuthException.class,
+                        ex -> assertThat(ex.getError()).isEqualTo(OAuthError.EMAIL_REQUIRED));
+
+        assertThat(customerRepo.count()).isEqualTo(before);
+        assertThat(linkRepo.findByProviderAndSubject("facebook", subject)).isEmpty();
+    }
+
+    @Test
+    void socialLoginWithAnUnverifiedEmailIsRefused() {
+        String subject = "g-unverified-" + UUID.randomUUID();
+
+        assertThatThrownBy(() -> registerSocialIdentity(
+                "google", info(subject, uniqueEmail("oauth-unverified"), false, "A")))
+                .isInstanceOfSatisfying(CustomerOAuthService.OAuthException.class,
+                        ex -> assertThat(ex.getError()).isEqualTo(OAuthError.EMAIL_REQUIRED));
+        assertThat(linkRepo.findByProviderAndSubject("google", subject)).isEmpty();
+    }
+
+    @Test
+    void anExistingLinkedAccountIsAlsoRefusedWhenTheProviderReturnsNoEmail() {
+        String subject = "fb-existing-" + UUID.randomUUID();
+        CustomerEntity legacy = saveCustomer(null, null, null, "ACTIVE");
+        attachLegacyLink(legacy.getId(), "facebook", subject);
+
+        assertThatThrownBy(() -> oauthService.linkOrCreate(
+                "facebook", info(subject, null, false, "A"), OAuthRegistrationConsent.none()))
+                .isInstanceOfSatisfying(CustomerOAuthService.OAuthException.class,
+                        ex -> assertThat(ex.getError()).isEqualTo(OAuthError.EMAIL_REQUIRED));
+    }
+
+    @Test
+    void repeatLoginBackfillsAnEmailThatTheProviderDidNotReturnInitially() {
+        String subject = "fb-backfill-" + UUID.randomUUID();
+        CustomerEntity created = saveCustomer(null, null, null, "ACTIVE");
+        attachLegacyLink(created.getId(), "facebook", subject);
+        String email = uniqueEmail("oauth-backfill");
+
+        CustomerEntity signedInAgain = oauthService.linkOrCreate(
+                "facebook", info(subject, email, true, "A"), OAuthRegistrationConsent.none());
+
+        assertThat(signedInAgain.getId()).isEqualTo(created.getId());
+        assertThat(signedInAgain.getEmail()).isEqualTo(email);
+        assertThat(signedInAgain.getEmailVerifiedAt()).isNotNull();
+    }
+
+    @Test
+    void anOldEmptyEmailSocialAccountIsRefusedWhenItsEmailBelongsToAPasswordAccount() {
+        // Pre-2026-09-26 path created a separate social account with email=null; it no longer
+        // signs in while the password account owns the provider email (CUSTOMER_RULE_013).
+        String subject = "g-collision-" + UUID.randomUUID();
+        CustomerEntity social = saveCustomer(null, null, null, "ACTIVE");
+        attachLegacyLink(social.getId(), "google", subject);
+        String email = uniqueEmail("oauth-backfill-owned");
+        saveCustomer(email, "$argon2id$fake-hash", Instant.now(), "ACTIVE");
+
+        assertThatThrownBy(() -> oauthService.linkOrCreate(
+                "google", info(subject, email, true, "A"), OAuthRegistrationConsent.none()))
+                .isInstanceOfSatisfying(CustomerOAuthService.OAuthException.class,
+                        ex -> assertThat(ex.getError()).isEqualTo(OAuthError.EMAIL_REGISTERED));
+        assertThat(customerRepo.findById(social.getId()).orElseThrow().getEmail()).isNull();
+    }
+
+    @Test
+    void anOldEmptyEmailSocialAccountIsRefusedWhenAnotherSocialAccountOwnsItsEmail() {
+        String subject = "fb-other-owner-" + UUID.randomUUID();
+        CustomerEntity social = saveCustomer(null, null, null, "ACTIVE");
+        attachLegacyLink(social.getId(), "facebook", subject);
+        String email = uniqueEmail("oauth-other-owner");
+        saveCustomer(email, null, Instant.now(), "ACTIVE");
+
+        assertThatThrownBy(() -> oauthService.linkOrCreate(
+                "facebook", info(subject, email, true, "A"), OAuthRegistrationConsent.none()))
+                .isInstanceOfSatisfying(CustomerOAuthService.OAuthException.class,
+                        ex -> assertThat(ex.getError()).isEqualTo(OAuthError.EMAIL_REGISTERED));
+    }
+
+    @Test
+    void aGrandfatheredLinkOntoThePasswordAccountItselfStillSignsIn() {
+        String email = uniqueEmail("oauth-grandfathered");
+        CustomerEntity owner = saveCustomer(email, "$argon2id$fake-hash", Instant.now(), "ACTIVE");
+        String subject = "g-grand-" + UUID.randomUUID();
+        attachLegacyLink(owner.getId(), "google", subject);
+
+        CustomerEntity signedIn = oauthService.linkOrCreate(
+                "google", info(subject, email, true, "A"), OAuthRegistrationConsent.none());
+
+        assertThat(signedIn.getId()).isEqualTo(owner.getId());
     }
 
     @Test
@@ -249,29 +334,33 @@ class CustomerOAuthApiTest {
     void anUnverifiedPasswordAccountIsNotAdoptedOnTheStrengthOfAProviderEmail() {
         String email = uniqueEmail("oauth-takeover");
         CustomerEntity victim = saveCustomer(email, "$argon2id$fake-hash", null, "ACTIVE");
+        long before = customerRepo.count();
 
-        CustomerEntity result = registerSocialIdentity(
-                "facebook", info("fb-sub-" + email, email, true, "Attacker"));
+        assertThatThrownBy(() -> registerSocialIdentity(
+                "facebook", info("fb-sub-" + email, email, true, "Attacker")))
+                .isInstanceOfSatisfying(CustomerOAuthService.OAuthException.class,
+                        ex -> assertThat(ex.getError()).isEqualTo(OAuthError.EMAIL_REGISTERED));
 
-        assertThat(result.getId()).isNotEqualTo(victim.getId());
-        assertThat(result.getEmail()).isNull(); // the address stays with its original owner
-        assertThat(customerRepo.findById(victim.getId()).orElseThrow().getPasswordHash()).isNotNull();
+        assertThat(customerRepo.count()).isEqualTo(before);
+        assertThat(linkRepo.findByCustomerIdAndProvider(victim.getId(), "facebook")).isEmpty();
     }
 
     @Test
-    void aPasswordAccountIsNeverAdoptedEvenWithAVerifiedMatchingEmail() {
-        // Password accounts and social accounts are deliberately separate identities
-        // (owner decision 2026-08-07) — a matching, provider-verified email is no longer
-        // enough to merge into a password account, unlike the pre-2026-08-07 behavior.
+    void aPasswordAccountEmailRefusesSocialSignInInsteadOfCreatingAnEmptyEmailAccount() {
+        // Password accounts and social accounts stay separate (2026-08-07); since 2026-09-26 the
+        // customer is told to use the password rather than given a second, email-less account.
         String email = uniqueEmail("oauth-noadopt");
         CustomerEntity existing = saveCustomer(email, "$argon2id$fake-hash", Instant.now(), "ACTIVE");
+        String subject = "g-sub-" + email;
+        long before = customerRepo.count();
 
-        CustomerEntity result = registerSocialIdentity("google", info("g-sub-" + email, email, true, "A"));
+        assertThatThrownBy(() -> registerSocialIdentity("google", info(subject, email, true, "A")))
+                .isInstanceOfSatisfying(CustomerOAuthService.OAuthException.class,
+                        ex -> assertThat(ex.getError()).isEqualTo(OAuthError.EMAIL_REGISTERED));
 
-        assertThat(result.getId()).isNotEqualTo(existing.getId());
-        assertThat(result.getEmail()).isNull(); // avoids colliding with the password account's email
+        assertThat(customerRepo.count()).isEqualTo(before);
         assertThat(linkRepo.findByCustomerIdAndProvider(existing.getId(), "google")).isEmpty();
-        assertThat(linkRepo.findByCustomerIdAndProvider(result.getId(), "google")).isPresent();
+        assertThat(linkRepo.findByProviderAndSubject("google", subject)).isEmpty();
     }
 
     @Test

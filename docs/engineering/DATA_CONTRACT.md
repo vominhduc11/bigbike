@@ -211,7 +211,7 @@ The admin topbar quick-search response is a compact read model and does not chan
 
 Order quick-search results carry both the order's stored customer-name snapshot and the shipping address `fullName` snapshot as separate fields, so the client can explain why the order matched without exposing a new write field. All other quick-search item fields are read-only projections of the existing admin list/detail data.
 
-Text matching for the admin read path is accent-insensitive and case-insensitive. The staff product path retains every entered word; the assistant/public `ProductSearchTerms` stop-word behavior remains a separate contract. `%`, `_` and `\\` are data characters and never wildcard operators.
+Text matching for the admin read path is accent-insensitive and case-insensitive. The staff product path retains every entered word; the shared `ProductSearchTerms` normalization remains a separate contract. `%`, `_` and `\\` are data characters and never wildcard operators.
 
 Status: `OWNER_CONFIRMED_FROM_HANDOFF_2026-08-28`
 
@@ -358,21 +358,22 @@ These are admin-only projections; customer/guest order shapes do not change. His
 
 Status: `CONFIRMED_FROM_CODE`
 
-### Payment method compatibility — nullable for legacy rows, two manual methods for new orders
+### Payment method compatibility — nullable for legacy rows, COD only for new orders
 
 `orders.payment_method` and `payments.payment_method` are nullable at the schema/entity layer so
 legacy orders created under the former manual-reconciliation model can still be loaded and shown.
 Migration `V284__allow_null_payment_method.sql` removed the `NOT NULL` constraint from
 `payments.payment_method`; `PaymentEntity` must mirror that nullability.
 
-This storage compatibility does **not** make the current checkout contract optional: every new
-storefront checkout order uses `COD` or `BANK_TRANSFER`; an omitted request value is normalized to
-`COD`, and any other explicit method is rejected. `BANK_TRANSFER` is the new manual-transfer code
-and must not reuse legacy `BACS`; `BACS`/`null` are read compatibility only. `CONFIRMED_FROM_CODE`
+This storage compatibility does **not** make the current checkout contract multi-method: every new
+storefront checkout order uses `COD`; an omitted request value is normalized to `COD`, and any
+explicit non-COD method is rejected before persistence. `BANK_TRANSFER`, `BACS`, `CHECK`, `CARD`
+and null values remain readable only when already present on historical rows. `CONFIRMED_FROM_CODE`
 
 ### Payment record status vocabulary
 
-`payments.status` is required and remains the only payment-status source. For BANK_TRANSFER, the admin receipt command changes PENDING to SUCCEEDED and gates order completion. It is not OrderEntity.status. COD exposes no payment-status UI.
+`payments.status` is required and remains the only payment-status source for stored records. New COD
+orders expose no payment-status UI or receipt action. Historical payment statuses remain readable.
 
 | Value | Meaning |
 |---|---|
@@ -386,9 +387,13 @@ Migration `V353__normalize_payment_record_status.sql` normalizes legacy
 `REFUNDED`/`PARTIALLY_REFUNDED → CANCELLED`, preserves existing canonical values,
 and stops on unknown values instead of guessing. It then adds
 `ck_payments_status` for exactly the four values above. Checkout and WordPress
-import code must write only the same vocabulary. See PAY_RULE_002/003 (owner decision 2026-09-07).
+import code must write only the same vocabulary. See PAY_RULE_002/003 (owner decision 2026-09-09).
 
-No schema migration or paid backfill: receipt updates the existing payment.status/paidAt/updatedAt and orders.paidAmount (=totalAmount)/paidAt/updatedAt atomically. Order monetary fields are compatibility projections, not a second payment-state source. ORDER_BANK_TRANSFER_CONFIRMED audit records retain actorId, createdAt, paymentId, amount, currency, confirmedByName (admin display-name snapshot) and paymentStatus before/after. Order detail responses add nullable paymentMethod from orders; admin detail adds boolean canConfirmBankTransfer (resource eligibility only; UI also requires orders.write). Legacy records are unchanged.
+No paid backfill is performed by the COD cutover. Order monetary fields remain compatibility
+projections, not a second payment-state source. Order detail responses continue to expose nullable
+`paymentMethod` and historical `payments[]`; the admin-only transfer-confirmation field and
+command are removed. Existing legacy records are unchanged except the two explicitly
+identified unconfirmed orders converted to COD.
 
 ### Admin invite (email-based admin user onboarding)
 
@@ -1661,7 +1666,7 @@ còn 1 cột tên (`name`) và 1 cột slug (`slug`), không tách VI/EN.
 
 **Redirect:** catalog danh mục/sản phẩm/bài viết đổi/xoá `slug_en` tự sinh 301 (`autoCreateSlugRedirect`/`autoCreateSlugEnRedirect`) — đổi → old-EN-URL→new-EN-URL; xoá → old-EN-URL→slug VI trong cùng locale; honored runtime bởi `bigbike-web/proxy.ts` qua `/api/internal/redirect`. Từ 2026-08-03, chi tiết sản phẩm EN dùng `/en/product/`, bài viết EN dùng `/en/tin-tuc/`; các alias cũ `/en/products/{slug}` và `/en/news...` redirect 301 tương thích, trong khi danh sách sản phẩm vẫn là `/en/products/` và danh mục vẫn dùng `/en/categories/`. Mọi redirect danh mục VI mới dùng `/danh-muc/{slug}/`; nguồn `/danh-muc-san-pham/{slug}/` cũ được giữ làm tương thích 301. Brand không có khái niệm slug EN nên không sinh redirect riêng. **Bài viết trước 2026-07-24 KHÔNG có cơ chế redirect** (module nội dung chưa wiring `SlugRedirectHelper`) — từ 2026-07-24 đã bổ sung, hành vi giờ đồng nhất với Sản phẩm/Danh mục.
 
-**Ngoài phạm vi:** module pages/CMS vẫn đã gỡ. Web định tuyến tám route bằng slug cố định. Từ 2026-09-01, tiêu đề/thân bài Bảo hành và Đổi trả là bốn resource UTF-8 dưới `bigbike-backend/src/main/resources/policy-content/`, dùng chung cho endpoint policy và Trợ lý BigBike. Quyết định này thay thế hợp đồng cũ ngày 2026-08-23 về bốn row `site_settings` nhóm `store_policy`; các row đó được xóa bởi `V1078__freeze_store_policy_content.sql`. Khối liên hệ vẫn lấy động từ nhóm `contact`; các trang còn lại vẫn tĩnh.
+**Ngoài phạm vi:** module pages/CMS vẫn đã gỡ. Từ 2026-10-01, web mở rộng từ tám lên mười bốn route thông tin cố định (chín chính sách, Giới thiệu, Liên hệ, Hướng dẫn và hai trang size), theo `POLICY_PAGE_RULE_001`–`009`. Không thêm bảng/cột hoặc setting. Metadata/nội dung của sáu policy mới nằm trong `bigbike-web/lib/content/static-pages.json`; registry dùng chung `policy-pages.ts`; pháp nhân/GPKD/đại diện lấy từ `business-identity.ts`. Khối liên hệ dùng các key `contact` hiện có. Từ 2026-09-01, tiêu đề/thân bài Bảo hành và Đổi trả là bốn resource UTF-8 dưới `bigbike-backend/src/main/resources/policy-content/`, dùng chung cho endpoint policy và Trợ lý BigBike. Quyết định này thay thế hợp đồng cũ ngày 2026-08-23 về bốn row `site_settings` nhóm `store_policy`; các row đó được xóa bởi `V1078__freeze_store_policy_content.sql`. Bảo mật tiếp tục có renderer riêng ở web để giữ công bố đo lường/ảnh/video hiện hành.
 
 Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`/`ProductEntity`/`ArticleEntity` (`slugEn`), `*JpaRepository.findBySlugEn` (category/product/article only — `BrandJpaRepository` has no such method), `JpaCatalogReadRepository`/`JpaContentReadRepository` (map active `slugEn` + OR-resolve), `AdminCatalogMutationService`/`AdminContentMutationService` (validate), migrations `V213`/`V214`/`V216`; brand `name_en`/`slug_en` dropped by `V352`.
 
@@ -1709,32 +1714,40 @@ Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng 
 | Cột tiếng Việt | Cột tiếng Anh | Kiểu |
 |---|---|---|
 | `title` | `title_en` | `VARCHAR(255)` |
-| `excerpt` | `excerpt_en` | `TEXT` |
 | `body` | `body_en` | `TEXT` |
 | `seo_title` | `seo_title_en` | `VARCHAR(255)` |
 | `seo_description` | `seo_description_en` | `TEXT` |
-| `author_name` | `author_name_en` | `VARCHAR(255)` |
 
-Fallback: giống `PRODUCT_RULE_002` — mỗi trường lùi về VI khi EN bị null/blank. Tác giả là trường tùy chọn; cả hai bản trống thì không sinh byline hoặc JSON-LD `author`. Xem `ARTICLE_RULE_001/002/007`.
+Fallback: giống `PRODUCT_RULE_002` — mỗi trường nội dung lùi về VI khi EN bị null/blank (`title`, `body`, `seo_title`, `seo_description`). Bài viết không còn cột tóm tắt hoặc tên tác giả; đoạn giới thiệu trên thẻ và mô tả SEO fallback được rút từ đầu `body` ở lớp đọc web theo `ARTICLE_RULE_010`–`011`. Xem `ARTICLE_RULE_001/002/007/010/011`.
 
 **Slug tiếng Anh (`slug_en`, V216):** xem mục **"English URL slug"** bên trên — `slug` tiếng Việt là canonical, `slug_en` là URL tiếng Anh tùy chọn (không sinh redirect).
 
 Status: `CONFIRMED_FROM_CODE` — `ArticleEntity`, `ArticleTranslations` domain record, migration `V138`.
 
-### Article featured + seo_no_index (V222)
+### Article `featured` + `seo_no_index` (V222)
 
-Migration `V222__add_article_featured_and_seo_no_index.sql` thêm 2 cột boolean vào bảng `articles`:
+Migration `V222__add_article_featured_and_seo_no_index.sql` thêm hai cột vẫn còn hiệu lực:
 
 | Cột | Kiểu | Default | Map ra payload | Ý nghĩa |
 |---|---|---|---|---|
-| `featured` | `BOOLEAN NOT NULL` | `false` | top-level `featured` | Đánh dấu "Tin nổi bật" — điều khiển widget Tin nổi bật trên web và query param `featured=true` của `GET /api/v1/articles`. |
+| `featured` | `BOOLEAN NOT NULL` | `false` | top-level `featured` | Nhân viên chọn bài vào "Tin nổi bật" ở trang bài viết. |
 | `seo_no_index` | `BOOLEAN NOT NULL` | `false` | `seo.noIndex` | `true` = đặt `noindex` cho bài viết (không cho search engine index trang chi tiết). |
 
 **Lưu ý lịch sử — `articles.seo_no_index`:** cột này từng tồn tại ở `V1` nhưng bị **DROP** ở `V152` (chưa dùng đến). `V222` **tái thêm** để dùng thật trong contract per-article SEO noindex.
 
 > **Đã mở rộng ở `V371`** — xem §"SEO noindex theo từng ngôn ngữ (V371)" bên dưới. Từ `V371`, `articles.seo_no_index` là cờ của **riêng bản tiếng Việt**; bản tiếng Anh dùng cột mới `seo_no_index_en`.
 
-Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.featured`, `ArticleEntity.seoNoIndex`, migration `V222__add_article_featured_and_seo_no_index.sql` (ghi chú: cột `seo_no_index` từng bị drop ở `V152`). Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — featured + seo.noIndex (V222)".
+**Khôi phục chọn tay (V1092):** migration `V1092__restore_manual_article_featured.sql` thêm lại
+`articles.featured` nếu nó đã bị kế hoạch GA4 ngắn hạn gỡ đi, với mặc định `false`, rồi xóa
+hai bảng chỉ phục vụ lượt đọc (`article_view_metrics`, `article_view_sync_state`). Vì vậy từ thời
+điểm này chỉ còn cờ chọn tay `featured`; không còn số lượt đọc hay thời điểm đồng bộ trong dữ liệu
+bài viết.
+
+Status: `OWNER_CONFIRMED_2026-09-20` — `ArticleEntity.featured`, `ArticleEntity.seoNoIndex`,
+migration `V222__add_article_featured_and_seo_no_index.sql`,
+`V1092__restore_manual_article_featured.sql` (ghi chú: cột `seo_no_index` từng bị drop ở
+`V152`). Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — `featured` +
+`homeExperience` + `seo.noIndex` (V272)".
 
 ### SEO noindex theo từng ngôn ngữ (V371)
 
@@ -1801,7 +1814,7 @@ Migration `V272__add_article_home_experience.sql` thêm 1 cột boolean vào b�
 
 Trang chủ hiển thị tối đa 3 bài có `home_experience = true` (mới nhất trước). Khi **không** bài nào được chọn, web fall back về 3 bài viết mới nhất bất kỳ (logic ở `app/page.tsx`, xem [API_CONTRACT.md](API_CONTRACT.md) §"Article list — homeExperience (V272)"). Trước V275 fallback lấy theo category `reviews`; sau khi gộp nhóm còn 1 "Tin tức" thì lấy bài mới nhất bất kỳ.
 
-Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.homeExperience`, migration `V272__add_article_home_experience.sql`. Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — featured + seo.noIndex (V222)".
+Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.homeExperience`, migration `V272__add_article_home_experience.sql`. Xem [API_CONTRACT.md](API_CONTRACT.md) §"Article payload — homeExperience + seo.noIndex".
 
 ### Content categories — REMOVED (V368)
 
@@ -1811,7 +1824,7 @@ Hệ quả contract: bài viết không còn category ở entity/request/respons
 
 ### Page bilingual content — REMOVED (2026-06-24)
 
-> **REMOVED (2026-06-24).** Bảng `pages` đã drop ở `V271__drop_pages_and_guide_page.sql` cùng entity `PageEntity` / domain `Page` / `PageTranslations` / enum `PageType`. Các cột song ngữ `_en` của trang (title/body/hero_*/seo_*, thêm ở `V138`) không còn. 8 route thông tin/chính sách hiện hành là **nội dung tĩnh trong `bigbike-web`**; trong đó có đúng 3 trang chính sách cố định — không còn dữ liệu trang trong DB. Bài viết (`articles`) vẫn giữ cột song ngữ — xem §"Article bilingual content (V138)".
+> **REMOVED (2026-06-24).** Bảng `pages` đã drop ở `V271__drop_pages_and_guide_page.sql` cùng entity `PageEntity` / domain `Page` / `PageTranslations` / enum `PageType`. Các cột song ngữ `_en` của trang (title/body/hero_*/seo_*, thêm ở `V138`) không còn. Từ 2026-10-01, 14 route thông tin/chính sách có danh sách cố định trong `bigbike-web`, gồm 9 chính sách theo `POLICY_PAGE_RULE_001`–`009`; Bảo hành/Đổi trả đọc resource backend chung, các trang khác tĩnh ở web — không có dữ liệu trang trong DB. Bài viết (`articles`) vẫn giữ cột song ngữ — xem §"Article bilingual content (V138)".
 
 ### Menu item bilingual label — English column (V160)
 
@@ -1882,18 +1895,24 @@ Status: `OWNER_CONFIRMED_2026-08-31; CONFIRMED_FROM_CODE_AND_TEST` — `HOME_VID
 
 `articles.body_blocks` là cột `jsonb` thêm vào trong migration `V140`. Cột này lưu mảng block có cấu trúc và dùng chung Java `DescriptionBlock` hierarchy để deserialize/render dữ liệu, nhưng là vocabulary riêng cho bài viết/content, không phải menu mô tả sản phẩm hiện hành.
 
-7 block type cho bài viết/content: `heading`, `paragraph`, `list`, `image`, `video`, `callout`, `divider`.
+8 block type cho bài viết/content: `heading`, `paragraph`, `list`, `image`, `video`, `callout`, `divider`, `table`.
 
-Admin hiện cho tạo mới `heading`, `paragraph`, `list`, `image`, `video`; các type khác vẫn được đọc/render để tương thích dữ liệu cũ. Khối `video` tuân theo `MEDIA_RULE_004`: request ghi chỉ nhận `provider` `youtube|upload`, URL YouTube phải hợp lệ và `upload` phải là media nội bộ. TikTok/Facebook chỉ còn là dữ liệu legacy trên đường đọc/render; khi gửi lại `bodyBlocks`, mọi khối video legacy phải được thay nguồn.
+Riêng khối `image` của bài viết có thể mang `captionHtmlTemplate?: string`: HTML của dòng chú thích cũ ngay dưới ảnh, với đúng một vị trí `{{caption}}` để thay bằng `caption` đã escape. Đây là dữ liệu trình bày nội bộ, không thêm block type và không dùng cho mô tả sản phẩm. Chỉ tạo field này khi nhận diện chắc chắn dòng chú thích và bảo toàn được markup; dòng không chắc phải giữ thành khối riêng. Khi chỉnh `caption`, renderer bài viết đặt chữ mới vào đúng vị trí trong template và lọc HTML an toàn.
+
+Admin hiện cho tạo mới `heading`, `paragraph`, `list`, `image`, `video`, `table`; các type khác vẫn được đọc/render để tương thích dữ liệu cũ. Khối `table` (owner 2026-09-18, `ARTICLE_RULE_008`) có `{ type: "table", html: "<table>…</table>" }`, `html` bắt buộc, tối đa 50.000 ký tự; HTML được lọc an toàn khi render, giữ hàng/cột, ô tiêu đề, colspan/rowspan và định dạng nội dung hợp lệ. Admin dùng trình soạn bảng hiện hữu để sửa từng ô. Không thêm table vào menu/import mô tả sản phẩm; API ghi mô tả sản phẩm từ chối loại khối table. Khi lưu bài viết, giữ liên kết tương đối/neo và liên kết gọi điện `tel:`, ảnh nội bộ, cấp tiêu đề và số bắt đầu danh sách; vẫn lọc script, sự kiện và giao thức nguy hiểm. Bài viết nhận tối đa **400 khối**. Bài rỗng chưa có khối được điền mảng rỗng, không tự tạo nội dung. Khối `video` tuân theo `MEDIA_RULE_004`: request ghi chỉ nhận `provider` `youtube|upload`, URL YouTube phải hợp lệ và `upload` phải là media nội bộ. TikTok/Facebook chỉ còn là dữ liệu legacy trên đường đọc/render; khi gửi lại `bodyBlocks`, mọi khối video legacy phải được thay nguồn.
 
 **Migration (V141):** HTML cũ trong cột `body` của tất cả article đã được parse sang blocks bởi `BodyBlockParser` khi chạy migration. Parser ánh xạ từng top-level HTML element sang block type gần nhất. Element không nhận dạng được trở thành fallback `paragraph` (outerHTML được giữ nguyên).
 
-**Read behavior:** Admin detail read trả về `bodyBlocks` trong `AdminContentItem`. Public read (`GET /api/v1/articles/{slug}`) vẫn chỉ đọc `body` HTML — không thay đổi contract web.
+**Read behavior:** Admin detail read trả về `bodyBlocks` trong `AdminContentItem`; khi chưa có khối nhưng có HTML, sinh khối trong bộ nhớ từ `BodyBlockParser`, không ghi DB qua GET. Public read (`GET /api/v1/articles/{slug}`) vẫn chỉ đọc `body` HTML — không thay đổi contract web. Màn admin cũng dựng khối từ HTML nếu phản hồi của máy chủ cũ còn thiếu khối, tránh mất nội dung khi thêm khối đầu tiên.
 
 **Mutation semantics (presence flag):**
-- Key `bodyBlocks` có mặt trong request → render blocks → ghi đè cả `body_blocks` lẫn `body`.
-- Key `bodyBlocks` vắng mặt → `body` được cập nhật bình thường; `body_blocks` không bị đụng.
+- Key `bodyBlocks` có mặt trong request → ghi `body_blocks`; nếu danh sách khối thực sự thay đổi thì render lại `body`. Nếu danh sách không đổi, giữ nguyên byte HTML `body` hiện có để thao tác Lưu không làm mất định dạng cũ.
+- Key `bodyBlocks` vắng mặt và có `body` → lưu HTML theo hợp đồng hiện hữu và tự sinh lại `body_blocks` tương ứng. Không gửi cả hai → giữ nguyên.
+- Nội dung `translations.en.body` được giữ nguyên byte khi gửi lại đúng giá trị đã lưu; bản tiếng Anh không bị tái lọc khi chỉ Lưu khối VI.
+- Admin ghi nhớ mảng khối đã tải và chỉ gửi `bodyBlocks` khi cấu trúc/nội dung khối thay đổi; GET vẫn chỉ đọc. Khối mới dựng từ HTML do cột khối còn thiếu vẫn được gửi vào lần Lưu đầu tiên để điền cột thiếu.
 - Array rỗng `[]` → `body_blocks` = `[]`; `body` = `""`.
+
+**Chuyển đổi và chống tái diễn (2026-09-18):** Sau khi hỗ trợ `table`, điền `body_blocks` cho bài có HTML mà thiếu khối; tuyệt đối không cập nhật `body`, `body_en` hay metadata. Bộ đồng bộ tại DB xử lý cả đường ghi SQL/import ngoài ứng dụng: HTML thay đổi mà phần khối không thay đổi thì đánh dấu khối cần dựng lại; tác vụ nền điền khối thiếu bằng parser, cập nhật có điều kiện theo đúng HTML đã đọc để không ghi đè sửa đồng thời. `[]` cùng HTML rỗng là xóa có chủ đích và được giữ nguyên. Bản khối có sẵn không bị đợt chuyển đổi ghi đè.
 
 Status: `CONFIRMED_FROM_CODE` — `ArticleEntity.bodyBlocks`, `Article.bodyBlocks`, `AdminContentItem.bodyBlocks`, `UpsertArticleRequest.bodyBlocksPresent`, `AdminContentMutationService.applyArticlePatch`, migration `V140/V141`.
 
@@ -2009,8 +2028,23 @@ variant data is unchanged. Unknown aliases have no mapping, never create a
 bucket, and are surfaced only by the owner audit query. Adding a color, finish
 or alias therefore requires data configuration but no code deployment.
 
-Status: `CONFIRMED_FROM_OWNER_DECISION_2026-08-15` — `BUSINESS_RULES.md`
-`CATALOG_RULE_006`–`CATALOG_RULE_010`.
+`catalog_visual_display_terms` is a display-only adjunct for the English
+screen-reader name of a product color option:
+
+| Column | Type | Constraint / purpose |
+|---|---|---|
+| `source_label` | `VARCHAR(160)` | Source term matched case-insensitively at word boundaries; PK. |
+| `label_en` | `VARCHAR(160)` | Required English replacement. |
+| `active` | `BOOLEAN` | Inactive terms are ignored. |
+
+It is deliberately separate from `catalog_visual_alias_mappings`: these terms
+do not classify a product, populate a facet, resolve a color query, or extend
+internal catalog normalization. It only supplements the existing
+12-color/4-finish display localizer for the public option's optional
+`accessibilityLabel`; raw variant values remain unchanged.
+
+Status: `CONFIRMED_FROM_OWNER_DECISION_2026-09-20` — `BUSINESS_RULES.md`
+`CATALOG_RULE_006`–`CATALOG_RULE_010`, `CATALOG_RULE_014`.
 
 ### customers / customer_addresses — account page fields (V127)
 
@@ -2051,6 +2085,39 @@ meaning. `variantName` supplies GA4 `item_variant`; `brandName` and `categoryNam
 and requires no schema migration. The owner confirmed the Merchant Center variant-level ID
 `VENTOLADY-NUXS`; GA4 uses the selling variant SKU (or the product SKU for a product without
 variants), not the product grouping SKU. See `INTEGRATION_GUIDE.md` for unselected catalog items.
+
+### GA4 cancellation event outbox
+
+`ga4_event_outbox` is a durable, reporting-only delivery ledger. For an order placed on/after the
+GA4 production cutover `2026-09-06 00:00 Asia/Ho_Chi_Minh`, it is written in the same database
+transaction that first moves the operational order to `CANCELLED`. Earlier orders are ineligible.
+The ledger does not change the order/payment lifecycle and does not represent money being returned.
+
+`orders.ga4_client_id VARCHAR(128) NULL` snapshots the pseudonymous GA4 browser id supplied by
+the successful storefront checkout. It must match `positive-number.positive-number`; invalid input
+is discarded rather than rejecting an order. The field is never returned in public/admin order
+responses and contains no name, email, phone, address, free text or internal customer id.
+
+| Column | Type / constraint | Meaning |
+|---|---|---|
+| `id` | UUID PK | Stable event/delivery id. |
+| `order_id` | UUID FK `orders(id)`, not null | Order whose measured revenue must be reversed. |
+| `event_name` | VARCHAR(32), check `refund` | GA4 event type; only `refund` exists in this ledger. |
+| `payload_json` | TEXT, not null | Immutable Measurement Protocol body snapshot. It uses the order's captured GA4 `client_id` when available (or one shared non-customer fallback id for older/blocked-browser orders), optional internal `user_id`, transaction/order number, VND value and sanitized item snapshots only. |
+| `status` | VARCHAR(16), check `PENDING|SENDING|SENT|FAILED` | Durable delivery state. `SENDING` is committed before the network call; `FAILED` and an unresolved `SENDING` row are terminal until manually reconciled. |
+| `attempt_count` | INTEGER ≥ 0 | Number of network attempts. |
+| `next_attempt_at` | TIMESTAMPTZ, not null | Earliest time the initial pending row may be claimed. |
+| `last_attempt_at`, `sent_at` | TIMESTAMPTZ, nullable | Delivery diagnostics. |
+| `last_error_code` | VARCHAR(64), nullable | Bounded, non-PII failure category; never a raw response/payload. |
+| `created_at`, `updated_at` | TIMESTAMPTZ, not null | Audit timestamps. |
+| `version` | BIGINT, not null | Optimistic locking for dispatcher claims. |
+
+`UNIQUE(order_id, event_name)` is the business idempotency key. Dispatch scans only `PENDING`
+rows ordered by `next_attempt_at,id`, then commits the chosen row as `SENDING` before making the
+network call. A failed or ambiguous request is never automatically resent: `FAILED` or stale
+`SENDING` rows require manual reconciliation in GA4. This at-most-once policy prevents one
+cancellation from subtracting revenue twice. The payload must never contain name, email, phone,
+shipping/billing address, chat/review text or `orderKey`. See `ANALYTICS_RULE_004`.
 
 ### Order line-item thumbnail — `productThumbnailUrl` (response-only, no DB column)
 
@@ -2157,19 +2224,12 @@ gates `PATCH /api/v1/customer/me` and both avatar endpoints on it, and `Customer
 locked from self-editing regardless of whether `customers.password_hash` is also non-null (a
 grandfathered pre-2026-08-07 merge) — see CUSTOMER_RULE_010.
 
-**Known edge case — email-collision with a password account can prevent Google+Facebook from
-merging with each other.** When a verified OAuth email matches an *existing password account*,
-`linkOrCreate` creates a new OAuth-only customer with `email` set to `null` (to avoid colliding
-with `customers_email_unique`, a partial unique index that still enforces uniqueness among non-null
-emails table-wide — see `customers — avatar_url` section's sibling `V64__add_customer_email_phone_unique.sql`).
-If the *other* social provider is later used with that same real email, its `findByEmail` lookup no
-longer finds the first OAuth account (its `email` column is `null`), matches the password account
-again instead, and — since that account has a password — falls through to creating a **third**,
-still-separate customer. Net effect: a customer with a password account plus both Google and
-Facebook sharing that same address ends up with 3 distinct customer rows, not the 2 (password +
-one merged social) the rule would otherwise produce. Accepted trade-off, not a bug — narrow enough
-in practice (requires all three identities to share one exact address) that a dedicated matching
-column was judged not worth the added schema complexity.
+**Email collision with a password account (updated 2026-09-26, CUSTOMER_RULE_013).** Until
+2026-09-26 a verified OAuth email matching an *existing password account* created a separate
+OAuth-only customer with `email = null`. That path is gone: `linkOrCreate` now refuses the sign-in
+(`oauth_email_registered`) unless the identity is already linked to that same password account.
+Rows created by the old path still exist with `email = null`; they can no longer sign in while the
+password account owns the provider email.
 
 ### customer_privacy_consents — versioned evidence for new-account agreement (V1063)
 
@@ -2409,20 +2469,19 @@ admin concurrency metadata.
 | `general` | Site name, footer description. `site_name` drives header/SEO; `footer_description` drives the header's mobile shop-info panel and the web footer (`WpFooter.tsx` — reconnected 2026-07-04 as the sole exception; see `API_CONTRACT.md` "Footer hardcoded" note). `footer_tagline`/`bct_url`/`business_registration` **removed 2026-07-03 (V308)** — see §"`footer_tagline`/`bct_url`/`business_registration` keys — removed" below. | Cài đặt chung |
 | `contact` | Hotline/email/address, opening hours, social links — **shared site data** for the header + the static `/lien-he` and `/gioi-thieu` pages + homepage, product page, floating-chat widget, order-confirmation page. Since 2026-06-23 both the contact page builder and the Settings "Liên hệ" tab are gone; the group has **no admin UI** (hidden via `HIDDEN_GROUPS`). Rows stay in the DB and feed the web read-only; unhide `CONTACT` to allow editing again. **Footer stopped consuming this group 2026-07-03** (hardcoded in `WpFooter.tsx`) — editing these rows updates every surface above except the footer. | (ẩn — dữ liệu chung, không UI) |
 | `public_home` | **Removed 2026-07-03 (V311).** Was: homepage promo banner, experience/about blocks, featured/news/videos kicker+title (15 keys). All hardcoded in `bigbike-web` now — see §"`public_home` keys — removed" below. | (đã gỡ) |
-| `payment` | Bank-transfer account shown to customers at checkout — holder, number, bank, branch (4 keys) | Thanh toán |
+| `payment` | **Removed 2026-09-09.** Bank-account settings are no longer stored or shown; payment-method history lives on orders/payment records. The 2026-10-01 policy publishes the owner-supplied Shinhan account for direct in-store purchases as fixed VI/EN page content (`POLICY_PAGE_RULE_009`), without a setting or new online payment method. | (đã gỡ) |
 | `public_about` | **Removed 2026-06-24 (V274).** The About page (`/gioi-thieu`) is **fully static** — copy from i18n `About`, the 5 service tiles from theme assets; the web never read these keys (`AboutPageContent.tsx`). The 28 rows (seeded V223, re-seeded V269), the `SettingDefinitionRegistry` defs, and `AboutServiceMediaSeeder` were all dropped. | (đã gỡ) |
 | `public_product` | **No shared settings.** All product-detail content is per-product now: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadges`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233. | (không có tab — nhóm trống) |
 | `public_hero` | Hero banners for listing pages (`/san-pham`, `/brands`, `/tin-tuc`) — 14 active keys (desktop background, title, alt text and per-page illustration; plus 2 global fallbacks). The 3 legacy `hero_*_mobile_image_url` keys remain stored and returned for compatibility only; they are not editable or rendered. Managed by the dedicated **Banner trang** admin screen (`BannerScreen.jsx`), not the generic settings screen. | Banner trang |
 | `promo` | **No rows.** The promo-banner keys (`promo_title`/`promo_off`/`promo_href`/`promo_image_url`) used to live in the `public_home` group — that group was removed entirely in V311 (hardcoded in `bigbike-web`); no `promo` group ever existed in the DB. | (không có tab — nhóm trống) |
 | `seo` | Homepage SEO title and description (`seo_home_title`/`seo_home_description`), plus the homepage bottom SEO HTML block (`home_content_bottom_html`). The visible homepage H1 is the localized title of the introduction block, not a site-setting field. The former `seo_home_h1` row is retained in storage for compatibility but is no longer editable or part of the public homepage contract. | SEO website |
-| `ai_assistant` | Vận hành Trợ lý BigBike: công tắc chung, trần mặc định 400 lượt AI/ngày giờ Việt Nam, số cặp hỏi–đáp gần nhất gửi model (`ai_assistant_recent_turn_pairs`, `0..12`, mặc định `12`) và công tắc diễn giải cách nói tự nhiên. Trần 40 lượt/hội thoại cố định; hạn mức ảnh/ngày là setting `ai_assistant_image_daily_limit`, mặc định 60, 0–10.000. Lịch sử lấy từ đúng conversation, che PII rồi cắt 450 ký tự/tin. Không chứa khoá AI. | Trợ lý BigBike |
 | `order_operations` | Private runtime data. `order_overdue_days` (`INTEGER`, effective value `2`, minimum `1`) remains stored for the daily overdue reminder, Orders filter and CSV export; it is not editable or exposed as an admin Settings tab and is never exposed by public settings. | (ẩn — dữ liệu nội bộ, không UI) |
 | `store` | **No active rows.** The former low-stock threshold was removed in V279 with the quantity-based inventory model; this group must not be used to recreate a “sắp hết hàng” tier. | (không có tab — nhóm trống) |
 | `inventory` | Hai khóa private cho bản tin hết hàng hằng ngày: `inventory_out_of_stock_digest_enabled` (`BOOLEAN`, mặc định `true`) và `inventory_out_of_stock_digest_time` (`STRING`, mặc định `08:00`, `HH:mm` giờ Việt Nam). Các khóa tồn kho/bảo hành cũ vẫn đã gỡ như mô tả ở trên; không có ngưỡng số lượng. | Cảnh báo hết hàng |
 | `product_assign` | Editable text of the "Phân công" guide shown on the product AND content/article create/edit screens (shared data) — `product_assign_title` (STRING) + `product_assign_roles` (JSON array, 1–6 dynamic role entries, V318). **Super-admin-only writable** (see below). | Phân công sản phẩm |
 | `security` | **Removed 2026-06-24 (V273).** `login_max_attempts` + `session_timeout_minutes` were seeded (V29) but **never enforced** by any auth/session code (no account lockout, no idle-timeout); dropped from the DB and from `SettingDefinitionRegistry`. | (đã gỡ) |
 
-**Removed:** `payment_sepay` — the SePay payment gateway was removed in V59; any leftover `payment_sepay` rows are deleted by V132.
+**Removed:** `payment_sepay` — the SePay payment gateway was removed in V59; any leftover `payment_sepay` rows are deleted by V132. The four legacy `payment` bank-account keys are removed by the COD-only cutover migration.
 
 ### `footer_tagline`/`bct_url`/`business_registration` keys — removed (2026-07-03, V308)
 
@@ -2567,6 +2626,9 @@ V373, V374, V375 and V1054 remain immutable historical migrations. Automatic out
 
 ## Trợ lý BigBike — dữ liệu sau rút gọn (V1070, owner decision 2026-08-30)
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 Migration V1068 và V1070 là các bước mới, không sửa migration đã chạy. V1070 theo quyết định
 của chủ shop ngày 2026-08-30 xóa dứt điểm dữ liệu/cấu trúc phục vụ chat người thật và các
 setting câu chào, gợi ý nhanh, lịch trực, email handoff, trần hội thoại và công tắc ảnh.
@@ -2656,12 +2718,15 @@ Hạn tệp video bảy ngày ghi đè hạn tệp ảnh 90 ngày; lịch sử c
 
 - Browser chat snapshot giữ tham chiếu `videos[]` (ID, trạng thái, loại tệp, dung lượng, thời lượng, có âm thanh, thời điểm tạo/hết hạn và contentPath riêng tư). Không lưu bytes, blob URL, tên tệp gốc hay bản chép lời; metadata cũ không có `videos` vẫn đọc được. Khi khôi phục snapshot, giao diện giữ trạng thái loading của video cho đến khi nhận được token của phiên chat, rồi mới tải bytes; không gửi yêu cầu thiếu định danh trong lúc phiên đang khôi phục. History luôn kiểm tra quyền/hết hạn tại máy chủ khi tải bytes.
 
-### Image reliability and receipts (V1082; owner decision 2026-09-08)
+### Image reliability (V1082; owner decisions 2026-09-08 and 2026-09-09)
 
 - `chat_images`: thêm `attachment_position` (PostgreSQL SMALLINT, 0..2, mặc định 0; ánh xạ Hibernate dùng JDBC SMALLINT để qua kiểm schema khi khởi động), `quota_reserved_on` (ngày Việt Nam, nullable), `analysis_json` (JSONB nullable, chỉ kết quả đã kiểm tra; không raw prose/PII), `analysis_deadline_at` (nullable TIMESTAMPTZ; lấy deadline chung đầu lượt gửi, dùng lại trong retry). Status thêm `ANALYSIS_FAILED`, còn `UNRECOGNIZED` nghĩa là đã xem nhưng chưa nhận ra. Reservation và dấu trên ảnh ghi cùng transaction; retry không giữ lượt mới.
-- `chat_conversations.context_json`: thêm `imageEvidence` nullable, gồm hãng/nhóm đã chuẩn hóa, tên hãng quan sát an toàn, các lựa chọn ảnh có thứ tự và mẫu đã đối chiếu. Chỉ trong chính phiên/hội thoại nối tiếp; không filename, chữ trên biên lai, dữ liệu người hoặc ảnh bytes. Record cũ thiếu trường vẫn đọc được.
-- `admin_notifications.chat_message_id`: nullable FK tới `chat_messages` ON DELETE CASCADE; unique khi khác null, chống trùng thông báo tiếp nhận cùng tin. Payload chỉ schemaVersion/conversationId/messageId; notification không kéo dài tuổi ảnh. Dọn thông báo chung không cắt ngắn vòng đời biên lai; biên lai được xóa theo FK khi tin/hội thoại bị xóa hoặc hết hạn. Các loại thông báo khác giữ hành vi hiện có.
+- `chat_conversations.context_json`: thêm `imageEvidence` nullable, gồm hãng/nhóm đã chuẩn hóa, tên hãng quan sát an toàn, các lựa chọn ảnh có thứ tự và mẫu đã đối chiếu. Chỉ trong chính phiên/hội thoại nối tiếp; không filename, dữ liệu người hoặc ảnh bytes. Record cũ thiếu trường vẫn đọc được.
+- `admin_notifications.chat_message_id`: field introduced by V1082 for the retired image-notification path and removed by V1083. Current notification rows contain only supported order/inventory data.
 - `site_settings.ai_assistant_image_daily_limit`: private INTEGER, group ai_assistant, mặc định 60; migration không sửa quota chữ hoặc bộ đếm đã dùng.
 - CLI chuyển kho lưu manifest vận hành ngoài git gồm tham chiếu ảnh trước–sau, version/checksum, trạng thái và lý do bỏ qua; không dùng bảng live migration cũ và không chứa dữ liệu khách.
 
-Ảnh chứng từ, biên lai, người, hàng hỏng hoặc ảnh bị chặn chỉ giữ mã phân loại/an toàn trong `analysis_json`; không giữ hãng/nhóm/tên mẫu mà provider có thể suy từ chữ riêng tư trên các ảnh này. Với ảnh sản phẩm, nhóm và slug lưu đệm được đối chiếu catalog; tên hãng ngoài catalog chỉ là quan sát ngắn đã kiểm cấu trúc, không phải thông tin về đơn hàng hay cá nhân.
+Ảnh không phải sản phẩm, người, hàng hỏng hoặc ảnh bị chặn chỉ giữ mã phân loại/an toàn trong
+`analysis_json`; không tạo thông báo hoặc gọi API thanh toán. Với ảnh sản phẩm, nhóm và slug lưu
+đệm được đối chiếu catalog; tên hãng ngoài catalog chỉ là quan sát ngắn đã kiểm cấu trúc, không
+phải thông tin về đơn hàng hay cá nhân.

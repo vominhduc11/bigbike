@@ -43,6 +43,35 @@ import java.util.List;
 @Service
 public class BodyBlockParser {
 
+    /** Article conversion preserves links, nested lists and rich headings as editable HTML. */
+    public List<DescriptionBlock> parseArticleHtmlToBlocks(String html) {
+        if (html == null || html.isBlank()) return List.of();
+        List<DescriptionBlock> blocks = new ArrayList<>();
+        for (Node node : Jsoup.parseBodyFragment(html).body().childNodes()) {
+            if (node instanceof Element el) {
+                boolean richList = (el.tagName().equals("ul") || el.tagName().equals("ol"))
+                        && (!el.select("a, img, strong, b, em, i, ul ul, ol ol, ul ol, ol ul").isEmpty()
+                            || el.hasAttr("start"));
+                boolean richHeading = el.tagName().matches("h[1-6]")
+                        && (!el.children().isEmpty() || el.hasAttr("id") || !el.tagName().matches("h[23]"));
+                boolean richFigure = el.tagName().equals("figure")
+                        && (el.select("img").size() != 1 || !el.select("a, video, iframe, table").isEmpty()
+                            || !el.ownText().isBlank()
+                            || el.children().stream().anyMatch(child -> !child.tagName().matches("img|figcaption")));
+                // Article quotes and feature layouts may contain several paragraphs/links.
+                // Keep their full markup instead of flattening them into plain text.
+                boolean richContainer = el.tagName().equals("blockquote") || el.tagName().equals("div");
+                DescriptionBlock block = el.tagName().equals("table")
+                        ? DescriptionBlock.TableBlock.builder().type("table").html(el.outerHtml()).build()
+                        : richList || richHeading || richFigure || richContainer ? fallback(el) : parseElement(el);
+                if (block != null) blocks.add(block);
+            } else if (node instanceof TextNode text && !text.isBlank()) {
+                blocks.add(plainTextParagraph(text.text()));
+            }
+        }
+        return blocks;
+    }
+
     public List<DescriptionBlock> parseHtmlToBlocks(String html) {
         if (html == null || html.isBlank()) return List.of();
 

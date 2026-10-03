@@ -2,18 +2,16 @@
 
 import Link from "@/i18n/StorefrontLink";
 import { useLocale } from "next-intl";
-import { getStaticPage, getGuideLayout } from "@/lib/content/static-pages";
+import { getGuideLayout } from "@/lib/content/static-pages";
+import { getPolicyLinks, getRetainedPolicyLinks } from "@/lib/content/policy-pages";
 import { translatePath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 
-/** 5 link cố định của footer (chính sách + hướng dẫn size) — client component để
+/** Liên kết chính sách và hướng dẫn size — client component để
  * đổi ngôn ngữ ngay khi bấm nút chuyển vi/en, không cần tải lại trang (cùng cơ chế
  * với menu header - xem HeaderMenu.tsx). Không còn gọi API/Menu admin. */
-function buildFooterMenuItems(locale: string) {
+function buildRetainedMenuItems(locale: string) {
   const isEn = locale === "en";
-  const returnPage = getStaticPage("chinh-sach-doi-tra-hang", locale);
-  const warrantyPage = getStaticPage("chinh-sach-bao-hanh", locale);
-  const privacyPage = getStaticPage("chinh-sach-bao-mat-thong-tin", locale);
 
   const guideLayout = getGuideLayout(locale);
   const sizeMuEntry = guideLayout.entries.find((e) => e.pageSlug === "cach-do-size-dau");
@@ -22,21 +20,7 @@ function buildFooterMenuItems(locale: string) {
   );
 
   return [
-    {
-      id: "returns",
-      href: "/chinh-sach/chinh-sach-doi-tra-hang/",
-      label: returnPage?.title || (isEn ? "Return Policy" : "Chính sách đổi trả hàng"),
-    },
-    {
-      id: "warranty",
-      href: "/chinh-sach/chinh-sach-bao-hanh/",
-      label: warrantyPage?.title || (isEn ? "Warranty Policy" : "Chính sách bảo hành"),
-    },
-    {
-      id: "privacy",
-      href: "/chinh-sach/chinh-sach-bao-mat-thong-tin/",
-      label: privacyPage?.title || (isEn ? "Privacy Policy" : "Chính sách bảo mật thông tin"),
-    },
+    ...getRetainedPolicyLinks(locale),
     {
       id: "helmet-sizing",
       href: "/huong-dan/size-mu/",
@@ -53,20 +37,41 @@ function buildFooterMenuItems(locale: string) {
   ];
 }
 
+function renderLink(item: { href: string; label: string }, locale: string) {
+  return (
+    <Link
+      href={translatePath(item.href, locale as Locale)}
+      className="inline-flex min-h-11 items-center text-white! no-underline! hover:text-brand-inverse!"
+    >
+      {item.label}
+    </Link>
+  );
+}
+
 export function FooterMenuLinks() {
   const locale = useLocale();
-  const items = buildFooterMenuItems(locale);
+  const policies = getPolicyLinks(locale);
 
   return (
-    <ul className="m-0 flex list-none flex-col gap-1 p-0">
-      {items.map((item) => (
+    <ul data-footer-policy-list className="m-0 flex list-none flex-col gap-2 p-0">
+      {policies.map((item) => (
         <li key={item.href} data-footer-menu-link={item.id}>
-          <Link
-            href={translatePath(item.href, locale as Locale)}
-            className="text-white! no-underline! hover:text-brand-inverse!"
-          >
-            {item.label}
-          </Link>
+          {renderLink(item, locale)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function FooterSupportLinks() {
+  const locale = useLocale();
+  const items = buildRetainedMenuItems(locale);
+
+  return (
+    <ul data-footer-retained-links className="m-0 flex list-none flex-col gap-2 p-0">
+      {items.map((item) => (
+        <li key={item.href} data-footer-support-link={item.id}>
+          {renderLink(item, locale)}
         </li>
       ))}
     </ul>

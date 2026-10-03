@@ -51,7 +51,6 @@ Wildcard `*` satisfies every dependency for `SUPER_ADMIN`, but it is not listed 
 | Admin Users | `admin-users.read` | — | `admin-users.write` | role list/assignment: `roles.read` |
 | Roles | `roles.read` | — | `roles.write` | dependency-closed payload required |
 | Reports | `reports.read` | — | export: `reports.export` | export is sensitive and depends on `reports.read` |
-| Trợ lý BigBike | `chat.read` | — | — | Chỉ xem danh sách, transcript, ảnh và thống kê; không có quyền gửi, nhận hoặc điều khiển chat người thật |
 
 Media access is deliberately **not** an automatic dependency of Product/Content/Catalog/Settings write permissions. Missing `media.read` disables the picker and prevents media API calls; `media.write` is required for upload and folder management.
 
@@ -95,6 +94,9 @@ permissions. Evidence: `REVIEW_RULE_014`–`016`, `SecurityConfig.java`.
 Danh sách từ chối không có thao tác xoá, kể cả `SUPER_ADMIN`; việc từ chối là vĩnh viễn theo quyết định owner. Mã bí mật không xuất hiện ở bất kỳ API admin nào.
 
 ### Trợ lý BigBike permissions
+
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
 
 | Permission | Granted roles (seed) | Endpoint | Evidence |
 |---|---|---|---|
@@ -225,7 +227,6 @@ HMAC identity limiter rather than a new account-lock state. Admin mutations use 
 | `/api/v1/admin/orders` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listOrders` |
 | `/api/v1/admin/orders/{orderId}` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.getOrderDetail` |
 | `/api/v1/admin/orders/{orderId}/allowed-transitions` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAllowedTransitions` |
-| `/api/v1/admin/orders/{orderId}/confirm-bank-transfer` POST | `orders.write`; operational BANK_TRANSFER in PENDING/PROCESSING only, historical rows read-only | `OWNER_CONFIRMED_2026-09-07` | PAY_RULE_002, AdminOrderController |
 | `/api/v1/admin/orders/{orderId}/status` PATCH | `orders.write` | `CONFIRMED_FROM_CODE` | `AdminOrderController.updateOrderStatus` |
 | `/api/v1/admin/orders/{orderId}/audit` GET | `orders.read` | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
 | `/api/v1/customer/orders/**` | `ROLE_CUSTOMER` | `CONFIRMED_FROM_CONFIG` | `SecurityConfig.java` |
@@ -302,8 +303,13 @@ There is no admin-lock action, technical role or `maintenance.manage` permission
 
 ### Video chat riêng tư — 08/09/2026
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 `CHAT_RULE_065`: video dùng đúng ownership và `chat.read` của ảnh. Khách chỉ tải/xem video thuộc hội thoại của mình; thiếu/sai định danh, quá hạn bảy ngày hoặc bị chặn đều trả 404. Admin thiếu `chat.read` trả 403; có quyền vẫn không xem được tệp đã hết hạn/bị chặn. Không cấp quyền mới, không có URL MinIO công khai và không cho sửa transcript.
 
-### Receipt image notifications — 2026-09-08
+### Payment receipt notifications — removed 2026-09-09
 
-CHAT_RULE_066: `chat.read` cho xem thông báo biên lai và ảnh riêng tư trong Hội thoại; notifications GET/mark-all-read hỗ trợ scope này, không cấp quyền đơn hàng. `settings.read/settings.write` đọc/sửa hạn mức ảnh; `settings.read` thấy số đã dùng nhưng không xem ảnh. `orders.write` vẫn là quyền duy nhất cho lệnh xác nhận chuyển khoản hiện có. Không cấp tự động quyền cho vai trò, không khôi phục `chat.reply`.
+`chat.read` continues to protect private chat history and product-image attachments. It does not
+grant access to the admin notification inbox. That inbox requires only `orders.read` or
+`inventory.read`; `settings.read/settings.write` still cover supported assistant settings.

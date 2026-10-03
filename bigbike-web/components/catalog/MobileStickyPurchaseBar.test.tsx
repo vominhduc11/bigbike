@@ -62,20 +62,102 @@ describe("MobileStickyPurchaseBar", () => {
     act(() => resize());
     expect(document.documentElement.style.getPropertyValue("--bb-pdp-sticky-height")).toBe("96px");
 
-    act(() =>
-      intersect(
-        [{ isIntersecting: false } as IntersectionObserverEntry],
-        {} as IntersectionObserver,
-      ),
-    );
-    expect(view.container.querySelector(".bb-pdp-sticky-cta")).toHaveAttribute(
-      "aria-hidden",
-      "false",
-    );
-
     view.unmount();
     expect(document.documentElement.style.getPropertyValue("--bb-pdp-sticky-height")).toBe("64px");
     expect(resizeDisconnect).toHaveBeenCalled();
     expect(intersectionDisconnect).toHaveBeenCalled();
+  });
+
+  it("chỉ hiện sau khi vùng mua hàng đã đi qua phía trên màn hình", () => {
+    const view = render(
+      <>
+        <div data-purchase-actions />
+        <button type="button" data-purchase-add />
+        <MobileStickyPurchaseBar addToCartLabel="Thêm vào giỏ" zaloLabel="Tư vấn Zalo" />
+      </>,
+    );
+    const sticky = view.container.querySelector(".bb-pdp-sticky-cta");
+
+    expect(sticky).toHaveAttribute("aria-hidden", "true");
+
+    act(() =>
+      intersect(
+        [
+          {
+            isIntersecting: false,
+            boundingClientRect: { top: 900, bottom: 956 },
+            rootBounds: { top: 0 },
+          } as IntersectionObserverEntry,
+        ],
+        {} as IntersectionObserver,
+      ),
+    );
+    expect(sticky).toHaveAttribute("aria-hidden", "true");
+
+    act(() =>
+      intersect(
+        [
+          {
+            isIntersecting: true,
+            boundingClientRect: { top: 120, bottom: 176 },
+            rootBounds: { top: 0 },
+          } as IntersectionObserverEntry,
+        ],
+        {} as IntersectionObserver,
+      ),
+    );
+    expect(sticky).toHaveAttribute("aria-hidden", "true");
+
+    act(() =>
+      intersect(
+        [
+          {
+            isIntersecting: false,
+            boundingClientRect: { top: -80, bottom: -24 },
+            rootBounds: { top: 0 },
+          } as IntersectionObserverEntry,
+        ],
+        {} as IntersectionObserver,
+      ),
+    );
+    expect(sticky).toHaveAttribute("aria-hidden", "false");
+
+    act(() =>
+      intersect(
+        [
+          {
+            isIntersecting: true,
+            boundingClientRect: { top: -20, bottom: 36 },
+            rootBounds: { top: 0 },
+          } as IntersectionObserverEntry,
+        ],
+        {} as IntersectionObserver,
+      ),
+    );
+    expect(sticky).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("giữ tỷ lệ 60/40 và để Zalo chiếm toàn hàng khi hết hàng", () => {
+    const { container, rerender } = render(
+      <>
+        <div data-purchase-actions />
+        <button type="button" data-purchase-add />
+        <MobileStickyPurchaseBar addToCartLabel="Thêm vào giỏ" zaloLabel="Tư vấn Zalo" />
+      </>,
+    );
+
+    expect(container.querySelector("[data-sticky-purchase-add]")).toHaveClass("flex-[3]");
+    expect(container.querySelector("[data-sticky-zalo]")).toHaveClass("flex-[2]");
+    expect(container.querySelectorAll("[data-sticky-purchase-label]")).toHaveLength(2);
+
+    rerender(
+      <>
+        <div data-purchase-actions />
+        <button type="button" data-purchase-add />
+        <MobileStickyPurchaseBar addToCartLabel="Thêm vào giỏ" zaloLabel="Tư vấn Zalo" outOfStock />
+      </>,
+    );
+    expect(container.querySelector("[data-sticky-purchase-add]")).not.toBeInTheDocument();
+    expect(container.querySelector("[data-sticky-zalo]")).toHaveClass("flex-[2]");
   });
 });

@@ -11,7 +11,7 @@ import { MediaPickerModal } from './MediaPickerModal'
 import { VideoPickerModal } from './VideoPickerModal'
 import { SortableList } from './Sortable'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
-import { cn, generateId } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import {
   CONTENT_MENU,
   PRODUCT_MENU,
@@ -78,9 +78,23 @@ export function BlockEditor({
   const getMediaAltSync = useMediaAltSyncList()
   // Trạng thái thu gọn per-khối (P2-19) — chỉ ở UI, keyed theo _key. KHÔNG đưa vào
   // model lưu (_key đã bị strip trước khi lưu) nên không làm bẩn payload/contract.
-  const [collapsedKeys, setCollapsedKeys] = useState(() => new Set())
+  const [collapsedKeys, setCollapsedKeys] = useState(
+    () =>
+      new Set(!productMode && blocks.length > 20 ? blocks.slice(1).map((block) => block._key) : []),
+  )
+  const [hasInitialBlocks, setHasInitialBlocks] = useState(blocks.length > 0)
+  // The form hydrates after its first render. Collapse long recovered articles
+  // then as well, so opening one does not mount hundreds of rich text editors.
+  if (!hasInitialBlocks && blocks.length > 0) {
+    setHasInitialBlocks(true)
+    if (!productMode && blocks.length > 20) {
+      setCollapsedKeys(new Set(blocks.slice(1).map((block) => block._key)))
+    }
+  }
+  const atLimit = !productMode && blocks.length >= 400
 
   function addBlock(type, preset) {
+    if (atLimit) return
     onChange([...blocks, createBlock(type, preset)])
   }
 
@@ -108,15 +122,9 @@ export function BlockEditor({
     onChange(blocks.filter((_, i) => i !== index))
   }
 
-  function duplicateBlock(index) {
-    const copy = { ...blocks[index], _key: generateId() }
-    const next = [...blocks]
-    next.splice(index + 1, 0, copy)
-    onChange(next)
-  }
-
-  // Chèn khối mới ngay dưới khối hiện tại (P2-19) — cùng khuôn splice như duplicate.
+  // Chèn khối mới ngay dưới khối hiện tại.
   function insertBlock(index, type, preset) {
+    if (atLimit) return
     const next = [...blocks]
     next.splice(index + 1, 0, createBlock(type, preset))
     onChange(next)
@@ -172,11 +180,10 @@ export function BlockEditor({
             productMode={productMode}
             collapsed={collapsedKeys.has(block._key)}
             onToggleCollapse={() => toggleCollapsed(block._key)}
-            insertMenu={menu}
+            insertMenu={atLimit ? undefined : menu}
             onInsertBelow={(type, preset) => insertBlock(index, type, preset)}
             onUpdate={(patch) => updateBlock(index, patch)}
             onRemove={() => removeBlock(index)}
-            onDuplicate={() => duplicateBlock(index)}
             onPickImage={() => setMediaPickerIndex(index)}
             onPickVideo={() => setVideoPickerIndex(index)}
             onAltBlur={(value) => getMediaAltSync(block._key ?? index).flushAltSync(value)}
@@ -197,7 +204,12 @@ export function BlockEditor({
       ) : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={structDisabled} className="self-start">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={structDisabled || atLimit}
+              className="self-start"
+            >
               + {t('products.detail.blocks.addBlock')}
             </Button>
           </DropdownMenuTrigger>
@@ -212,6 +224,12 @@ export function BlockEditor({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+      )}
+
+      {atLimit && (
+        <p className="text-sm text-muted-foreground">
+          {t('products.detail.blocks.limit', { max: 400 })}
+        </p>
       )}
 
       {mediaPickerIndex !== null && (

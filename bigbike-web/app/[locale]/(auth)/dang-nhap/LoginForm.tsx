@@ -26,6 +26,7 @@ import { FormRootError } from "@/components/ui/FormRootError";
 import { Label } from "@/components/ui/label";
 import { AuthFormSkeleton } from "@/components/ui/Skeletons";
 import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
+import { clearPendingAuthentication, trackAuthentication } from "@/lib/analytics";
 
 type LoginField = "login" | "password";
 const LOGIN_FIELDS: LoginField[] = ["login", "password"];
@@ -85,12 +86,14 @@ export function LoginForm({
   }
 
   async function onSubmit(values: LoginFormValues) {
+    clearPendingAuthentication();
     clearErrors("root");
     setSubmittedInvalidField(null);
     try {
       await loginCustomer(values.login, values.password, values.remember);
       markCustomerAuthenticated();
       await refreshAuth();
+      trackAuthentication("login", "password");
     } catch (err: unknown) {
       reportStorefrontFailure("login", err);
 
@@ -122,7 +125,7 @@ export function LoginForm({
   if (auth.status === "authenticated") return <AuthFormSkeleton withTitle={false} />;
 
   return (
-    <div>
+    <div data-clarity-mask="true">
       <FormRootError
         message={errors.root?.message ?? (socialErrorKey ? tSocial(socialErrorKey) : undefined)}
       />

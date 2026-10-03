@@ -3,8 +3,10 @@ import userEvent from "@testing-library/user-event";
 import type { AnchorHTMLAttributes } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ReviewInvitationOptOutClient } from "./ReviewInvitationOptOutClient";
+const localeState = vi.hoisted(() => ({ value: "vi" }));
 
 vi.mock("next-intl", () => ({
+  useLocale: () => localeState.value,
   useTranslations: () => (key: string) => {
     const messages: Record<string, string> = {
       loading: "Đang tải",
@@ -30,11 +32,26 @@ vi.mock("@/i18n/StorefrontLink", () => ({
 }));
 
 afterEach(() => {
+  localeState.value = "vi";
   vi.unstubAllGlobals();
   window.history.replaceState(null, "", "/");
 });
 
 describe("ReviewInvitationOptOutClient", () => {
+  it.each(["vi", "en"])(
+    "keeps the Home link in %s without submitting an opt-out",
+    async (locale) => {
+      localeState.value = locale;
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      render(<ReviewInvitationOptOutClient />);
+      expect(await screen.findByRole("link", { name: "Về trang chủ" })).toHaveAttribute(
+        "href",
+        locale === "en" ? "/en/" : "/",
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
   it("lets a guest permanently opt out using only the secret email fragment", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ data: { unsubscribed: true } }), {

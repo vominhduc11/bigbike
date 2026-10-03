@@ -15,6 +15,7 @@ import { ReviewRequestError, submitProductReview, uploadReviewPhoto } from "./ap
 import { StarRatingInput } from "./stars";
 import type { PhotoItem } from "./types";
 import { createReviewSchema, type ReviewFormValues } from "@/lib/schemas/customer";
+import { trackReviewSubmit } from "@/lib/analytics";
 
 // Customer review photos: max 10, ≤8MB each, images only — must mirror the backend caps.
 const MAX_PHOTOS = 10;
@@ -82,8 +83,8 @@ export function WriteReviewForm({
     } catch (uploadError) {
       setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, status: "error" } : p)));
       setPhotoError(
-        uploadError instanceof ReviewRequestError && uploadError.message
-          ? uploadError.message
+        uploadError instanceof ReviewRequestError && uploadError.status === 429
+          ? t("errorPhotoRateLimit")
           : t("errorPhotoUpload"),
       );
     }
@@ -139,6 +140,11 @@ export function WriteReviewForm({
         website: values.website,
         inviteToken,
       });
+      trackReviewSubmit({
+        productId,
+        rating: values.rating,
+        photoCount: photoUrls.length,
+      });
       setDone(true);
       onSuccess();
     } catch (submitError) {
@@ -159,7 +165,10 @@ export function WriteReviewForm({
   }
 
   return (
-    <div className={cn(isDialog ? "px-5 pb-5 pt-4" : "border border-border p-6")}>
+    <div
+      className={cn(isDialog ? "px-5 pb-5 pt-4" : "border border-border p-6")}
+      data-clarity-mask="true"
+    >
       {!isDialog && (
         <h3 className="m-0 mb-5 font-body text-a3-section font-semibold text-[var(--bb-text-primary)]">
           {t("formTitle")}

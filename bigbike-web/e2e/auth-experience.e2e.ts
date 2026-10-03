@@ -47,7 +47,7 @@ for (const locale of LOCALES) {
     await expect(page.locator("[data-auth-brand-panel]")).toBeVisible();
     await expect(page.locator("header[data-bb-header]")).toHaveCount(0);
     await expect(page.locator("nav.bb-bottom-nav")).toHaveCount(0);
-    await expect(page.locator(".bb-floating-chat-anchor, .bb-scroll-top-anchor")).toHaveCount(0);
+    await expect(page.locator(".bb-floating-contact-anchor, .bb-scroll-top-anchor")).toHaveCount(0);
     await expect(page.locator("[data-auth-order-lookup]")).toBeVisible();
     await expect(page.getByRole("link", { name: locale.loginSocial })).toBeVisible();
     await expect(page.locator("[data-auth-guest-exit]")).toBeVisible();
@@ -61,7 +61,7 @@ for (const locale of LOCALES) {
     await gotoAndSettle(page, locale.register);
 
     await expect(page.locator("[data-auth-brand-panel]")).toBeHidden();
-    await expect(page.locator(".bb-floating-chat-anchor, .bb-scroll-top-anchor")).toHaveCount(0);
+    await expect(page.locator(".bb-floating-contact-anchor, .bb-scroll-top-anchor")).toHaveCount(0);
     await expect(page.locator("header[data-bb-header], nav.bb-bottom-nav")).toHaveCount(0);
     await expect(page.locator("#reg-fullName")).not.toBeFocused();
 

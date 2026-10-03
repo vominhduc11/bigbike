@@ -17,7 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-import { ChevronDown, Copy, GripVertical, Plus, X } from 'lucide-react'
+import { ChevronDown, GripVertical, Plus, X } from 'lucide-react'
 import { DeferredRichTextEditor } from '../DeferredRichTextEditor'
 import { cn, generateId } from '@/lib/utils'
 import { parseSizeGuide, parseSizeGuideResult, mergeSizeGuideIntoHtml } from '../../lib/sizeChart'
@@ -45,6 +45,7 @@ import { nextProductFeatureSide } from './constants'
 const KNOWN_BLOCK_TYPES = new Set([
   'heading',
   'paragraph',
+  'table',
   'list',
   'image',
   'video',
@@ -57,7 +58,6 @@ export function BlockControls({
   disabled,
   insertMenu,
   onInsertBelow,
-  onDuplicate,
   onRemove,
   productMode,
   block,
@@ -114,17 +114,6 @@ export function BlockControls({
             </DropdownMenuContent>
           </DropdownMenu>
         ))}
-      <Button
-        variant="outline"
-        size="icon"
-        className="h-7 w-7"
-        onClick={onDuplicate}
-        disabled={disabled}
-        aria-label={t('products.detail.blocks.duplicate')}
-        title={t('products.detail.blocks.duplicate')}
-      >
-        <Copy size={14} aria-hidden="true" />
-      </Button>
       <Button
         variant="ghost"
         size="icon"
@@ -1366,7 +1355,6 @@ export function BlockCard({
   onInsertBelow,
   onUpdate,
   onRemove,
-  onDuplicate,
   onPickImage,
   onPickVideo,
   onAltBlur,
@@ -1436,7 +1424,7 @@ export function BlockCard({
                 contentLang={contentLang}
               />
             )}
-            {block.type === 'paragraph' && (
+            {(block.type === 'paragraph' || block.type === 'table') && (
               <ParagraphBlockEditor
                 block={block}
                 onChange={onUpdate}
@@ -1507,7 +1495,6 @@ export function BlockCard({
         disabled={dragDisabled}
         insertMenu={insertMenu}
         onInsertBelow={onInsertBelow}
-        onDuplicate={onDuplicate}
         onRemove={onRemove}
         productMode={productMode}
         block={block}

@@ -34,6 +34,7 @@ import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import com.bigbike.bigbike_backend.service.search.StorefrontSearchRules;
 import com.bigbike.bigbike_backend.service.admin.BrandLogoValidationService;
+import com.bigbike.bigbike_backend.service.catalog.CatalogColorAccessibilityLabelService;
 import com.bigbike.bigbike_backend.util.AdminSearchText;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -93,6 +94,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
     private final BrandJpaRepository brandJpaRepository;
     private final BrandLogoValidationService brandLogoValidationService;
     private final PublishedProductListingCache publishedProductListingCache;
+    private final CatalogColorAccessibilityLabelService colorAccessibilityLabelService;
 
     @Override
     public List<Product> findAllProducts() {
@@ -254,81 +256,6 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         }
         return StorefrontSearchRules.rankMatchingProducts(
                 findAllPublishedProductsForListing(locale), String.join(" ", tokens), limit);
-    }
-
-    @Override
-    public List<Product> searchPublishedProductsForAssistant(
-            List<String> tokens,
-            String categorySlug,
-            String brandSlug,
-            Long minPrice,
-            Long maxPrice,
-            com.bigbike.bigbike_backend.service.common.SortSpec sortSpec,
-            String locale,
-            int limit
-    ) {
-        if (tokens == null || tokens.isEmpty() || limit <= 0) {
-            return List.of();
-        }
-        Set<String> categoryIds = resolveCategorySlugWithDescendants(categorySlug);
-        Specification<ProductEntity> spec = buildAssistantProductSearchSpec(
-                tokens, categoryIds, brandSlug, minPrice, maxPrice, sortSpec);
-        return productJpaRepository.findAll(
-                        spec,
-                        org.springframework.data.domain.PageRequest.of(0, Math.min(limit, 100)))
-                .getContent()
-                .stream()
-                .map(entity -> toDomainListing(entity, locale))
-                .toList();
-    }
-
-    /** Assistant search applies the same token semantics as the shared public/admin predicate. */
-    private static Specification<ProductEntity> buildAssistantProductSearchSpec(
-            List<String> tokens,
-            Set<String> categoryIds,
-            String brandSlug,
-            Long minPrice,
-            Long maxPrice,
-            com.bigbike.bigbike_backend.service.common.SortSpec sortSpec
-    ) {
-        return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("publishStatus"), PublishStatus.PUBLISHED));
-            predicates.add(cb.isFalse(root.get("discontinued")));
-            if (categoryIds != null) {
-                if (categoryIds.isEmpty()) {
-                    predicates.add(cb.disjunction());
-                } else {
-                    predicates.add(categoryMembership(root, query, cb, categoryIds));
-                }
-            }
-            if (brandSlug != null && !brandSlug.isBlank()) {
-                predicates.add(cb.equal(root.join("brand", JoinType.LEFT).get("slug"), brandSlug));
-            }
-            predicates.add(ProductFilterSpecifications.productTextSearch(
-                    root, cb, String.join(" ", tokens)));
-            Expression<BigDecimal> effectivePrice = effectivePriceExpression(cb, root);
-            if (minPrice != null) {
-                predicates.add(cb.greaterThanOrEqualTo(effectivePrice, BigDecimal.valueOf(minPrice)));
-            }
-            if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(effectivePrice, BigDecimal.valueOf(maxPrice)));
-            }
-            if (!Long.class.equals(query.getResultType())) {
-                boolean desc = sortSpec != null
-                        && sortSpec.direction() == com.bigbike.bigbike_backend.service.common.SortDirection.DESC;
-                String sortField = sortSpec == null ? "createdAt" : sortSpec.field();
-                switch (sortField) {
-                    case "name" -> query.orderBy(desc ? cb.desc(cb.lower(root.get("name")))
-                            : cb.asc(cb.lower(root.get("name"))));
-                    case "price" -> query.orderBy(desc ? cb.desc(effectivePrice)
-                            : cb.asc(effectivePrice));
-                    default -> query.orderBy(desc ? cb.desc(root.get("createdAt"))
-                            : cb.asc(root.get("createdAt")));
-                }
-            }
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
     }
 
     private static Expression<String> unaccentLower(CriteriaBuilder cb, Expression<?> value) {
@@ -1229,21 +1156,33 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         // V1053 repairs legacy rows before the FK columns become mandatory; the
         // read path never guesses a dictionary value from free text.
         String attributeValueId = publicView || value == null ? null : value.getId();
+        String displayName = publicView && hasText(option.getLegacyDisplayName())
+                ? option.getLegacyDisplayName()
+                : preferLabel(
+                        attribute != null ? pick(attribute.getName(), attribute.getNameEn(), locale) : null,
+                        option.getOptionName()
+                );
+        String displayValue = publicView && hasText(option.getLegacyDisplayValue())
+                ? option.getLegacyDisplayValue()
+                : preferLabel(
+                        value != null ? pick(value.getLabel(), value.getLabelEn(), locale) : null,
+                        option.getOptionValue()
+                );
+        String rawColorValue = publicView && hasText(option.getLegacyDisplayValue())
+                ? option.getLegacyDisplayValue()
+                : preferLabel(value != null ? value.getLabel() : null, option.getOptionValue());
+        String accessibilityLabel = publicView
+                && LOCALE_EN.equalsIgnoreCase(locale)
+                && attribute != null
+                && "color".equals(attribute.getCode())
+                ? colorAccessibilityLabelService.localize(rawColorValue, locale)
+                : null;
 
         return new ProductVariantOption(
-                publicView && hasText(option.getLegacyDisplayName())
-                        ? option.getLegacyDisplayName()
-                        : preferLabel(
-                                attribute != null ? pick(attribute.getName(), attribute.getNameEn(), locale) : null,
-                                option.getOptionName()
-                        ),
-                publicView && hasText(option.getLegacyDisplayValue())
-                        ? option.getLegacyDisplayValue()
-                        : preferLabel(
-                                value != null ? pick(value.getLabel(), value.getLabelEn(), locale) : null,
-                                option.getOptionValue()
-                        ),
-                attributeValueId
+                displayName,
+                displayValue,
+                attributeValueId,
+                accessibilityLabel
         );
     }
 

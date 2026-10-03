@@ -16,6 +16,9 @@ Chụp lại sau khi thêm vào bản live:
 - `admin.bigbike.vn`: trong `/api` chỉ chuyển tiếp năm nhóm đã duyệt; các đường API
   khác trả `404`. `/`, `/ws`, `/media/`, `/media-proxy/` và `/wp/` giữ nguyên.
 - `admin.bigbike.vn`: giới hạn HTTP/API 30 yêu cầu/giây, burst 30; `/ws` được miễn.
+- `admin.bigbike.vn` (13/09/2026): truyền trực tiếp toàn bộ request/response proxy,
+  không ghi tệp JSON, ảnh lớn hoặc asset vào vùng đệm đĩa của host. Chốt này ngăn
+  lỗi quyền thư mục tạm tái diễn thành `500` khi nhập JSON hoặc ảnh `200` bị cắt dở.
 - `media.bigbike.vn`: bản nguyên trạng trước khi siết cửa ảnh; chỉ file trong thư mục
   `live-reference/` được coi là ảnh chụp byte-for-byte của production tại thời điểm này.
 

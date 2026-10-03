@@ -9,7 +9,6 @@ import { toCheckoutResultPath } from "@/lib/utils/routes";
 import type { CheckoutPayload, OrderSummary } from "@/lib/contracts/commerce";
 
 const payload = {
-  paymentMethod: "BANK_TRANSFER",
   billingAddress: { fullName: "Test" },
 } as CheckoutPayload;
 beforeEach(() => {
@@ -19,7 +18,7 @@ beforeEach(() => {
 describe("checkout attempt recovery", () => {
   it("reuses the original key and payload after a lost response", () => {
     const first = prepareCheckoutAttempt("cart-1", payload);
-    const second = prepareCheckoutAttempt("cart-1", { ...payload, paymentMethod: "COD" });
+    const second = prepareCheckoutAttempt("cart-1", payload);
     expect(second).toEqual(first);
     expect(readCheckoutAttempt()).toEqual(first);
   });
@@ -53,11 +52,10 @@ describe("checkout attempt recovery", () => {
     get.mockRestore();
     set.mockRestore();
   });
-  it("routes COD directly and BANK_TRANSFER through the transfer step", () => {
+  it("routes every new order directly to the normal confirmation page", () => {
     const order = { orderNumber: "BB-1", orderKey: "key", paymentMethod: "COD" };
+    const legacyOrder = { ...order, paymentMethod: "BANK_TRANSFER" };
     expect(toCheckoutResultPath(order, "vi")).not.toContain("step=");
-    expect(toCheckoutResultPath({ ...order, paymentMethod: "BANK_TRANSFER" }, "en")).toContain(
-      "step=bank-transfer",
-    );
+    expect(toCheckoutResultPath(legacyOrder, "en")).not.toContain("step=");
   });
 });

@@ -11,9 +11,6 @@ import com.bigbike.bigbike_backend.api.error.ValidationException;
 import com.bigbike.bigbike_backend.api.order.dto.OrderAddressResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderLineItemResponse;
 import com.bigbike.bigbike_backend.api.order.dto.OrderPaymentResponse;
-import com.bigbike.bigbike_backend.domain.commerce.PaymentRecordStatus;
-import com.bigbike.bigbike_backend.service.order.BankTransferPolicy;
-import com.bigbike.bigbike_backend.service.ws.OrderWsEvent;
 import com.bigbike.bigbike_backend.api.order.dto.OrderShippingItemResponse;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
 import com.bigbike.bigbike_backend.mapper.OrderAddressMapper;
@@ -28,6 +25,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderShippi
 import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEntity;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
+import com.bigbike.bigbike_backend.service.analytics.Ga4RefundOutboxService;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
@@ -90,7 +88,6 @@ public class AdminOrderService {
         ALLOWED_TRANSITIONS.put("CANCELLED",  Set.of());
     }
 
-    private final com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository adminUserRepo;
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
     private final OrderAddressJpaRepository addressRepo;
@@ -111,6 +108,7 @@ public class AdminOrderService {
     private final PaymentMapper paymentMapper;
     private final OrderHistoryClassificationService historyClassificationService;
     private final OrderOperationsSettings orderOperationsSettings;
+    private final Ga4RefundOutboxService ga4RefundOutboxService;
 
     // List
 
@@ -183,10 +181,7 @@ public class AdminOrderService {
             return List.of();
         }
         Set<String> allowed = ALLOWED_TRANSITIONS.getOrDefault(order.getStatus(), Set.of());
-        return allowed.stream()
-                .filter(next -> !"COMPLETED".equals(next) || !BankTransferPolicy.isBankTransfer(order)
-                        || BankTransferPolicy.isPaid(order, paymentRepo.findByOrderId(orderId)))
-                .sorted().toList();
+        return allowed.stream().sorted().toList();
     }
 
     // Update order status
@@ -222,15 +217,6 @@ public class AdminOrderService {
                     "Cannot transition order from " + currentStatus + " to " + newStatus + ".");
         }
 
-        if ("COMPLETED".equals(newStatus) && BankTransferPolicy.isBankTransfer(order)) {
-            List<PaymentEntity> payments = paymentRepo.findByOrderId(orderId);
-            BankTransferPolicy.requirePayment(order, payments);
-            if (!BankTransferPolicy.isPaid(order, payments)) {
-                throw new ConflictException("BANK_TRANSFER_PAYMENT_REQUIRED",
-                        "Cần xác nhận đã nhận đủ tiền chuyển khoản trước khi hoàn thành đơn.");
-            }
-        }
-
         String beforeStatus = order.getStatus();
         Instant now = Instant.now();
 
@@ -251,6 +237,9 @@ public class AdminOrderService {
         }
 
         orderRepo.save(order);
+        if ("CANCELLED".equals(newStatus)) {
+            ga4RefundOutboxService.enqueueCancellationRefund(order);
+        }
 
         if ("COMPLETED".equals(newStatus) || "CANCELLED".equals(newStatus)) {
             webRevalidationService.revalidateProductsForOrder(orderId);
@@ -272,45 +261,6 @@ public class AdminOrderService {
         runAfterCommit(() -> orderNotificationService.sendOrderStatusUpdate(statusSnapshot, statusForEmail));
 
         return toDetail(orderRepo.findById(orderId).orElseThrow());
-    }
-
-    @Transactional
-    public AdminOrderDetailResponse confirmBankTransfer(UUID orderId, UUID adminId,
-            String clientIp, String userAgent) {
-        OrderEntity order = orderRepo.findByIdForUpdate(orderId)
-                .orElseThrow(() -> new NotFoundException("Order not found."));
-        if (historyClassificationService.isHistorical(orderId)) {
-            throw new ConflictException("HISTORICAL_ORDER_READ_ONLY", "Đơn lịch sử chỉ được xem.");
-        }
-        if (!BankTransferPolicy.isBankTransfer(order) || !BankTransferPolicy.isActive(order)) {
-            throw new ConflictException("BANK_TRANSFER_NOT_APPLICABLE",
-                    "Chỉ xác nhận chuyển khoản cho đơn đang chờ xác nhận hoặc đang xử lý.");
-        }
-        PaymentEntity payment = BankTransferPolicy.requirePayment(order, paymentRepo.findByOrderId(orderId));
-        if (payment.getStatus() == PaymentRecordStatus.SUCCEEDED) return toDetail(order);
-
-        Instant now = Instant.now();
-        payment.setStatus(PaymentRecordStatus.SUCCEEDED);
-        payment.setPaidAt(now);
-        payment.setUpdatedAt(now);
-        order.setPaidAmount(order.getTotalAmount());
-        order.setPaidAt(now);
-        order.setUpdatedAt(now);
-        paymentRepo.save(payment);
-        orderRepo.save(order);
-        auditLogWriter.saveRequired(auditLogFactory.build("ADMIN", adminId,
-                "ORDER_BANK_TRANSFER_CONFIRMED", "ORDER", orderId,
-                writeAuditJson(Map.of("paymentStatus", "PENDING")),
-                writeAuditJson(Map.of("paymentStatus", "SUCCEEDED", "paymentId", payment.getId(),
-                        "amount", payment.getAmount(), "currency", payment.getCurrency(),
-                        "paidAt", now.toString(), "confirmedByName", adminUserRepo.findById(adminId)
-                                .map(user -> user.getDisplayName() == null ? adminId.toString() : user.getDisplayName())
-                                .orElse(adminId.toString()))), clientIp, userAgent));
-        adminOrderWsService.pushPaymentConfirmed(new OrderWsEvent(
-                "ORDER_PAYMENT_CONFIRMED", orderId, order.getOrderNumber(),
-                order.getCustomerName(), order.getTotalAmount(), order.getStatus(),
-                order.getPaymentMethod(), now));
-        return toDetail(order);
     }
 
     @Transactional(readOnly = true)
@@ -431,8 +381,7 @@ public class AdminOrderService {
                 .orElse(null);
 
         return orderMapper.toAdminDetailResponse(order, customerName, lineItems, addresses,
-                shippingItems, payments, classification,
-                classification == null && BankTransferPolicy.canConfirm(order, paymentEntities));
+                shippingItems, payments, classification);
     }
 
     private OrderAddressResponse toAddress(OrderAddressEntity e) {

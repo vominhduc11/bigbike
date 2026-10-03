@@ -101,9 +101,10 @@ public final class StorefrontSearchRules {
     }
 
     /**
-     * Article title/excerpt matching used by both the in-memory and database adapters. Articles
-     * follow the same word-boundary rule as products ({@code SEARCH_RULE_004}): every term but the
-     * last must match a whole word, and the trailing term matches by word prefix.
+     * Article title matching used by both the in-memory and database adapters. Articles follow
+     * the same word-boundary rule as products ({@code SEARCH_RULE_004}): every term but the last
+     * must match a whole word, and the trailing term matches by word prefix. Callers must pass
+     * title fields only; article body text is reserved for the assistant search path.
      */
     public static boolean matchesLiteralTerms(Collection<String> fields, Collection<String> terms) {
         if (terms == null || terms.isEmpty()) {

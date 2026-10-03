@@ -10,7 +10,7 @@ export function AccountShell({
 }) {
   // Hero-less: `bb-heroless` triggers the shared logo-emblem clearance in globals.css.
   return (
-    <div id="main-content" className="bb-heroless">
+    <div id="main-content" className="bb-heroless" data-clarity-mask="true">
       <Container>
         <AccountNav loginRedirect={loginRedirect}>{children}</AccountNav>
       </Container>

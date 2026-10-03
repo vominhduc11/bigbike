@@ -128,7 +128,10 @@ export function PurchaseSection({
   const attributeNames = useMemo(() => Array.from(collectAttributeNames(variants)), [variants]);
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(() =>
-    variantOptions(previewMode ? undefined : resolveLinkedVariant(product, initialVariantId)),
+    variantOptions(
+      previewMode ? undefined : resolveLinkedVariant(product, initialVariantId),
+      attributeNames,
+    ),
   );
   const [useLinkedVariant, setUseLinkedVariant] = useState(
     !previewMode && Boolean(initialVariantId),
@@ -274,13 +277,7 @@ export function PurchaseSection({
 
   return (
     <>
-      <div
-        data-purchase-section
-        className="grid items-start gap-8 min-[1024px]:grid-cols-12"
-        itemProp="itemReviewed"
-        itemScope
-        itemType="https://schema.org/Product"
-      >
+      <div data-purchase-section className="grid items-start gap-8 min-[1024px]:grid-cols-12">
         {/* Gallery col — dùng ProductGallery (Swiper) y như PurchaseSectionClient.
           Ảnh chính + dải thumbnail là 2 Swiper liên kết qua module Thumbs; tập media
           (ảnh + VIDEO, cover-đầu + khử trùng + theo màu) do ProductGallery tự xử lý.
@@ -331,7 +328,7 @@ export function PurchaseSection({
                 )}
               </p>
             ) : null}
-            <div itemProp="name">
+            <div>
               <h1
                 data-bigbike-product-name
                 className="mb-5 font-body text-a1-title font-semibold leading-title text-foreground"

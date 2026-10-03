@@ -21,12 +21,20 @@ type AddressState = {
 type VnAddressFieldsProps = {
   value: AddressState;
   onChange: (field: keyof AddressState, value: string) => void;
+  onBlur?: (field: keyof AddressState) => void;
   required?: boolean;
   labelClassName?: string;
   selectContentClassName?: string;
 };
 
-export function VnAddressFields({ value, onChange, required, labelClassName = "font-body text-a5-meta font-semibold text-muted-foreground", selectContentClassName }: VnAddressFieldsProps) {
+export function VnAddressFields({
+  value,
+  onChange,
+  onBlur,
+  required,
+  labelClassName = "font-body text-a5-meta font-semibold text-muted-foreground",
+  selectContentClassName,
+}: VnAddressFieldsProps) {
   const t = useTranslations("AddressFields");
   const selectedProvince = useMemo(
     () => VN_PROVINCES.find((p) => p.name === value.province) ?? null,
@@ -39,7 +47,8 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "f
     <>
       <div className="flex flex-col gap-1.5">
         <label className={labelClassName}>
-          {t("provinceLabel")}{required && <span className="text-brand ml-[3px]">*</span>}
+          {t("provinceLabel")}
+          {required && <span className="text-brand ml-[3px]">*</span>}
         </label>
         <Select
           required={required}
@@ -49,31 +58,34 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "f
             onChange("ward", "");
           }}
         >
-          <SelectTrigger aria-label={t("provinceLabel")}>
+          <SelectTrigger aria-label={t("provinceLabel")} onBlur={() => onBlur?.("province")}>
             <SelectValue placeholder={t("provincePlaceholder")} />
           </SelectTrigger>
           <SelectContent className={cn("max-h-72", selectContentClassName)}>
             {VN_PROVINCES.map((p) => (
-              <SelectItem key={p.code} value={p.name}>{p.name}</SelectItem>
+              <SelectItem key={p.code} value={p.name}>
+                {p.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className={labelClassName}>{t("wardLabel")}{required && <span className="text-brand ml-[3px]">*</span>}</label>
+        <label className={labelClassName}>
+          {t("wardLabel")}
+          {required && <span className="text-brand ml-[3px]">*</span>}
+        </label>
         {selectedProvince && wards.length > 0 ? (
-          <Select
-            required={required}
-            value={value.ward}
-            onValueChange={(v) => onChange("ward", v)}
-          >
-            <SelectTrigger aria-label={t("wardLabel")}>
+          <Select required={required} value={value.ward} onValueChange={(v) => onChange("ward", v)}>
+            <SelectTrigger aria-label={t("wardLabel")} onBlur={() => onBlur?.("ward")}>
               <SelectValue placeholder={t("wardPlaceholder")} />
             </SelectTrigger>
             <SelectContent className={cn("max-h-72", selectContentClassName)}>
               {wards.map((w) => (
-                <SelectItem key={w.code} value={w.name}>{w.name}</SelectItem>
+                <SelectItem key={w.code} value={w.name}>
+                  {w.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -81,7 +93,10 @@ export function VnAddressFields({ value, onChange, required, labelClassName = "f
           <Input
             value={value.ward}
             onChange={(e) => onChange("ward", e.target.value)}
-            placeholder={selectedProvince ? t("wardInputPlaceholder") : t("provinceFirstPlaceholder")}
+            onBlur={() => onBlur?.("ward")}
+            placeholder={
+              selectedProvince ? t("wardInputPlaceholder") : t("provinceFirstPlaceholder")
+            }
             disabled={!selectedProvince}
             autoComplete="address-level2"
           />

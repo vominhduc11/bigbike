@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +55,7 @@ public class CheckoutService {
     private static final String CART_STATUS_CONVERTED = "CONVERTED";
     private static final String CURRENCY_VND = "VND";
     private static final String FLOW_CHECKOUT = "CHECKOUT";
+    private static final Pattern GA4_CLIENT_ID_PATTERN = Pattern.compile("^[0-9]+\\.[0-9]+$");
 
     private final CartJpaRepository cartRepo;
     private final CheckoutIdempotencyKeyJpaRepository checkoutIdempotencyKeyRepo;
@@ -147,6 +149,7 @@ public class CheckoutService {
                 total,
                 "checkout",
                 normalizeLocale(req.locale()),
+                normalizeGa4ClientId(req.analyticsClientId()),
                 clientIp,
                 userAgent,
                 now
@@ -208,7 +211,7 @@ public class CheckoutService {
 
     // Quick-buy removed 2026-07-15 (owner decision, reverses AUD-010): the storefront has
     // no quick-buy entry point — customers order through the cart via checkoutFromCart.
-    // GET /checkout/options removed 2026-07-15 (AUD-056): COD and BANK_TRANSFER are fixed
+    // GET /checkout/options removed 2026-07-15 (AUD-056): COD is the fixed payment method.
     // storefront methods (PAY_RULE_001), so there is no dynamic options endpoint.
 
     private <T> IdempotencyReservation reserveIdempotency(
@@ -310,6 +313,7 @@ public class CheckoutService {
             BigDecimal total,
             String source,
             String locale,
+            String ga4ClientId,
             String clientIp,
             String userAgent,
             Instant now
@@ -337,6 +341,7 @@ public class CheckoutService {
         order.setPaidAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
         order.setSource(source);
         order.setLocale(locale);
+        order.setGa4ClientId(ga4ClientId);
         order.setIpAddress(clientIp);
         order.setUserAgent(userAgent);
         order.setPlacedAt(now);
@@ -347,6 +352,13 @@ public class CheckoutService {
 
     private static String normalizeLocale(String locale) {
         return "en".equalsIgnoreCase(locale != null ? locale.trim() : null) ? "en" : "vi";
+    }
+
+    private static String normalizeGa4ClientId(String clientId) {
+        String normalized = clientId == null ? "" : clientId.trim();
+        return normalized.length() <= 128 && GA4_CLIENT_ID_PATTERN.matcher(normalized).matches()
+                ? normalized
+                : null;
     }
 
     private PaymentEntity buildPayment(

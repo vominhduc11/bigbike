@@ -22,6 +22,7 @@ const STATIC_ROUTES: RouteParts[] = [
   { vi: "/dang-ky", en: "/register" },
   { vi: "/quen-mat-khau", en: "/forgot-password" },
   { vi: "/xac-nhan-email", en: "/verify-email" },
+  { vi: "/tu-choi-thu-moi-danh-gia", en: "/review-invitations/unsubscribe" },
   { vi: "/tim-kiem", en: "/search" },
   { vi: "/lien-he", en: "/contact" },
   { vi: "/gioi-thieu", en: "/about" },
@@ -30,6 +31,12 @@ const STATIC_ROUTES: RouteParts[] = [
   { vi: "/chinh-sach/chinh-sach-bao-mat-thong-tin", en: "/policy/privacy-policy" },
   { vi: "/chinh-sach/chinh-sach-bao-hanh", en: "/policy/warranty-policy" },
   { vi: "/chinh-sach/chinh-sach-doi-tra-hang", en: "/policy/return-policy" },
+  { vi: "/chinh-sach/chinh-sach-giao-hang", en: "/policy/delivery-policy" },
+  { vi: "/chinh-sach/chinh-sach-thanh-toan", en: "/policy/payment-policy" },
+  { vi: "/chinh-sach/chinh-sach-gia", en: "/policy/pricing-policy" },
+  { vi: "/chinh-sach/chinh-sach-giai-quyet-khieu-nai", en: "/policy/complaints-policy" },
+  { vi: "/chinh-sach/dieu-kien-giao-dich", en: "/policy/trading-conditions" },
+  { vi: "/chinh-sach/quyen-va-nghia-vu", en: "/policy/rights-and-obligations" },
   { vi: "/huong-dan", en: "/guide" },
   { vi: "/huong-dan/size-mu", en: "/guide/helmet-size" },
   { vi: "/huong-dan/size-trang-phuc", en: "/guide/clothing-size" },
@@ -267,11 +274,10 @@ export function toOrderLookupPath(locale?: Locale): string {
 }
 
 export function toCheckoutResultPath(
-  order: { orderNumber: string; orderKey: string; paymentMethod: string },
+  order: { orderNumber: string; orderKey: string },
   locale?: Locale,
 ): string {
-  const path = toOrderConfirmPath(order.orderNumber, order.orderKey, locale);
-  return order.paymentMethod === "BANK_TRANSFER" ? `${path}&step=bank-transfer` : path;
+  return toOrderConfirmPath(order.orderNumber, order.orderKey, locale);
 }
 
 export function toOrderDetailPath(orderId: string, locale?: Locale): string {

@@ -436,7 +436,6 @@ class AdminMutationApiTest {
                 {
                   "slug": "%s",
                   "title": "Preview Article Dry Run",
-                  "excerpt": "Đoạn mô tả ngắn xem trước.",
                   "body": "<p>Nội dung bài viết nháp.</p>",
                   "publishStatus": "DRAFT"
                 }
@@ -909,7 +908,6 @@ class AdminMutationApiTest {
                                 {
                                   "slug": "%s",
                                   "title": "Phase 4G Article %s",
-                                  "excerpt": "Mutation test article",
                                   "body": "<p>Article body</p>",
                                   "publishStatus": "DRAFT",
                                   "translations": {

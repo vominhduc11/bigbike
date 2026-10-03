@@ -40,15 +40,8 @@ public class ArticleEntity {
     @Column(nullable = false)
     private String title;
 
-    @Column(columnDefinition = "text")
-    private String excerpt;
-
     @Column(nullable = false, columnDefinition = "text")
     private String body;
-
-    /** Optional bilingual article author (ARTICLE_RULE_007). */
-    @Column(name = "author_name", length = 255)
-    private String authorName;
 
     private String coverImageId;
 
@@ -69,7 +62,7 @@ public class ArticleEntity {
     @Column(nullable = false)
     private PublishStatus publishStatus;
 
-    /** Featured article flag (V222) — drives the public {@code ?featured=true} filter. */
+    /** Manual "Tin nổi bật" pick flag (V222, restored by V1092). */
     @Column(nullable = false)
     private boolean featured;
 
@@ -111,13 +104,7 @@ public class ArticleEntity {
     private String titleEn;
 
     @Column(columnDefinition = "text")
-    private String excerptEn;
-
-    @Column(columnDefinition = "text")
     private String bodyEn;
-
-    @Column(name = "author_name_en", length = 255)
-    private String authorNameEn;
 
     private String seoTitleEn;
 

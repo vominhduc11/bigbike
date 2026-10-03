@@ -20,6 +20,7 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEn
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.audit.AuditLogJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.analytics.Ga4EventOutboxJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.CategoryJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
@@ -69,6 +70,7 @@ class Phase1HAdminOrderApiTest {
     @Autowired OrderJpaRepository orderRepo;
     @Autowired PaymentJpaRepository paymentRepo;
     @Autowired AuditLogJpaRepository auditLogRepo;
+    @Autowired Ga4EventOutboxJpaRepository ga4EventOutboxRepo;
 
     private MockMvc mockMvc;
     private String adminToken;
@@ -292,6 +294,11 @@ class Phase1HAdminOrderApiTest {
         OrderEntity cancelled = orderRepo.findById(direct.id()).orElseThrow();
         assertThat(cancelled.getCancelledAt()).isNotNull();
         assertThat(cancelled.getCancelReason()).isEqualTo(cancelReason);
+        var refundEvent = ga4EventOutboxRepo.findByOrderIdAndEventName(direct.id(), "refund")
+                .orElseThrow();
+        assertThat(refundEvent.getPayloadJson())
+                .contains(cancelled.getOrderNumber(), "\"name\":\"refund\"");
+        assertThat(refundEvent.getPayloadJson()).doesNotContain("test@example.com", "0909123456");
         assertThat(auditLogRepo.findAll()).anySatisfy(audit -> {
             assertThat(audit.getAction()).isEqualTo("ORDER_STATUS_UPDATED");
             assertThat(audit.getResourceId()).isEqualTo(direct.id());
@@ -303,6 +310,8 @@ class Phase1HAdminOrderApiTest {
                 .andExpect(status().isConflict());
         updateStatus(direct.id(), "COMPLETED", null)
                 .andExpect(status().isConflict());
+        assertThat(ga4EventOutboxRepo.findByOrderIdAndEventName(direct.id(), "refund")
+                .orElseThrow().getId()).isEqualTo(refundEvent.getId());
 
         OrderInfo completed = placeOrder(1_350_000);
         updateStatus(completed.id(), "PROCESSING", null)
@@ -459,117 +468,6 @@ class Phase1HAdminOrderApiTest {
                 .andReturn();
         String id = jsonValue(checkout.getResponse().getContentAsString(), "id");
         return new OrderInfo(UUID.fromString(id));
-    }
-
-    @Test
-    void bankTransferReceiptRequiresOrderWriteAndRejectsCustomers() throws Exception {
-        OrderEntity order = bankOrder("PENDING");
-        String path = "/api/v1/admin/orders/" + order.getId() + "/confirm-bank-transfer";
-        mockMvc.perform(post(path)).andExpect(status().isUnauthorized());
-        mockMvc.perform(post(path).header("Authorization", "Bearer " + orderReaderToken))
-                .andExpect(status().isForbidden());
-        var principal = new com.bigbike.bigbike_backend.domain.customer.CustomerPrincipal(
-                UUID.randomUUID(), "customer@example.test", null, UUID.randomUUID());
-        var authentication = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                principal, null, java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_CUSTOMER")));
-        mockMvc.perform(post(path).with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication(authentication)))
-                .andExpect(status().isForbidden());
-        assertThat(paymentRepo.findByOrderId(order.getId()).get(0).getStatus()).isEqualTo(PaymentRecordStatus.PENDING);
-    }
-
-    @Test
-    void receiptIsAuditedIdempotentAndDoesNotCompleteOrder() throws Exception {
-        OrderEntity order = bankOrder("PROCESSING");
-        updateStatus(order.getId(), "COMPLETED", null).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error.code").value("BANK_TRANSFER_PAYMENT_REQUIRED"));
-        mockMvc.perform(get("/api/v1/admin/orders/" + order.getId() + "/allowed-transitions")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0]").value("CANCELLED"));
-        String path = "/api/v1/admin/orders/" + order.getId() + "/confirm-bank-transfer";
-        for (int i = 0; i < 2; i++) {
-            mockMvc.perform(post(path).header("Authorization", "Bearer " + orderWriterToken))
-                    .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("PROCESSING"))
-                    .andExpect(jsonPath("$.data.canConfirmBankTransfer").value(false))
-                    .andExpect(jsonPath("$.data.paymentMethod").value("BANK_TRANSFER"))
-                    .andExpect(jsonPath("$.data.payments[0].status").value("SUCCEEDED"))
-                    .andExpect(jsonPath("$.data.paidAmount").value(1000000));
-        }
-        var audit = auditLogRepo.findByResourceTypeAndResourceId("ORDER", order.getId());
-        assertThat(audit).hasSize(1);
-        assertThat(audit.get(0).getActorId()).isEqualTo(adminUserRepo.findByEmail(ORDER_WRITER_EMAIL).orElseThrow().getId());
-        assertThat(audit.get(0).getAfterData()).contains("confirmedByName", "SUCCEEDED");
-        assertThat(audit.get(0).getCreatedAt()).isNotNull();
-        assertThat(orderRepo.findById(order.getId()).orElseThrow().getPaidAt())
-                .isEqualTo(paymentRepo.findByOrderId(order.getId()).get(0).getPaidAt());
-        updateStatus(order.getId(), "COMPLETED", null).andExpect(status().isOk());
-        mockMvc.perform(post(path).header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.error.code").value("BANK_TRANSFER_NOT_APPLICABLE"));
-    }
-
-    @Test
-    void receiptInPendingDoesNotAdvanceOrderAndPaidOrdersCanStillBeCancelled() throws Exception {
-        OrderEntity order = bankOrder("PENDING");
-        mockMvc.perform(post("/api/v1/admin/orders/" + order.getId() + "/confirm-bank-transfer")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("PENDING"));
-        updateStatus(order.getId(), "COMPLETED", null).andExpect(status().isConflict());
-        updateStatus(order.getId(), "CANCELLED", ",\"cancelReason\":\"Customer requested cancellation\"")
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data.payments[0].status").value("SUCCEEDED"));
-    }
-
-    @Test
-    void receiptRejectsLegacyCodTerminalAndInvalidPaymentsWithoutWrites() throws Exception {
-        for (String method : java.util.List.of("COD", "BACS")) {
-            OrderEntity order = bankOrder("PENDING");
-            order.setPaymentMethod(method); orderRepo.saveAndFlush(order);
-            mockMvc.perform(post("/api/v1/admin/orders/" + order.getId() + "/confirm-bank-transfer")
-                            .header("Authorization", "Bearer " + adminToken))
-                    .andExpect(status().isConflict());
-            assertThat(paymentRepo.findByOrderId(order.getId()).get(0).getStatus()).isEqualTo(PaymentRecordStatus.PENDING);
-        }
-        for (String state : java.util.List.of("CANCELLED", "COMPLETED")) {
-            OrderEntity order = bankOrder(state);
-            mockMvc.perform(post("/api/v1/admin/orders/" + order.getId() + "/confirm-bank-transfer")
-                            .header("Authorization", "Bearer " + adminToken)).andExpect(status().isConflict());
-        }
-        for (String problem : java.util.List.of("amount", "currency", "method", "missing", "multiple", "failed", "cancelled")) {
-            OrderEntity order = bankOrder("PROCESSING");
-            PaymentEntity payment = paymentRepo.findByOrderId(order.getId()).get(0);
-            switch (problem) {
-                case "amount" -> payment.setAmount(BigDecimal.ONE);
-                case "currency" -> payment.setCurrency("USD");
-                case "method" -> payment.setPaymentMethod("COD");
-                case "failed" -> payment.setStatus(PaymentRecordStatus.FAILED);
-                case "cancelled" -> payment.setStatus(PaymentRecordStatus.CANCELLED);
-                default -> { }
-            }
-            paymentRepo.saveAndFlush(payment);
-            if (problem.equals("missing")) paymentRepo.delete(payment);
-            if (problem.equals("multiple")) addBankPayment(order);
-            mockMvc.perform(post("/api/v1/admin/orders/" + order.getId() + "/confirm-bank-transfer")
-                            .header("Authorization", "Bearer " + adminToken))
-                    .andExpect(status().isConflict()).andExpect(jsonPath("$.error.code").value("BANK_TRANSFER_PAYMENT_INVALID"));
-            updateStatus(order.getId(), "COMPLETED", null).andExpect(status().isConflict());
-            assertThat(auditLogRepo.findByResourceTypeAndResourceId("ORDER", order.getId())).isEmpty();
-        }
-    }
-
-    private OrderEntity bankOrder(String status) {
-        OrderEntity order = createStoredOrder(status, 1000000, "receipt@example.test", Instant.now());
-        order.setPaymentMethod("BANK_TRANSFER");
-        order = orderRepo.saveAndFlush(order);
-        addBankPayment(order);
-        return order;
-    }
-
-    private void addBankPayment(OrderEntity order) {
-        PaymentEntity payment = new PaymentEntity();
-        payment.setOrder(order); payment.setPaymentMethod("BANK_TRANSFER");
-        payment.setStatus(PaymentRecordStatus.PENDING); payment.setAmount(order.getTotalAmount());
-        payment.setCurrency(order.getCurrency()); payment.setCreatedAt(Instant.now()); payment.setUpdatedAt(Instant.now());
-        paymentRepo.saveAndFlush(payment);
     }
 
     private void ensureCategory() {

@@ -9,12 +9,12 @@ type PurchaseEventProps = {
 };
 
 /**
- * Fires GA4 `purchase` exactly once per order.
+ * Fires GA4 `purchase` and Meta `Purchase` exactly once per order.
  *
  * Two guards, both needed: the ref stops the effect from re-firing while this tab is open (the
  * confirmation page polls, so `order` gets a new identity every 15s), and the sessionStorage key
  * survives a reload of the same tab — the confirmation URL is bookmarkable and customers do
- * refresh it. Double-firing here would double the shop's reported revenue.
+ * refresh it. Double-firing here would double reported revenue in either destination.
  */
 export function PurchaseEvent({ order }: PurchaseEventProps) {
   const firedRef = useRef(false);

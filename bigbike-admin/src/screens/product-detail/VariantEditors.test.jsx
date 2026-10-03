@@ -7,6 +7,7 @@ import {
 } from './sizeScaleUtils'
 import { isSizeAttributeName } from '../../lib/schemas'
 import { buildVariantMatrixVariants } from './variantMatrixUtils'
+import { orderVariantAttributes } from './constants'
 
 describe('size scale value parser', () => {
   it('keeps the comma-separated order and trims labels', () => {
@@ -26,25 +27,57 @@ describe('size scale value parser', () => {
   })
 })
 
-describe('variant matrix money input', () => {
-  it('keeps selected dictionary IDs and shared price on every generated variant', () => {
+describe('automatic choice pricing', () => {
+  it('keeps dictionary IDs and inherits the common price without storing an override', () => {
     const variants = buildVariantMatrixVariants(
       [
         { name: 'Màu sắc', valueIds: ['value-red', 'value-blue'], values: ['Đỏ', 'Xanh'] },
         { name: 'Kích cỡ', valueIds: ['value-m'], values: ['M'] },
       ],
-      { sharedPrice: '2000000' },
+      { skuPrefix: 'E2E-HELMET' },
     )
 
     expect(variants).toHaveLength(2)
     expect(variants[0]).toMatchObject({
-      retailPrice: '2000000',
+      sku: 'E2E-HELMET-DO-M',
+      retailPrice: '',
       salePrice: '',
     })
     expect(variants[0].options).toEqual([
       { name: 'Màu sắc', value: 'Đỏ', attributeValueId: 'value-red' },
       { name: 'Kích cỡ', value: 'M', attributeValueId: 'value-m' },
     ])
+  })
+})
+
+describe('variant attribute picker order', () => {
+  it('keeps colour and size first, then sorts every backend-provided type', () => {
+    const ordered = orderVariantAttributes([
+      { id: 'model', code: 'model', name: 'Model' },
+      { id: 'color', code: 'color', name: 'màu sắc' },
+      { id: 'length', code: 'chieu-dai', name: 'Chiều dài' },
+      { id: 'size', code: 'size', name: 'Size' },
+      { id: 'gender', code: 'gender', name: 'Gender' },
+      { id: 'bolt', code: 'co-oc', name: 'Cỡ ốc' },
+    ])
+
+    expect(ordered.map((attribute) => attribute.id)).toEqual([
+      'color',
+      'size',
+      'length',
+      'bolt',
+      'gender',
+      'model',
+    ])
+  })
+
+  it('includes a newly returned type without a hardcoded allowlist', () => {
+    const ordered = orderVariantAttributes([
+      { id: 'new', code: 'material', name: 'Chất liệu' },
+      { id: 'color', code: 'color', name: 'Màu sắc' },
+    ])
+
+    expect(ordered.map((attribute) => attribute.id)).toEqual(['color', 'new'])
   })
 })
 

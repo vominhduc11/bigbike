@@ -107,10 +107,19 @@ public class ContentRequestValidator {
             java.util.Set<String> existingBlockMediaUrls = current == null
                     ? new java.util.HashSet<>()
                     : AdminMutationValidators.collectBlockMediaUrls(current.getBodyBlocks());
+            if (current != null) {
+                existingBlockMediaUrls.addAll(AdminMutationValidators.extractInlineImageSrcs(current.getBody()));
+            }
             String base = mediaUrlProperties.getPublicBaseUrl();
             int index = 0;
             for (com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock block : request.getBodyBlocks()) {
                 if (block instanceof com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock.ImageBlock imageBlock) {
+                    if (imageBlock.getCaptionHtmlTemplate() != null
+                            && !com.bigbike.bigbike_backend.service.catalog.DescriptionBlockRenderer
+                                    .isCaptionTemplate(imageBlock.getCaptionHtmlTemplate())) {
+                        errors.add(new ApiErrorDetail("bodyBlocks[" + index + "].captionHtmlTemplate",
+                                "INVALID_VALUE", "Caption format is invalid."));
+                    }
                     String u = AdminMutationValidators.trimToNull(imageBlock.getUrl());
                     if (u != null && !existingBlockMediaUrls.contains(u)) {
                         AdminMutationValidators.validateWhitelistedMediaUrl(u, "bodyBlocks[" + index + "].url", base, errors);

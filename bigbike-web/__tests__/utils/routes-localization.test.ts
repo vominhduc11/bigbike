@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { routing } from "../../i18n/routing";
 import {
   translatePath,
   getLocalizedRoute,
@@ -24,6 +25,26 @@ import {
 
 describe("Route Localization Utility Tests", () => {
   describe("translatePath", () => {
+    it("mirrors every registered public static route in both directions", () => {
+      for (const [internal, localized] of Object.entries(routing.pathnames)) {
+        if (internal.includes("[") || internal.startsWith("/preview/")) continue;
+        const viPath = typeof localized === "string" ? localized : localized.vi;
+        const enPath = typeof localized === "string" ? localized : localized.en;
+        const viUrl = viPath === "/" ? "/" : `${viPath}/`;
+        const enUrl = enPath === "/" ? "/en/" : `/en${enPath}/`;
+        expect(translatePath(viUrl, "en"), internal).toBe(enUrl);
+        expect(translatePath(enUrl, "vi"), internal).toBe(viUrl);
+      }
+    });
+
+    it("keeps query and fragment when switching the opt-out page", () => {
+      expect(translatePath("/tu-choi-thu-moi-danh-gia/?source=email#confirmation", "en")).toBe(
+        "/en/review-invitations/unsubscribe/?source=email#confirmation",
+      );
+      expect(
+        translatePath("/en/review-invitations/unsubscribe/?source=email#confirmation", "vi"),
+      ).toBe("/tu-choi-thu-moi-danh-gia/?source=email#confirmation");
+    });
     it("should translate static routes correctly from VI to EN", () => {
       expect(translatePath("/gio-hang/", "en")).toBe("/en/cart/");
       expect(translatePath("/dat-hang/", "en")).toBe("/en/order/");

@@ -29,7 +29,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 "chon-mu-fullface-phu-hop",
                 null,                       // slugEn
                 "Cách Chọn Mũ Fullface Phù Hợp",
-                "Hướng dẫn chọn mũ fullface theo nhu cầu sử dụng.",
                 "<p>Chọn mũ theo nhu cầu đi phố, touring, track day và form đầu.</p>",
                 new ImageAsset(
                         "img_article_fullface",
@@ -54,8 +53,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 Instant.parse("2026-04-10T03:00:00Z"),
                 Instant.parse("2026-04-09T02:00:00Z"),
                 Instant.parse("2026-04-10T03:00:00Z"),
-                null,
-                null                       // authorName
+                null
         );
 
         Article article2 = new Article(
@@ -63,7 +61,6 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 "xu-huong-do-bao-ho-2026",
                 null,                       // slugEn
                 "Xu Hướng Đồ Bảo Hộ 2026",
-                "Những xu hướng bảo hộ nổi bật cho biker năm 2026.",
                 "<p>Tổng hợp xu hướng về vật liệu, công nghệ và tiêu chuẩn an toàn.</p>",
                 new ImageAsset(
                         "img_article_gear_2026",
@@ -88,8 +85,7 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
                 Instant.parse("2026-04-15T03:00:00Z"),
                 Instant.parse("2026-04-14T03:00:00Z"),
                 Instant.parse("2026-04-15T03:00:00Z"),
-                null,
-                null                       // authorName
+                null
         );
 
         this.articles = List.of(article1, article2);
@@ -108,26 +104,8 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
         return articles.stream()
                 .filter(a -> a.publishStatus() == PublishStatus.PUBLISHED)
                 .filter(a -> StorefrontSearchRules.matchesLiteralTerms(
-                        java.util.Arrays.asList(a.title(), a.excerpt()), tokens))
+                        java.util.List.of(a.title()), tokens))
                 .limit(limit)
-                .toList();
-    }
-
-    @Override
-    public List<ContentReadRepository.ArticleKnowledge> searchPublishedArticleKnowledge(
-            java.util.List<String> tokens, String locale, int limit) {
-        if ("en".equalsIgnoreCase(locale)) return List.of();
-        return articles.stream()
-                .filter(article -> article.publishStatus() == PublishStatus.PUBLISHED)
-                .filter(article -> tokens == null || tokens.isEmpty() || tokens.stream().allMatch(token -> {
-                    String term = token.toLowerCase(Locale.ROOT);
-                    return containsLower(article.title(), term)
-                            || containsLower(article.excerpt(), term)
-                            || containsLower(article.body(), term);
-                }))
-                .limit(Math.min(3, limit))
-                .map(article -> new ContentReadRepository.ArticleKnowledge(
-                        article.title(), article.excerpt(), article.body()))
                 .toList();
     }
 
@@ -185,13 +163,13 @@ public class InMemoryContentReadRepository implements ContentReadRepository {
     private static boolean matchesArticleQuery(Article a, String q) {
         if (q == null || q.isBlank()) return true;
         return StorefrontSearchRules.matchesLiteralTerms(
-                java.util.Arrays.asList(a.title(), a.excerpt()), StorefrontSearchRules.literalTerms(q));
+                java.util.List.of(a.title()), StorefrontSearchRules.literalTerms(q));
     }
 
     private static boolean matchesArticleAdminQuery(Article a, String q) {
         if (q == null || q.isBlank()) return true;
         String term = q.toLowerCase(Locale.ROOT);
-        return containsLower(a.title(), term) || containsLower(a.excerpt(), term) || containsLower(a.slug(), term);
+        return containsLower(a.title(), term);
     }
 
     private static boolean containsLower(String s, String termLower) {

@@ -1,10 +1,11 @@
 import rawPages from "./static-pages.json";
 
-// Metadata của 10 trang thông tin (chính sách, hướng dẫn, điều khoản…) ĐÃ ĐÓNG CỨNG trong code.
+// Metadata trang thông tin (chính sách, hướng dẫn…) cố định trong code.
 // Trước đây các trang này do admin quản lý qua bảng `pages` (module Nội dung → Trang). Owner
 // chốt (2026-06-24) gỡ hẳn phần quản lý Trang; nội dung freeze tại đây, không còn gọi backend.
-// Bảo hành/Đổi trả là ngoại lệ đã được thay thế ngày 2026-09-01: thân bài đọc từ resource backend
-// dùng chung với Trợ lý BigBike; static-pages.json chỉ còn metadata route/title/SEO cho hai trang.
+// Bảo hành là ngoại lệ: thân bài đọc từ resource chính sách tại backend.
+// Từ 2026-10-02, bảy mục mới chép phần SEO tương ứng vào nguồn tĩnh, gồm trang gộp
+// Cung cấp dịch vụ/đổi trả/hoàn tiền; nguồn tư vấn Đổi trả ở backend vẫn giữ nguyên.
 
 export type StaticPageRaw = {
   slug: string;
@@ -34,7 +35,8 @@ export type LocalizedStaticPage = {
 };
 
 const isEn = (locale: string) => locale === "en";
-const pick = (en: string | null, vi: string, locale: string): string => (isEn(locale) && en ? en : vi);
+const pick = (en: string | null, vi: string, locale: string): string =>
+  isEn(locale) && en ? en : vi;
 const pickN = (en: string | null, vi: string | null, locale: string): string | null =>
   isEn(locale) && en ? en : vi;
 // Pages with a custom bilingual renderer must not fall back to Vietnamese HTML
@@ -42,7 +44,7 @@ const pickN = (en: string | null, vi: string | null, locale: string): string | n
 // body is an intentional omission; the route-specific renderer remains the
 // source of truth for these pages.
 const pickBody = (en: string | null, vi: string, locale: string): string =>
-  isEn(locale) ? en ?? "" : vi;
+  isEn(locale) ? (en ?? "") : vi;
 
 /** Trang thông tin tĩnh theo slug; null nếu slug không thuộc bộ đã đóng cứng. */
 export function getStaticPage(slug: string, locale: string): LocalizedStaticPage | null {

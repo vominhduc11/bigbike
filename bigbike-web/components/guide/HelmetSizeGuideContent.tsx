@@ -36,7 +36,10 @@ const COPY = {
   s1Title: { vi: "Cách đo vòng đầu chuẩn", en: "How to measure your head" },
   s2Title: { vi: "Bảng size tham chiếu phổ biến", en: "Common reference size chart" },
   s3Title: { vi: "Mũ mới có nên hơi chật không?", en: "Should a new helmet feel a bit tight?" },
-  s4Title: { vi: "Không chắc size? Liên hệ BigBike", en: "Not sure about your size? Contact BigBike" },
+  s4Title: {
+    vi: "Không chắc size? Liên hệ BigBike",
+    en: "Not sure about your size? Contact BigBike",
+  },
   colSize: { vi: "Size", en: "Size" },
   colHead: { vi: "Vòng đầu (cm)", en: "Head (cm)" },
   colFit: { vi: "Phù hợp", en: "Suited for" },
@@ -99,9 +102,21 @@ const STEPS: Step[] = [
 type SizeRow = { size: string; head: string; fit: Bi };
 
 const SIZE_ROWS: SizeRow[] = [
-  { size: "XS", head: "53 – 54", fit: { vi: "Đầu nhỏ, phụ nữ vóc nhỏ", en: "Small head, petite women" } },
-  { size: "S", head: "55 – 56", fit: { vi: "Phổ biến với nữ, nam đầu nhỏ", en: "Common for women, small-headed men" } },
-  { size: "M", head: "57 – 58", fit: { vi: "Phổ biến nhất — nam trung bình", en: "Most common — average men" } },
+  {
+    size: "XS",
+    head: "53 – 54",
+    fit: { vi: "Đầu nhỏ, phụ nữ vóc nhỏ", en: "Small head, petite women" },
+  },
+  {
+    size: "S",
+    head: "55 – 56",
+    fit: { vi: "Phổ biến với nữ, nam đầu nhỏ", en: "Common for women, small-headed men" },
+  },
+  {
+    size: "M",
+    head: "57 – 58",
+    fit: { vi: "Phổ biến nhất — nam trung bình", en: "Most common — average men" },
+  },
   { size: "L", head: "59 – 60", fit: { vi: "Nam đầu lớn", en: "Larger-headed men" } },
   { size: "XL", head: "61 – 62", fit: { vi: "Nam đầu rất lớn", en: "Very large heads" } },
   { size: "XXL", head: "63 – 64", fit: { vi: "Đặc biệt", en: "Special" } },
@@ -123,9 +138,7 @@ const FIT_BAD: Bi[] = [
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 font-body text-a2-page font-bold leading-title text-brand">
-      {children}
-    </h2>
+    <h2 className="mb-4 font-body text-a2-page font-bold leading-title text-brand">{children}</h2>
   );
 }
 
@@ -144,7 +157,9 @@ export function HelmetSizeGuideContent({ locale }: { locale: string }) {
       <ol className="mb-8 space-y-3">
         {STEPS.map((s, i) => (
           <li key={i} className="flex gap-4 border border-border p-4">
-            <span className="font-body text-a2-page font-bold leading-none text-brand">{i + 1}</span>
+            <span className="font-body text-a2-page font-bold leading-none text-brand">
+              {i + 1}
+            </span>
             <div className="leading-body">
               <strong className="text-foreground">{t(lang, s.title)}</strong>
               <br />
@@ -160,9 +175,15 @@ export function HelmetSizeGuideContent({ locale }: { locale: string }) {
         <table className="w-full border-collapse text-a4-content">
           <thead>
             <tr className="bg-secondary">
-              <th className="w-1/6 border border-border p-3 text-left font-bold">{t(lang, COPY.colSize)}</th>
-              <th className="w-1/4 border border-border p-3 text-left font-bold">{t(lang, COPY.colHead)}</th>
-              <th className="border border-border p-3 text-left font-bold">{t(lang, COPY.colFit)}</th>
+              <th className="w-1/6 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colSize)}
+              </th>
+              <th className="w-1/4 border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colHead)}
+              </th>
+              <th className="border border-border p-3 text-left font-bold">
+                {t(lang, COPY.colFit)}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -176,7 +197,9 @@ export function HelmetSizeGuideContent({ locale }: { locale: string }) {
           </tbody>
         </table>
       </div>
-      <p className="mb-8 text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.tableNote)}</p>
+      <p className="mb-8 text-a5-meta leading-snug text-muted-foreground">
+        {t(lang, COPY.tableNote)}
+      </p>
 
       {/* 3. Mũ mới có nên hơi chật */}
       <SectionTitle>{t(lang, COPY.s3Title)}</SectionTitle>
@@ -189,7 +212,8 @@ export function HelmetSizeGuideContent({ locale }: { locale: string }) {
       <div className="mb-8 grid gap-4 sm:grid-cols-2">
         <div className="border border-border p-4">
           <p className="mb-3 flex items-center gap-2 font-body text-a4-content font-bold text-foreground">
-            <Check className="size-5 shrink-0 text-pros-accent" aria-hidden /> {t(lang, COPY.fitGood)}
+            <Check className="size-5 shrink-0 text-pros-accent" aria-hidden />{" "}
+            {t(lang, COPY.fitGood)}
           </p>
           <ul className="list-disc space-y-2 pl-5 leading-snug">
             {FIT_GOOD.map((c, i) => (
@@ -218,14 +242,24 @@ export function HelmetSizeGuideContent({ locale }: { locale: string }) {
         </span>
         <span>
           {t(lang, COPY.zalo)}:{" "}
-          <a href={ZALO_URL} target="_blank" rel="noopener noreferrer" className="font-bold text-brand no-underline">
+          <a
+            href={ZALO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-brand no-underline"
+            data-analytics-location="helmet_size_guide"
+          >
             {ZALO}
           </a>{" "}
           <span className="text-muted-foreground">(Mrs. Thư)</span>
         </span>
         <span>
           {t(lang, COPY.hotline)}:{" "}
-          <a href={telHref(HOTLINE)} className="font-bold text-brand no-underline">
+          <a
+            href={telHref(HOTLINE)}
+            className="font-bold text-brand no-underline"
+            data-analytics-location="helmet_size_guide"
+          >
             {HOTLINE}
           </a>
         </span>

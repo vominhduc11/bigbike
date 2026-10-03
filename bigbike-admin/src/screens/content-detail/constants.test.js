@@ -12,6 +12,45 @@ function articleForm(overrides = {}) {
 }
 
 describe('Content payload — ảnh giữ alt, nội dung xoá được', () => {
+  it('giữ alt và mẫu định dạng chú thích khi lưu khối ảnh bài viết', () => {
+    const block = {
+      _key: 'editor-only',
+      type: 'image',
+      url: '/media/articles/photo.jpg',
+      alt: 'Ảnh chuyến đi',
+      caption: 'Đèo Hải Vân',
+      captionHtmlTemplate: '<p style="text-align: center"><em>{{caption}}</em></p>',
+    }
+    const payload = toPayload(articleForm({ bodyBlocks: [block] }), false)
+    expect(payload.bodyBlocks).toEqual(
+      [{ ...block, _key: undefined }].map(({ _key, ...rest }) => rest),
+    )
+  })
+
+  it('không gửi lại các khối đã lưu khi chỉ bấm Lưu mà không sửa nội dung', () => {
+    const item = {
+      slug: 'bai-viet-thu-nghiem',
+      title: 'Bài viết thử nghiệm',
+      body: '<h2>&nbsp;</h2><p>Nội dung cũ</p>',
+      bodyBlocks: [
+        { type: 'heading', level: 2, text: '' },
+        { type: 'paragraph', html: '<p>Nội dung cũ</p>' },
+      ],
+    }
+    const form = buildFormFromItem('ARTICLE', item)
+    const saved = JSON.parse(JSON.stringify(toPayload(form, false)))
+    expect(saved).not.toHaveProperty('bodyBlocks')
+    expect(saved).not.toHaveProperty('body')
+
+    const changed = {
+      ...form,
+      bodyBlocks: form.bodyBlocks.map((block, i) =>
+        i === 0 ? { ...block, text: 'Tiêu đề mới' } : block,
+      ),
+    }
+    expect(toPayload(changed, false).bodyBlocks).toHaveLength(2)
+  })
+
   it('gửi kèm alt của ảnh bìa và ảnh sản phẩm để không mất chữ admin vừa nhập', () => {
     const payload = toPayload(
       articleForm({
@@ -84,41 +123,17 @@ describe('Content payload — ảnh giữ alt, nội dung xoá được', () => 
     expect(payload.productImage).toEqual({ url: '' })
   })
 
-  it('luôn gửi excerpt kể cả khi rỗng để admin xoá được đoạn tóm tắt cũ', () => {
-    const payload = toPayload(articleForm({ excerpt: '' }), false)
-    expect(payload).toHaveProperty('excerpt')
-    expect(payload.excerpt).toBe('')
+  it('không gửi các trường tóm tắt và tên tác giả đã gỡ', () => {
+    const payload = toPayload(articleForm(), false)
+    expect(payload).not.toHaveProperty('excerpt')
+    expect(payload).not.toHaveProperty('authorName')
+    expect(payload.translations.en).not.toHaveProperty('excerpt')
+    expect(payload.translations.en).not.toHaveProperty('authorName')
   })
 
-  it('gửi đúng đoạn tóm tắt đã nhập (đã cắt khoảng trắng)', () => {
-    const payload = toPayload(articleForm({ excerpt: '  Tóm tắt ngắn  ' }), false)
-    expect(payload.excerpt).toBe('Tóm tắt ngắn')
-  })
-
-  it('lưu tên tác giả song ngữ và gửi chuỗi rỗng khi để trống để xoá được tên cũ', () => {
-    const payload = toPayload(
-      articleForm({
-        authorName: '  Nguyễn Văn A  ',
-        translations: {
-          en: {
-            slug: '',
-            title: '',
-            excerpt: '',
-            body: '',
-            authorName: '  Alex A  ',
-            seoTitle: '',
-            seoDescription: '',
-          },
-        },
-      }),
-      false,
-    )
-    expect(payload.authorName).toBe('Nguyễn Văn A')
-    expect(payload.translations.en.authorName).toBe('Alex A')
-
-    const blank = toPayload(articleForm(), false)
-    expect(blank.authorName).toBe('')
-    expect(blank.translations.en.authorName).toBeNull()
+  it('gửi cờ bài viết nổi bật do nhân viên chọn tay', () => {
+    const payload = toPayload(articleForm({ featured: true }), false)
+    expect(payload.featured).toBe(true)
   })
 
   it('luôn gửi khối SEO rõ ràng, chuẩn hoá ô trống thành null', () => {
@@ -148,7 +163,6 @@ describe('Content payload — ảnh giữ alt, nội dung xoá được', () => 
           en: {
             slug: 'test-article',
             title: 'Test article',
-            excerpt: '',
             body: '',
             seoTitle: '',
             seoDescription: '',
@@ -159,7 +173,15 @@ describe('Content payload — ảnh giữ alt, nội dung xoá được', () => 
     )
     expect(payload.translations.en.slug).toBe('test-article')
     expect(payload.translations.en.title).toBe('Test article')
-    expect(payload.translations.en.excerpt).toBeNull()
+    expect(payload.translations.en).not.toHaveProperty('excerpt')
+  })
+
+  it('gửi lại HTML tiếng Anh nguyên vẹn khi không sửa nội dung', () => {
+    const original = ' <p style="text-align: center">Keep&nbsp;spacing</p>\n'
+    const form = articleForm({
+      translations: { en: { ...buildEmptyForm('ARTICLE').translations.en, body: original } },
+    })
+    expect(toPayload(form, false).translations.en.body).toBe(original)
   })
 })
 
@@ -173,7 +195,6 @@ describe('Content schema — trường bắt buộc và giới hạn ký tự', 
         en: {
           slug: 'test-article',
           title: 'Test article',
-          excerpt: '',
           body: '',
           seoTitle: '',
           seoDescription: '',
@@ -190,7 +211,7 @@ describe('Content schema — trường bắt buộc và giới hạn ký tự', 
         body: '',
         bodyBlocks: null,
         translations: {
-          en: { title: '', slug: '', excerpt: '', body: '', seoTitle: '', seoDescription: '' },
+          en: { title: '', slug: '', body: '', seoTitle: '', seoDescription: '' },
         },
       }),
     )
@@ -202,11 +223,10 @@ describe('Content schema — trường bắt buộc và giới hạn ký tự', 
     expect(errors).not.toHaveProperty('translations.en.body')
   })
 
-  it('chặn tiêu đề/SEO quá 255 và tóm tắt/mô tả SEO quá 5.000 ký tự', () => {
+  it('chặn tiêu đề/SEO quá giới hạn ký tự', () => {
     const result = createContentSchema(t, true, 'ARTICLE').safeParse(
       validForm({
         title: 'a'.repeat(256),
-        excerpt: 'b'.repeat(5001),
         seoTitle: 'c'.repeat(256),
         seoDescription: 'd'.repeat(5001),
       }),
@@ -214,16 +234,8 @@ describe('Content schema — trường bắt buộc và giới hạn ký tự', 
     const errors = zodErrors(result)
 
     expect(errors.title).toBe('content.detail.errTitleTooLong')
-    expect(errors.excerpt).toBe('content.detail.errExcerptTooLong')
-    expect(
-      zodErrors(
-        createContentSchema(t, true, 'ARTICLE').safeParse(
-          validForm({
-            authorName: 'a'.repeat(256),
-          }),
-        ),
-      ).authorName,
-    ).toBe('content.detail.errAuthorTooLong')
+    expect(errors).not.toHaveProperty('excerpt')
+    expect(errors).not.toHaveProperty('authorName')
     expect(errors.seoTitle).toBe('content.detail.errSeoTitleTooLong')
     expect(errors.seoDescription).toBe('content.detail.errSeoDescriptionTooLong')
   })

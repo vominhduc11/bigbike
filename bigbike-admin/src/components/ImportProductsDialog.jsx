@@ -9,6 +9,19 @@ import { AdminTable } from '@/components/AdminTable'
 import { toast } from '@/lib/toast'
 import { ApiClientError, importProductsCommit, importProductsValidate } from '@/lib/adminApi'
 
+function importErrorDetails(err) {
+  if (err instanceof ApiClientError && err.status === 429) {
+    return {
+      rateLimited: true,
+      retryAt: err.retryAfterSeconds ? Date.now() + err.retryAfterSeconds * 1000 : null,
+    }
+  }
+  return {
+    message: err instanceof ApiClientError ? err.message : null,
+    retryAt: null,
+  }
+}
+
 function actionLabel(t, action) {
   if (action === 'CREATE') return t('import.actionCreate')
   if (action === 'UPDATE') return t('import.actionUpdate')
@@ -48,6 +61,15 @@ export function ImportProductsDialog({ file, open, onClose }) {
   const [report, setReport] = useState(null)
   const [excludedRowKeys, setExcludedRowKeys] = useState(new Set())
   const [error, setError] = useState(null)
+  const [retryAt, setRetryAt] = useState(null)
+  const [now, setNow] = useState(0)
+  const retrySeconds = retryAt ? Math.max(0, Math.ceil((retryAt - now) / 1000)) : 0
+
+  useEffect(() => {
+    if (!open || retrySeconds === 0) return
+    const timeout = window.setTimeout(() => setNow(Date.now()), 1000)
+    return () => window.clearTimeout(timeout)
+  }, [open, retrySeconds])
 
   useEffect(() => {
     if (!open || !file) return
@@ -63,14 +85,16 @@ export function ImportProductsDialog({ file, open, onClose }) {
       })
       .catch((err) => {
         if (cancelled) return
-        // Chỉ hiện thông báo từ máy chủ (ApiClientError, đã thân thiện); lỗi kỹ thuật khác → thông báo chung.
-        setError(err instanceof ApiClientError ? err.message : t('import.error'))
+        const details = importErrorDetails(err)
+        setError(details)
+        setRetryAt(details.retryAt)
+        setNow(Date.now())
         setStep('error')
       })
     return () => {
       cancelled = true
     }
-  }, [open, file, t])
+  }, [open, file])
 
   function handleClose() {
     // Chặn đóng khi đang lưu để không bỏ dở giữa chừng (backdrop/Esc/nút X đều gọi hàm này).
@@ -79,9 +103,10 @@ export function ImportProductsDialog({ file, open, onClose }) {
   }
 
   async function handleConfirm() {
-    if (!file) return
+    if (!file || retrySeconds > 0) return
     setStep('committing')
     setError(null)
+    setRetryAt(null)
     try {
       const result = await importProductsCommit(file, Array.from(excludedRowKeys))
       setReport(result)
@@ -95,8 +120,10 @@ export function ImportProductsDialog({ file, open, onClose }) {
         }),
       )
     } catch (err) {
-      // Chỉ hiện thông báo từ máy chủ (ApiClientError, đã thân thiện); lỗi kỹ thuật khác → thông báo chung.
-      setError(err instanceof ApiClientError ? err.message : t('import.error'))
+      const details = importErrorDetails(err)
+      setError(details)
+      setRetryAt(details.retryAt)
+      setNow(Date.now())
       setStep('review')
     }
   }
@@ -111,6 +138,9 @@ export function ImportProductsDialog({ file, open, onClose }) {
   }
 
   const allExcluded = report ? report.rows.every((r) => excludedRowKeys.has(r.rowKey)) : true
+  const errorMessage = error?.rateLimited
+    ? t('import.rateLimited')
+    : error?.message || t('import.error')
 
   let actions
   if (step === 'review') {
@@ -119,7 +149,7 @@ export function ImportProductsDialog({ file, open, onClose }) {
         <Button variant="ghost" size="sm" onClick={handleClose}>
           {t('import.close')}
         </Button>
-        <Button size="sm" onClick={handleConfirm} disabled={allExcluded}>
+        <Button size="sm" onClick={handleConfirm} disabled={allExcluded || retrySeconds > 0}>
           {t('import.confirmImport')}
         </Button>
       </>
@@ -206,16 +236,30 @@ export function ImportProductsDialog({ file, open, onClose }) {
       )}
 
       {step === 'error' && (
-        <div className="text-sm text-danger py-6" role="alert">
-          {error}
+        <div className="space-y-2 py-6" role="alert">
+          <p className="text-sm text-danger">{errorMessage}</p>
+          {retrySeconds > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {retrySeconds < 60
+                ? t('import.retryAfterSeconds', { count: retrySeconds })
+                : t('import.retryAfterMinutes', { count: Math.ceil(retrySeconds / 60) })}
+            </p>
+          )}
         </div>
       )}
 
       {(step === 'review' || step === 'done') && report && (
         <div className="space-y-3">
           {error ? (
-            <div className="text-sm text-danger" role="alert">
-              {error}
+            <div className="space-y-1" role="alert">
+              <p className="text-sm text-danger">{errorMessage}</p>
+              {retrySeconds > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {retrySeconds < 60
+                    ? t('import.retryAfterSeconds', { count: retrySeconds })
+                    : t('import.retryAfterMinutes', { count: Math.ceil(retrySeconds / 60) })}
+                </p>
+              )}
             </div>
           ) : null}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm" role="status" aria-live="polite">

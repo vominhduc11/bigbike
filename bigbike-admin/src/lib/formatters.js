@@ -34,6 +34,12 @@ export function formatCurrencyVnd(amount, locale = activeLocale()) {
 /** Alias kept for backward compatibility — same output as formatCurrencyVnd. */
 export const formatVndShort = formatCurrencyVnd
 
+/** Whole-number formatter for operational counts. Returns em-dash for absent or invalid data. */
+export function formatNumber(value, locale = activeLocale()) {
+  if (value == null || !Number.isFinite(Number(value))) return '—'
+  return new Intl.NumberFormat(locale).format(Math.trunc(Number(value)))
+}
+
 /** ISO "yyyy-mm-dd" → "d/m" (no leading zeros, no year) — chart axis/tooltip labels. */
 export function fmtIsoDateShort(isoDate) {
   if (!isoDate || typeof isoDate !== 'string') return ''

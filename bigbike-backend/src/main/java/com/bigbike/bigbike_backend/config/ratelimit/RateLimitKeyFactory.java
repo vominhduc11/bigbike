@@ -31,12 +31,13 @@ public class RateLimitKeyFactory {
     }
 
     public RateLimitKey create(RateLimitTier tier, RateLimitScope scope, String subject) {
+        return new RateLimitKey(tier, scope, createStorageKey(tier.key(), scope, subject));
+    }
+
+    String createStorageKey(String namespace, RateLimitScope scope, String subject) {
         String normalizedSubject = subject == null || subject.isBlank() ? "anonymous" : subject.trim();
-        String material = tier.key() + '\n' + scope.key() + '\n' + normalizedSubject;
-        return new RateLimitKey(
-                tier,
-                scope,
-                "bb:rl:v1:" + tier.key() + ':' + scope.key() + ':' + digest(material));
+        String material = namespace + '\n' + scope.key() + '\n' + normalizedSubject;
+        return "bb:rl:v1:" + namespace + ':' + scope.key() + ':' + digest(material);
     }
 
     private String digest(String material) {

@@ -6,7 +6,6 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { StatePanel } from '../components/StatePanel'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
 import { fetchSettings, batchUpdateSettings } from '../lib/adminApi'
-import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
 import { useSaveShortcut } from '@/lib/useSaveShortcut'
 import { Button } from '@/components/ui/button'
@@ -284,11 +283,6 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
       return
     }
 
-    if (SENSITIVE_SETTING_TABS.has(activeTab)) {
-      const ok = await showConfirm(t('settings.confirmSaveMessage'), t('settings.confirmSaveTitle'))
-      if (!ok) return
-    }
-
     setSaving(true)
     setSaveSuccess(false)
     setSaveError('')
@@ -308,9 +302,6 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
         return { ...previous, items: (previous?.items || []).map((s) => updated.get(s.key) || s) }
       })
       queryClient.invalidateQueries({ queryKey: ['settings'] })
-      if (dirty.some((setting) => setting.key === 'ai_assistant_image_daily_limit')) {
-        queryClient.invalidateQueries({ queryKey: ['chat-stats'] })
-      }
       // Clear drafts for saved keys
       const savedKeys = dirty.map((s) => s.key)
       const dropSaved = (obj) => {
@@ -342,7 +333,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     } finally {
       setSaving(false)
     }
-  }, [activeItems, activeTab, autosaveKey, drafts, draftsEn, queryClient, t])
+  }, [activeItems, autosaveKey, drafts, draftsEn, queryClient, t])
 
   // F6: cảnh báo khi rời màn Cài đặt lúc còn thay đổi chưa lưu (chặn điều hướng
   // nội bộ qua navigate + beforeunload reload/đóng tab). Đổi tab nội bộ KHÔNG mất

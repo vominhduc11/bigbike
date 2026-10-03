@@ -8,21 +8,22 @@ web="$repo_root/deploy/nginx/bigbike.vn.conf"
 admin="$repo_root/deploy/nginx/admin.bigbike.vn.conf"
 admin_inner="$repo_root/bigbike-admin/nginx.conf"
 
-rg -q '^limit_req_status 429;' "$shared"
-rg -q '^limit_conn_status 429;' "$shared"
-rg -q 'bigbike_rate_limit_json' "$shared"
+rg -q 'zone=api_limit:10m rate=10r/s;' "$shared"
+rg -q 'zone=general_limit:10m rate=30r/s;' "$shared"
+rg -q 'limit_req zone=api_limit' "$api"
+rg -q 'limit_req zone=general_limit' "$web"
 
-for config in "$api" "$web" "$admin"; do
-  rg -q 'error_page 429' "$config"
-  rg -q 'Retry-After "1"' "$config"
-  ! rg -q 'error_page[^;]*(429[^;]*503|503[^;]*429)' "$config"
-  ! rg -q '\$proxy_add_x_forwarded_for' "$config"
-  rg -q 'proxy_set_header X-Forwarded-For \$remote_addr;' "$config"
-done
+# The 2026-09-12 admin rollout intentionally deploys request-rate protection
+# without a connection cap because every employee appears behind Cloudflare.
+rg -q 'limit_req_status 429;' "$admin"
+rg -q 'error_page 429 = @rate_limited_admin;' "$admin"
+rg -q 'Retry-After "1"' "$admin"
+test "$(rg -c 'limit_req zone=general_limit burst=30 nodelay;' "$admin")" -eq 2
+! rg -q 'limit_conn' "$admin"
+! rg -q 'error_page[^;]*(429[^;]*503|503[^;]*429)' "$admin"
 
-# Backend 429 must pass through unchanged; a proxy interceptor plus error_page 429 would turn it
-# into an Nginx maintenance/generic response.
-rg -q 'proxy_intercept_errors off;' "$api"
+# Backend 429 envelopes must pass through the two admin proxy locations.
+test "$(rg -c 'proxy_intercept_errors off;' "$admin")" -eq 2
 ! rg -q '\$proxy_add_x_forwarded_for' "$admin_inner"
 rg -q 'proxy_set_header X-Forwarded-For \$http_x_forwarded_for;' "$admin_inner"
 

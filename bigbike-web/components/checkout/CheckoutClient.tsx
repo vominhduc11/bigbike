@@ -11,16 +11,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatVnd, telHref } from "@/lib/utils/format";
 import { toCartPath, toProductListPath } from "@/lib/utils/routes";
 import { type Locale } from "@/i18n/locale";
-import { trackAddPaymentInfo } from "@/lib/analytics";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { queryKeys } from "@/lib/query/keys";
-import { requestChatOpen } from "@/lib/chat/chat-launcher";
+import { requestContactOpen } from "@/lib/contact/contact-launcher";
 import type { PublicSiteSetting } from "@/lib/contracts/public";
 import { pickSetting } from "@/lib/utils/settings";
-import { CheckoutConfirmRow, PaymentMethodSelector, ZaloSupportBlock } from "./parts/atoms";
+import { CheckoutConfirmRow, ZaloSupportBlock } from "./parts/atoms";
 import { CheckoutAddressFields } from "./parts/CheckoutAddressFields";
 import { CheckoutSummary } from "./parts/CheckoutSummary";
 import { useCheckout } from "./parts/useCheckout";
+import { claimAnalyticsSessionEvent, trackAddPaymentInfo } from "@/lib/analytics";
+
+const GA_PAYMENT_KEY = "COD";
 
 /**
  * Nội dung trang Thanh toán — được nâng cấp theo Mockup 1 (tiêu chuẩn UI/UX cao cấp).
@@ -58,16 +60,16 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
     addressErrors,
     vnAddress,
     onVnChange,
+    onVnBlur,
     customerNote,
     setCustomerNote,
     shipToDifferent,
     setShipToDifferent,
-    paymentMethod,
-    setPaymentMethod,
     registerShip,
     shipErrors,
     vnShip,
     onVnChangeShip,
+    onVnBlurShip,
     cartSubtotal,
     grandTotal,
     submitting,
@@ -149,7 +151,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
   }
 
   return (
-    <form data-checkout-form onSubmit={handleSubmit} noValidate>
+    <form data-checkout-form data-clarity-mask="true" onSubmit={handleSubmit} noValidate>
       <div className="space-y-4">
         {submitError && (
           <div className="border border-destructive bg-accent p-5 text-destructive" role="alert">
@@ -174,6 +176,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
                 includeEmail
                 vnValue={vnAddress}
                 onVnChange={onVnChange}
+                onVnBlur={onVnBlur}
               />
 
               <div className="flex flex-col gap-1.5">
@@ -223,6 +226,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
                     includeEmail={false}
                     vnValue={vnShip}
                     onVnChange={onVnChangeShip}
+                    onVnBlur={onVnBlurShip}
                   />
                 </div>
               </div>
@@ -233,20 +237,19 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
           <section className="border border-border bg-background p-6">
             <h2 className="mb-6 font-body text-a2-page font-semibold">{t("paymentMethodTitle")}</h2>
 
-            {/*
-              `add_payment_info` hangs off the real interaction, not off state: the draft restore
-              in useCheckout() calls setPaymentMethod() directly, and that path must stay silent
-              or a returning customer would be counted as choosing a method they never touched.
-            */}
-            <PaymentMethodSelector
-              value={paymentMethod}
-              onValueChange={(next) => {
-                setPaymentMethod(next);
-                trackAddPaymentInfo(cart, next);
+            <p className="m-0 border border-brand/30 bg-secondary p-4 text-a4-content leading-relaxed text-foreground">
+              {t("codOnlyNotice")}
+            </p>
+
+            <CheckoutConfirmRow
+              checked={confirmedChecked}
+              onCheckedChange={(checked) => {
+                setConfirmedChecked(checked);
+                if (checked && claimAnalyticsSessionEvent(`payment:${cart.id}:${GA_PAYMENT_KEY}`)) {
+                  trackAddPaymentInfo(cart);
+                }
               }}
             />
-
-            <CheckoutConfirmRow checked={confirmedChecked} onCheckedChange={setConfirmedChecked} />
 
             <Button
               type="submit"
@@ -260,11 +263,12 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
                 type="button"
                 variant="link"
                 className="min-h-11"
-                data-chat-support
+                data-contact-support
+                data-analytics-location="checkout"
                 aria-haspopup="dialog"
-                aria-controls="bigbike-assistant-panel"
+                aria-controls="bigbike-contact-panel"
                 disabled={submitting}
-                onClick={(event) => requestChatOpen(event.currentTarget)}
+                onClick={(event) => requestContactOpen(event.currentTarget)}
               >
                 {t("needHelp")}
               </Button>
@@ -278,6 +282,7 @@ export function CheckoutClient({ settings = [] }: { settings?: PublicSiteSetting
                   <a
                     className="font-semibold text-foreground hover:text-brand"
                     href={telHref(activeHotline)}
+                    data-analytics-location="checkout"
                   >
                     {activeHotline}
                   </a>

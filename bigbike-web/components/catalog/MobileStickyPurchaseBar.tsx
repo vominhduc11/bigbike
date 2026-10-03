@@ -62,7 +62,11 @@ export function MobileStickyPurchaseBar({
 
     observerRef.current = new IntersectionObserver(
       ([entry]) => {
-        setVisible(entry ? !entry.isIntersecting : false);
+        // A non-intersecting target can be either ABOVE or BELOW the viewport. Only the
+        // first case means the customer has already passed the inline purchase controls.
+        // Treating both cases alike made the sticky bar cover the price on first paint.
+        const viewportTop = entry?.rootBounds?.top ?? 0;
+        setVisible(Boolean(entry && entry.boundingClientRect.bottom <= viewportTop));
       },
       { threshold: 0 },
     );
@@ -120,7 +124,7 @@ export function MobileStickyPurchaseBar({
   // Tỉ lệ 60/40: nút giỏ hàng flex-[3], nút Zalo flex-[2] (3:2 = 60:40). Khi hết hàng
   // ẩn nút giỏ, nút Zalo còn lại tự chiếm full ngang (flex-grow lấp hết chỗ trống).
   const BASE_BTN =
-    "h-14 flex items-center justify-center rounded-none font-cta text-b4-action font-bold uppercase tracking-normal cursor-pointer active:opacity-85";
+    "h-14 min-w-0 flex items-center justify-center gap-1 whitespace-nowrap rounded-none px-0 min-[390px]:px-1 font-cta text-b4-action font-bold uppercase tracking-normal cursor-pointer active:opacity-85";
 
   return (
     <div
@@ -136,7 +140,7 @@ export function MobileStickyPurchaseBar({
         // while still matching body:has(.is-visible) (which hides the bottom nav
         // even for a display:none element) — that produced "nav disappears but
         // bar never shows". `flex` is the mobile state; `md:hidden` hides ≥768.
-        "flex md:hidden fixed bottom-0 left-0 right-0 z-[var(--bb-z-sticky-action)] pt-3 px-4 [padding-bottom:max(8px,env(safe-area-inset-bottom))] gap-2.5 bg-white border-t border-border [box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] [transition-property:transform] duration-200 ease-[ease]",
+        "flex md:hidden fixed bottom-0 left-0 right-0 z-[var(--bb-z-sticky-action)] gap-2 border-t border-border bg-white px-2 pt-3 [padding-bottom:max(8px,env(safe-area-inset-bottom))] [box-shadow:0_-4px_16px_rgba(0,0,0,0.08)] [transition-property:transform] duration-200 ease-[ease]",
         visible
           ? "[transform:translateY(0)] pointer-events-auto"
           : "[transform:translateY(calc(100%_+_1px))] pointer-events-none",
@@ -157,8 +161,9 @@ export function MobileStickyPurchaseBar({
           aria-label={addToCartLabel}
           aria-disabled={addDisabled}
           tabIndex={visible && !previewMode ? 0 : -1}
+          data-sticky-purchase-add
         >
-          {addToCartLabel}
+          <span data-sticky-purchase-label>{addToCartLabel}</span>
         </Button>
       ) : null}
 
@@ -172,8 +177,8 @@ export function MobileStickyPurchaseBar({
             "flex-[2] rounded-none border border-zalo bg-white text-zalo opacity-50 cursor-not-allowed",
           )}
         >
-          <ZaloIcon className="size-5 shrink-0" />
-          {zaloLabel}
+          <ZaloIcon className="hidden size-4 shrink-0 min-[360px]:block" />
+          <span data-sticky-purchase-label>{zaloLabel}</span>
         </span>
       ) : (
         <Button
@@ -190,10 +195,13 @@ export function MobileStickyPurchaseBar({
             target={zaloUrl ? "_blank" : undefined}
             rel={zaloUrl ? "noopener noreferrer" : undefined}
             aria-label={zaloLabel}
+            data-analytics-contact-channel={zaloUrl ? "zalo" : undefined}
+            data-analytics-location="mobile_purchase_bar"
             tabIndex={visible ? 0 : -1}
+            data-sticky-zalo
           >
-            <ZaloIcon className="size-5 shrink-0" />
-            {zaloLabel}
+            <ZaloIcon className="hidden size-4 shrink-0 min-[360px]:block" />
+            <span data-sticky-purchase-label>{zaloLabel}</span>
           </a>
         </Button>
       )}

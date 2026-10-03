@@ -6,7 +6,6 @@ import {
   createAddress,
   deleteAddress,
   fetchCart,
-  fetchChatAvailability,
   fetchMe,
   fetchMyAddresses,
   fetchMyOrder,
@@ -125,16 +124,6 @@ export function useDeleteAddress() {
       qc.setQueryData<CustomerAddress[]>(queryKeys.addresses(), (current = []) =>
         current.filter((item) => item.id !== id),
       ),
-  });
-}
-
-export function useChatAvailability(locale: "vi" | "en", enabled: boolean) {
-  return useQuery({
-    queryKey: queryKeys.chatAvailability(locale),
-    queryFn: () => fetchChatAvailability(locale),
-    enabled,
-    staleTime: 5 * 60 * 1000,
-    retry: false,
   });
 }
 

@@ -68,6 +68,30 @@ export const routing = defineRouting({
       vi: "/chinh-sach/chinh-sach-doi-tra-hang",
       en: "/policy/return-policy",
     },
+    "/chinh-sach/chinh-sach-giao-hang": {
+      vi: "/chinh-sach/chinh-sach-giao-hang",
+      en: "/policy/delivery-policy",
+    },
+    "/chinh-sach/chinh-sach-thanh-toan": {
+      vi: "/chinh-sach/chinh-sach-thanh-toan",
+      en: "/policy/payment-policy",
+    },
+    "/chinh-sach/chinh-sach-gia": {
+      vi: "/chinh-sach/chinh-sach-gia",
+      en: "/policy/pricing-policy",
+    },
+    "/chinh-sach/chinh-sach-giai-quyet-khieu-nai": {
+      vi: "/chinh-sach/chinh-sach-giai-quyet-khieu-nai",
+      en: "/policy/complaints-policy",
+    },
+    "/chinh-sach/dieu-kien-giao-dich": {
+      vi: "/chinh-sach/dieu-kien-giao-dich",
+      en: "/policy/trading-conditions",
+    },
+    "/chinh-sach/quyen-va-nghia-vu": {
+      vi: "/chinh-sach/quyen-va-nghia-vu",
+      en: "/policy/rights-and-obligations",
+    },
     "/huong-dan": { vi: "/huong-dan", en: "/guide" },
     "/huong-dan/size-mu": { vi: "/huong-dan/size-mu", en: "/guide/helmet-size" },
     "/huong-dan/size-trang-phuc": {

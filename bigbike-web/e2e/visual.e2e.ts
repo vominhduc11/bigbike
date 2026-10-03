@@ -17,18 +17,26 @@ function dynamicMasks(page: Page): Locator[] {
     page.locator(".bb-main-banner"), // hero auto-rotates
     page.locator(".bb-fp-viewport"), // featured-products carousel
     page.locator(".bb-cart-badge"), // count varies
-    page.locator("#bb-floating-chat-trigger"), // floating chat FAB
+    page.locator("#bb-floating-contact-trigger"), // floating chat FAB
   ];
 }
 
-async function prep(page: Page, path: string, vp: { width: number; height: number }): Promise<void> {
+async function prep(
+  page: Page,
+  path: string,
+  vp: { width: number; height: number },
+): Promise<void> {
   await page.setViewportSize({ width: vp.width, height: vp.height });
   await gotoAndSettle(page, path);
   await disableAnimations(page);
   // Freeze Swiper autoplay + reset to slide 0 so full-page captures converge.
   await page.evaluate(() => {
     document.querySelectorAll<HTMLElement>(".swiper").forEach((el) => {
-      const sw = (el as unknown as { swiper?: { autoplay?: { stop?: () => void }; slideTo?: (i: number, s: number) => void } }).swiper;
+      const sw = (
+        el as unknown as {
+          swiper?: { autoplay?: { stop?: () => void }; slideTo?: (i: number, s: number) => void };
+        }
+      ).swiper;
       sw?.autoplay?.stop?.();
       sw?.slideTo?.(0, 0);
     });
@@ -42,7 +50,10 @@ function headerSearchTrigger(page: Page): Locator {
 }
 
 function searchDialog(page: Page): Locator {
-  return page.getByRole("dialog").filter({ has: page.getByRole("combobox") }).first();
+  return page
+    .getByRole("dialog")
+    .filter({ has: page.getByRole("combobox") })
+    .first();
 }
 
 function featuredProductCard(page: Page): Locator {
@@ -60,16 +71,22 @@ async function clickMobileMenuTrigger(page: Page): Promise<void> {
 test.describe("Visual — chrome", () => {
   test("header @desktop", async ({ page }) => {
     await prep(page, "/", DESKTOP);
-    await expect(page.locator("header, .bb-header-container").first()).toHaveScreenshot("header-desktop.png", {
-      mask: dynamicMasks(page),
-    });
+    await expect(page.locator("header, .bb-header-container").first()).toHaveScreenshot(
+      "header-desktop.png",
+      {
+        mask: dynamicMasks(page),
+      },
+    );
   });
 
   test("header @mobile", async ({ page }) => {
     await prep(page, "/", MOBILE);
-    await expect(page.locator("header, .bb-header-container").first()).toHaveScreenshot("header-mobile.png", {
-      mask: dynamicMasks(page),
-    });
+    await expect(page.locator("header, .bb-header-container").first()).toHaveScreenshot(
+      "header-mobile.png",
+      {
+        mask: dynamicMasks(page),
+      },
+    );
   });
 
   test("footer @desktop", async ({ page }) => {
@@ -120,9 +137,12 @@ test.describe("Visual — overlays", () => {
     await clickMobileMenuTrigger(page);
     await page.waitForTimeout(500);
     await disableAnimations(page);
-    await expect(page.locator("[data-header-mobile-menu]").first()).toHaveScreenshot("mobile-menu-drawer.png", {
-      mask: dynamicMasks(page),
-    });
+    await expect(page.locator("[data-header-mobile-menu]").first()).toHaveScreenshot(
+      "mobile-menu-drawer.png",
+      {
+        mask: dynamicMasks(page),
+      },
+    );
   });
 });
 

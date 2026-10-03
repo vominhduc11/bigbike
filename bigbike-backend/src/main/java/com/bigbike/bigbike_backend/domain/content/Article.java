@@ -2,8 +2,6 @@ package com.bigbike.bigbike_backend.domain.content;
 
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.ImageAsset;
-import com.fasterxml.jackson.annotation.JsonInclude;
-
 import com.bigbike.bigbike_backend.domain.catalog.PublishStatus;
 import com.bigbike.bigbike_backend.domain.catalog.SeoMeta;
 import java.time.Instant;
@@ -15,13 +13,12 @@ public record Article(
         /** Optional English URL slug (V216). Canonical {@code slug} stays vi; null when unset. */
         String slugEn,
         String title,
-        String excerpt,
         String body,
         ImageAsset coverImage,
         /** ACF product_image overlay for the Experience Carousel (re-added V171). Null when not set. */
         ImageAsset productImage,
         PublishStatus publishStatus,
-        /** Featured article flag (V222). */
+        /** Manual "Tin nổi bật" pick flag (V222, restored by V1092). */
         boolean featured,
         /** Homepage Experience carousel pick flag (V272). */
         boolean homeExperience,
@@ -32,9 +29,6 @@ public record Article(
         Instant createdAt,
         Instant updatedAt,
         /** Structured body blocks (V140). Non-null only on admin detail reads; null on public/list reads. */
-        List<DescriptionBlock> bodyBlocks,
-        /** Optional localized author name (ARTICLE_RULE_007). */
-        @JsonInclude(JsonInclude.Include.NON_NULL)
-        String authorName
+        List<DescriptionBlock> bodyBlocks
 ) {
 }

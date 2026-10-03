@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { listArticles, listBrands, listCategories, listProducts } from "@/lib/api/public-api";
 import { getGuideLayout } from "@/lib/content/static-pages";
+import { POLICY_SLUGS } from "@/lib/content/policy-pages";
 import {
   toArticleListPath,
   toArticlePath,
@@ -46,7 +47,9 @@ const STATIC_DATE = new Date("2025-01-01");
  */
 class SitemapSourceError extends Error {
   constructor(source: string, page: number, cause: { message?: string } | null) {
-    super(`Sitemap bỏ dở: nguồn "${source}" lỗi ở trang ${page} — ${cause?.message ?? "không rõ nguyên nhân"}`);
+    super(
+      `Sitemap bỏ dở: nguồn "${source}" lỗi ở trang ${page} — ${cause?.message ?? "không rõ nguyên nhân"}`,
+    );
     this.name = "SitemapSourceError";
   }
 }
@@ -124,20 +127,36 @@ function indexableBy<T extends { id?: string | null; seo?: { noIndex?: boolean |
   for (const row of rows) {
     if (row.id) byId.set(row.id, !row.seo?.noIndex);
   }
-  return (id) => (id ? byId.get(id) ?? false : false);
+  return (id) => (id ? (byId.get(id) ?? false) : false);
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [products, categories, brands, articles, productsEn, categoriesEn, brandsEn, articlesEn] =
     await Promise.all([
-      fetchAll("products", (page) => listProducts({ page, size: PAGE_SIZE, sort: "createdAt:desc", lang: "vi" })),
-      fetchAll("categories", (page) => listCategories({ page, size: PAGE_SIZE, sort: "sortOrder:asc", lang: "vi" })),
-      fetchAll("brands", (page) => listBrands({ page, size: PAGE_SIZE, sort: "name:asc", lang: "vi" })),
-      fetchAll("articles", (page) => listArticles({ page, size: PAGE_SIZE, sort: "publishedAt:desc", lang: "vi" })),
-      fetchAll("products:en", (page) => listProducts({ page, size: PAGE_SIZE, sort: "createdAt:desc", lang: "en" })),
-      fetchAll("categories:en", (page) => listCategories({ page, size: PAGE_SIZE, sort: "sortOrder:asc", lang: "en" })),
-      fetchAll("brands:en", (page) => listBrands({ page, size: PAGE_SIZE, sort: "name:asc", lang: "en" })),
-      fetchAll("articles:en", (page) => listArticles({ page, size: PAGE_SIZE, sort: "publishedAt:desc", lang: "en" })),
+      fetchAll("products", (page) =>
+        listProducts({ page, size: PAGE_SIZE, sort: "createdAt:desc", lang: "vi" }),
+      ),
+      fetchAll("categories", (page) =>
+        listCategories({ page, size: PAGE_SIZE, sort: "sortOrder:asc", lang: "vi" }),
+      ),
+      fetchAll("brands", (page) =>
+        listBrands({ page, size: PAGE_SIZE, sort: "name:asc", lang: "vi" }),
+      ),
+      fetchAll("articles", (page) =>
+        listArticles({ page, size: PAGE_SIZE, sort: "publishedAt:desc", lang: "vi" }),
+      ),
+      fetchAll("products:en", (page) =>
+        listProducts({ page, size: PAGE_SIZE, sort: "createdAt:desc", lang: "en" }),
+      ),
+      fetchAll("categories:en", (page) =>
+        listCategories({ page, size: PAGE_SIZE, sort: "sortOrder:asc", lang: "en" }),
+      ),
+      fetchAll("brands:en", (page) =>
+        listBrands({ page, size: PAGE_SIZE, sort: "name:asc", lang: "en" }),
+      ),
+      fetchAll("articles:en", (page) =>
+        listArticles({ page, size: PAGE_SIZE, sort: "publishedAt:desc", lang: "en" }),
+      ),
     ]);
 
   const productEnIndexable = indexableBy(productsEn);
@@ -146,59 +165,123 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articleEnIndexable = indexableBy(articlesEn);
 
   const entries: MetadataRoute.Sitemap = [
-    ...localePair(toHomePath("vi"), toHomePath("en"), { lastModified: STATIC_DATE, changeFrequency: "daily", priority: 1 }),
-    ...localePair(toProductListPath("vi"), toProductListPath("en"), { lastModified: STATIC_DATE, changeFrequency: "daily", priority: 0.9 }),
-    ...localePair(toArticleListPath("vi"), toArticleListPath("en"), { lastModified: STATIC_DATE, changeFrequency: "weekly", priority: 0.7 }),
-    ...localePair(toBrandListPath("vi"), toBrandListPath("en"), { lastModified: STATIC_DATE, changeFrequency: "monthly", priority: 0.5 }),
-    ...localePair(toPagePath("gioi-thieu", "vi"), toPagePath("gioi-thieu", "en"), { lastModified: STATIC_DATE, changeFrequency: "yearly", priority: 0.5 }),
-    ...localePair(toPagePath("lien-he", "vi"), toPagePath("lien-he", "en"), { lastModified: STATIC_DATE, changeFrequency: "yearly", priority: 0.5 }),
-    ...localePair(translatePath("/huong-dan/", "vi"), translatePath("/huong-dan/", "en"), { lastModified: STATIC_DATE, changeFrequency: "yearly", priority: 0.5 }),
+    ...localePair(toHomePath("vi"), toHomePath("en"), {
+      lastModified: STATIC_DATE,
+      changeFrequency: "daily",
+      priority: 1,
+    }),
+    ...localePair(toProductListPath("vi"), toProductListPath("en"), {
+      lastModified: STATIC_DATE,
+      changeFrequency: "daily",
+      priority: 0.9,
+    }),
+    ...localePair(toArticleListPath("vi"), toArticleListPath("en"), {
+      lastModified: STATIC_DATE,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    }),
+    ...localePair(toBrandListPath("vi"), toBrandListPath("en"), {
+      lastModified: STATIC_DATE,
+      changeFrequency: "monthly",
+      priority: 0.5,
+    }),
+    ...localePair(toPagePath("gioi-thieu", "vi"), toPagePath("gioi-thieu", "en"), {
+      lastModified: STATIC_DATE,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    }),
+    ...localePair(toPagePath("lien-he", "vi"), toPagePath("lien-he", "en"), {
+      lastModified: STATIC_DATE,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    }),
+    ...localePair(translatePath("/huong-dan/", "vi"), translatePath("/huong-dan/", "en"), {
+      lastModified: STATIC_DATE,
+      changeFrequency: "yearly",
+      priority: 0.5,
+    }),
   ];
 
   for (const product of products.filter((item) => !item.discontinued)) {
-    entries.push(...entryPair(
-      toProductPath(product.slug, "vi"),
-      toProductPath(product.slugEn?.trim() || product.slug, "en"),
-      { lastModified: product.updatedAt ? new Date(product.updatedAt) : STATIC_DATE, changeFrequency: "weekly", priority: 0.8 },
-      !product.seo?.noIndex,
-      productEnIndexable(product.id),
-    ));
+    entries.push(
+      ...entryPair(
+        toProductPath(product.slug, "vi"),
+        toProductPath(product.slugEn?.trim() || product.slug, "en"),
+        {
+          lastModified: product.updatedAt ? new Date(product.updatedAt) : STATIC_DATE,
+          changeFrequency: "weekly",
+          priority: 0.8,
+        },
+        !product.seo?.noIndex,
+        productEnIndexable(product.id),
+      ),
+    );
   }
   for (const category of categories) {
-    entries.push(...entryPair(
-      toCategoryPath(category.slug, "vi"),
-      toCategoryPath(category.slugEn?.trim() || category.slug, "en"),
-      { lastModified: category.updatedAt ? new Date(category.updatedAt) : STATIC_DATE, changeFrequency: "weekly", priority: 0.6 },
-      !category.seo?.noIndex,
-      categoryEnIndexable(category.id),
-    ));
+    entries.push(
+      ...entryPair(
+        toCategoryPath(category.slug, "vi"),
+        toCategoryPath(category.slugEn?.trim() || category.slug, "en"),
+        {
+          lastModified: category.updatedAt ? new Date(category.updatedAt) : STATIC_DATE,
+          changeFrequency: "weekly",
+          priority: 0.6,
+        },
+        !category.seo?.noIndex,
+        categoryEnIndexable(category.id),
+      ),
+    );
   }
   for (const brand of brands) {
-    entries.push(...entryPair(
-      toBrandPath(brand.slug, "vi"),
-      toBrandPath(brand.slug, "en"),
-      { lastModified: brand.updatedAt ? new Date(brand.updatedAt) : STATIC_DATE, changeFrequency: "monthly", priority: 0.5 },
-      !brand.seo?.noIndex,
-      brandEnIndexable(brand.id),
-    ));
+    entries.push(
+      ...entryPair(
+        toBrandPath(brand.slug, "vi"),
+        toBrandPath(brand.slug, "en"),
+        {
+          lastModified: brand.updatedAt ? new Date(brand.updatedAt) : STATIC_DATE,
+          changeFrequency: "monthly",
+          priority: 0.5,
+        },
+        !brand.seo?.noIndex,
+        brandEnIndexable(brand.id),
+      ),
+    );
   }
   for (const article of articles) {
-    entries.push(...entryPair(
-      toArticlePath(article.slug, "vi"),
-      toArticlePath(article.slugEn?.trim() || article.slug, "en"),
-      { lastModified: article.updatedAt ? new Date(article.updatedAt) : STATIC_DATE, changeFrequency: "monthly", priority: 0.4 },
-      !article.seo?.noIndex,
-      articleEnIndexable(article.id),
-    ));
+    entries.push(
+      ...entryPair(
+        toArticlePath(article.slug, "vi"),
+        toArticlePath(article.slugEn?.trim() || article.slug, "en"),
+        {
+          lastModified: article.updatedAt ? new Date(article.updatedAt) : STATIC_DATE,
+          changeFrequency: "monthly",
+          priority: 0.4,
+        },
+        !article.seo?.noIndex,
+        articleEnIndexable(article.id),
+      ),
+    );
   }
 
-  for (const slug of ["chinh-sach-bao-mat-thong-tin", "chinh-sach-bao-hanh", "chinh-sach-doi-tra-hang"]) {
+  for (const slug of POLICY_SLUGS) {
     const source = `/chinh-sach/${slug}/`;
-    entries.push(...localePair(translatePath(source, "vi"), translatePath(source, "en"), { lastModified: STATIC_DATE, changeFrequency: "yearly", priority: 0.3 }));
+    entries.push(
+      ...localePair(translatePath(source, "vi"), translatePath(source, "en"), {
+        lastModified: new Date("2026-10-02"),
+        changeFrequency: "yearly",
+        priority: 0.3,
+      }),
+    );
   }
   for (const guide of getGuideLayout("vi").entries) {
     const source = `/huong-dan/${guide.pathSegment}/`;
-    entries.push(...localePair(translatePath(source, "vi"), translatePath(source, "en"), { lastModified: STATIC_DATE, changeFrequency: "yearly", priority: 0.5 }));
+    entries.push(
+      ...localePair(translatePath(source, "vi"), translatePath(source, "en"), {
+        lastModified: STATIC_DATE,
+        changeFrequency: "yearly",
+        priority: 0.5,
+      }),
+    );
   }
 
   return entries;

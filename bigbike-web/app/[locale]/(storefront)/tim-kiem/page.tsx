@@ -75,24 +75,28 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
   const articlePromise = catalog.filters.q
     ? listArticles({ page: 1, size: 12, q: catalog.filters.q, lang: locale })
     : Promise.resolve({ data: [], pagination: null, error: null });
-  const [settingsResult, facetsResult, productsResult, articlesResult] = await Promise.all([
-    listPublicSettings(locale),
-    getCatalogFacets({
-      category: catalog.filters.category,
-      brand: catalog.filters.brand,
-      q: catalog.filters.q,
-      filterColor: catalog.filters.color,
-      filterFinish: catalog.filters.finish,
-      filterGender: catalog.filters.gender,
-      sizeFilter: catalog.filters.size,
-      minPrice: catalog.filters.minPrice,
-      maxPrice: catalog.filters.maxPrice,
-      inStock: catalog.filters.inStock,
-      lang: locale,
-    }),
-    productPromise,
-    articlePromise,
-  ]);
+  const [settingsResult, facetsResult, productsResult, articlesResult, suggestedProductsResult] =
+    await Promise.all([
+      listPublicSettings(locale),
+      getCatalogFacets({
+        category: catalog.filters.category,
+        brand: catalog.filters.brand,
+        q: catalog.filters.q,
+        filterColor: catalog.filters.color,
+        filterFinish: catalog.filters.finish,
+        filterGender: catalog.filters.gender,
+        sizeFilter: catalog.filters.size,
+        minPrice: catalog.filters.minPrice,
+        maxPrice: catalog.filters.maxPrice,
+        inStock: catalog.filters.inStock,
+        lang: locale,
+      }),
+      productPromise,
+      articlePromise,
+      // Same request as StorefrontLayout: Next can reuse the cached response instead of adding a
+      // second source of recommendations. Four cards make one complete desktop row.
+      listProducts({ page: 1, size: 5, sort: "popularity", inStock: true, lang: locale }),
+    ]);
 
   // Tiêu đề phải cho khách biết đang xem kết quả của từ nào và có bao nhiêu kết quả
   // (SEARCH_RULE_006) — trước đây luôn là chữ "Tìm kiếm" trơ trọi. Tổng số lấy từ lượt gọi
@@ -132,7 +136,12 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
 
       <div id="main-content">
         <Container>
-          <SearchPageForm key={catalog.filters.q ?? ""} initialQuery={catalog.filters.q ?? ""} />
+          <SearchPageForm
+            key={catalog.filters.q ?? ""}
+            initialQuery={catalog.filters.q ?? ""}
+            resultCount={resultCount}
+            resultsAvailable={Boolean(catalog.filters.q && !productsResult.error)}
+          />
           {/* canonicalPath phải dịch theo locale: CatalogClient dùng nó làm gốc cho
                 link phân trang (buildPaginationHref) và nút xoá lọc. Truyền thẳng
                 SEARCH_PATH thì trang /en/search/ phát toàn bộ link về /tim-kiem/, kéo
@@ -151,6 +160,14 @@ export default async function SearchPage({ params, searchParams }: SearchPagePro
               initialPagination={productsResult.pagination}
               initialProductsError={Boolean(productsResult.error)}
               initialFacetsError={Boolean(facetsResult.error)}
+              emptyRecommendations={
+                suggestedProductsResult.error
+                  ? []
+                  : suggestedProductsResult.data
+                      .filter((product) => product.stockState === "IN_STOCK")
+                      .slice(0, 4)
+              }
+              emptyRecommendationsLabel={tSearch("suggestedProductsHeading")}
             />
           </Suspense>
           {catalog.filters.q && (

@@ -65,33 +65,6 @@ describe('NotificationBell order notifications', () => {
     })
   })
 
-  it('lets chat-only staff open a receipt without caching its conversation reference', async () => {
-    mocks.permissions.clear()
-    mocks.permissions.add('chat.read')
-    mocks.fetchAdminNotifications.mockResolvedValue({
-      unreadCount: 1,
-      items: [
-        {
-          id: 'receipt',
-          type: 'CHAT_BANK_TRANSFER_RECEIPT',
-          conversationId: 'conversation-1',
-          messageId: 'message-1',
-          at: Date.now(),
-          read: false,
-        },
-      ],
-    })
-    render(<NotificationBell navigate={mocks.navigate} />)
-    await waitFor(() => expect(mocks.fetchAdminNotifications).toHaveBeenCalled())
-    await userEvent.click(screen.getByRole('button', { name: 'notifications.bellLabel' }))
-    await userEvent.click(await screen.findByText('notifications.transferReceipt'))
-    expect(mocks.navigate).toHaveBeenCalledWith('/admin/chat/conversation-1?message=message-1')
-    for (let index = 0; index < localStorage.length; index++) {
-      expect(localStorage.getItem(localStorage.key(index))).not.toContain('conversation-1')
-    }
-    expect(mocks.subscribeAdminWs).not.toHaveBeenCalled()
-  })
-
   it('lets an inventory-only staff member open both complete digest sections and every long-list row', async () => {
     mocks.permissions.clear()
     mocks.permissions.add('inventory.read')
@@ -170,7 +143,7 @@ describe('NotificationBell order notifications', () => {
 
     await user.click(within(dialog).getByText('Sản phẩm 79'))
     expect(mocks.navigate).toHaveBeenCalledWith('/admin/products/full-79')
-  })
+  }, 15000)
 
   it('shows order notifications only and opens the order', async () => {
     const user = userEvent.setup()

@@ -8,7 +8,7 @@ import { Autoplay } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import "swiper/css";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { toProductListPath } from "@/lib/utils/routes";
+import { localizeStorefrontHref, toProductListPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 
 // Inlined leaf styling for the WP #main-banner hero. Leaf CSS was removed from
@@ -20,8 +20,7 @@ const LINK_CLASS =
   "-swiper-lazy bb-main-banner-link relative block w-full h-full text-inherit no-underline";
 const ARROW_BASE =
   "absolute top-1/2 z-10 inline-flex items-center justify-center p-0 [transform:translateY(-50%)] border-none bg-transparent text-white cursor-pointer [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.6))] [transition:opacity_0.15s_ease] opacity-100 hover:opacity-75 focus-visible:[outline:2px_solid_rgba(255,255,255,0.7)] focus-visible:[outline-offset:2px] w-12 h-18";
-const ARROW_ICON =
-  "block shrink-0 w-22 h-22 max-md:w-15 max-md:h-15";
+const ARROW_ICON = "block shrink-0 w-22 h-22 max-md:w-15 max-md:h-15";
 
 export type HeroSlide = {
   id: string;
@@ -61,17 +60,17 @@ function enforceHorizontalTrack(swiper: SwiperType | null) {
 function HeroSlideView({ slide }: { slide: HeroSlide }) {
   const locale = useLocale() as Locale;
   const t = useTranslations("Home");
-  const href = slide.href ?? toProductListPath(locale);
-  const slideLabel =
-    [slide.productName || slide.categoryName || slide.alt || "BigBike", slide.productCode]
-      .filter(Boolean)
-      .join(" - ");
+  const href = slide.href ? localizeStorefrontHref(slide.href, locale) : toProductListPath(locale);
+  const slideLabel = [
+    slide.productName || slide.categoryName || slide.alt || "BigBike",
+    slide.productCode,
+  ]
+    .filter(Boolean)
+    .join(" - ");
 
   const picture = (
     <picture className="block w-full h-full">
-      {slide.mobileSrc ? (
-        <source media="(max-width: 767px)" srcSet={slide.mobileSrc} />
-      ) : null}
+      {slide.mobileSrc ? <source media="(max-width: 767px)" srcSet={slide.mobileSrc} /> : null}
       <img
         src={slide.desktopSrc}
         alt={slide.alt}
@@ -100,7 +99,14 @@ function HeroSlideView({ slide }: { slide: HeroSlide }) {
   }
 
   return (
-    <Link href={href} className={LINK_CLASS} aria-label={slideLabel}>
+    <Link
+      href={href}
+      className={LINK_CLASS}
+      aria-label={slideLabel}
+      data-analytics-promotion-id={`hero-${slide.id}`}
+      data-analytics-promotion-name={slide.productName || slide.categoryName || slide.alt}
+      data-analytics-location="homepage_hero"
+    >
       {picture}
       {copy}
     </Link>
@@ -117,7 +123,6 @@ export function HeroSlider({ slides }: HeroSliderProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
-
 
   const count = slides.length;
 
@@ -144,11 +149,7 @@ export function HeroSlider({ slides }: HeroSliderProps) {
             className="js-home-banner"
             modules={[Autoplay]}
             loop={count > 1}
-            autoplay={
-              count > 1
-                ? { delay: 3000, disableOnInteraction: false }
-                : false
-            }
+            autoplay={count > 1 ? { delay: 3000, disableOnInteraction: false } : false}
             onSwiper={(swiper) => {
               swiperRef.current = swiper;
               enforceHorizontalTrack(swiper);
@@ -192,7 +193,9 @@ export function HeroSlider({ slides }: HeroSliderProps) {
               <ChevronRight aria-hidden="true" className={ARROW_ICON} strokeWidth={2} />
             </button>
             <div className="absolute left-1/2 bottom-17.5 z-10 flex items-end gap-0 w-[min(370px,calc(100%-48px))] [transform:translateX(-50%)] pb-2.5 border-b border-b-muted-foreground text-white font-body text-a4-content leading-title text-left max-md:hidden">
-              <span>{activeIndex + 1}/{count}</span>
+              <span>
+                {activeIndex + 1}/{count}
+              </span>
             </div>
           </>
         ) : null}

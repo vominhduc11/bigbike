@@ -8,6 +8,8 @@ export const richContentClassName =
   "[&_h1]:mb-5 [&_h1]:font-body [&_h1]:text-a1-title [&_h1]:font-bold " +
   "[&_h2]:mb-4 [&_h2]:mt-8 [&_h2]:font-body [&_h2]:text-a2-page [&_h2]:font-bold " +
   "[&_h3]:mb-3 [&_h3]:mt-6 [&_h3]:font-body [&_h3]:text-a3-section [&_h3]:font-semibold " +
+  "[&_figure]:m-0 [&_figure]:mb-4 [&_figure>img]:mx-auto " +
+  "[&_figcaption]:mt-2 [&_figcaption]:text-center [&_figcaption]:text-a5-meta [&_figcaption]:italic [&_figcaption]:text-muted-foreground " +
   "[&_img]:h-auto [&_img]:max-w-full [&_li]:mb-2 [&_ol]:mb-4 [&_ol]:list-decimal [&_ol]:pl-6 " +
   "[&_p]:mb-4 [&_.rich-table-scroll]:mb-4 [&_.rich-table-scroll]:block [&_.rich-table-scroll]:w-full [&_.rich-table-scroll]:overflow-x-auto [&_table]:w-full " +
   "[&_td]:border [&_td]:border-border [&_td]:p-3 [&_th]:border [&_th]:border-border [&_th]:p-3 " +

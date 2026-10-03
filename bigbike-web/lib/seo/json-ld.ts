@@ -20,7 +20,7 @@ import {
   toProductListPath,
   toProductPath,
 } from "@/lib/utils/routes";
-import { stripHtmlToText } from "@/lib/utils/text";
+import { normalizeMetaDescription, stripHtmlToText } from "@/lib/utils/text";
 import { derivePricing } from "@/lib/pricing";
 import { resolveMediaUrl } from "@/lib/utils/format";
 import { resolveLinkedVariant, withProductVariant } from "@/lib/utils/product-variant-link";
@@ -146,25 +146,21 @@ export function buildArticleJsonLd(
     canonicalPathOverride ?? article.seo?.canonicalUrl ?? toArticlePath(article.slug, locale),
   );
   const images = article.coverImage?.url ? [toCanonicalUrl(article.coverImage.url)] : [];
-  const authorName = article.authorName?.trim();
+  const description = article.seo?.description?.trim()
+    ? normalizeMetaDescription(article.seo.description)
+    : normalizeMetaDescription(article.body);
 
   return {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: article.seo?.title ?? article.title,
-    description: article.seo?.description ?? article.excerpt ?? "",
+    description: description || "",
     image: images.length > 0 ? images : undefined,
     datePublished: article.publishedAt ?? article.createdAt,
     dateModified: article.updatedAt,
     mainEntityOfPage: canonicalUrl,
     url: canonicalUrl,
     inLanguage: locale,
-    author: authorName
-      ? {
-          "@type": "Person",
-          name: authorName,
-        }
-      : undefined,
     publisher: buildPublisher(publisherName, publisherLogoPath),
   };
 }
@@ -608,21 +604,37 @@ function buildVariantProductJsonLd(
     sku: variant.sku ?? undefined,
     url: variantUrl,
     image: image ? [toCanonicalUrl(image)] : undefined,
+    ...buildVariantDimensions(variant),
     offers: buildOffer(price, stockState, variantUrl),
   };
 }
 
 function buildVariesBy(variants: ProductVariant[]): string[] | undefined {
-  const fields = new Set<string>();
-  for (const option of variants.flatMap((variant) => variant.options ?? [])) {
-    const normalized = option.name
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-    if (/(color|colour|mau)/.test(normalized)) fields.add("https://schema.org/color");
-    if (/(size|kich co)/.test(normalized)) fields.add("https://schema.org/size");
+  const dimensions = variants.map(buildVariantDimensions);
+  const fields: string[] = [];
+  if (dimensions.every((variant) => variant.color)) fields.push("https://schema.org/color");
+  if (dimensions.every((variant) => variant.size)) fields.push("https://schema.org/size");
+  return fields.length > 0 ? fields : undefined;
+}
+
+function buildVariantDimensions(variant: ProductVariant): { color?: string; size?: string } {
+  const dimensions: { color?: string; size?: string } = {};
+  for (const option of variant.options ?? []) {
+    const field = variantDimensionFromOptionName(option.name);
+    const value = option.value?.trim();
+    if (field && value && !dimensions[field]) dimensions[field] = value;
   }
-  return fields.size > 0 ? Array.from(fields) : undefined;
+  return dimensions;
+}
+
+function variantDimensionFromOptionName(name: string): "color" | "size" | undefined {
+  const normalized = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (/(color|colour|mau)/.test(normalized)) return "color";
+  if (/(size|kich co|kich thuoc)/.test(normalized)) return "size";
+  return undefined;
 }
 
 function stockStateToAvailability(stockState: Product["stockState"]): string {

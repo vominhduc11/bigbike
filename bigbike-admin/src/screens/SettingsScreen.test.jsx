@@ -7,7 +7,6 @@ import { SettingsScreen } from './SettingsScreen'
 const mocks = vi.hoisted(() => ({
   fetchSettings: vi.fn(),
   batchUpdateSettings: vi.fn(),
-  showConfirm: vi.fn(),
   setContentLang: vi.fn(),
 }))
 
@@ -22,7 +21,6 @@ vi.mock('../lib/adminApi', () => ({
   fetchSettings: mocks.fetchSettings,
   batchUpdateSettings: mocks.batchUpdateSettings,
 }))
-vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
 vi.mock('../lib/contentLang', () => ({
   useContentLang: () => 'vi',
   setContentLang: mocks.setContentLang,
@@ -80,14 +78,6 @@ const settings = [
     superAdminOnly: false,
   },
   {
-    key: 'bank_account_holder',
-    value: 'BIGBIKE',
-    valueEn: '',
-    valueType: 'STRING',
-    settingGroup: 'payment',
-    superAdminOnly: false,
-  },
-  {
     key: 'order_overdue_days',
     value: '2',
     valueEn: '',
@@ -125,7 +115,6 @@ beforeEach(() => {
       valueEn: update.valueEn,
     })),
   }))
-  mocks.showConfirm.mockResolvedValue(true)
 })
 
 describe('SettingsScreen', () => {
@@ -196,15 +185,6 @@ describe('SettingsScreen', () => {
     expect(siteName).toHaveValue('BigBike nháp')
   })
 
-  it('shows the bank-transfer settings tab required by the current checkout rules', async () => {
-    const user = userEvent.setup()
-    renderScreen()
-
-    await user.click(await screen.findByRole('button', { name: 'PAYMENT' }))
-
-    expect(screen.getByLabelText('Chủ tài khoản nhận chuyển khoản')).toHaveValue('BIGBIKE')
-  })
-
   it('hides frozen policy rows while keeping the remaining settings tabs available', async () => {
     renderScreen()
 
@@ -212,7 +192,7 @@ describe('SettingsScreen', () => {
 
     expect(screen.queryByRole('button', { name: 'STORE_POLICY' })).not.toBeInTheDocument()
     expect(screen.queryByText('Nội dung policy cũ trong DB')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'PAYMENT' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'PAYMENT' })).not.toBeInTheDocument()
   })
 
   it('hides the retired order-operations tab and setting even when the API still returns the key', async () => {
@@ -224,7 +204,7 @@ describe('SettingsScreen', () => {
     expect(screen.queryByRole('tab', { name: 'ORDER_OPERATIONS' })).not.toBeInTheDocument()
     expect(screen.queryByText('Nhắc khi đơn chờ quá số ngày')).not.toBeInTheDocument()
     expect(screen.queryByText('order_overdue_days')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'PAYMENT' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'PAYMENT' })).not.toBeInTheDocument()
   })
 
   it('hides review invitation controls and operations even when the API returns legacy rows', async () => {
@@ -261,7 +241,7 @@ describe('SettingsScreen', () => {
     expect(screen.queryByText('Bật email mời đánh giá')).not.toBeInTheDocument()
     expect(screen.queryByText('Gửi sau khi hoàn tất (số ngày)')).not.toBeInTheDocument()
     expect(screen.queryByText('Số thư mời tối đa mỗi ngày')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'PAYMENT' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'PAYMENT' })).not.toBeInTheDocument()
   })
 
   it('hides the legacy homepage H1 setting while keeping other SEO settings visible', async () => {
@@ -274,27 +254,6 @@ describe('SettingsScreen', () => {
     expect(screen.getByLabelText('Mô tả SEO trang chủ')).toBeInTheDocument()
     expect(screen.queryByLabelText('Tiêu đề chính trang chủ')).not.toBeInTheDocument()
     expect(screen.queryByText('Dữ liệu H1 cũ')).not.toBeInTheDocument()
-  })
-
-  it('confirms and saves bank-transfer details as one atomic batch', async () => {
-    const user = userEvent.setup()
-    renderScreen()
-
-    await user.click(await screen.findByRole('button', { name: 'PAYMENT' }))
-    const holder = screen.getByLabelText('Chủ tài khoản nhận chuyển khoản')
-    await user.clear(holder)
-    await user.type(holder, 'BIGBIKE VN')
-    await user.click(screen.getByRole('button', { name: 'settings.saveCount' }))
-
-    expect(mocks.showConfirm).toHaveBeenCalledWith(
-      'settings.confirmSaveMessage',
-      'settings.confirmSaveTitle',
-    )
-    await waitFor(() =>
-      expect(mocks.batchUpdateSettings).toHaveBeenCalledWith([
-        { key: 'bank_account_holder', value: 'BIGBIKE VN' },
-      ]),
-    )
   })
 
   it('requires the English site name when the Vietnamese site name changes', async () => {

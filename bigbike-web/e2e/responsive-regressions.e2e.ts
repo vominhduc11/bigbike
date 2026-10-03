@@ -229,6 +229,39 @@ test("Ba dòng liên hệ chân trang không bị cắt ở 320px", async ({ pag
   }
 });
 
+test("Liên kết chân trang và nút Mua ngay có vùng bấm an toàn trên điện thoại", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoAndSettle(page, "/");
+
+  const compactPolicyLinks = await page.locator("[data-footer-menu] li a").evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom, height: rect.height };
+    }),
+  );
+  expect(compactPolicyLinks).toHaveLength(5);
+  for (const link of compactPolicyLinks) expect(link.height).toBeGreaterThanOrEqual(24);
+  for (let index = 1; index < compactPolicyLinks.length; index += 1) {
+    expect(
+      compactPolicyLinks[index].top - compactPolicyLinks[index - 1].bottom,
+    ).toBeGreaterThanOrEqual(8);
+  }
+
+  for (const selector of ["[data-footer-contacts] a", "[data-footer-social] a"]) {
+    const heights = await page
+      .locator(selector)
+      .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().height));
+    expect(heights.length, `${selector}: thiếu liên kết cần kiểm tra`).toBeGreaterThan(0);
+    for (const height of heights) expect(height, selector).toBeGreaterThanOrEqual(44);
+  }
+
+  const buyNow = page.locator("[data-home-highlight-buy]").first();
+  await expect(buyNow).toBeAttached();
+  expect((await buyNow.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+});
+
 test("Ô ghi nhớ và nút VI/EN có vùng chạm tối thiểu 44px", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
 

@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
   fetchOrderAuditTrail: vi.fn(),
   fetchOrderDetail: vi.fn(),
   updateOrderStatus: vi.fn(),
-  confirmBankTransfer: vi.fn(),
   showConfirm: vi.fn(),
   subscribeAdminWs: vi.fn(() => vi.fn()),
   wsHandlers: new Map(),
@@ -41,7 +40,6 @@ vi.mock('../lib/adminApi', () => ({
   fetchOrderAuditTrail: mocks.fetchOrderAuditTrail,
   fetchOrderDetail: mocks.fetchOrderDetail,
   updateOrderStatus: mocks.updateOrderStatus,
-  confirmBankTransfer: mocks.confirmBankTransfer,
 }))
 
 vi.mock('../lib/adminWebSocket', () => ({
@@ -593,78 +591,31 @@ describe('OrderDetailScreen', () => {
 
     renderScreen()
 
-    expect(await screen.findAllByText('status.bankTransfer.SUCCEEDED')).toHaveLength(3)
+    expect(await screen.findAllByText('status.paymentRecord.SUCCEEDED')).toHaveLength(2)
   })
 })
 
-const transferOrder = {
-  ...baseOrder,
-  paymentMethod: 'BANK_TRANSFER',
-  currency: 'VND',
-  canConfirmBankTransfer: true,
-  orderStatus: 'PROCESSING',
-  payments: [
-    {
-      id: 'transfer',
-      paymentMethod: 'BANK_TRANSFER',
-      status: 'PENDING',
-      amount: 1030000,
-      currency: 'VND',
-    },
-  ],
-}
-
-it('confirms full receipt without sending a completion command and reloads allowed actions', async () => {
-  mocks.fetchOrderDetail.mockResolvedValue({ item: transferOrder })
-  mocks.fetchOrderAllowedTransitions.mockResolvedValue({ transitions: ['CANCELLED'] })
-  mocks.confirmBankTransfer.mockResolvedValue({
-    item: {
-      ...transferOrder,
-      canConfirmBankTransfer: false,
-      payments: [{ ...transferOrder.payments[0], status: 'SUCCEEDED' }],
-    },
-  })
-  renderScreen()
-  await userEvent.click(
-    await screen.findByRole('button', { name: 'orders.detail.transferConfirmTitle' }),
-  )
-  await waitFor(() => expect(mocks.confirmBankTransfer).toHaveBeenCalledExactlyOnceWith('order-1'))
-  expect(mocks.updateOrderStatus).not.toHaveBeenCalled()
-  await waitFor(() =>
-    expect(mocks.fetchOrderAllowedTransitions.mock.calls.length).toBeGreaterThan(1),
-  )
-  expect(
-    screen.queryByRole('button', { name: 'orders.detail.transferConfirmTitle' }),
-  ).not.toBeInTheDocument()
-})
-
-it.each([{ canUpdate: false }, { historical: true }, { terminal: true }])(
-  'keeps receipt unavailable for $canUpdate $historical $terminal',
-  async ({ canUpdate = true, historical, terminal }) => {
-    mocks.fetchOrderDetail.mockResolvedValue({
-      item: {
-        ...transferOrder,
-        orderScope: historical ? 'HISTORICAL' : 'OPERATIONAL',
-        orderStatus: terminal ? 'COMPLETED' : 'PROCESSING',
-        canConfirmBankTransfer: !terminal,
-      },
-    })
-    renderScreen({ canUpdate })
-    await screen.findAllByText('status.bankTransfer.PENDING')
-    expect(
-      screen.queryByRole('button', { name: 'orders.detail.transferConfirmTitle' }),
-    ).not.toBeInTheDocument()
-  },
-)
-
-it('hides COD payment record status and receipt action', async () => {
+it('shows COD payment records as read-only history without a payment action', async () => {
   mocks.fetchOrderDetail.mockResolvedValue({
-    item: { ...baseOrder, payments: [{ paymentMethod: 'COD', status: 'PENDING' }] },
+    item: {
+      ...baseOrder,
+      paymentMethod: 'COD',
+      payments: [
+        {
+          id: 'cod-payment',
+          paymentMethod: 'COD',
+          status: 'PENDING',
+          amount: 1030000,
+          paidAt: null,
+        },
+      ],
+    },
   })
   renderScreen()
   await screen.findByText('orders.detail.paymentMethod')
-  expect(screen.queryByText('status.paymentRecord.PENDING')).not.toBeInTheDocument()
-  expect(
-    screen.queryByRole('button', { name: 'orders.detail.transferConfirmTitle' }),
-  ).not.toBeInTheDocument()
+  await userEvent.click(await screen.findByRole('button', { name: /orders\.detail\.payments/ }))
+  expect(await screen.findAllByText('status.paymentRecord.PENDING')).toHaveLength(2)
+  expect(screen.getAllByText('status.paymentMethod.COD')).toHaveLength(3)
+  expect(screen.getAllByText('1030000 ₫')).toHaveLength(3)
+  expect(screen.queryByRole('button', { name: /transfer|receipt/i })).not.toBeInTheDocument()
 })

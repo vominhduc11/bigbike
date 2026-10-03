@@ -373,6 +373,9 @@ final class AdminMutationValidators {
 
     /** Raw-HTML (VI) payload of the block types that carry free HTML, or {@code null} for the rest. */
     static String blockRawHtml(DescriptionBlock block) {
+        if (block instanceof DescriptionBlock.TableBlock b) {
+            return b.getHtml();
+        }
         if (block instanceof DescriptionBlock.ParagraphBlock b) {
             return b.getHtml();
         }

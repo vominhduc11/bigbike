@@ -18,6 +18,8 @@ const ERROR_CODES = [
   "oauth_cancelled",
   "oauth_unconfigured",
   "oauth_blocked",
+  "oauth_email_required",
+  "oauth_email_registered",
   "oauth_failed",
   // Pre-2026-08-07 code; links in the wild may still carry it and must not render a blank page.
   "oauth",
@@ -74,7 +76,9 @@ test.describe("social login failures are explained", () => {
       await expect(alert).not.toBeEmpty();
       // Vietnamese with diacritics, not a raw code leaking through.
       await expect(alert).not.toContainText(code);
-      expect(await alert.innerText()).toMatch(/[àáâãèéêìíòóôõùúýăđĩũơưạảấầẩậắằẵặẹẻẽếềểệỉịọỏốồổộớờởợụủứừửữựỳỵỷỹ]/i);
+      expect(await alert.innerText()).toMatch(
+        /[àáâãèéêìíòóôõùúýăđĩũơưạảấầẩậắằẵặẹẻẽếềểệỉịọỏốồổộớờởợụủứừửữựỳỵỷỹ]/i,
+      );
     });
   }
 
@@ -89,11 +93,18 @@ test.describe("social login failures are explained", () => {
 
   test("each failure reason reads differently", async ({ page }) => {
     const messages = new Set<string>();
-    for (const code of ["oauth_cancelled", "oauth_unconfigured", "oauth_blocked", "oauth_failed"]) {
+    for (const code of [
+      "oauth_cancelled",
+      "oauth_unconfigured",
+      "oauth_blocked",
+      "oauth_email_required",
+      "oauth_email_registered",
+      "oauth_failed",
+    ]) {
       await page.goto(`/dang-nhap/?error=${code}`);
       messages.add((await formAlert(page).innerText()).trim());
     }
-    expect(messages.size).toBe(4);
+    expect(messages.size).toBe(6);
   });
 
   test("a plain login page shows no alert", async ({ page }) => {

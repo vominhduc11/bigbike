@@ -30,13 +30,7 @@ export function getOrderStatusLabel(targetStatus, order, t) {
 }
 
 export function getOrderMutationError(error, t) {
-  const receiptErrors = {
-    BANK_TRANSFER_PAYMENT_REQUIRED: 'orders.detail.transferPaymentRequired',
-    BANK_TRANSFER_PAYMENT_INVALID: 'orders.detail.transferPaymentInvalid',
-    BANK_TRANSFER_NOT_APPLICABLE: 'orders.detail.transferNotApplicable',
-    HISTORICAL_ORDER_READ_ONLY: 'orders.detail.historicalReadOnly',
-  }
-  if (receiptErrors[error?.code]) return t(receiptErrors[error.code])
+  if (error?.code === 'HISTORICAL_ORDER_READ_ONLY') return t('orders.detail.historicalReadOnly')
   switch (Number(error?.status)) {
     case 400:
       return t('orders.detail.errorValidation')
@@ -88,17 +82,4 @@ export function getOrderAuditDetails(entry, t) {
     confirmedByName: typeof after.confirmedByName === 'string' ? after.confirmedByName : '',
     paymentConfirmed: entry?.action === 'ORDER_BANK_TRANSFER_CONFIRMED',
   }
-}
-
-export function bankTransferState(order) {
-  if (order.paymentMethod !== 'BANK_TRANSFER') return null
-  const payment = order.payments?.[0]
-  if (
-    order.payments?.length !== 1 ||
-    payment?.paymentMethod !== 'BANK_TRANSFER' ||
-    Number(payment.amount) !== order.total ||
-    payment.currency !== order.currency
-  )
-    return 'UNKNOWN'
-  return ['PENDING', 'SUCCEEDED'].includes(payment.status) ? payment.status : 'UNKNOWN'
 }

@@ -5,7 +5,6 @@ import { toast } from '@/lib/toast'
 import {
   ChevronDown,
   ChevronUp,
-  Copy,
   ImageIcon,
   MoreHorizontal,
   Pencil,
@@ -14,9 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import {
-  createAttribute,
   createAttributeValue,
-  deleteAttribute,
   deleteAttributeValue,
   fetchAttributes,
   fetchAttributeValues,
@@ -27,7 +24,6 @@ import {
   createSizeScale,
   updateSizeScale,
   deleteSizeScale,
-  updateAttribute,
   updateAttributeValueLabel,
 } from '../../lib/adminApi'
 import { showConfirm } from '../../lib/confirm'
@@ -37,9 +33,8 @@ import {
   isSizeAttributeName,
   getVariantAttributeGroup,
 } from '../../lib/schemas'
-import { FormField, Modal, MobileCardList, MobileCard } from '../../components/layout'
+import { Modal, MobileCardList, MobileCard } from '../../components/layout'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -49,17 +44,11 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '../../components/MoneyInput'
-import { parseMoneyInput } from '../../lib/moneyInput'
+import { formatMoneyInput } from '../../lib/moneyInput'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import {
   Table,
   TableBody,
@@ -71,7 +60,6 @@ import {
 import { generateId } from '@/lib/utils'
 import { useMediaAltSync } from '@/lib/useMediaAltSync'
 import { SortableList, DragHandle } from '../../components/Sortable'
-import { BulkActionBar } from '../../components/BulkActionBar'
 import {
   getVariantColorValue,
   getVariantColorKey,
@@ -79,6 +67,7 @@ import {
   resolveColorChangeMedia,
   VARIANTS_FILTER_THRESHOLD,
   VARIANTS_RENDER_CAP,
+  orderVariantAttributes,
 } from './constants'
 import { GalleryEditor } from './ContentEditors'
 import { MediaPickerModal } from '../../components/MediaPickerModal'
@@ -86,11 +75,8 @@ import { MediaRequirementHint } from '../../components/MediaRequirementHint'
 import { HelpTooltip } from '../../components/HelpTooltip'
 import { IMAGE_RECO } from '../../lib/imageRecommendations'
 import { parseSizeScaleValues, filterValuesBySizeScale } from './sizeScaleUtils'
-import { buildVariantMatrixVariants, skuToken } from './variantMatrixUtils'
-
-// Sentinel value for the "+ Tạo loại thuộc tính mới…" entry appended to the
-// attribute-name Select — kept distinct from any real attribute name/code.
-const CREATE_NEW_ATTRIBUTE_VALUE = '__create_new_attribute__'
+import { choiceSignature, reconcileChoices, getChoiceErrors } from './variantMatrixUtils'
+import { hasManagedEnglishValueInput } from './attributeValueEnglishPolicy'
 
 // Sentinel appended to the size-value Select so a staff member who needs a size the
 // scale does not carry has a way out instead of being stuck.
@@ -111,13 +97,10 @@ function isSameAttributeSelection(attributes, currentName, nextName) {
   const nextAttr = resolveAttr(attributes, nextName)
   const currentGroup = getVariantAttributeGroup(currentName)
   const nextGroup = getVariantAttributeGroup(nextName)
-  if (
-    currentGroup &&
-    currentGroup === nextGroup &&
-    ['color', 'size', 'model'].includes(currentGroup)
-  )
-    return true
   if (currentAttr?.id && nextAttr?.id) return currentAttr.id === nextAttr.id
+  if (currentGroup && currentGroup === nextGroup && ['color', 'size'].includes(currentGroup)) {
+    return true
+  }
   if (isColorAttributeName(currentName) && isColorAttributeName(nextName)) return true
   return normalizeVariantToken(currentName) === normalizeVariantToken(nextName)
 }
@@ -131,241 +114,30 @@ function deriveVariantName(options) {
     .join(' - ')
 }
 
-// Rename an attribute's display name. The code/key stays immutable (shown
-// read-only) so existing variant options that resolve via the code keep working.
-// `onDeleted` fires after a successful delete so the caller can clear the row
-// that was pointing at this (now-gone) attribute.
-function AttributeRenameModal({ open, onClose, attribute, onDeleted, contentLang }) {
-  const { t } = useTranslation()
-  const queryClient = useQueryClient()
-  // Mounted only while open (see caller), so initialising from the current name
-  // is correct on every open — no effect-sync needed.
-  const [name, setName] = useState(attribute?.name ?? '')
-  const [nameEn, setNameEn] = useState(attribute?.nameEn ?? '')
-
-  const renameMut = useMutation({
-    mutationFn: (vars) => updateAttribute(attribute.id, vars),
-    onSuccess: () => {
-      toast.success(
-        t('products.detail.variant.attrRenamed', { defaultValue: 'Đã đổi tên thuộc tính.' }),
-      )
-      queryClient.invalidateQueries({ queryKey: ['attributes'] })
-      onClose()
-    },
-    onError: (err) =>
-      toast.error(
-        err?.message ||
-          t('products.detail.variant.attrSaveError', {
-            defaultValue: 'Không lưu được thuộc tính.',
-          }),
-      ),
-  })
-
-  const deleteMut = useMutation({
-    mutationFn: () => deleteAttribute(attribute.id),
-    onSuccess: () => {
-      toast.success(
-        t('products.detail.variant.attrDeleted', { defaultValue: 'Đã xoá loại thuộc tính.' }),
-      )
-      queryClient.invalidateQueries({ queryKey: ['attributes'] })
-      onDeleted?.()
-      onClose()
-    },
-    onError: (err) =>
-      toast.error(
-        err?.message ||
-          t('products.detail.variant.attrDeleteError', {
-            defaultValue: 'Không xoá được thuộc tính.',
-          }),
-      ),
-  })
-
-  const trimmed = name.trim()
-  const dirty =
-    trimmed && (trimmed !== attribute?.name || nameEn.trim() !== (attribute?.nameEn ?? ''))
-  const saveRename = () => renameMut.mutate({ name: trimmed, nameEn: nameEn.trim() })
-  const busy = renameMut.isPending || deleteMut.isPending
-
-  const handleDelete = async () => {
-    const displayName =
-      contentLang === 'en' ? attribute?.nameEn || attribute?.name : attribute?.name
-    const confirmed = await showConfirm(
-      t('products.detail.variant.attrDeleteConfirm', {
-        name: displayName,
-        defaultValue: `Xoá hẳn loại thuộc tính "${displayName}" khỏi hệ thống? Không thể hoàn tác.`,
-      }),
-      t('common.permanentDeleteTitle'),
-      { variant: 'danger', confirmLabel: t('common.permanentDelete') },
-    )
-    if (confirmed) deleteMut.mutate()
-  }
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={t('products.detail.variant.attrRenameTitle', { defaultValue: 'Đổi tên thuộc tính' })}
-      actions={
-        <>
-          <Button
-            variant="outline"
-            className="text-destructive hover:text-destructive mr-auto"
-            onClick={handleDelete}
-            disabled={busy}
-          >
-            <Trash2 size={15} /> {t('common.delete', { defaultValue: 'Xoá' })}
-          </Button>
-          <Button variant="outline" onClick={onClose} disabled={busy}>
-            {t('common.close', { defaultValue: 'Đóng' })}
-          </Button>
-          <Button onClick={saveRename} disabled={busy || !dirty}>
-            {t('common.save', { defaultValue: 'Lưu' })}
-          </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">
-            {t('products.detail.variant.attrNameLabel', { defaultValue: 'Tên hiển thị' })}
-          </span>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={busy}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && dirty && !busy) saveRename()
-            }}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">
-            {t('products.detail.variant.attrNameEnLabel', {
-              defaultValue: 'Tên hiển thị (Tiếng Anh)',
-            })}
-          </span>
-          <Input
-            value={nameEn}
-            onChange={(e) => setNameEn(e.target.value)}
-            disabled={busy}
-            placeholder={t('products.detail.variant.attrEnPlaceholder', {
-              defaultValue: 'Để trống sẽ dùng tên tiếng Việt',
-            })}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && dirty && !busy) saveRename()
-            }}
-          />
-        </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>
-            {t('products.detail.variant.attrCodeLabel', { defaultValue: 'Mã (không đổi):' })}
-          </span>
-          <span className="font-mono">{attribute?.code}</span>
-        </div>
-      </div>
-    </Modal>
-  )
-}
-
-// Create a brand-new attribute type (e.g. "Chất liệu") that doesn't exist yet
-// in the shared catalog. Auto-selects the created attribute back into the row.
-function CreateAttributeModal({ open, onClose, onCreated }) {
-  const { t } = useTranslation()
-  const queryClient = useQueryClient()
-  const [name, setName] = useState('')
-  const [nameEn, setNameEn] = useState('')
-
-  const createMut = useMutation({
-    mutationFn: (vars) => createAttribute(vars),
-    onSuccess: (created) => {
-      toast.success(
-        t('products.detail.variant.attrCreated', { defaultValue: 'Đã tạo loại thuộc tính mới.' }),
-      )
-      queryClient.invalidateQueries({ queryKey: ['attributes'] })
-      onCreated?.(created)
-    },
-    onError: (err) =>
-      toast.error(
-        err?.message ||
-          t('products.detail.variant.attrSaveError', {
-            defaultValue: 'Không lưu được thuộc tính.',
-          }),
-      ),
-  })
-
-  const trimmed = name.trim()
-  const submit = () => createMut.mutate({ name: trimmed, nameEn: nameEn.trim() })
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={t('products.detail.variant.attrCreateTitle', {
-        defaultValue: 'Tạo loại thuộc tính mới',
-      })}
-      actions={
-        <>
-          <Button variant="outline" onClick={onClose} disabled={createMut.isPending}>
-            {t('common.close', { defaultValue: 'Đóng' })}
-          </Button>
-          <Button onClick={submit} disabled={createMut.isPending || !trimmed}>
-            {t('common.create', { defaultValue: 'Tạo' })}
-          </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">
-            {t('products.detail.variant.attrNameLabel', { defaultValue: 'Tên hiển thị' })}
-          </span>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={t('products.detail.variant.attrCreatePlaceholder', {
-              defaultValue: 'Ví dụ: Chất liệu',
-            })}
-            disabled={createMut.isPending}
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && trimmed && !createMut.isPending) submit()
-            }}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium">
-            {t('products.detail.variant.attrNameEnLabel', {
-              defaultValue: 'Tên hiển thị (Tiếng Anh)',
-            })}
-          </span>
-          <Input
-            value={nameEn}
-            onChange={(e) => setNameEn(e.target.value)}
-            disabled={createMut.isPending}
-            placeholder={t('products.detail.variant.attrEnPlaceholder', {
-              defaultValue: 'Để trống sẽ dùng tên tiếng Việt',
-            })}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && trimmed && !createMut.isPending) submit()
-            }}
-          />
-        </div>
-      </div>
-    </Modal>
-  )
-}
-
 // One editable row in the attribute-value manager: rename an existing value's label,
 // or delete it outright (blocked server-side while any variant uses it).
 // The slug (shown read-only) stays fixed so variant references keep working.
-function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
+function AttributeValueEditRow({
+  value,
+  onSave,
+  onDelete,
+  saving,
+  deleting,
+  hasEnglishValueInput,
+}) {
   const { t } = useTranslation()
   const [label, setLabel] = useState(value.label)
   const [labelEn, setLabelEn] = useState(value.labelEn ?? '')
   const used = Number(value.usageCount || 0) > 0
-  const dirty =
-    label.trim() && (label.trim() !== value.label || labelEn.trim() !== (value.labelEn ?? ''))
-  const busy = saving || deleting || used
+  const labelChanged = label.trim() !== value.label
+  const labelEnChanged = labelEn.trim() !== (value.labelEn ?? '')
+  const dirty = label.trim() && (labelChanged || (hasEnglishValueInput && labelEnChanged))
+  const busy = saving || deleting
+  const saveValue = () =>
+    onSave({
+      label: label.trim(),
+      ...(hasEnglishValueInput ? { labelEn: labelEn.trim() } : {}),
+    })
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -373,7 +145,7 @@ function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           className="flex-1"
-          disabled={busy}
+          disabled={busy || used}
         />
         <span
           className="font-mono text-xs text-muted-foreground w-28 shrink-0 truncate"
@@ -381,12 +153,7 @@ function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
         >
           {value.slug}
         </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onSave({ label: label.trim(), labelEn: labelEn.trim() })}
-          disabled={busy || !dirty}
-        >
+        <Button variant="outline" size="sm" onClick={saveValue} disabled={busy || !dirty}>
           {t('common.save', { defaultValue: 'Lưu' })}
         </Button>
         <Button
@@ -394,7 +161,7 @@ function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
           size="icon"
           className="text-destructive hover:text-destructive shrink-0"
           onClick={onDelete}
-          disabled={busy}
+          disabled={busy || used}
           aria-label={t('common.delete', { defaultValue: 'Xoá' })}
           title={t('common.delete', { defaultValue: 'Xoá' })}
         >
@@ -409,14 +176,16 @@ function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
           })}
         </span>
       )}
-      <Input
-        value={labelEn}
-        onChange={(e) => setLabelEn(e.target.value)}
-        disabled={busy}
-        placeholder={t('products.detail.variant.valueEnPlaceholder', {
-          defaultValue: 'Tên tiếng Anh (tùy chọn)',
-        })}
-      />
+      {hasEnglishValueInput && (
+        <Input
+          value={labelEn}
+          onChange={(e) => setLabelEn(e.target.value)}
+          disabled={busy}
+          placeholder={t('products.detail.variant.valueEnPlaceholder', {
+            defaultValue: 'Tên tiếng Anh (tùy chọn)',
+          })}
+        />
+      )}
     </div>
   )
 }
@@ -425,7 +194,7 @@ function AttributeValueEditRow({ value, onSave, onDelete, saving, deleting }) {
 // one outright. Scoped to one attribute; on add it auto-selects the new value
 // back into the variant row. `onValueDeleted` lets the caller clear the row's
 // current selection if the deleted value was the one in use there.
-function AttributeValueManagerModal({
+export function AttributeValueManagerModal({
   open,
   onClose,
   attribute,
@@ -440,6 +209,7 @@ function AttributeValueManagerModal({
   const queryClient = useQueryClient()
   const [newLabel, setNewLabel] = useState('')
   const [newLabelEn, setNewLabelEn] = useState('')
+  const hasEnglishValueInput = hasManagedEnglishValueInput(attribute)
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['attributeValues', attribute?.id] })
@@ -463,7 +233,7 @@ function AttributeValueManagerModal({
   })
 
   const renameMut = useMutation({
-    mutationFn: ({ id, label, labelEn }) => updateAttributeValueLabel(id, { label, labelEn }),
+    mutationFn: ({ id, ...value }) => updateAttributeValueLabel(id, value),
     onSuccess: () => {
       toast.success(
         t('products.detail.variant.valueRenamed', { defaultValue: 'Đã đổi tên giá trị.' }),
@@ -506,6 +276,14 @@ function AttributeValueManagerModal({
     if (confirmed) deleteMut.mutate(v.id)
   }
 
+  const createValue = () => {
+    if (!newLabel.trim() || createMut.isPending) return
+    createMut.mutate({
+      label: newLabel.trim(),
+      ...(hasEnglishValueInput ? { labelEn: newLabelEn.trim() } : {}),
+    })
+  }
+
   return (
     <Modal
       open={open}
@@ -535,28 +313,24 @@ function AttributeValueManagerModal({
                   defaultValue: 'Ví dụ: Đỏ đô, M, iPhone 15 Pro',
                 })}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newLabel.trim() && !createMut.isPending)
-                    createMut.mutate({ label: newLabel.trim(), labelEn: newLabelEn.trim() })
+                  if (e.key === 'Enter') createValue()
                 }}
                 className="flex-1"
               />
-              <Button
-                onClick={() =>
-                  createMut.mutate({ label: newLabel.trim(), labelEn: newLabelEn.trim() })
-                }
-                disabled={createMut.isPending || !newLabel.trim()}
-              >
+              <Button onClick={createValue} disabled={createMut.isPending || !newLabel.trim()}>
                 <Plus size={16} />{' '}
                 {t('products.detail.variant.valueAddButton', { defaultValue: 'Thêm' })}
               </Button>
             </div>
-            <Input
-              value={newLabelEn}
-              onChange={(e) => setNewLabelEn(e.target.value)}
-              placeholder={t('products.detail.variant.valueEnPlaceholder', {
-                defaultValue: 'Tên tiếng Anh (tùy chọn)',
-              })}
-            />
+            {hasEnglishValueInput && (
+              <Input
+                value={newLabelEn}
+                onChange={(e) => setNewLabelEn(e.target.value)}
+                placeholder={t('products.detail.variant.valueEnPlaceholder', {
+                  defaultValue: 'Tên tiếng Anh (tùy chọn)',
+                })}
+              />
+            )}
           </div>
         </div>
 
@@ -588,6 +362,7 @@ function AttributeValueManagerModal({
                   value={v}
                   saving={renameMut.isPending}
                   deleting={deleteMut.isPending && deleteMut.variables === v.id}
+                  hasEnglishValueInput={hasEnglishValueInput}
                   onSave={(vals) => renameMut.mutate({ id: v.id, ...vals })}
                   onDelete={() => handleDelete(v)}
                 />
@@ -1329,8 +1104,6 @@ function VariantOptionRow({
   const isSizeRow = isSizeAttributeName(attr?.name || opt.name)
   const needsSizeScale = isSizeRow && !sizeScale
   const [managerOpen, setManagerOpen] = useState(false)
-  const [renameAttrOpen, setRenameAttrOpen] = useState(false)
-  const [createAttrOpen, setCreateAttrOpen] = useState(false)
 
   // Every variant attribute uses the same dictionary flow (colour, size, model,
   // or a custom attribute). Free text is intentionally not a fallback.
@@ -1393,10 +1166,6 @@ function VariantOptionRow({
               // during mount. Treat that as a no-op; clearing the attribute here also
               // clears the option value and drops the row label to "Biến thể N".
               if (!val) return
-              if (val === CREATE_NEW_ATTRIBUTE_VALUE) {
-                setCreateAttrOpen(true)
-                return
-              }
               // Idempotent reselect: picking the same underlying attribute must never
               // wipe value/attributeValueId. Legacy rows can differ only by alias or
               // casing ("màu sắc" vs "Màu sắc"), while Radix may re-emit that value on
@@ -1436,52 +1205,9 @@ function VariantOptionRow({
                   {contentLang === 'en' ? a.nameEn || a.name : a.name}
                 </SelectItem>
               ))}
-              <SelectItem value={CREATE_NEW_ATTRIBUTE_VALUE}>
-                +{' '}
-                {t('products.detail.variant.attrCreateTitle', {
-                  defaultValue: 'Tạo loại thuộc tính mới',
-                })}
-              </SelectItem>
             </SelectContent>
           </Select>
         </div>
-        {attr?.id && (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="shrink-0"
-            onClick={() => setRenameAttrOpen(true)}
-            disabled={disabled}
-            aria-label={t('products.detail.variant.attrRenameTitle', {
-              defaultValue: 'Đổi tên thuộc tính',
-            })}
-            title={t('products.detail.variant.attrRenameTitle', {
-              defaultValue: 'Đổi tên thuộc tính',
-            })}
-          >
-            <Pencil size={15} />
-          </Button>
-        )}
-        {attr?.id && renameAttrOpen && (
-          <AttributeRenameModal
-            open
-            onClose={() => setRenameAttrOpen(false)}
-            attribute={attr}
-            onDeleted={() => onUpdate({ name: '', value: '', attributeValueId: null })}
-            contentLang={contentLang}
-          />
-        )}
-        {createAttrOpen && (
-          <CreateAttributeModal
-            open
-            onClose={() => setCreateAttrOpen(false)}
-            onCreated={(created) => {
-              onUpdate({ name: created.name, value: '', attributeValueId: null })
-              setCreateAttrOpen(false)
-            }}
-          />
-        )}
       </div>
 
       {/* Value — every attribute uses a dictionary Select and stores its stable ID. */}
@@ -1518,25 +1244,27 @@ function VariantOptionRow({
               >
                 <SelectValue
                   placeholder={
-                    needsSizeScale
-                      ? t('products.detail.variant.sizeScaleRequiredPlaceholder', {
-                          defaultValue: 'Hãy chọn Bảng cỡ áp dụng trước',
-                        })
-                      : attrValuesError
-                        ? t('products.detail.variant.valueLoadError', {
-                            defaultValue: 'Không tải được danh sách giá trị.',
+                    !attr?.id
+                      ? t('products.detail.choices.pickAttributeFirst')
+                      : needsSizeScale
+                        ? t('products.detail.variant.sizeScaleRequiredPlaceholder', {
+                            defaultValue: 'Hãy chọn Bảng cỡ áp dụng trước',
                           })
-                        : attrValuesLoading
-                          ? t('products.detail.variant.valueLoading', {
-                              defaultValue: 'Đang tải danh sách giá trị…',
+                        : attrValuesError
+                          ? t('products.detail.variant.valueLoadError', {
+                              defaultValue: 'Không tải được danh sách giá trị.',
                             })
-                          : attrValues.length === 0
-                            ? t('products.detail.variant.valueSelectEmpty', {
-                                defaultValue: 'Chưa có giá trị — hãy thêm ngay.',
+                          : attrValuesLoading
+                            ? t('products.detail.variant.valueLoading', {
+                                defaultValue: 'Đang tải danh sách giá trị…',
                               })
-                            : t('products.detail.variant.valueSelectPlaceholder', {
-                                defaultValue: 'Chọn giá trị từ danh sách',
-                              })
+                            : attrValues.length === 0
+                              ? t('products.detail.variant.valueSelectEmpty', {
+                                  defaultValue: 'Chưa có giá trị — hãy thêm ngay.',
+                                })
+                              : t('products.detail.variant.valueSelectPlaceholder', {
+                                  defaultValue: 'Chọn giá trị từ danh sách',
+                                })
                   }
                 />
               </SelectTrigger>
@@ -1755,10 +1483,10 @@ function getVariantRowErrorLabels(fieldErrors, t, hasIncompleteOption = false) {
     hasIncompleteOption ||
     entries.some(([key]) => key === 'options' || key.startsWith('options.'))
   ) {
-    labels.push(t('products.detail.variant.rowErrorOptions'))
+    labels.push(fieldErrors.options || t('products.detail.variant.rowErrorOptions'))
   }
   if (entries.some(([key]) => key === 'imageUrl' || key.startsWith('gallery'))) {
-    labels.push(t('products.detail.variant.rowErrorImage'))
+    labels.push(fieldErrors.imageUrl || t('products.detail.variant.rowErrorImage'))
   }
 
   const knownPrefixes = ['sku', 'retailPrice', 'salePrice', 'options', 'imageUrl', 'gallery']
@@ -1813,86 +1541,92 @@ function VariantDetailFields({
           )}
         </div>
 
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
-              {hasColor
-                ? t('products.detail.variant.colorGalleryLabelWithValue', { color: colorValue })
-                : t('products.detail.variant.colorGalleryLabel')}
-              <HelpTooltip
-                content={
-                  hasColor
-                    ? t('products.detail.variant.colorGalleryHintWithColor')
-                    : t('products.detail.variant.colorGalleryHintNoColor')
-                }
-              />
-            </span>
-            {fieldErrors.gallery && (
-              <small className="field-error" role="alert">
-                {fieldErrors.gallery}
-              </small>
-            )}
-            {hasColor && (
-              <GalleryEditor
-                items={variant.gallery ?? []}
-                onChange={(next) => updateField('gallery', next)}
-                disabled={disabled}
-                validationErrors={fieldErrors}
-              />
-            )}
-          </div>
-
-          {hasColor && (
+        {hasColor && (
+          <div className="space-y-6">
             <div className="space-y-2">
               <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
-                {t('products.detail.variant.colorRepresentationImageLabel')}
-                <HelpTooltip content={t('products.detail.variant.colorRepresentationImageHint')} />
+                {hasColor
+                  ? t('products.detail.variant.colorGalleryLabelWithValue', { color: colorValue })
+                  : t('products.detail.variant.colorGalleryLabel')}
+                <HelpTooltip
+                  content={
+                    hasColor
+                      ? t('products.detail.variant.colorGalleryHintWithColor')
+                      : t('products.detail.variant.colorGalleryHintNoColor')
+                  }
+                />
               </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setPickerOpen(true)}
-                  disabled={disabled}
-                >
-                  {variant.imageUrl ? t('imageInput.changeImage') : t('imageInput.pickFromLibrary')}
-                </Button>
-                {variant.imageUrl && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-danger hover:bg-danger-bg"
-                    onClick={() => {
-                      onChange(variant._key, {
-                        imageUrl: '',
-                        imageAlt: '',
-                        imageWidth: null,
-                        imageHeight: null,
-                        imageMimeType: null,
-                      })
-                    }}
-                    disabled={disabled}
-                  >
-                    {t('imageInput.removeImage')}
-                  </Button>
-                )}
-              </div>
-              <MediaRequirementHint recommend={IMAGE_RECO.productImage} />
-              {fieldErrors.imageUrl && (
+              {fieldErrors.gallery && (
                 <small className="field-error" role="alert">
-                  {fieldErrors.imageUrl}
+                  {fieldErrors.gallery}
                 </small>
               )}
-              {variant.imageUrl && (
-                <img
-                  src={variant.imageUrl}
-                  alt={variant.imageAlt || label}
-                  className="max-h-40 rounded-[var(--admin-radius-thumb)] border border-border object-contain"
+              {hasColor && (
+                <GalleryEditor
+                  items={variant.gallery ?? []}
+                  onChange={(next) => updateField('gallery', next)}
+                  disabled={disabled}
+                  validationErrors={fieldErrors}
                 />
               )}
             </div>
-          )}
-        </div>
+
+            {hasColor && (
+              <div className="space-y-2">
+                <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                  {t('products.detail.variant.colorRepresentationImageLabel')}
+                  <HelpTooltip
+                    content={t('products.detail.variant.colorRepresentationImageHint')}
+                  />
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setPickerOpen(true)}
+                    disabled={disabled}
+                  >
+                    {variant.imageUrl
+                      ? t('imageInput.changeImage')
+                      : t('imageInput.pickFromLibrary')}
+                  </Button>
+                  {variant.imageUrl && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-danger hover:bg-danger-bg"
+                      onClick={() => {
+                        onChange(variant._key, {
+                          imageUrl: '',
+                          imageAlt: '',
+                          imageWidth: null,
+                          imageHeight: null,
+                          imageMimeType: null,
+                        })
+                      }}
+                      disabled={disabled}
+                    >
+                      {t('imageInput.removeImage')}
+                    </Button>
+                  )}
+                </div>
+                <MediaRequirementHint recommend={IMAGE_RECO.productImage} />
+                {fieldErrors.imageUrl && (
+                  <small className="field-error" role="alert">
+                    {fieldErrors.imageUrl}
+                  </small>
+                )}
+                {variant.imageUrl && (
+                  <img
+                    src={variant.imageUrl}
+                    alt={variant.imageAlt || label}
+                    className="max-h-40 rounded-[var(--admin-radius-thumb)] border border-border object-contain"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {pickerOpen && (
         <MediaPickerModal
@@ -1922,13 +1656,12 @@ function VariantRow({
   onToggle,
   onChange,
   onRemove,
-  onDuplicate,
   disabled,
   fieldErrors = {},
   sortable,
   contentLang,
-  selected,
-  onSelect,
+  commonRetailPrice = '',
+  commonSalePrice = '',
   sizeScale = null,
   onFocusSizeScale,
   onManageSizeScale,
@@ -1968,7 +1701,6 @@ function VariantRow({
         ref={sortable?.setNodeRef}
         style={{ ...sortable?.style, opacity: sortable?.isDragging ? 0.4 : undefined }}
         className={hasErrors ? 'border-danger bg-danger-bg/40' : undefined}
-        data-state={selected ? 'selected' : undefined}
         onClick={() => onToggle(variant._key)}
       >
         <TableCell className="w-10 px-1" onClick={stopRowToggle}>
@@ -1976,14 +1708,6 @@ function VariantRow({
             handleProps={sortable?.handleProps}
             disabled={disabled || !sortable}
             label={t('products.detail.dragToReorder')}
-          />
-        </TableCell>
-        <TableCell className="w-10 px-2" onClick={stopRowToggle}>
-          <Checkbox
-            checked={selected}
-            onCheckedChange={(checked) => onSelect(variant._key, checked === true)}
-            disabled={disabled}
-            aria-label={t('products.detail.variant.selectRow', { label })}
           />
         </TableCell>
         <TableCell className="w-16">
@@ -2055,6 +1779,7 @@ function VariantRow({
         <TableCell className="min-w-36" onClick={stopRowToggle}>
           <MoneyInput
             value={variant.retailPrice}
+            placeholder={formatMoneyInput(commonRetailPrice)}
             onValueChange={(value) => updateField('retailPrice', value)}
             disabled={disabled}
             aria-label={t('products.detail.variant.retailPrice')}
@@ -2069,6 +1794,7 @@ function VariantRow({
         <TableCell className="min-w-36" onClick={stopRowToggle}>
           <MoneyInput
             value={variant.salePrice}
+            placeholder={!variant.retailPrice ? formatMoneyInput(commonSalePrice) : undefined}
             onValueChange={(value) => updateField('salePrice', value)}
             zeroAsEmpty
             disabled={disabled}
@@ -2101,36 +1827,22 @@ function VariantRow({
           </div>
         </TableCell>
         <TableCell className="w-12" onClick={stopRowToggle}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={disabled}
-                aria-label={t('products.detail.variant.actions', { label })}
-              >
-                <MoreHorizontal className="size-4" aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => onDuplicate(variant._key)}>
-                <Copy aria-hidden="true" />
-                {t('products.detail.variant.duplicate')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onSelect={() => onRemove(variant._key)}
-              >
-                <Trash2 aria-hidden="true" />
-                {t('products.detail.variant.remove')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={disabled}
+            className="text-destructive hover:text-destructive"
+            aria-label={t('products.detail.variant.remove')}
+            onClick={() => onRemove(variant._key)}
+          >
+            <Trash2 className="size-4" aria-hidden="true" />
+          </Button>
         </TableCell>
       </TableRow>
       {expanded && (
         <TableRow className="bg-surface-muted hover:bg-surface-muted">
-          <TableCell colSpan={9} className="border-b border-border p-5">
+          <TableCell colSpan={8} className="border-b border-border p-5">
             <VariantDetailFields
               sizeScale={sizeScale}
               onFocusSizeScale={onFocusSizeScale}
@@ -2158,12 +1870,11 @@ function VariantMobileCard({
   onToggle,
   onChange,
   onRemove,
-  onDuplicate,
   disabled,
   fieldErrors = {},
   contentLang,
-  selected,
-  onSelect,
+  commonRetailPrice = '',
+  commonSalePrice = '',
   sizeScale = null,
   onFocusSizeScale,
   onManageSizeScale,
@@ -2203,9 +1914,6 @@ function VariantMobileCard({
   return (
     <Fragment>
       <MobileCard
-        selectable
-        selected={selected}
-        onSelectChange={(checked) => onSelect(variant._key, checked === true)}
         title={
           <span className="flex items-center gap-2">
             {thumb}
@@ -2266,6 +1974,7 @@ function VariantMobileCard({
             value: (
               <MoneyInput
                 value={variant.retailPrice}
+                placeholder={formatMoneyInput(commonRetailPrice)}
                 onValueChange={(value) => updateField('retailPrice', value)}
                 disabled={disabled}
                 aria-label={t('products.detail.variant.retailPrice')}
@@ -2278,6 +1987,7 @@ function VariantMobileCard({
             value: (
               <MoneyInput
                 value={variant.salePrice}
+                placeholder={!variant.retailPrice ? formatMoneyInput(commonSalePrice) : undefined}
                 onValueChange={(value) => updateField('salePrice', value)}
                 zeroAsEmpty
                 disabled={disabled}
@@ -2303,15 +2013,6 @@ function VariantMobileCard({
               {expanded
                 ? t('products.detail.variant.collapseDetails', { defaultValue: 'Thu gọn' })
                 : t('products.detail.variant.editDetails', { defaultValue: 'Sửa chi tiết' })}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDuplicate(variant._key)}
-              disabled={disabled}
-            >
-              <Copy className="size-4" aria-hidden="true" />
-              {t('products.detail.variant.duplicate')}
             </Button>
             <Button
               variant="ghost"
@@ -2350,7 +2051,9 @@ export function VariantsEditor({
   onChange,
   disabled,
   validationErrors = {},
-  onOpenMatrixWizard,
+  productSku = '',
+  commonRetailPrice = '',
+  commonSalePrice = '',
   contentLang,
   sizeScaleId = '',
   sizeScales = [],
@@ -2362,10 +2065,7 @@ export function VariantsEditor({
   // khi sản phẩm có hàng chục hoặc hàng trăm biến thể.
   const [expandedKey, setExpandedKey] = useState(() => items[0]?._key ?? null)
   const [filter, setFilter] = useState('')
-  const [selectedKeys, setSelectedKeys] = useState([])
-  const [bulkPriceOpen, setBulkPriceOpen] = useState(false)
-  const [bulkRetailPrice, setBulkRetailPrice] = useState('')
-  const [bulkSalePrice, setBulkSalePrice] = useState('')
+  const [sellingMode, setSellingMode] = useState(() => (items.length ? 'multiple' : ''))
   const [sizeScaleManagerOpen, setSizeScaleManagerOpen] = useState(false)
   // Bảng cỡ đang áp dụng — dùng để thu gọn ô chọn cỡ của từng dòng biến thể xuống
   // đúng các cỡ hợp lệ, thay vì đổ ra toàn bộ danh mục cỡ dùng chung.
@@ -2377,9 +2077,6 @@ export function VariantsEditor({
     field.focus()
   }
   const openSizeScaleManager = () => setSizeScaleManagerOpen(true)
-  // Cho phép xoá giá khuyến mãi hàng loạt (đưa về trống) — ô nhập giá không thể diễn đạt "để trống".
-  const [bulkClearSale, setBulkClearSale] = useState(false)
-
   // ── Render-count cap (A7) ──────────────────────────────────────────────
   // Chỉ render N dòng đầu (tiền tố items[0..revealCount)) — dù đang lọc hay không.
   // Vì luôn là một tiền tố liên tục, index hiển thị khớp đúng index gốc trong `items`
@@ -2477,66 +2174,6 @@ export function VariantsEditor({
     onChange(items.map((v) => (v._key === key ? nextCurrent : v)))
   }
 
-  function buildEmptyVariant() {
-    return {
-      _key: generateId(),
-      id: '',
-      sku: '',
-      name: '',
-      retailPrice: '',
-      salePrice: '',
-      isAvailable: true,
-      options: [],
-      gallery: [],
-      imageUrl: '',
-      imageAlt: '',
-      imageWidth: null,
-      imageHeight: null,
-      imageMimeType: null,
-    }
-  }
-
-  function addVariant() {
-    const created = buildEmptyVariant()
-    onChange([...items, created])
-    setExpandedKey(created._key)
-    // Biến thể mới luôn ở cuối danh sách — mở rộng cap để thẻ vừa mở thật sự render ra.
-    ensureRevealed(items.length + 1)
-  }
-
-  function duplicateVariant(key) {
-    const idx = items.findIndex((v) => v._key === key)
-    if (idx === -1) return
-    const original = items[idx]
-
-    // Generate a non-colliding copy SKU: base-COPY, base-COPY-2, base-COPY-3…
-    const existingSkus = new Set(items.map((v) => v.sku).filter(Boolean))
-    function makeCopySku(sku) {
-      if (!sku) return ''
-      const base = sku.replace(/-COPY(?:-\d+)?$/, '')
-      const candidate = `${base}-COPY`
-      if (!existingSkus.has(candidate)) return candidate
-      let n = 2
-      while (existingSkus.has(`${candidate}-${n}`)) n++
-      return `${candidate}-${n}`
-    }
-
-    const copy = {
-      ...original,
-      _key: generateId(),
-      id: '',
-      sku: makeCopySku(original.sku),
-      name: deriveVariantName(original.options),
-      options: original.options.map((o) => ({ ...o })),
-      gallery: (original.gallery ?? []).map((img) => ({ ...img })),
-    }
-    const next = [...items.slice(0, idx + 1), copy, ...items.slice(idx + 1)]
-    onChange(next)
-    setExpandedKey(copy._key)
-    // Bản sao chèn ngay sau bản gốc (vị trí idx+1) — mở rộng cap vừa đủ để nó render ra.
-    ensureRevealed(idx + 2)
-  }
-
   async function removeVariant(key) {
     const idx = items.findIndex((v) => v._key === key)
     if (idx === -1) return
@@ -2550,65 +2187,7 @@ export function VariantsEditor({
     )
     if (!confirmed) return
     onChange(items.filter((v) => v._key !== key))
-    setSelectedKeys((keys) => keys.filter((selectedKey) => selectedKey !== key))
     if (expandedKey === key) setExpandedKey(null)
-  }
-
-  function setVariantSelected(key, selected) {
-    setSelectedKeys((keys) => {
-      if (selected) return keys.includes(key) ? keys : [...keys, key]
-      return keys.filter((selectedKey) => selectedKey !== key)
-    })
-  }
-
-  function applyBulkAvailability(isAvailable) {
-    const selected = new Set(selectedKeys)
-    onChange(
-      items.map((variant) => (selected.has(variant._key) ? { ...variant, isAvailable } : variant)),
-    )
-  }
-
-  async function applyBulkDelete() {
-    const selected = new Set(activeSelectedKeys)
-    const count = selected.size
-    if (!count) return
-
-    const confirmed = await showConfirm(
-      t('products.detail.variant.bulkDeleteConfirm', { count }),
-      t('products.detail.variant.bulkDelete'),
-      { variant: 'default', confirmLabel: t('products.detail.variant.bulkDelete') },
-    )
-    if (!confirmed) return
-
-    const remaining = items.filter((variant) => !selected.has(variant._key))
-    onChange(remaining)
-    setSelectedKeys([])
-    if (expandedKey && selected.has(expandedKey)) {
-      setExpandedKey(remaining[0]?._key ?? null)
-    }
-  }
-
-  function applyBulkPrices() {
-    const selected = new Set(selectedKeys)
-    const retailPrice = bulkRetailPrice
-    // Giá sale bằng 0 trong giao diện admin có cùng nghĩa với để trống.
-    const salePrice = parseMoneyInput(bulkSalePrice) === 0 ? '' : bulkSalePrice
-    if (!retailPrice && !salePrice && !bulkClearSale) return
-    onChange(
-      items.map((variant) => {
-        if (!selected.has(variant._key)) return variant
-        return {
-          ...variant,
-          ...(retailPrice ? { retailPrice } : {}),
-          // bulkClearSale thắng ô nhập: đưa giá khuyến mãi về trống cho biến thể đã chọn.
-          ...(bulkClearSale ? { salePrice: '' } : salePrice ? { salePrice } : {}),
-        }
-      }),
-    )
-    setBulkPriceOpen(false)
-    setBulkRetailPrice('')
-    setBulkSalePrice('')
-    setBulkClearSale(false)
   }
 
   // ── Filter (rendered only above threshold) ────────────────────────────
@@ -2637,94 +2216,60 @@ export function VariantsEditor({
   const renderedRows = (
     filterTerm ? visible : items.map((v, originalIdx) => ({ v, originalIdx }))
   ).slice(0, revealCount)
-  const selectableKeys = renderedRows.map(({ v }) => v._key)
-  const itemKeySet = new Set(items.map((variant) => variant._key))
-  const activeSelectedKeys = selectedKeys.filter((key) => itemKeySet.has(key))
-  const selectedSet = new Set(activeSelectedKeys)
-  const selectedVisibleCount = selectableKeys.filter((key) => selectedSet.has(key)).length
-  const allVisibleSelected =
-    selectableKeys.length > 0 && selectedVisibleCount === selectableKeys.length
-  const someVisibleSelected = selectedVisibleCount > 0 && !allVisibleSelected
-
-  function setAllRenderedSelected(checked) {
-    setSelectedKeys((keys) => {
-      const next = new Set(keys.filter((key) => itemKeySet.has(key)))
-      selectableKeys.forEach((key) => {
-        if (checked) next.add(key)
-        else next.delete(key)
-      })
-      return [...next]
-    })
-  }
+  const liveErrors = { ...getChoiceErrors(items, t), ...validationErrors }
+  const usesSize = items.some((row) =>
+    row.options?.some((option) => isSizeAttributeName(option.name)),
+  )
 
   return (
     <div className="flex flex-col gap-3">
-      {onSizeScaleChange ? (
-        <div className="border border-border p-3">
-          <label
-            className="mb-2 block text-sm font-semibold text-foreground"
-            htmlFor="product-size-scale"
-          >
-            {t('products.detail.sizeScale.label', { defaultValue: 'Bảng cỡ áp dụng' })}
-          </label>
-          <div className="mb-2 flex justify-end">
+      {items.length === 0 && (
+        <div className="space-y-3">
+          <p className="font-medium">{t('products.detail.choices.modeQuestion')}</p>
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setSizeScaleManagerOpen(true)}
+              variant={sellingMode === 'single' ? 'default' : 'outline'}
+              aria-pressed={sellingMode === 'single'}
               disabled={disabled}
+              onClick={() => setSellingMode('single')}
             >
-              {t('products.detail.sizeScale.manage', { defaultValue: 'Quản lý bảng cỡ' })}
+              {t('products.detail.choices.single')}
+            </Button>
+            <Button
+              type="button"
+              variant={sellingMode === 'multiple' ? 'default' : 'outline'}
+              aria-pressed={sellingMode === 'multiple'}
+              disabled={disabled}
+              onClick={() => setSellingMode('multiple')}
+            >
+              {t('products.detail.choices.multiple')}
             </Button>
           </div>
-          <Select
-            value={sizeScaleId || '__none__'}
-            onValueChange={(value) => onSizeScaleChange(value === '__none__' ? '' : value)}
-            disabled={disabled || sizeScalesLoading}
-          >
-            <SelectTrigger id="product-size-scale" className="w-full">
-              <SelectValue
-                placeholder={t('products.detail.sizeScale.placeholder', {
-                  defaultValue: 'Chọn bảng cỡ áp dụng',
-                })}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">
-                {t('products.detail.sizeScale.none', {
-                  defaultValue: 'Không dùng bảng cỡ (sản phẩm không có cỡ)',
-                })}
-              </SelectItem>
-              {sizeScales.map((scale) => (
-                <SelectItem key={scale.id} value={scale.id}>
-                  {scale.name}
-                  {' · '}
-                  {contentLang === 'en'
-                    ? scale.group?.labelEn || scale.group?.label || scale.code
-                    : scale.group?.label || scale.group?.key || scale.code}
-                  {scale.group && scale.group.active === false
-                    ? ` · ${t('products.detail.sizeScale.groupInactiveTag', {
-                        defaultValue: 'nhóm đang tắt — cỡ không hiện ngoài web',
-                      })}`
-                    : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {t('products.detail.sizeScale.hint', {
-              defaultValue:
-                'Sản phẩm có cỡ phải chọn đúng bảng cỡ thì ô lọc Kích cỡ ngoài website mới gom đúng nhóm.',
-            })}
-          </p>
-          {validationErrors.sizeScaleId ? (
-            <p className="mt-1 text-xs font-semibold text-danger" role="alert">
-              {validationErrors.sizeScaleId}
+          {sellingMode === 'single' && (
+            <p className="text-sm text-muted-foreground">
+              {t('products.detail.choices.singleHint')}
             </p>
-          ) : null}
+          )}
         </div>
-      ) : null}
+      )}
+      {(items.length > 0 || sellingMode === 'multiple') && (
+        <VariantSelectionBuilder
+          key={items.map((row) => choiceSignature(row.options)).join(';')}
+          items={items}
+          onChange={onChange}
+          disabled={disabled}
+          productSku={productSku}
+          contentLang={contentLang}
+          sizeScaleId={sizeScaleId}
+          sizeScales={sizeScales}
+          sizeScalesLoading={sizeScalesLoading}
+          onSizeScaleChange={onSizeScaleChange}
+          onManageSizeScale={openSizeScaleManager}
+          usesSize={usesSize}
+          sizeScaleError={validationErrors.sizeScaleId}
+        />
+      )}
       <SizeScaleManagerModal
         open={sizeScaleManagerOpen}
         onClose={() => setSizeScaleManagerOpen(false)}
@@ -2752,96 +2297,127 @@ export function VariantsEditor({
             })}
           </span>
         )}
-        {!disabled && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="size-4" aria-hidden="true" />
-                {t('products.detail.variant.addVariant')}
-                <ChevronDown className="size-4" aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={addVariant}>
-                <Plus aria-hidden="true" />
-                {t('products.detail.variant.addSingle')}
-              </DropdownMenuItem>
-              {onOpenMatrixWizard && (
-                <DropdownMenuItem onSelect={onOpenMatrixWizard}>
-                  {t('products.detail.variant.addMatrix')}
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
       </div>
 
-      <BulkActionBar
-        selectedCount={activeSelectedKeys.length}
-        onClear={() => setSelectedKeys([])}
-        actions={[
-          {
-            label: t('products.detail.variant.bulkFillPrice'),
-            onClick: () => setBulkPriceOpen(true),
-          },
-          {
-            label: t('products.detail.variant.bulkMarkOutOfStock'),
-            onClick: () => applyBulkAvailability(false),
-          },
-          {
-            label: t('products.detail.variant.bulkMarkInStock'),
-            onClick: () => applyBulkAvailability(true),
-          },
-          {
-            label: t('products.detail.variant.bulkDelete'),
-            tone: 'danger',
-            onClick: applyBulkDelete,
-          },
-        ]}
-      />
+      {items.length > 0 && (
+        <>
+          <Table containerClassName="hide-on-mobile rounded-[var(--admin-radius-card)] border border-border">
+            <TableHeader>
+              <TableRow className="hover:bg-surface-muted">
+                <TableHead className="w-10 px-1">
+                  <span className="sr-only">{t('products.detail.dragToReorder')}</span>
+                </TableHead>
+                <TableHead className="w-16">{t('products.detail.variant.columnImage')}</TableHead>
+                <TableHead className="min-w-52">
+                  {t('products.detail.variant.columnVariant')}
+                </TableHead>
+                <TableHead className="min-w-52">{t('products.detail.variant.columnSku')}</TableHead>
+                <TableHead className="min-w-36">
+                  {t('products.detail.variant.columnRetailPrice')}
+                </TableHead>
+                <TableHead className="min-w-36">
+                  {t('products.detail.variant.columnSalePrice')}
+                </TableHead>
+                <TableHead className="min-w-32">
+                  {t('products.detail.variant.columnStatus')}
+                </TableHead>
+                <TableHead className="w-12 text-center">
+                  <span className="sr-only">{t('products.detail.variant.columnActions')}</span>
+                  <MoreHorizontal className="mx-auto size-4" aria-hidden="true" />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
 
-      <Table containerClassName="hide-on-mobile rounded-[var(--admin-radius-card)] border border-border">
-        <TableHeader>
-          <TableRow className="hover:bg-surface-muted">
-            <TableHead className="w-10 px-1">
-              <span className="sr-only">{t('products.detail.dragToReorder')}</span>
-            </TableHead>
-            <TableHead className="w-10 px-2">
-              <Checkbox
-                checked={allVisibleSelected ? true : someVisibleSelected ? 'indeterminate' : false}
-                onCheckedChange={(checked) => setAllRenderedSelected(checked === true)}
-                disabled={disabled || selectableKeys.length === 0}
-                aria-label={t('products.detail.variant.selectAllRows')}
+            {filterTerm ? (
+              <TableBody>
+                {renderedRows.map(({ v, originalIdx }) => {
+                  const prefix = `variants.${originalIdx}.`
+                  const fieldErrors = Object.fromEntries(
+                    Object.entries(liveErrors)
+                      .filter(([key]) => key.startsWith(prefix))
+                      .map(([key, value]) => [key.slice(prefix.length), value]),
+                  )
+                  return (
+                    <VariantRow
+                      commonRetailPrice={commonRetailPrice}
+                      commonSalePrice={commonSalePrice}
+                      key={v._key}
+                      sizeScale={selectedSizeScale}
+                      onFocusSizeScale={focusSizeScaleField}
+                      onManageSizeScale={openSizeScaleManager}
+                      variant={v}
+                      index={originalIdx}
+                      expanded={effectiveExpandedKey === v._key}
+                      onToggle={toggleExpanded}
+                      onChange={updateVariant}
+                      onRemove={removeVariant}
+                      disabled={disabled}
+                      fieldErrors={fieldErrors}
+                      contentLang={contentLang}
+                    />
+                  )
+                })}
+                {visible.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="py-8 text-center text-sm text-muted-foreground"
+                    >
+                      {t('products.detail.variant.filterEmpty', { filter })}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            ) : (
+              <SortableList
+                items={items.slice(0, revealCount)}
+                getId={(variant) => variant._key}
+                onReorder={(next) => onChange([...next, ...items.slice(revealCount)])}
+                disabled={disabled}
+                as="tbody"
+                renderItem={(variant, sortable, index) => {
+                  const prefix = `variants.${index}.`
+                  const fieldErrors = Object.fromEntries(
+                    Object.entries(liveErrors)
+                      .filter(([key]) => key.startsWith(prefix))
+                      .map(([key, value]) => [key.slice(prefix.length), value]),
+                  )
+                  return (
+                    <VariantRow
+                      commonRetailPrice={commonRetailPrice}
+                      commonSalePrice={commonSalePrice}
+                      sizeScale={selectedSizeScale}
+                      onFocusSizeScale={focusSizeScaleField}
+                      onManageSizeScale={openSizeScaleManager}
+                      variant={variant}
+                      index={index}
+                      expanded={effectiveExpandedKey === variant._key}
+                      onToggle={toggleExpanded}
+                      onChange={updateVariant}
+                      onRemove={removeVariant}
+                      disabled={disabled}
+                      fieldErrors={fieldErrors}
+                      sortable={sortable}
+                      contentLang={contentLang}
+                    />
+                  )
+                }}
               />
-            </TableHead>
-            <TableHead className="w-16">{t('products.detail.variant.columnImage')}</TableHead>
-            <TableHead className="min-w-52">{t('products.detail.variant.columnVariant')}</TableHead>
-            <TableHead className="min-w-52">{t('products.detail.variant.columnSku')}</TableHead>
-            <TableHead className="min-w-36">
-              {t('products.detail.variant.columnRetailPrice')}
-            </TableHead>
-            <TableHead className="min-w-36">
-              {t('products.detail.variant.columnSalePrice')}
-            </TableHead>
-            <TableHead className="min-w-32">{t('products.detail.variant.columnStatus')}</TableHead>
-            <TableHead className="w-12 text-center">
-              <span className="sr-only">{t('products.detail.variant.columnActions')}</span>
-              <MoreHorizontal className="mx-auto size-4" aria-hidden="true" />
-            </TableHead>
-          </TableRow>
-        </TableHeader>
+            )}
+          </Table>
 
-        {filterTerm ? (
-          <TableBody>
+          <MobileCardList>
             {renderedRows.map(({ v, originalIdx }) => {
               const prefix = `variants.${originalIdx}.`
               const fieldErrors = Object.fromEntries(
-                Object.entries(validationErrors)
+                Object.entries(liveErrors)
                   .filter(([key]) => key.startsWith(prefix))
                   .map(([key, value]) => [key.slice(prefix.length), value]),
               )
               return (
-                <VariantRow
+                <VariantMobileCard
+                  commonRetailPrice={commonRetailPrice}
+                  commonSalePrice={commonSalePrice}
                   key={v._key}
                   sizeScale={selectedSizeScale}
                   onFocusSizeScale={focusSizeScaleField}
@@ -2852,618 +2428,419 @@ export function VariantsEditor({
                   onToggle={toggleExpanded}
                   onChange={updateVariant}
                   onRemove={removeVariant}
-                  onDuplicate={duplicateVariant}
                   disabled={disabled}
                   fieldErrors={fieldErrors}
                   contentLang={contentLang}
-                  selected={selectedSet.has(v._key)}
-                  onSelect={setVariantSelected}
                 />
               )
             })}
-            {visible.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
-                  {t('products.detail.variant.filterEmpty', { filter })}
-                </TableCell>
-              </TableRow>
+            {renderedRows.length === 0 && filterTerm && (
+              <li className="mobile-card text-center text-sm text-muted-foreground">
+                {t('products.detail.variant.filterEmpty', { filter })}
+              </li>
             )}
-          </TableBody>
-        ) : (
-          <SortableList
-            items={items.slice(0, revealCount)}
-            getId={(variant) => variant._key}
-            onReorder={(next) => onChange([...next, ...items.slice(revealCount)])}
-            disabled={disabled}
-            as="tbody"
-            renderItem={(variant, sortable, index) => {
-              const prefix = `variants.${index}.`
-              const fieldErrors = Object.fromEntries(
-                Object.entries(validationErrors)
-                  .filter(([key]) => key.startsWith(prefix))
-                  .map(([key, value]) => [key.slice(prefix.length), value]),
-              )
-              return (
-                <VariantRow
-                  sizeScale={selectedSizeScale}
-                  onFocusSizeScale={focusSizeScaleField}
-                  onManageSizeScale={openSizeScaleManager}
-                  variant={variant}
-                  index={index}
-                  expanded={effectiveExpandedKey === variant._key}
-                  onToggle={toggleExpanded}
-                  onChange={updateVariant}
-                  onRemove={removeVariant}
-                  onDuplicate={duplicateVariant}
-                  disabled={disabled}
-                  fieldErrors={fieldErrors}
-                  sortable={sortable}
-                  contentLang={contentLang}
-                  selected={selectedSet.has(variant._key)}
-                  onSelect={setVariantSelected}
-                />
-              )
-            }}
-          />
-        )}
-      </Table>
+          </MobileCardList>
 
-      <MobileCardList>
-        {renderedRows.map(({ v, originalIdx }) => {
-          const prefix = `variants.${originalIdx}.`
-          const fieldErrors = Object.fromEntries(
-            Object.entries(validationErrors)
-              .filter(([key]) => key.startsWith(prefix))
-              .map(([key, value]) => [key.slice(prefix.length), value]),
-          )
-          return (
-            <VariantMobileCard
-              key={v._key}
-              sizeScale={selectedSizeScale}
-              onFocusSizeScale={focusSizeScaleField}
-              onManageSizeScale={openSizeScaleManager}
-              variant={v}
-              index={originalIdx}
-              expanded={effectiveExpandedKey === v._key}
-              onToggle={toggleExpanded}
-              onChange={updateVariant}
-              onRemove={removeVariant}
-              onDuplicate={duplicateVariant}
-              disabled={disabled}
-              fieldErrors={fieldErrors}
-              contentLang={contentLang}
-              selected={selectedSet.has(v._key)}
-              onSelect={setVariantSelected}
-            />
-          )
-        })}
-        {renderedRows.length === 0 && filterTerm && (
-          <li className="mobile-card text-center text-sm text-muted-foreground">
-            {t('products.detail.variant.filterEmpty', { filter })}
-          </li>
-        )}
-      </MobileCardList>
-
-      {remainingCount > 0 && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setRevealCount((c) => c + VARIANTS_RENDER_CAP)}
-        >
-          {t('products.detail.variant.showMore', { count: remainingCount })}
-        </Button>
-      )}
-
-      <Modal
-        open={bulkPriceOpen}
-        onClose={() => setBulkPriceOpen(false)}
-        title={t('products.detail.variant.bulkPriceTitle', { count: activeSelectedKeys.length })}
-        description={t('products.detail.variant.bulkPriceHint')}
-        actions={
-          <>
-            <Button variant="ghost" onClick={() => setBulkPriceOpen(false)}>
-              {t('common.cancel')}
-            </Button>
+          {remainingCount > 0 && (
             <Button
-              onClick={applyBulkPrices}
-              disabled={!bulkRetailPrice && !bulkSalePrice && !bulkClearSale}
+              variant="outline"
+              size="sm"
+              onClick={() => setRevealCount((c) => c + VARIANTS_RENDER_CAP)}
             >
-              {t('products.detail.variant.bulkApplyPrice')}
+              {t('products.detail.variant.showMore', { count: remainingCount })}
             </Button>
-          </>
-        }
-      >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label={t('products.detail.variant.columnRetailPrice')}>
-            <MoneyInput value={bulkRetailPrice} onValueChange={setBulkRetailPrice} />
-          </FormField>
-          <FormField label={t('products.detail.variant.columnSalePrice')}>
-            <MoneyInput
-              value={bulkSalePrice}
-              onValueChange={setBulkSalePrice}
-              zeroAsEmpty
-              disabled={bulkClearSale}
-            />
-          </FormField>
-        </div>
-        <label className="mt-4 flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={bulkClearSale}
-            onCheckedChange={(checked) => setBulkClearSale(checked === true)}
-          />
-          <span>
-            {t('products.detail.variant.bulkClearSale', {
-              defaultValue: 'Xoá giá khuyến mãi (đưa về trống) cho các biến thể đã chọn',
-            })}
-          </span>
-        </label>
-      </Modal>
+          )}
+        </>
+      )}
     </div>
   )
 }
 
-// ── Variant matrix wizard ──────────────────────────────────────────────────────
-
-export function VariantMatrixWizard({ onGenerate, onClose, sizeScaleId = '', sizeScales = [] }) {
-  const { t, i18n } = useTranslation()
-  const contentLang = i18n.language?.toLowerCase().startsWith('en') ? 'en' : 'vi'
-  const [attributes, setAttributes] = useState([
-    { attributeId: '', name: t('products.detail.matrix.defaultColor'), valueIds: [] },
-    { attributeId: '', name: t('products.detail.matrix.defaultSize'), valueIds: [] },
-  ])
-  const [createAttrRow, setCreateAttrRow] = useState(null)
-  const [valueManagerRow, setValueManagerRow] = useState(null)
-  // Optional smart-defaults applied to every generated variant so the owner doesn't have
-  // to type a SKU / price on each row afterwards (audit P0-4). Both opt-in: leave blank to
-  // keep the old behaviour (empty sku/price).
-  const [skuPrefix, setSkuPrefix] = useState('')
-  const [sharedPrice, setSharedPrice] = useState('')
-
-  const {
-    data: catalogAttributes = [],
-    isLoading: catalogLoading,
-    isError: catalogError,
-  } = useQuery({
+function VariantSelectionBuilder({
+  items,
+  onChange,
+  disabled,
+  productSku,
+  contentLang,
+  sizeScaleId,
+  sizeScales,
+  sizeScalesLoading,
+  onSizeScaleChange,
+  onManageSizeScale,
+  usesSize,
+  sizeScaleError,
+}) {
+  const { t } = useTranslation()
+  const catalog = useQuery({
     queryKey: ['attributes'],
     queryFn: fetchAttributes,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 300000,
   })
-
-  const selectedSizeScale = sizeScales.find((scale) => scale.id === sizeScaleId) || null
-
-  const matrixRows = attributes.map((row) => ({
-    ...row,
-    attribute: row.attributeId
-      ? (catalogAttributes.find((item) => item.id === row.attributeId) ?? null)
-      : resolveAttr(catalogAttributes, row.name),
-  }))
-
-  const valueQueries = useQueries({
-    queries: matrixRows.map((row, index) => ({
-      queryKey: ['attributeValues', row.attribute?.id || `matrix-row-${index}`],
-      queryFn: () => fetchAttributeValues(row.attribute.id),
-      enabled: Boolean(row.attribute?.id),
-      staleTime: 5 * 60 * 1000,
-    })),
-  })
-
-  function selectAttribute(i, attributeId) {
-    const selected = catalogAttributes.find((attribute) => attribute.id === attributeId)
-    if (!selected) return
-    setAttributes((prev) =>
-      prev.map((row, index) =>
-        index === i ? { ...row, attributeId: selected.id, name: selected.name, valueIds: [] } : row,
-      ),
+  const attributes = catalog.data || []
+  const attributeKey = (nameOrAttribute) => {
+    const attribute =
+      nameOrAttribute && typeof nameOrAttribute === 'object'
+        ? nameOrAttribute
+        : resolveAttr(attributes, nameOrAttribute)
+    if (attribute?.id) return `id:${attribute.id}`
+    const group = getVariantAttributeGroup(attribute?.name || nameOrAttribute)
+    if (!attributes.length) {
+      return ['color', 'size'].includes(group)
+        ? `group:${group}`
+        : `name:${normalizeVariantToken(attribute?.name || nameOrAttribute)}`
+    }
+    // Preserve legacy aliases such as "pa_color" while keeping distinct backend
+    // types such as `model` and `iphone` independently selectable.
+    const groupedAttribute = attributes.find(
+      (entry) =>
+        getVariantAttributeGroup(entry.name) === group ||
+        getVariantAttributeGroup(entry.code) === group,
     )
+    if (groupedAttribute?.id) return `id:${groupedAttribute.id}`
+    return `name:${normalizeVariantToken(attribute?.name || nameOrAttribute)}`
   }
-
-  function toggleValue(i, valueId, checked) {
-    setAttributes((prev) =>
-      prev.map((row, index) => {
-        if (index !== i) return row
-        const current = Array.isArray(row.valueIds) ? row.valueIds : []
-        const next = checked
-          ? [...new Set([...current, valueId])]
-          : current.filter((id) => id !== valueId)
-        return { ...row, valueIds: next }
+  const [rows, setRows] = useState(() => {
+    const collected = new Map()
+    items.forEach((item) =>
+      item.options?.forEach((option) => {
+        if (!option.name?.trim()) return
+        const key = attributeKey(option.name)
+        if (!collected.has(key)) collected.set(key, { name: option.name, valueIds: [] })
+        if (
+          option.attributeValueId &&
+          !collected.get(key).valueIds.includes(option.attributeValueId)
+        ) {
+          collected.get(key).valueIds.push(option.attributeValueId)
+        }
       }),
     )
-  }
+    return [...collected.values()]
+  })
+  const [search, setSearch] = useState({})
+  const [managerIndex, setManagerIndex] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const [notice, setNotice] = useState('')
+  const orderedAttributes = orderVariantAttributes(attributes)
+  const resolved = rows.map((row) => ({
+    ...row,
+    attribute:
+      resolveAttr(attributes, row.name) ||
+      attributes.find((attribute) => attributeKey(attribute.name) === attributeKey(row.name)),
+  }))
+  const queries = useQueries({
+    queries: resolved.map((row) => ({
+      queryKey: ['attributeValues', row.attribute?.id || row.name],
+      queryFn: () => fetchAttributeValues(row.attribute.id),
+      enabled: Boolean(row.attribute?.id),
+      staleTime: 300000,
+    })),
+  })
+  const scale = sizeScales.find((item) => item.id === sizeScaleId)
+  const hasSize = usesSize || rows.some((row) => isSizeAttributeName(row.name))
+  const locked = disabled || busy
 
-  function addAttr() {
-    if (attributes.length >= 5) return
-    setAttributes((prev) => [...prev, { attributeId: '', name: '', valueIds: [] }])
-  }
-
-  function removeAttr(i) {
-    setAttributes((prev) => prev.filter((_, idx) => idx !== i))
-  }
-
-  const parsed = matrixRows
-    .map((row, index) => {
-      const all = valueQueries[index]?.data ?? []
-      // Lọc lại đúng như danh sách tick ở trên: không bao giờ sinh ra biến thể mang
-      // cỡ ngoài bảng cỡ, kể cả khi state còn sót id từ lần chọn trước.
-      const values =
-        isSizeAttributeName(row.attribute?.name || row.name) && selectedSizeScale
-          ? filterValuesBySizeScale(all, selectedSizeScale, '')
-          : all
-      const selectedValues = (row.valueIds ?? [])
-        .map((valueId) => values.find((value) => value.id === valueId))
-        .filter(Boolean)
+  async function changeSelection(nextRows, addedValue, { evaluateIncomplete = false } = {}) {
+    if (locked) return
+    setNotice('')
+    const incomplete = nextRows.some((row) => !row.valueIds.length)
+    // An unfinished selection stays local while the operator is still choosing its
+    // first value. When the last value is removed from an existing dimension,
+    // evaluate the completed dimensions so the existing removal confirmation still
+    // protects saved choices.
+    if (incomplete && !evaluateIncomplete) {
+      setRows(nextRows)
+      return
+    }
+    const rowsToReconcile = incomplete ? nextRows.filter((row) => row.valueIds.length) : nextRows
+    const count = rowsToReconcile.length
+      ? rowsToReconcile.reduce((total, row) => total * row.valueIds.length, 1)
+      : 0
+    if (count > 200) {
+      setNotice(t('products.detail.choices.limit', { count, max: 200 }))
+      return
+    }
+    const parsed = rowsToReconcile.map((row) => {
+      const index = rows.findIndex((entry) => attributeKey(entry.name) === attributeKey(row.name))
+      const values = queries[index]?.data || []
       return {
-        name: row.attribute?.name?.trim() || row.name.trim(),
-        valueIds: selectedValues.map((value) => value.id),
-        values: selectedValues.map((value) => value.label || value.slug),
+        name: row.name,
+        valueIds: row.valueIds,
+        values: row.valueIds.map((id) => {
+          const value = id === addedValue?.id ? addedValue : values.find((entry) => entry.id === id)
+          const saved = items
+            .flatMap((item) => item.options || [])
+            .find((option) => option.attributeValueId === id)
+          return value?.label || value?.slug || saved?.value || ''
+        }),
       }
     })
-    .filter((a) => a.name && a.valueIds.length > 0 && a.values.length === a.valueIds.length)
-
-  const estimatedCount = parsed.length > 0 ? parsed.reduce((acc, a) => acc * a.values.length, 1) : 0
-
-  const MATRIX_HARD_CAP = 200
-
-  function generate() {
-    if (!parsed.length) return
-    if (estimatedCount > MATRIX_HARD_CAP) return
-    const newVariants = buildVariantMatrixVariants(parsed, { skuPrefix, sharedPrice })
-    onGenerate(newVariants)
-    onClose()
+    if (parsed.some((row) => row.values.some((value) => !value))) {
+      setNotice(t('products.detail.choices.valuesError'))
+      return
+    }
+    const result = reconcileChoices(items, parsed, productSku)
+    setBusy(true)
+    try {
+      if (
+        result.removed.length &&
+        !(await showConfirm(
+          t('products.detail.choices.removeSelectionConfirm', { count: result.removed.length }),
+          t('products.detail.variant.remove'),
+        ))
+      )
+        return
+      setRows(nextRows)
+      if (!incomplete || result.removed.length) onChange(result.rows)
+    } finally {
+      setBusy(false)
+    }
   }
 
-  const isValid = estimatedCount > 0 && estimatedCount <= MATRIX_HARD_CAP
+  function toggleAttribute(attribute, checked) {
+    const key = attributeKey(attribute.name)
+    if (checked && rows.some((row) => attributeKey(row.name) === key)) return
+    changeSelection(
+      checked
+        ? [...rows, { name: attribute.name, valueIds: [] }]
+        : rows.filter((row) => attributeKey(row.name) !== key),
+    )
+  }
+
+  function toggleValue(index, value, checked) {
+    const next = rows.map((row, rowIndex) =>
+      rowIndex === index
+        ? {
+            ...row,
+            valueIds: checked
+              ? [...new Set([...row.valueIds, value.id])]
+              : row.valueIds.filter((id) => id !== value.id),
+          }
+        : row,
+    )
+    // Keep an empty dimension visible. Removing its last value still evaluates the
+    // completed dimensions so saved choices receive the existing confirmation.
+    changeSelection(next, checked ? value : null, {
+      evaluateIncomplete: !checked && next[index].valueIds.length === 0,
+    })
+  }
 
   return (
-    <Modal
-      open
-      wide
-      title={t('products.detail.matrix.title')}
-      description={t('products.detail.matrix.description')}
-      onClose={onClose}
-      actions={
-        <>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>
-            {t('common.cancel')}
+    <div className="space-y-4 rounded-[var(--admin-radius-card)] border border-border p-4">
+      <p className="font-semibold">{t('products.detail.choices.differences')}</p>
+      {catalog.isPending ? (
+        <p role="status">{t('common.loading')}</p>
+      ) : catalog.isError ? (
+        <div role="alert" className="space-y-2 text-danger">
+          <p>{t('products.detail.choices.catalogError')}</p>
+          <Button type="button" variant="outline" onClick={() => catalog.refetch()}>
+            {t('common.retry')}
           </Button>
-          <Button
-            type="button"
-            variant={isValid ? 'default' : 'outline'}
-            size="sm"
-            onClick={generate}
-            disabled={!isValid}
-          >
-            {estimatedCount === 0
-              ? t('products.detail.matrix.generateButtonEmpty')
-              : t('products.detail.matrix.generateButton', { count: estimatedCount })}
-          </Button>
-        </>
-      }
-    >
-      {catalogError && (
-        <p className="field-error mb-4" role="alert">
-          {t('products.detail.matrix.catalogError', {
-            defaultValue: 'Không tải được danh mục thuộc tính. Vui lòng thử tải lại trang.',
+        </div>
+      ) : (
+        <div
+          className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4"
+          role="group"
+          aria-label={t('products.detail.choices.differences')}
+        >
+          {orderedAttributes.map((attribute) => {
+            const group =
+              getVariantAttributeGroup(attribute.name) || getVariantAttributeGroup(attribute.code)
+            const label =
+              group === 'color'
+                ? t('products.detail.choices.color')
+                : group === 'size'
+                  ? t('products.detail.choices.size')
+                  : contentLang === 'en'
+                    ? attribute.nameEn || attribute.name
+                    : attribute.name
+            return (
+              <label
+                key={attribute.id}
+                className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2"
+              >
+                <Checkbox
+                  checked={rows.some(
+                    (row) => attributeKey(row.name) === attributeKey(attribute.name),
+                  )}
+                  disabled={locked}
+                  onCheckedChange={(checked) => toggleAttribute(attribute, checked === true)}
+                />
+                <span className="min-w-0 truncate">{label}</span>
+              </label>
+            )
           })}
-        </p>
+        </div>
       )}
-
-      <div className="flex flex-col gap-3 mb-4">
-        {matrixRows.map((row, i) => {
-          const allValues = valueQueries[i]?.data ?? []
-          // Dòng cỡ chỉ tick được cỡ thuộc bảng cỡ của sản phẩm — cùng luật với ô
-          // chọn cỡ từng dòng, nên hàng loạt không sinh ra biến thể không lưu được.
-          const isSizeRow = isSizeAttributeName(row.attribute?.name || row.name)
-          const needsSizeScale = isSizeRow && !selectedSizeScale
-          const values =
-            isSizeRow && selectedSizeScale
-              ? filterValuesBySizeScale(allValues, selectedSizeScale, '')
-              : allValues
-          const selectedValues = (row.valueIds ?? [])
-            .map((valueId) => values.find((value) => value.id === valueId))
-            .filter(Boolean)
-          const valueQuery = valueQueries[i]
-          return (
-            <div key={i} className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <Select
-                  value={row.attribute?.id || ''}
-                  onValueChange={(value) => {
-                    if (value === CREATE_NEW_ATTRIBUTE_VALUE) {
-                      setCreateAttrRow(i)
-                      return
-                    }
-                    selectAttribute(i, value)
-                  }}
-                  disabled={catalogLoading || catalogError}
+      {hasSize && onSizeScaleChange && (
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label htmlFor="product-size-scale" className="text-sm font-medium">
+              {t('products.detail.sizeScale.label')}
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={locked}
+              onClick={onManageSizeScale}
+            >
+              {t('products.detail.sizeScale.manage')}
+            </Button>
+          </div>
+          <Select
+            value={sizeScaleId || '__none__'}
+            disabled={locked || sizeScalesLoading}
+            onValueChange={(id) => onSizeScaleChange(id === '__none__' ? '' : id)}
+          >
+            <SelectTrigger id="product-size-scale">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">{t('products.detail.sizeScale.placeholder')}</SelectItem>
+              {sizeScales.map((entry) => (
+                <SelectItem key={entry.id} value={entry.id}>
+                  {entry.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {sizeScaleError && (
+            <p role="alert" className="text-sm text-danger">
+              {sizeScaleError}
+            </p>
+          )}
+        </div>
+      )}
+      {resolved.map((row, index) => {
+        const query = queries[index]
+        const isSize = isSizeAttributeName(row.name)
+        const needsScale = isSize && !scale
+        const values =
+          isSize && scale ? filterValuesBySizeScale(query.data || [], scale, '') : query.data || []
+        const term = normalizeVariantToken(search[row.name] || '')
+        const shown = values.filter((value) =>
+          normalizeVariantToken(`${value.label} ${value.labelEn || ''}`).includes(term),
+        )
+        const label = contentLang === 'en' ? row.attribute?.nameEn || row.name : row.name
+        return (
+          <div key={row.name} className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">{label}</span>
+              {row.attribute && !isSize && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={locked}
+                  onClick={() => setManagerIndex(index)}
                 >
-                  <SelectTrigger
-                    aria-label={t('products.detail.matrix.attributeLabel', {
-                      defaultValue: 'Tên thuộc tính',
-                    })}
-                    className="flex-1"
-                  >
-                    <SelectValue
-                      placeholder={
-                        catalogLoading
-                          ? t('products.detail.matrix.catalogLoading', {
-                              defaultValue: 'Đang tải danh mục…',
-                            })
-                          : t('products.detail.matrix.attributePlaceholder', {
-                              defaultValue: 'Chọn thuộc tính',
-                            })
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {catalogAttributes.map((attribute) => (
-                      <SelectItem key={attribute.id} value={attribute.id}>
-                        {contentLang === 'en' ? attribute.nameEn || attribute.name : attribute.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value={CREATE_NEW_ATTRIBUTE_VALUE}>
-                      +{' '}
-                      {t('products.detail.variant.attrCreateTitle', {
-                        defaultValue: 'Tạo loại thuộc tính mới',
-                      })}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-[2] justify-start overflow-hidden"
-                      disabled={
-                        !row.attribute?.id ||
-                        valueQuery?.isLoading ||
-                        valueQuery?.isError ||
-                        values.length === 0
-                      }
-                      aria-label={t('products.detail.matrix.valuesLabel', {
-                        defaultValue: 'Các giá trị thuộc tính',
-                      })}
+                  {t('products.detail.choices.addValue', { attribute: label })}
+                </Button>
+              )}
+            </div>
+            {needsScale ? (
+              <p className="text-sm text-muted-foreground">
+                {t('products.detail.variant.sizeScaleRequiredHint')}
+              </p>
+            ) : catalog.isPending || query.isLoading ? (
+              <p role="status">{t('common.loading')}</p>
+            ) : query.isError || !row.attribute ? (
+              <div role="alert" className="text-sm text-danger">
+                <p>{t('products.detail.choices.valuesError')}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => query.refetch()}
+                  disabled={!row.attribute}
+                >
+                  {t('common.retry')}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Input
+                  type="search"
+                  value={search[row.name] || ''}
+                  disabled={locked}
+                  aria-label={t('products.detail.choices.searchValues', { attribute: label })}
+                  placeholder={t('products.detail.choices.searchValues', { attribute: label })}
+                  onChange={(event) => setSearch({ ...search, [row.name]: event.target.value })}
+                />
+                <div className="flex max-h-64 flex-wrap gap-x-4 gap-y-2 overflow-y-auto">
+                  {shown.map((value) => (
+                    <label
+                      key={value.id}
+                      className="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--admin-radius-control)] border border-border px-3"
                     >
-                      <span className="truncate">
-                        {selectedValues.length > 0
-                          ? selectedValues
-                              .map((value) =>
-                                contentLang === 'en' ? value.labelEn || value.label : value.label,
-                              )
-                              .join(', ')
-                          : valueQuery?.isLoading
-                            ? t('products.detail.matrix.valueListLoading', {
-                                defaultValue: 'Đang tải giá trị…',
-                              })
-                            : t('products.detail.matrix.valuesPlaceholder', {
-                                defaultValue: 'Chọn một hoặc nhiều giá trị',
-                              })}
+                      <Checkbox
+                        checked={row.valueIds.includes(value.id)}
+                        disabled={locked}
+                        onCheckedChange={(checked) => toggleValue(index, value, checked === true)}
+                      />
+                      <span>
+                        {contentLang === 'en' ? value.labelEn || value.label : value.label}
                       </span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="max-h-[45vh] overflow-y-auto">
-                    {valueQuery?.isError ? (
-                      <p className="text-sm text-destructive">
-                        {t('products.detail.matrix.valueListError', {
-                          defaultValue: 'Không tải được danh sách giá trị.',
-                        })}
-                      </p>
-                    ) : needsSizeScale ? (
-                      <p className="text-sm text-muted-foreground">
-                        {t('products.detail.variant.sizeScaleRequiredHint', {
-                          defaultValue: 'Chọn Bảng cỡ áp dụng để hiện đúng danh sách cỡ.',
-                        })}
-                      </p>
-                    ) : values.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        {isSizeRow && selectedSizeScale
-                          ? t('products.detail.variant.sizeScaleNoValues', {
-                              scale: selectedSizeScale.name,
-                              defaultValue: 'Bảng cỡ này chưa có cỡ nào.',
-                            })
-                          : t('products.detail.matrix.valueListEmpty', {
-                              defaultValue: 'Thuộc tính này chưa có giá trị.',
-                            })}
-                      </p>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        {values.map((value) => (
-                          <label
-                            key={value.id}
-                            className="flex cursor-pointer items-center gap-2 text-sm"
-                          >
-                            <Checkbox
-                              checked={(row.valueIds ?? []).includes(value.id)}
-                              onCheckedChange={(checked) =>
-                                toggleValue(i, value.id, checked === true)
-                              }
-                            />
-                            <span>
-                              {contentLang === 'en' ? value.labelEn || value.label : value.label}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </PopoverContent>
-                </Popover>
-                {row.attribute?.id && (
+                    </label>
+                  ))}
+                </div>
+                {!shown.length && (
+                  <p className="text-sm text-muted-foreground">
+                    {t('products.detail.choices.noValues')}
+                  </p>
+                )}
+                {isSize && scale && (
                   <Button
                     type="button"
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => setValueManagerRow(i)}
-                    aria-label={t('products.detail.variant.valueManagerTitle', {
-                      attribute:
-                        contentLang === 'en'
-                          ? row.attribute.nameEn || row.attribute.name
-                          : row.attribute.name,
-                      defaultValue: 'Quản lý giá trị thuộc tính',
-                    })}
-                    title={t('products.detail.variant.valueManagerTitle', {
-                      attribute:
-                        contentLang === 'en'
-                          ? row.attribute.nameEn || row.attribute.name
-                          : row.attribute.name,
-                      defaultValue: 'Quản lý giá trị thuộc tính',
-                    })}
+                    variant="link"
+                    disabled={locked}
+                    onClick={onManageSizeScale}
                   >
-                    <Pencil size={15} />
+                    {t('products.detail.variant.sizeAddToScale', { scale: scale.name })}
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive shrink-0"
-                  onClick={() => removeAttr(i)}
-                  disabled={attributes.length <= 1}
-                  aria-label={t('products.detail.variant.removeOption')}
-                >
-                  <X size={16} aria-hidden="true" />
-                </Button>
-                <HelpTooltip content={t('products.detail.matrix.valuesHelp')} />
-              </div>
-              {row.attribute?.id && !row.valueIds?.length && !valueQuery?.isLoading && (
-                <p className="text-xs text-warning">{t('products.detail.matrix.rowValuesEmpty')}</p>
-              )}
-              {valueQuery?.isError && (
-                <p className="text-xs text-destructive" role="alert">
-                  {t('products.detail.matrix.valueListError', {
-                    defaultValue: 'Không tải được danh sách giá trị.',
-                  })}
-                </p>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      {createAttrRow !== null && (
-        <CreateAttributeModal
-          open
-          onClose={() => setCreateAttrRow(null)}
-          onCreated={(created) => {
-            setAttributes((prev) =>
-              prev.map((row, index) =>
-                index === createAttrRow
-                  ? { ...row, attributeId: created.id, name: created.name, valueIds: [] }
-                  : row,
-              ),
-            )
-            setCreateAttrRow(null)
-          }}
-        />
+              </>
+            )}
+          </div>
+        )
+      })}
+      {(!rows.length || rows.some((row) => !row.valueIds.length)) && (
+        <p className="text-sm text-muted-foreground">{t('products.detail.choices.chooseValues')}</p>
       )}
-
-      {valueManagerRow !== null && matrixRows[valueManagerRow]?.attribute && (
+      {!productSku.trim() && (
+        <p className="text-sm text-warning">{t('products.detail.choices.needProductSku')}</p>
+      )}
+      <p className="text-xs text-muted-foreground">{t('products.detail.choices.rules')}</p>
+      {notice && (
+        <p role="alert" className="text-sm text-danger">
+          {notice}
+        </p>
+      )}
+      {managerIndex !== null && resolved[managerIndex]?.attribute && (
         <AttributeValueManagerModal
           open
-          onClose={() => setValueManagerRow(null)}
-          attribute={matrixRows[valueManagerRow].attribute}
-          values={valueQueries[valueManagerRow]?.data ?? []}
-          valuesLoading={valueQueries[valueManagerRow]?.isLoading}
-          valuesError={valueQueries[valueManagerRow]?.isError}
-          onPicked={(created) => {
-            setAttributes((prev) =>
-              prev.map((row, index) =>
-                index === valueManagerRow
-                  ? { ...row, valueIds: [...new Set([...(row.valueIds ?? []), created.id])] }
-                  : row,
-              ),
-            )
-          }}
-          onValueDeleted={(deletedId) => {
-            setAttributes((prev) =>
-              prev.map((row, index) =>
-                index === valueManagerRow
-                  ? { ...row, valueIds: (row.valueIds ?? []).filter((id) => id !== deletedId) }
-                  : row,
-              ),
-            )
-          }}
+          onClose={() => setManagerIndex(null)}
+          attribute={resolved[managerIndex].attribute}
+          values={queries[managerIndex]?.data || []}
+          valuesLoading={queries[managerIndex]?.isLoading}
+          valuesError={queries[managerIndex]?.isError}
           contentLang={contentLang}
+          onPicked={(value) => toggleValue(managerIndex, value, true)}
+          onValueDeleted={(id) => {
+            // The manager already confirmed permanent deletion. The backend
+            // protects saved references; discard any unsaved rows using it too.
+            setRows(
+              rows.map((row) => ({
+                ...row,
+                valueIds: row.valueIds.filter((value) => value !== id),
+              })),
+            )
+            const remaining = items.filter(
+              (item) => !item.options?.some((option) => option.attributeValueId === id),
+            )
+            if (remaining.length !== items.length) onChange(remaining)
+          }}
         />
       )}
-
-      <Button variant="outline" size="sm" onClick={addAttr} disabled={attributes.length >= 5}>
-        + {t('products.detail.variant.addOption')}
-      </Button>
-
-      {/* Điền sẵn (tùy chọn): mã hàng + giá — để không phải gõ tay từng biến thể (P0-4) */}
-      <div className="mt-4 rounded-[var(--admin-radius-control)] border border-border bg-muted/40 p-3">
-        <p className="text-sm font-medium mb-2">
-          {t('products.detail.matrix.smartFillTitle', {
-            defaultValue: 'Điền sẵn cho tất cả biến thể (tùy chọn)',
-          })}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-              {t('products.detail.matrix.skuPrefixLabel', { defaultValue: 'Tiền tố mã hàng' })}
-              <HelpTooltip
-                content={t('products.detail.matrix.skuPrefixHelp', {
-                  defaultValue:
-                    'Tự tạo mã hàng theo mẫu: tiền tố + giá trị thuộc tính. Để trống nếu muốn tự nhập sau.',
-                })}
-              />
-            </div>
-            <Input
-              value={skuPrefix}
-              onChange={(e) => setSkuPrefix(e.target.value)}
-              placeholder={t('products.detail.matrix.skuPrefixPlaceholder', {
-                defaultValue: 'vd: AGV-K1S',
-              })}
-              className="font-mono"
-              maxLength={80}
-            />
-            {skuPrefix.trim() && parsed.length > 0 ? (
-              <p className="text-xs text-muted-foreground">
-                {t('products.detail.matrix.skuSamplePreview', {
-                  defaultValue: 'Ví dụ mã: {{sku}}',
-                  sku: [
-                    skuPrefix.trim(),
-                    ...parsed.map((a) => skuToken(a.values[0])).filter(Boolean),
-                  ].join('-'),
-                })}
-              </p>
-            ) : null}
-          </div>
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-              {t('products.detail.matrix.sharedPriceLabel', { defaultValue: 'Giá bán chung' })}
-              <HelpTooltip
-                content={t('products.detail.matrix.sharedPriceHelp', {
-                  defaultValue:
-                    'Áp cùng một giá cho mọi biến thể (sửa từng dòng sau nếu cần). Để trống nếu giá khác nhau.',
-                })}
-              />
-            </div>
-            <MoneyInput
-              value={sharedPrice}
-              onValueChange={setSharedPrice}
-              placeholder={t('products.detail.matrix.sharedPricePlaceholder', {
-                defaultValue: 'vd: 5.900.000',
-              })}
-            />
-          </div>
-        </div>
-      </div>
-
-      {estimatedCount > 0 && (
-        <p
-          className={`text-sm mt-3 ${estimatedCount > MATRIX_HARD_CAP ? 'text-danger font-medium' : estimatedCount > 50 ? 'text-warning font-medium' : 'text-muted-foreground'}`}
-        >
-          {estimatedCount > MATRIX_HARD_CAP
-            ? t('products.detail.matrix.estimateHardCap', {
-                count: estimatedCount,
-                cap: MATRIX_HARD_CAP,
-              })
-            : estimatedCount > 50
-              ? t('products.detail.matrix.estimateWarn', { count: estimatedCount })
-              : t('products.detail.matrix.estimate', { count: estimatedCount })}
-        </p>
-      )}
-    </Modal>
+    </div>
   )
 }

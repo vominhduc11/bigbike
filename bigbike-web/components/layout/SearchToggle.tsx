@@ -11,6 +11,7 @@ import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useMediaQueryChange } from "@/lib/hooks/useMediaQueryChange";
 import { useRecentSearches } from "@/lib/hooks/useRecentSearches";
 import { SearchSuggestionsError, useSearchSuggestions } from "@/lib/query/search-suggestions";
+import { trackSearch } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { toArticlePath, toProductPath, toSearchPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
@@ -55,6 +56,7 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
   const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const wasOpenRef = useRef(false);
+  const lastTrackedQuickSearchRef = useRef<string | null>(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   // 200ms keeps the whole round trip inside the 0.3s the owner asked for now that the
@@ -73,6 +75,7 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
     data: suggestionResult,
     error: suggestionError,
     isFetching: suggestLoading,
+    isPlaceholderData: suggestionsAreStale,
     refetch,
   } = useSearchSuggestions(locale, debouncedQuery, suggestQuery);
   const suggestions = suggestionResult?.products ?? EMPTY_PRODUCT_SUGGESTIONS;
@@ -102,6 +105,41 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
   const hasShortcuts =
     shortcuts.trendingBrands.length > 0 || shortcuts.suggestedProducts.length > 0;
   const showPreSuggestions = open && !trimmedQuery && (recentSearches.length > 0 || hasShortcuts);
+
+  useEffect(() => {
+    if (!open || !trimmedQuery) {
+      lastTrackedQuickSearchRef.current = null;
+      return;
+    }
+    if (
+      !suggestQuery ||
+      queryTooLong ||
+      suggestLoading ||
+      suggestionsAreStale ||
+      suggestionError ||
+      !suggestionResult ||
+      debouncedQuery !== trimmedQuery
+    ) {
+      return;
+    }
+
+    const resultCount = suggestionResult.products.length;
+    const key = `${locale}:${debouncedQuery}`;
+    if (lastTrackedQuickSearchRef.current === key) return;
+    lastTrackedQuickSearchRef.current = key;
+    trackSearch(debouncedQuery, resultCount, "header_quick");
+  }, [
+    debouncedQuery,
+    locale,
+    open,
+    queryTooLong,
+    suggestLoading,
+    suggestQuery,
+    suggestionError,
+    suggestionResult,
+    suggestionsAreStale,
+    trimmedQuery,
+  ]);
 
   const selectableItems: SearchNavigationOption[] = !trimmedQuery
     ? [
@@ -283,7 +321,11 @@ export function SearchToggle({ shortcuts = EMPTY_SHORTCUTS }: SearchToggleProps)
               data-search-busy={isLoading ? "true" : undefined}
               disabled={isLoading}
               aria-label={t(
-                isLoading ? "loadingSuggestions" : trimmedQuery ? "clearAriaLabel" : "closeAriaLabel",
+                isLoading
+                  ? "loadingSuggestions"
+                  : trimmedQuery
+                    ? "clearAriaLabel"
+                    : "closeAriaLabel",
               )}
               onClick={() => {
                 if (!trimmedQuery) {

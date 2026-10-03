@@ -26,9 +26,15 @@ async function isScrollLocked(page: Page): Promise<boolean> {
 async function expectClosedAndUnlocked(page: Page, label: string): Promise<void> {
   await page.waitForTimeout(400); // allow close animation + lock release
   const s = await readLock(page);
-  expect(s.panel == null || s.panel === "" || s.panel === "none", `${label}: header panel still active ("${s.panel}")`).toBeTruthy();
+  expect(
+    s.panel == null || s.panel === "" || s.panel === "none",
+    `${label}: header panel still active ("${s.panel}")`,
+  ).toBeTruthy();
   expect(s.scrollLockedAttr, `${label}: data-scroll-locked still set`).toBeFalsy();
-  expect(await isScrollLocked(page), `${label}: scroll lock (overflow-y:hidden) still applied after close`).toBeFalsy();
+  expect(
+    await isScrollLocked(page),
+    `${label}: scroll lock (overflow-y:hidden) still applied after close`,
+  ).toBeFalsy();
 }
 
 function headerSearchTrigger(page: Page) {
@@ -36,7 +42,10 @@ function headerSearchTrigger(page: Page) {
 }
 
 function searchDialog(page: Page) {
-  return page.getByRole("dialog").filter({ has: page.getByRole("combobox") }).first();
+  return page
+    .getByRole("dialog")
+    .filter({ has: page.getByRole("combobox") })
+    .first();
 }
 
 function searchInput(page: Page) {
@@ -48,7 +57,9 @@ function mobileMenuTrigger(page: Page) {
 }
 
 function floatingChatTrigger(page: Page) {
-  return page.locator("#bb-floating-chat-trigger button, button.b24-widget-button-inner-block").first();
+  return page
+    .locator("#bb-floating-contact-trigger button, button.b24-widget-button-inner-block")
+    .first();
 }
 
 function firstVideoTrigger(page: Page) {
@@ -56,16 +67,23 @@ function firstVideoTrigger(page: Page) {
 }
 
 async function readMainFrame(page: Page) {
-  return page.locator(".bb-main").first().evaluate((el) => {
-    const rect = el.getBoundingClientRect();
-    return {
-      left: Math.round(rect.left * 100) / 100,
-      width: Math.round(rect.width * 100) / 100,
-    };
-  });
+  return page
+    .locator(".bb-main")
+    .first()
+    .evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      return {
+        left: Math.round(rect.left * 100) / 100,
+        width: Math.round(rect.width * 100) / 100,
+      };
+    });
 }
 
-async function expectMainFrameStable(page: Page, expected: Awaited<ReturnType<typeof readMainFrame>>, label: string) {
+async function expectMainFrameStable(
+  page: Page,
+  expected: Awaited<ReturnType<typeof readMainFrame>>,
+  label: string,
+) {
   const current = await readMainFrame(page);
   expect(current.left, `${label}: page content should not shift horizontally`).toBe(expected.left);
   expect(current.width, `${label}: page content width should stay stable`).toBe(expected.width);
@@ -85,7 +103,9 @@ function featuredProductCard(page: Page) {
 /* ------------------------------- desktop --------------------------------- */
 
 test.describe("Effects — desktop @1440", () => {
-  test("search panel opens, focuses input, locks scroll, closes on Escape + releases lock", async ({ page }) => {
+  test("search panel opens, focuses input, locks scroll, closes on Escape + releases lock", async ({
+    page,
+  }) => {
     const guards = installPageGuards(page);
     await gotoAndSettle(page, "/");
 
@@ -175,10 +195,13 @@ test.describe("Effects — desktop @1440", () => {
       return;
     }
     const mainFrameBefore = await readMainFrame(page);
-    await expect(page.locator("#bb-floating-chat-trigger")).toHaveAttribute("data-bigbike-launcher-ready", "true");
+    await expect(page.locator("#bb-floating-contact-trigger")).toHaveAttribute(
+      "data-bigbike-contact-ready",
+      "true",
+    );
     await fab.focus();
     await fab.press("Enter");
-    const chatDialog = page.locator("[data-bigbike-assistant]");
+    const chatDialog = page.locator("[data-bigbike-contact]");
     await expect(chatDialog).toBeVisible();
     await expectMainFrameStable(page, mainFrameBefore, "floating chat open");
     await page.keyboard.press("Escape");
@@ -224,18 +247,25 @@ test.describe("Effects — mobile @390", () => {
 
     const drawer = page.locator("[data-header-mobile-menu]").first();
     await expect(drawer).toBeVisible();
-    const desktopIconCount = await page.locator("[data-header-desktop-menu] [data-header-submenu-icon]").count();
+    const desktopIconCount = await page
+      .locator("[data-header-desktop-menu] [data-header-submenu-icon]")
+      .count();
     const mobileIconCount = await drawer.locator("[data-header-submenu-icon]").count();
-    expect(mobileIconCount, "mobile menu should render category icons").toBeGreaterThanOrEqual(desktopIconCount);
+    expect(mobileIconCount, "mobile menu should render category icons").toBeGreaterThanOrEqual(
+      desktopIconCount,
+    );
     if (desktopIconCount > 0) {
-      await expect(page.locator("[data-header-desktop-menu] [data-header-submenu-icon]").first())
-        .toHaveClass(/\bw-6\b/);
-      await expect(page.locator("[data-header-desktop-menu] [data-header-submenu-icon]").first())
-        .toHaveClass(/\bh-6\b/);
+      await expect(
+        page.locator("[data-header-desktop-menu] [data-header-submenu-icon]").first(),
+      ).toHaveClass(/\bw-6\b/);
+      await expect(
+        page.locator("[data-header-desktop-menu] [data-header-submenu-icon]").first(),
+      ).toHaveClass(/\bh-6\b/);
     }
     if (mobileIconCount > 0) {
       await expect(drawer.locator("[data-header-submenu-icon]").first()).toHaveAttribute(
-        "data-header-submenu-icon-depth", "1",
+        "data-header-submenu-icon-depth",
+        "1",
       );
       await expect(drawer.locator("[data-header-submenu-icon]").first()).toHaveClass(/\bw-6\b/);
       await expect(drawer.locator("[data-header-submenu-icon]").first()).toHaveClass(/\bh-6\b/);
@@ -244,30 +274,52 @@ test.describe("Effects — mobile @390", () => {
       const rect = el.getBoundingClientRect();
       const styles = getComputedStyle(el);
       const duration = styles.animationDuration.split(",")[0]?.trim() ?? "0s";
-      const durationMs = duration.endsWith("ms") ? parseFloat(duration) : parseFloat(duration) * 1000;
+      const durationMs = duration.endsWith("ms")
+        ? parseFloat(duration)
+        : parseFloat(duration) * 1000;
       return {
         animationName: styles.animationName,
         durationMs,
         left: rect.left,
       };
     });
-    expect(openingMotion.animationName, "mobile drawer should use the dedicated menu slide-in").toBe("bb-mobile-menu-in-right");
-    expect(openingMotion.durationMs, "mobile drawer open animation should be visible").toBeGreaterThanOrEqual(500);
-    expect(openingMotion.left, "mobile drawer should still be sliding in immediately after open").toBeGreaterThan(20);
+    expect(
+      openingMotion.animationName,
+      "mobile drawer should use the dedicated menu slide-in",
+    ).toBe("bb-mobile-menu-in-right");
+    expect(
+      openingMotion.durationMs,
+      "mobile drawer open animation should be visible",
+    ).toBeGreaterThanOrEqual(500);
+    expect(
+      openingMotion.left,
+      "mobile drawer should still be sliding in immediately after open",
+    ).toBeGreaterThan(20);
     await page.waitForTimeout(600);
-    await expect.poll(async () => {
-      return drawer.evaluate((el) => Math.round(el.getBoundingClientRect().left));
-    }, { timeout: 2000 }).toBe(0);
+    await expect
+      .poll(
+        async () => {
+          return drawer.evaluate((el) => Math.round(el.getBoundingClientRect().left));
+        },
+        { timeout: 2000 },
+      )
+      .toBe(0);
     await expectMainFrameStable(page, mainFrameBefore, "mobile menu open");
     const drawerWidthBeforeSubmenu = await drawer.evaluate((el) => el.clientWidth);
-    expect(await isScrollLocked(page), "background should be scroll-locked while drawer open").toBeTruthy();
+    expect(
+      await isScrollLocked(page),
+      "background should be scroll-locked while drawer open",
+    ).toBeTruthy();
 
     const branch = drawer.locator("[data-header-submenu-trigger]").first();
-    if ((await branch.count()) > 0 && await branch.isVisible().catch(() => false)) {
+    if ((await branch.count()) > 0 && (await branch.isVisible().catch(() => false))) {
       const branchItem = branch.locator("xpath=ancestor::li[1]");
       const submenu = branchItem.locator("[data-header-submenu]").first();
       await expect(submenu).toHaveAttribute("data-state", "closed");
-      expect(await submenu.evaluate((el) => el.getBoundingClientRect().height), "submenu should start collapsed").toBeLessThan(1);
+      expect(
+        await submenu.evaluate((el) => el.getBoundingClientRect().height),
+        "submenu should start collapsed",
+      ).toBeLessThan(1);
 
       await branch.click();
       await expect(branch).toHaveAttribute("aria-expanded", "true");
@@ -275,21 +327,30 @@ test.describe("Effects — mobile @390", () => {
       const expandMotion = await submenu.evaluate((el) => {
         const styles = getComputedStyle(el);
         const duration = styles.transitionDuration.split(",")[0]?.trim() ?? "0s";
-        const durationMs = duration.endsWith("ms") ? parseFloat(duration) : parseFloat(duration) * 1000;
+        const durationMs = duration.endsWith("ms")
+          ? parseFloat(duration)
+          : parseFloat(duration) * 1000;
         return {
           height: el.getBoundingClientRect().height,
           property: styles.transitionProperty,
           durationMs,
         };
       });
-      expect(expandMotion.property, "submenu should animate height").toContain("grid-template-rows");
-      expect(expandMotion.durationMs, "submenu expand transition should be visible").toBeGreaterThanOrEqual(200);
+      expect(expandMotion.property, "submenu should animate height").toContain(
+        "grid-template-rows",
+      );
+      expect(
+        expandMotion.durationMs,
+        "submenu expand transition should be visible",
+      ).toBeGreaterThanOrEqual(200);
       await page.waitForTimeout(80);
       const expandingHeight = await submenu.evaluate((el) => el.getBoundingClientRect().height);
       await page.waitForTimeout(260);
       const expandedHeight = await submenu.evaluate((el) => el.getBoundingClientRect().height);
       expect(expandedHeight, "submenu should finish expanded").toBeGreaterThan(20);
-      expect(expandingHeight, "submenu should still be expanding shortly after click").toBeLessThan(expandedHeight);
+      expect(expandingHeight, "submenu should still be expanding shortly after click").toBeLessThan(
+        expandedHeight,
+      );
       const drawerScroll = await drawer.evaluate((el) => {
         const originalScrollTop = el.scrollTop;
         el.scrollTop = 96;
@@ -306,14 +367,23 @@ test.describe("Effects — mobile @390", () => {
           scrolledTop,
         };
       });
-      expect(drawerScroll.clientWidth, "drawer content width should not shift when submenu expands").toBe(drawerWidthBeforeSubmenu);
-      expect(drawerScroll.offsetWidth - drawerScroll.clientWidth, "hidden scrollbar should not reserve drawer width").toBeLessThanOrEqual(1);
+      expect(
+        drawerScroll.clientWidth,
+        "drawer content width should not shift when submenu expands",
+      ).toBe(drawerWidthBeforeSubmenu);
+      expect(
+        drawerScroll.offsetWidth - drawerScroll.clientWidth,
+        "hidden scrollbar should not reserve drawer width",
+      ).toBeLessThanOrEqual(1);
       expect(
         drawerScroll.scrollbarDisplay === "none" || drawerScroll.scrollbarWidth === "0px",
         `drawer scrollbar should be hidden (display=${drawerScroll.scrollbarDisplay}, width=${drawerScroll.scrollbarWidth})`,
       ).toBeTruthy();
       if (drawerScroll.scrollHeight > drawerScroll.clientHeight) {
-        expect(drawerScroll.scrolledTop, "drawer should still scroll after hiding scrollbar").toBeGreaterThan(0);
+        expect(
+          drawerScroll.scrolledTop,
+          "drawer should still scroll after hiding scrollbar",
+        ).toBeGreaterThan(0);
       }
 
       await branch.click();
@@ -321,10 +391,18 @@ test.describe("Effects — mobile @390", () => {
       await expect(submenu).toHaveAttribute("data-state", "closed");
       await page.waitForTimeout(80);
       const collapsingHeight = await submenu.evaluate((el) => el.getBoundingClientRect().height);
-      expect(collapsingHeight, "submenu should still be collapsing shortly after close").toBeGreaterThan(0);
-      expect(collapsingHeight, "submenu collapse should move toward zero").toBeLessThan(expandedHeight);
+      expect(
+        collapsingHeight,
+        "submenu should still be collapsing shortly after close",
+      ).toBeGreaterThan(0);
+      expect(collapsingHeight, "submenu collapse should move toward zero").toBeLessThan(
+        expandedHeight,
+      );
       await page.waitForTimeout(260);
-      expect(await submenu.evaluate((el) => el.getBoundingClientRect().height), "submenu should finish collapsed").toBeLessThan(1);
+      expect(
+        await submenu.evaluate((el) => el.getBoundingClientRect().height),
+        "submenu should finish collapsed",
+      ).toBeLessThan(1);
     }
 
     await clickMobileMenuTrigger(page);
@@ -352,7 +430,9 @@ test.describe("Effects — mobile @390", () => {
     await expect(sheet).toBeVisible();
     await expect.poll(async () => (await readLock(page)).panel).toBe("cart");
     const txt = (await sheet.textContent()) ?? "";
-    expect(txt.replace(/\s+/g, " ").trim().length, "cart sheet content not blank").toBeGreaterThan(5);
+    expect(txt.replace(/\s+/g, " ").trim().length, "cart sheet content not blank").toBeGreaterThan(
+      5,
+    );
 
     await page.keyboard.press("Escape");
     await expect(sheet).toBeHidden();
@@ -368,10 +448,13 @@ test.describe("Effects — mobile @390", () => {
     }
 
     const mainFrameBefore = await readMainFrame(page);
-    await expect(page.locator("#bb-floating-chat-trigger")).toHaveAttribute("data-bigbike-launcher-ready", "true");
+    await expect(page.locator("#bb-floating-contact-trigger")).toHaveAttribute(
+      "data-bigbike-contact-ready",
+      "true",
+    );
     await fab.focus();
     await fab.press("Enter");
-    const chatDialog = page.locator("[data-bigbike-assistant]");
+    const chatDialog = page.locator("[data-bigbike-contact]");
     await expect(chatDialog).toBeVisible();
     await expectMainFrameStable(page, mainFrameBefore, "mobile floating chat open");
     await page.keyboard.press("Escape");
@@ -399,7 +482,10 @@ test.describe("Effects — mobile @390", () => {
     await expect(modal).toBeHidden();
     await page.waitForTimeout(400);
     await expectMainFrameStable(page, mainFrameBefore, "mobile video modal closed");
-    expect(await isScrollLocked(page), "scroll lock stuck after mobile video modal close").toBeFalsy();
+    expect(
+      await isScrollLocked(page),
+      "scroll lock stuck after mobile video modal close",
+    ).toBeFalsy();
   });
 
   test("bottom nav is anchored at the bottom and main clears it", async ({ page }) => {
@@ -409,7 +495,10 @@ test.describe("Effects — mobile @390", () => {
     const box = await nav.boundingBox();
     const vh = page.viewportSize()!.height;
     expect(box, "bottom nav box").not.toBeNull();
-    expect(box!.y + box!.height, `bottom nav bottom edge (=${box!.y + box!.height}, vh=${vh})`).toBeGreaterThanOrEqual(vh - 2);
+    expect(
+      box!.y + box!.height,
+      `bottom nav bottom edge (=${box!.y + box!.height}, vh=${vh})`,
+    ).toBeGreaterThanOrEqual(vh - 2);
     const mainPad = await page
       .locator("main.bb-main")
       .first()

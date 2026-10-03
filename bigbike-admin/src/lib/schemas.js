@@ -296,7 +296,7 @@ export function createProductSchema(t, isCreate = false) {
               .optional(),
           }),
         )
-        .max(200, 'Biến thể tối đa 200 mục.')
+        .max(200, t('products.detail.choices.limit', { max: 200 }))
         .optional(),
       relatedProductIds: z
         .array(z.string())
@@ -845,7 +845,7 @@ export function createProductSchema(t, isCreate = false) {
         if (!v.name.trim()) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: 'Biến thể cần ít nhất một thuộc tính (Màu sắc, Kích cỡ...) để tự tạo tên.',
+            message: t('products.detail.choices.optionsRequired'),
             path: ['variants', i, 'options'],
           })
         }
@@ -873,8 +873,7 @@ export function createProductSchema(t, isCreate = false) {
         if (hasVariantGallery && !hasColor) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message:
-              'Gallery biến thể chỉ áp dụng theo Màu/Color. Hãy thêm thuộc tính màu hoặc dùng gallery chung của sản phẩm.',
+            message: t('products.detail.choices.colorGalleryOnly'),
             path: ['variants', i, 'gallery'],
           })
         }
@@ -1170,19 +1169,15 @@ export function createContentSchema(t, _isCreate, _normalizedType) {
     .object({
       slug: z.string(),
       title: z.string().max(255, t('content.detail.errTitleTooLong')),
-      excerpt: z.string().max(5000, t('content.detail.errExcerptTooLong')),
-      authorName: z
-        .string()
-        .max(
-          255,
-          t('content.detail.errAuthorTooLong', { defaultValue: 'Tên tác giả tối đa 255 ký tự.' }),
-        )
-        .optional(),
       body: z.string(),
-      bodyBlocks: z.array(z.any()).nullable().optional(),
+      bodyBlocks: z
+        .array(z.any())
+        .max(400, t('products.detail.blocks.limit', { max: 400 }))
+        .nullable()
+        .optional(),
       publishStatus: z.string(),
-      // Công tắc bài viết — boolean optional, không có validation đặc biệt.
       featured: z.boolean().optional(),
+      homeExperience: z.boolean().optional(),
       seoNoIndex: z.boolean().optional(),
       coverImageUrl: z.string().optional(),
       coverImageAlt: z.string().max(255, t('content.detail.errImageAltTooLong')).optional(),
@@ -1208,16 +1203,6 @@ export function createContentSchema(t, _isCreate, _normalizedType) {
             .object({
               slug: z.string().optional(),
               title: z.string().max(255, t('content.detail.errTitleTooLong')).optional(),
-              excerpt: z.string().max(5000, t('content.detail.errExcerptTooLong')).optional(),
-              authorName: z
-                .string()
-                .max(
-                  255,
-                  t('content.detail.errAuthorTooLong', {
-                    defaultValue: 'Tên tác giả tối đa 255 ký tự.',
-                  }),
-                )
-                .optional(),
               body: z.string().optional(),
               seoTitle: z.string().max(255, t('content.detail.errSeoTitleTooLong')).optional(),
               seoDescription: z

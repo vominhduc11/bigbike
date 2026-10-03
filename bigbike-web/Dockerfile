@@ -35,6 +35,13 @@ ENV NEXT_PUBLIC_ADMIN_ORIGIN=${NEXT_PUBLIC_ADMIN_ORIGIN}
 # compiled out of the client bundle as `undefined`. Empty default → no analytics script renders.
 ARG NEXT_PUBLIC_GA4_MEASUREMENT_ID=
 ENV NEXT_PUBLIC_GA4_MEASUREMENT_ID=${NEXT_PUBLIC_GA4_MEASUREMENT_ID}
+# Microsoft Clarity project id is also compiled into the browser bundle. Empty → no recorder.
+ARG NEXT_PUBLIC_CLARITY_PROJECT_ID=
+ENV NEXT_PUBLIC_CLARITY_PROJECT_ID=${NEXT_PUBLIC_CLARITY_PROJECT_ID}
+# Meta Pixel is public but must be present while Next builds the browser bundle. Empty → no
+# loader, no PageView and no Meta event queue.
+ARG NEXT_PUBLIC_META_PIXEL_ID=
+ENV NEXT_PUBLIC_META_PIXEL_ID=${NEXT_PUBLIC_META_PIXEL_ID}
 # Next 16 defaults `next build` to Turbopack, whose native bindings are unavailable
 # on this Alpine/musl (linux-x64) image — fall back to the Webpack builder.
 RUN --mount=type=cache,target=/app/.next/cache \

@@ -1,4 +1,5 @@
 import type { Product, ProductVariant } from "@/lib/contracts/public";
+import { normalizeAttributeName } from "@/lib/utils/variant-match";
 
 /** Only an exact, single variant id belonging to this product can select a purchasable row. */
 export function resolveLinkedVariant(
@@ -16,6 +17,16 @@ export function withProductVariant(path: string, variantId: string): string {
   return `${base}?${params.toString()}`;
 }
 
-export function variantOptions(variant?: ProductVariant): Record<string, string> {
-  return Object.fromEntries((variant?.options ?? []).map(({ name, value }) => [name, value]));
+export function variantOptions(
+  variant?: ProductVariant,
+  attributeNames: string[] = [],
+): Record<string, string> {
+  return Object.fromEntries(
+    (variant?.options ?? []).map(({ name, value }) => [
+      attributeNames.find(
+        (label) => normalizeAttributeName(label) === normalizeAttributeName(name),
+      ) ?? name,
+      value,
+    ]),
+  );
 }

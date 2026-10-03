@@ -14,7 +14,6 @@ final class ContentFieldApplier {
     public static String articleJson(ArticleEntity e) {
         return "{\"id\":\"" + e.getId() + "\",\"title\":\"" + esc(e.getTitle()) +
                "\",\"slug\":\"" + e.getSlug() + "\",\"publishStatus\":\"" + e.getPublishStatus() +
-               "\",\"excerpt\":\"" + esc(e.getExcerpt()) +
                "\",\"coverImageUrl\":\"" + esc(e.getCoverImageUrl()) + "\"}";
     }
 

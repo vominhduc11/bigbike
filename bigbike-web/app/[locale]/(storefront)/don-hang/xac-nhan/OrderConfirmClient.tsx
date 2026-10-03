@@ -62,10 +62,6 @@ export function OrderConfirmClient() {
         settingsRecord={settingsRecord}
         isLoading={canLookup && orderQuery.isLoading}
         hasError={orderQuery.isError}
-        transferStep={searchParams.get("step") === "bank-transfer"}
-        settingsLoading={settingsQuery.isLoading}
-        settingsError={settingsQuery.isError}
-        retrySettings={() => void settingsQuery.refetch()}
         retryOrder={() => void orderQuery.refetch()}
       />
     </>

@@ -10,6 +10,7 @@ import "swiper/css";
 import type { HomeVideo } from "@/lib/contracts/public";
 import { ArrowButton } from "./video-carousel/ArrowButton";
 import { VideoCard } from "./video-carousel/VideoCard";
+import { trackVideoOpen } from "@/lib/analytics";
 
 // Only mounted when a video is clicked (activeIndex !== null below) — dynamic import
 // keeps its code out of the initial homepage bundle instead of loading it upfront.
@@ -99,10 +100,22 @@ export function HomeVideoCarousel({ videos, surface = "dark", compact = false }:
     return () => window.removeEventListener("resize", handleResize);
   }, [syncViewportState, updateSnap]);
 
-  const handleOpen = useCallback((idx: number, trigger: HTMLElement) => {
-    triggerRef.current = trigger;
-    setActiveIndex(idx);
-  }, []);
+  const handleOpen = useCallback(
+    (idx: number, trigger: HTMLElement) => {
+      const video = videos[idx];
+      if (video) {
+        trackVideoOpen({
+          id: video.id,
+          title: video.title,
+          provider: video.youtubeId ? "youtube" : "upload",
+          placement: compact ? "product_video_section" : "homepage_video",
+        });
+      }
+      triggerRef.current = trigger;
+      setActiveIndex(idx);
+    },
+    [compact, videos],
+  );
 
   const handleClose = useCallback(() => {
     setActiveIndex(null);

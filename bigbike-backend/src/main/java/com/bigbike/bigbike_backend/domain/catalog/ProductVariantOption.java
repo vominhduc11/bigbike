@@ -12,6 +12,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * for the admin view (see {@code JpaCatalogReadRepository.toVariantOption}) and
  * omitted from the public storefront response via {@link JsonInclude}.
  *
+ * <p>{@code accessibilityLabel} is the inverse public-only projection for an
+ * English colour option. It never replaces {@code value}, which remains the
+ * stable selection/display text, and is consumed only by the storefront's
+ * screen-reader-only chip label.
+ *
  * <p>Colour variants render on the storefront from the variant's own gallery
  * image (see {@code VariantSelector.tsx}); there is no per-term colour swatch or
  * hex value.
@@ -19,9 +24,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public record ProductVariantOption(
         String name,
         String value,
-        @JsonInclude(JsonInclude.Include.NON_NULL) String attributeValueId
+        @JsonInclude(JsonInclude.Include.NON_NULL) String attributeValueId,
+        @JsonInclude(JsonInclude.Include.NON_NULL) String accessibilityLabel
 ) {
     public ProductVariantOption(String name, String value) {
-        this(name, value, null);
+        this(name, value, null, null);
+    }
+
+    public ProductVariantOption(String name, String value, String attributeValueId) {
+        this(name, value, attributeValueId, null);
     }
 }

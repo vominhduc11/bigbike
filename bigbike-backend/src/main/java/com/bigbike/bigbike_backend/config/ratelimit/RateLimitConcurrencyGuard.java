@@ -23,6 +23,8 @@ public class RateLimitConcurrencyGuard {
     private static final int MAX_ADMIN_MEDIA_GLOBAL = 10;
     private static final int MAX_ADMIN_IMPORT_GLOBAL = 1;
     private static final int MAX_ADMIN_EXPORT_GLOBAL = 3;
+    // Keep the existing Redis lease namespace so active imports remain mutually exclusive during rollout.
+    private static final String ADMIN_IMPORT_LEASE_NAMESPACE = "admin-import-commit";
     private static final Duration MEDIA_LEASE_TTL = Duration.ofMinutes(10);
     private static final Duration IMPORT_LEASE_TTL = Duration.ofMinutes(30);
     private static final Duration EXPORT_LEASE_TTL = Duration.ofMinutes(15);
@@ -55,7 +57,7 @@ public class RateLimitConcurrencyGuard {
         }
         if (properties.getStore() == RateLimitProperties.Store.REDIS) {
             return acquireRedis(
-                    "admin-media", RateLimitTier.ADMIN_MEDIA, accountId,
+                    "admin-media", "admin-media", accountId,
                     MAX_ADMIN_MEDIA_GLOBAL, MAX_ADMIN_MEDIA_PER_ACCOUNT, MEDIA_LEASE_TTL);
         }
         return acquireLocalMedia(accountId);
@@ -67,7 +69,7 @@ public class RateLimitConcurrencyGuard {
         }
         if (properties.getStore() == RateLimitProperties.Store.REDIS) {
             return acquireRedis(
-                    "admin-import", RateLimitTier.ADMIN_IMPORT_COMMIT, null,
+                    "admin-import", ADMIN_IMPORT_LEASE_NAMESPACE, null,
                     MAX_ADMIN_IMPORT_GLOBAL, MAX_ADMIN_IMPORT_GLOBAL, IMPORT_LEASE_TTL);
         }
         synchronized (lock) {
@@ -86,7 +88,7 @@ public class RateLimitConcurrencyGuard {
         }
         if (properties.getStore() == RateLimitProperties.Store.REDIS) {
             return acquireRedis(
-                    "admin-export", RateLimitTier.ADMIN_EXPORT, null,
+                    "admin-export", "admin-export", null,
                     MAX_ADMIN_EXPORT_GLOBAL, MAX_ADMIN_EXPORT_GLOBAL, EXPORT_LEASE_TTL);
         }
         synchronized (lock) {
@@ -101,16 +103,17 @@ public class RateLimitConcurrencyGuard {
 
     private Lease acquireRedis(
             String operation,
-            RateLimitTier tier,
+            String keyNamespace,
             UUID accountId,
             int globalLimit,
             int accountLimit,
             Duration ttl
     ) {
-        String globalKey = keyFactory.create(tier, RateLimitScope.GLOBAL, "global").storageKey() + ":concurrency";
+        String globalKey = keyFactory.createStorageKey(keyNamespace, RateLimitScope.GLOBAL, "global")
+                + ":concurrency";
         String accountKey = accountId == null
                 ? globalKey
-                : keyFactory.create(tier, RateLimitScope.ADMIN_ACCOUNT, accountId.toString()).storageKey()
+                : keyFactory.createStorageKey(keyNamespace, RateLimitScope.ADMIN_ACCOUNT, accountId.toString())
                         + ":concurrency";
         String leaseId = UUID.randomUUID().toString();
         try {

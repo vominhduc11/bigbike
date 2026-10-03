@@ -5,7 +5,10 @@ import type { Product } from "@/lib/contracts/public";
 import { PurchaseSection } from "./PurchaseSection";
 import { merchantVariants } from "@/__tests__/merchant/fixtures";
 
-const { localeState } = vi.hoisted(() => ({ localeState: { value: "vi" } }));
+const { localeState, addToCartMock } = vi.hoisted(() => ({
+  localeState: { value: "vi" },
+  addToCartMock: vi.fn(),
+}));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: { rating?: string; count?: number }) => {
@@ -21,7 +24,7 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("@/lib/cart-context", () => ({
-  useCart: () => ({ addToCart: vi.fn() }),
+  useCart: () => ({ addToCart: addToCartMock }),
 }));
 
 vi.mock("@/components/catalog/ProductGallery", () => ({
@@ -75,6 +78,7 @@ function renderSection(
 
 beforeEach(() => {
   localeState.value = "vi";
+  addToCartMock.mockReset();
   window.gtag = vi.fn();
 });
 
@@ -90,19 +94,12 @@ function viewedItems() {
 }
 
 describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_003", () => {
-  it("ratingCount >= 1 → hiển thị sao đúng trung bình + microdata aggregateRating", () => {
+  it("ratingCount >= 1 → hiển thị sao đúng trung bình, không tạo Product microdata trùng", () => {
     const { container } = renderSection(4.0, 3);
     const star = container.querySelector('[aria-label="4.0 sao, 3 đánh giá"]');
     expect(star).not.toBeNull();
-    const aggregate = container.querySelector('[itemtype="https://schema.org/AggregateRating"]');
-    expect(aggregate).not.toBeNull();
-    // reviewCount đi bằng <meta> để không in số lượt 2 lần cạnh nhãn "(3)".
-    expect(aggregate!.querySelector('meta[itemprop="reviewCount"]')!.getAttribute("content")).toBe(
-      "3",
-    );
-    expect(aggregate!.querySelector('meta[itemprop="ratingValue"]')!.getAttribute("content")).toBe(
-      "4.0",
-    );
+    expect(container.querySelector('[itemtype="https://schema.org/Product"]')).toBeNull();
+    expect(container.querySelector('[itemtype="https://schema.org/AggregateRating"]')).toBeNull();
     expect(screen.queryByText("4.0")).toBeNull();
     expect(window.gtag).not.toHaveBeenCalled();
     expect(screen.getByText("(3)")).toBeInTheDocument();
@@ -111,6 +108,7 @@ describe("PurchaseSection — buy-box PDP, hiển thị rating theo REVIEW_RULE_
   it("0 review → hiển thị sao trung tính và không xuất microdata", () => {
     const { container } = renderSection(null, null);
     expect(container.querySelector('[aria-label="Chưa có đánh giá, 0 đánh giá"]')).not.toBeNull();
+    expect(container.querySelector('[itemtype="https://schema.org/Product"]')).toBeNull();
     expect(container.querySelector('[itemtype="https://schema.org/AggregateRating"]')).toBeNull();
     expect(screen.getByText("(0)")).toBeInTheDocument();
     expect(screen.queryByText(/noReviews/)).toBeNull();
@@ -169,6 +167,56 @@ describe("PurchaseSection — liên kết GMC chọn sẵn biến thể", () => 
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it.each(["Màu sắc", "color"])(
+    "shows one color group and resolves purchases with %s / màu sắc labels",
+    (label) => {
+      const product = merchantVariants();
+      product.variants![0].options![0].name = label;
+      product.variants![1].options![0].name = "màu sắc";
+      renderWithQueryClient(
+        <PurchaseSection product={product} gallery={[]} rating={null} ratingCount={null} />,
+      );
+      expect(screen.getAllByRole("radiogroup")).toHaveLength(2);
+      fireEvent.click(screen.getByRole("radio", { name: "Đỏ" }));
+      fireEvent.click(screen.getByRole("radio", { name: "L" }));
+      expect(screen.getByText("stockOut")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /addToCart$/ })).toBeDisabled();
+      fireEvent.click(screen.getByRole("radio", { name: "Xanh" }));
+      fireEvent.click(screen.getByRole("radio", { name: "M" }));
+      expect(screen.getByRole("radio", { name: "Đỏ" })).toHaveAttribute("aria-checked", "false");
+      expect(screen.getByRole("button", { name: /addToCart$/ })).toBeEnabled();
+      expect(screen.getByText("1.100.000 ₫")).toBeInTheDocument();
+    },
+  );
+
+  it.each(["Màu sắc", "color"])(
+    "keeps linked selections in one group with %s / màu sắc labels",
+    (label) => {
+      const product = merchantVariants();
+      product.variants![0].options![0].name = label;
+      product.variants![1].options![0].name = "màu sắc";
+      renderWithQueryClient(
+        <PurchaseSection
+          product={product}
+          initialVariantId="variant-red"
+          gallery={[]}
+          rating={null}
+          ratingCount={null}
+        />,
+      );
+      expect(screen.getAllByRole("radiogroup")).toHaveLength(2);
+      expect(screen.getByRole("radio", { name: "Đỏ" })).toHaveAttribute("aria-checked", "true");
+      fireEvent.click(screen.getByRole("radio", { name: "Xanh" }));
+      fireEvent.click(screen.getByRole("radio", { name: "M" }));
+      expect(screen.getByRole("radio", { name: "Đỏ" })).toHaveAttribute("aria-checked", "false");
+      expect(screen.getByRole("button", { name: /addToCart$/ })).toBeEnabled();
+      expect(viewedItems()).toEqual(["E2E_GMC_RED_L", "E2E_GMC_BLUE_M"]);
+      fireEvent.click(screen.getByRole("radio", { name: "Xanh" }));
+      expect(screen.getByRole("radio", { name: "Xanh" })).toHaveAttribute("aria-checked", "false");
+      expect(screen.getByRole("button", { name: /addToCart$/ })).toBeDisabled();
+    },
+  );
+
   it.each(["vi", "en"])("tracks the GMC variant and completed selection changes (%s)", (locale) => {
     localeState.value = locale;
     renderWithQueryClient(
@@ -223,6 +271,82 @@ describe("PurchaseSection — liên kết GMC chọn sẵn biến thể", () => 
     expect(screen.getByText("stockOut")).toBeInTheDocument();
     expect(viewedItems()).toEqual(["E2E_GMC_RED_L"]);
   });
+});
+
+describe("PurchaseSection — Size và Kích cỡ là một nhóm", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([
+    ["vi", undefined],
+    ["en", undefined],
+    ["vi", "size-bxl"],
+    ["en", "size-bxl"],
+  ] as const)(
+    "switches sizes and adds the exact variant (%s, linked=%s)",
+    async (locale, linked) => {
+      localeState.value = locale;
+      const product = makeProduct({
+        variants: ["XL", "BXL", "XXL"].map((size, index) => ({
+          id: `size-${size.toLowerCase()}`,
+          name: size,
+          sku: `E2E_SIZE_${size}`,
+          options: [{ name: size === "BXL" ? "Kích cỡ" : "Size", value: size }],
+          stockState: "IN_STOCK",
+          isAvailable: true,
+          price: { retailPrice: (index + 1) * 1000000, currency: "VND" },
+        })),
+      });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({
+            pricing: product.price,
+            stock: { stockState: "IN_STOCK" },
+            variants: product.variants,
+          }),
+        }),
+      );
+      const { queryClient } = renderWithQueryClient(
+        <PurchaseSection
+          product={product}
+          initialVariantId={linked}
+          gallery={[]}
+          rating={null}
+          ratingCount={null}
+        />,
+      );
+      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+      expect(screen.getAllByRole("radiogroup")).toHaveLength(1);
+      expect(screen.getAllByRole("radio")).toHaveLength(3);
+      const add = screen.getByRole("button", { name: /addToCart$/ });
+      if (linked) {
+        expect(screen.getByRole("radio", { name: "BXL" })).toHaveAttribute("aria-checked", "true");
+        expect(add).toBeEnabled();
+      } else {
+        expect(add).toBeDisabled();
+      }
+      for (const size of ["XXL", "BXL", "XL"]) {
+        fireEvent.click(screen.getByRole("radio", { name: size }));
+        expect(screen.getAllByRole("radio", { checked: true })).toHaveLength(1);
+        expect(screen.getByRole("radio", { name: size })).toHaveAttribute("aria-checked", "true");
+        expect(add).toBeEnabled();
+        fireEvent.click(add);
+        await waitFor(() =>
+          expect(addToCartMock).toHaveBeenLastCalledWith(
+            product.id,
+            1,
+            `size-${size.toLowerCase()}`,
+          ),
+        );
+        await waitFor(() => expect(add).toBeEnabled());
+      }
+      expect(screen.getByText("1.000.000 ₫")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("radio", { name: "XL" }));
+      expect(screen.queryAllByRole("radio", { checked: true })).toHaveLength(0);
+      expect(add).toBeDisabled();
+    },
+  );
 });
 
 describe("PurchaseSection — fallback nội dung tiếng Việt", () => {

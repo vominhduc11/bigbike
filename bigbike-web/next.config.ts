@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 import createNextIntlPlugin from "next-intl/plugin";
 import withBundleAnalyzerFactory from "@next/bundle-analyzer";
+import { BIGBIKE_DEVICE_SIZES, BIGBIKE_IMAGE_SIZES } from "./lib/image-widths";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 // ANALYZE=true npm run analyze — opens an interactive treemap of the client/server
@@ -225,16 +226,10 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    // Keep fixed storefront slots close to the smallest useful source at DPR 1/2;
-    // category thumbnails also retain exact 1×–4× candidates for their smaller frames.
-    imageSizes: [
-      16, 32, 48, 64, 72, 80, 96, 120, 128, 149, 150, 160, 180, 192, 200, 240, 256, 278, 288, 298,
-      300, 320, 384,
-    ],
-    deviceSizes: [
-      360, 375, 390, 400, 430, 451, 512, 640, 750, 768, 828, 902, 1024, 1080, 1200, 1280, 1440,
-      1536, 1920, 2048, 2560, 3840,
-    ],
+    // Keep the serialized srcset compact while preserving exact 1×–4× category icon sources
+    // and sufficient 2×/3× sources for product cards, PDP media and brand marks.
+    imageSizes: [...BIGBIKE_IMAGE_SIZES],
+    deviceSizes: [...BIGBIKE_DEVICE_SIZES],
     remotePatterns: [
       // cdn.bigbike.vn is legacy (old WordPress host, not a real CDN — see
       // LEGACY_UPLOADS_BASE comment above). Kept as an allowlist entry so next/image
@@ -279,18 +274,28 @@ const nextConfig: NextConfig = {
         hostname: "platform-lookaside.fbsbx.com",
         pathname: "/**",
       },
-      // BigBike Assistant avatar hosted on the owner-provided Cloudinary asset.
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-        pathname: "/daohufjec/image/upload/**",
-      },
       // Dynamic: MinIO on any network IP configured via BIGBIKE_LEGACY_UPLOADS_BASE
       ...(dynamicMediaPattern ? [dynamicMediaPattern] : []),
     ],
   },
   async redirects() {
     return [
+      // Giao hàng thuộc trang Cung cấp dịch vụ/đổi trả/hoàn tiền (POLICY_PAGE_RULE_001).
+      {
+        source: "/chinh-sach/chinh-sach-giao-hang",
+        destination: "/chinh-sach/chinh-sach-doi-tra-hang/",
+        statusCode: 301,
+      },
+      {
+        source: "/en/policy/delivery-policy",
+        destination: "/en/policy/return-policy/",
+        statusCode: 301,
+      },
+      {
+        source: "/en/chinh-sach/chinh-sach-giao-hang",
+        destination: "/en/policy/return-policy/",
+        statusCode: 301,
+      },
       // Canonical Vietnamese catalog URLs (CATEGORY_RULE_003).
       // Use an explicit statusCode because Next's `permanent: true` emits 308, not 301.
       {
@@ -515,13 +520,13 @@ const nextConfig: NextConfig = {
         // YouTube IFrame API (www.youtube.com/iframe_api + widget từ s.ytimg.com) để điều khiển
         // play/pause/ended của video sản phẩm — KHÔNG có 2 origin này thì script bị CSP chặn,
         // dải ảnh không biết video đang chạy nên vẫn tự nhảy slide. frame-src đã cho phép nhúng iframe.
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.youtube.com https://s.ytimg.com",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com",
         "worker-src 'self' blob:",
         "style-src 'self' 'unsafe-inline'",
-        `img-src 'self' data: blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
+        `img-src 'self' data: blob: https: https://*.clarity.ms https://c.bing.com${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
         `media-src 'self' blob: https:${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
         "font-src 'self' data:",
-        `connect-src 'self' https: ${API_ORIGIN} https://www.google-analytics.com`,
+        `connect-src 'self' https: ${API_ORIGIN} https://www.google-analytics.com https://*.clarity.ms https://c.bing.com`,
         "frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com https://www.tiktok.com https://www.facebook.com",
         `frame-ancestors ${frameAncestors}`,
         "base-uri 'self'",

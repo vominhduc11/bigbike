@@ -7,6 +7,7 @@ import { sanitizeRichHtml } from "@/lib/utils/html";
 type StaticSidebarLayoutProps = {
   sidebarItems: PolicySidebarItem[];
   sidebarEmptyLabel?: string;
+  compactSidebar?: boolean;
   body?: string | null;
   bodyNode?: ReactNode;
   children?: ReactNode;
@@ -15,13 +16,14 @@ type StaticSidebarLayoutProps = {
 export function StaticSidebarLayout({
   sidebarItems,
   sidebarEmptyLabel,
+  compactSidebar,
   body,
   bodyNode,
   children,
 }: StaticSidebarLayoutProps) {
   return (
     <Container className="grid grid-cols-1 gap-8 md:grid-cols-12">
-      <PolicySidebar items={sidebarItems} emptyLabel={sidebarEmptyLabel} />
+      <PolicySidebar items={sidebarItems} emptyLabel={sidebarEmptyLabel} compact={compactSidebar} />
       <div className="min-w-0 md:col-span-9">
         {bodyNode != null ? (
           bodyNode

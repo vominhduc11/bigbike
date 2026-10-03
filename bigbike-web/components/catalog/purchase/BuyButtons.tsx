@@ -87,6 +87,8 @@ export function BuyButtons({
               href={zaloUrl ? zaloHref(zaloUrl) : "#"}
               target={zaloUrl ? "_blank" : undefined}
               rel={zaloUrl ? "noopener noreferrer" : undefined}
+              data-analytics-contact-channel={zaloUrl ? "zalo" : undefined}
+              data-analytics-location="product_purchase_box"
             >
               <ZaloIcon className="size-5 shrink-0" />
               {tb("mobileZaloConsult")}

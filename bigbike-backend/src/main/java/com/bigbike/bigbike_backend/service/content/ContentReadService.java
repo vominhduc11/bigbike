@@ -30,9 +30,8 @@ public class ContentReadService {
         Sort springSort = toSpringSort(sortSpec);
         org.springframework.data.domain.Pageable pageable = PageRequest.of(page - 1, size, springSort);
 
-        // ?featured=true restricts to featured articles; null/false keeps the existing behavior (no filter).
+        // Only true activates either manual curation filter; omitted/false keeps the default list.
         Boolean featuredFilter = Boolean.TRUE.equals(featured) ? Boolean.TRUE : null;
-        // ?homeExperience=true restricts to homepage-experience picks; null/false keeps no filter.
         Boolean homeExperienceFilter = Boolean.TRUE.equals(homeExperience) ? Boolean.TRUE : null;
 
         org.springframework.data.domain.Page<Article> result =

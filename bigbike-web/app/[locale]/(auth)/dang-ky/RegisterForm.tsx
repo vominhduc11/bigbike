@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormRootError } from "@/components/ui/FormRootError";
 import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
+import { clearPendingAuthentication, trackAuthentication } from "@/lib/analytics";
 
 type RegisterField = keyof RegisterFormValues;
 const REGISTER_FIELDS: RegisterField[] = [
@@ -92,6 +93,7 @@ export function RegisterForm({
   }
 
   async function onSubmit(values: RegisterFormValues) {
+    clearPendingAuthentication();
     clearErrors("root");
     setSubmittedInvalidField(null);
     try {
@@ -105,6 +107,7 @@ export function RegisterForm({
       );
       markCustomerAuthenticated();
       await refreshAuth();
+      trackAuthentication("sign_up", "password");
       setConfirmedEmail(values.email);
       setRegistered(true);
     } catch (error) {
@@ -130,7 +133,7 @@ export function RegisterForm({
 
   if (registered) {
     return (
-      <div className="text-center">
+      <div className="text-center" data-clarity-mask="true">
         <h2 className="mb-3 font-body text-a2-page font-bold">{t("successHeading")}</h2>
         {confirmedEmail ? (
           <p className="mb-8 text-a4-content">
@@ -149,7 +152,7 @@ export function RegisterForm({
   }
 
   return (
-    <div>
+    <div data-clarity-mask="true">
       <FormRootError
         message={errors.root?.message ?? (socialErrorKey ? tSocial(socialErrorKey) : undefined)}
       />

@@ -14,7 +14,8 @@
 | VN address data | Dữ liệu hai cấp tỉnh/thành → phường/xã có ở cả API đọc backend và bundle web. Storefront dùng bundle `VN_PROVINCES`; hiện không có caller nội bộ cho API. | `CONFIRMED_FROM_CODE` | `VnAddressController.java`, `vn-address.json`, `vn-address-data.ts`, `VnAddressFields.tsx` |
 | Google Gemini (shared backend credential) | Review moderation and Trợ lý BigBike share one backend-only credential but remain separate features. The assistant is fixed to Gemini 3.7 Flash with same-model retries; review moderation keeps its independent model/switch/failure behavior. **Not** a translation path. | `OWNER_CONFIRMED_2026-08-29` | `AiReviewModerationClient.java`, `AiChatClient.java`, `CHAT_RULE_019`, `REVIEW_RULE_012`/`013` |
 | Synology NAS (offsite backup) | Sole offsite copy of sales data, media and operational config. Reached over the existing Tailscale tailnet — **no new Internet-facing port**. NFS v4.0 mount at `/mnt/bigbike-nas`, all writes confined to the `vps-backups/` subdirectory. Hourly database dumps, daily media and config archives, SHA-256 verified by read-back. | `OWNER_CONFIRMED_2026-09-06` | `scripts/ops/backup-to-nas.sh`, `/etc/cron.d/bigbike-backup`, [BACKUP_RESTORE_RUNBOOK.md](BACKUP_RESTORE_RUNBOOK.md) |
-| Google Analytics 4 (storefront) | `gtag.js` loaded once from the storefront root layout with measurement id `NEXT_PUBLIC_GA4_MEASUREMENT_ID`. Ten e-commerce events plus GA4's own `page_view`. Google Tag Manager was removed 2026-09-06 — GA4 is wired directly and there must be exactly one measurement install in the repo. Blank id → the scripts are not rendered at all. | `OWNER_CONFIRMED_2026-09-06` | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `bigbike-web/Dockerfile`, `docker-compose.yaml` |
+| Google Analytics 4 (storefront) | `gtag.js` loaded once from the storefront root layout with measurement id `NEXT_PUBLIC_GA4_MEASUREMENT_ID`. GA4 recommended commerce, promotion and authentication events are supplemented by the business events documented below. Google Tag Manager was removed 2026-09-06 — GA4 is wired directly and there must be exactly one measurement install in the repo. Blank id → the scripts are not rendered at all. | `OWNER_CONFIRMED_2026-09-06` | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `bigbike-web/Dockerfile`, `docker-compose.yaml` |
+| Meta Pixel (storefront) | The shop's existing Pixel `460465848002810` is loaded once from the storefront root layout when `NEXT_PUBLIC_META_PIXEL_ID` is set. It shares the central event helper with GA4; a blank value loads nothing. No Google Tag Manager, Cloudflare integration, second browser install or Conversions API path exists. | `OWNER_CONFIRMED_2026-09-12` | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `bigbike-web/next.config.ts`, `bigbike-web/Dockerfile`, `docker-compose.yaml` |
 
 ### Internal notification recipient
 
@@ -124,6 +125,9 @@ The master switch and the four category toggles are **settings**, not env — se
 
 ## Trợ lý BigBike (Google Gemini)
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 | Aspect | Contract |
 |---|---|
 | Client/model | Plain Spring `RestClient` with `x-goog-api-key`. Sales assistant is always `gemini-3.7-flash` from server configuration; no DB setting, model discovery, price registry or fallback model. |
@@ -143,8 +147,8 @@ Review moderation remains a separate Google-Gemini client with its own model, ti
 ## Homepage YouTube Video Feed
 
 `HOME_VIDEO_RULE_001`–`003` dùng duy nhất site setting `youtube_url`. Không có API key,
-biến môi trường hoặc hạ tầng mới; TikTok/Facebook không có client, placeholder hay nhánh
-dự phòng trong luồng tự động.
+biến môi trường hoặc hạ tầng mới; TikTok/Facebook không có **video-feed** client, placeholder hay
+nhánh dự phòng trong luồng tự động. Điều này không liên quan đến Meta Pixel đo lường storefront.
 
 1. Scheduler chạy `0 10 4 * * *`, zone `Asia/Ho_Chi_Minh`.
 2. URL `/channel/UC...` tạo thẳng feed `https://www.youtube.com/feeds/videos.xml?channel_id=...`;
@@ -312,15 +316,15 @@ Evidence:
 - `RateLimitingFilter.java`
 - `CustomerCsrfFilter.java`
 
-## Payment — no automatic gateway
+## Payment — COD only, no automatic gateway
 
-New storefront checkout accepts `COD` or `BANK_TRANSFER`. An omitted `paymentMethod` is normalised to `COD`; any other explicit code, including legacy `BACS`, is rejected.
+New storefront checkout accepts `COD` only. An omitted `paymentMethod` is normalized to `COD`; any
+explicit non-COD value is rejected before an order is created. Existing `BANK_TRANSFER`, `BACS`,
+`CHECK` and `CARD` rows remain readable as historical accounting data, without a new confirmation
+command or bank-account settings.
 
-There is **no automatic payment gateway integration**. Both methods are reconciled manually by admin:
-
-- `COD` — cash collected on delivery; admin marks the order paid after the courier hands over the money.
-- `BANK_TRANSFER` — after order creation, show existing public payment settings, persisted total and BIGBIKE {orderNumber}; Continue/Pay later only navigate. Staff verify the bank externally and confirm receipt in admin before delivery completion (PAY_RULE_002). No bank/provider/QR/webhook integration is added.
-- Legacy `BACS` — no longer offered or accepted for new storefront orders; existing BACS orders remain readable and may still be reconciled manually through payment records/`paidAmount`.
+`COD` is collected on delivery and the shop confirms the ordinary order lifecycle. There is no
+automatic payment gateway, redirect, provider webhook or payment receipt workflow.
 
 No redirect, no provider webhook, no `paymentRedirectUrl`. The Alepay/ZaloPay online-gateway plan was dropped — those method codes are no longer accepted at checkout.
 
@@ -347,8 +351,10 @@ manual flow simpler and conflict-free. No new Maven dependency is required.
   (HMAC-SHA256 of the access token keyed by the app secret) so a stolen token cannot be replayed.
   ⚠️ Facebook requires **App Review + Business Verification** before the `email` scope works
   for the public; in Development mode only app admins/testers/developers can log in.
-  ⚠️ Facebook may return **no email** (user revoked the permission) — the callback then
-  creates an account without email or fails gracefully; it cannot link to an existing account.
+  ⚠️ Facebook may return **no email** (user revoked the permission, or a phone-only account) —
+  since 2026-09-26 the callback refuses the sign-in with `oauth_email_required`
+  (BUSINESS_RULES.md CUSTOMER_RULE_013); no account or session is created. Same for Google when
+  `email_verified` is not true.
   A repeat login by the same linked customer **does** backfill the email later if the provider
   starts supplying a verified one (e.g. after App Review approval) and no other customer already
   owns that address — see `CustomerOAuthService.backfillEmailIfMissing`.
@@ -411,17 +417,58 @@ double every number the property reports, revenue included.
 | Property | Measurement id `G-REZM4NT0CS` — the shop's existing GA4 property. It carries four years of history and must never be replaced with a freshly created one. |
 | Load point | `bigbike-web/app/[locale]/layout.tsx` only. An inline `next/script` (`id="ga4-init"`, `strategy="afterInteractive"`) defines `window.dataLayer` + `window.gtag` and calls `gtag('js')` / `gtag('config')`; a second `next/script` pulls `https://www.googletagmanager.com/gtag/js?id=…`. Both render only when the id is set. |
 | Page views | GA4's own Enhanced Measurement ("page changes based on browser history events") handles client-side navigation. The storefront fires **no** manual `page_view` — doing so would double-count unless the shop owner disabled that GA4 setting by hand. |
-| Event helper | `bigbike-web/lib/analytics.ts` is the single choke point. It calls `window.gtag("event", …)` and no-ops when `gtag` is absent (server render, or id not configured). No component talks to `gtag` directly. |
-| Events | `view_item_list`, `select_item`, `view_item`, `add_to_cart`, `remove_from_cart`, `view_cart`, `begin_checkout`, `add_shipping_info`, `add_payment_info`, `purchase`. |
+| Event helper | `bigbike-web/lib/analytics.ts` is the single choke point. It calls `window.gtag("event", …)` and no-ops when `gtag` is absent (server render, or id not configured). No component talks directly to `gtag`, `fbq` or Clarity. |
+| Standard events | `view_item_list`, `select_item`, `view_item`, `add_to_cart`, `remove_from_cart`, `view_cart`, `begin_checkout`, `add_shipping_info`, `add_payment_info`, `purchase`, `refund`, `select_promotion`, `login`, `sign_up`, `search`. `add_payment_info` means the customer confirmed COD; no transfer option exists. `refund` is sent by the backend outbox on cancellation, not by a browser component. |
+| Business events | `chat_open`, `contact_click`, `catalog_filter`, `size_guide_use`, `review_submit`, `video_open`, `scroll_depth`, `view_content_section`. Custom names are used only where GA4 has no recommended event matching the action. |
 | `add_shipping_info` | The storefront has no carrier chooser — shipping inside the system is always free and any real fee is settled with the customer off-platform. The event is emitted once per cart with a fixed `shipping_tier`, so GA4's ordered checkout funnel stays complete. |
 | Money | `currency` is always `"VND"` and is present on every event that carries a value. Prices are integers (`Math.round`); VND has no minor unit, so values are never scaled by 100. Formatted strings must never be sent. |
 | Item ids | `item_id` is the selling **variant SKU**, matching the owner's verified Merchant Center example `VENTOLADY-NUXS` (LS2 Vento, women, XS). Products without variants use their product SKU. All ten events use the shared item mapper; variant identity must not change to a parent SKU at purchase. Existing missing-SKU fallbacks remain compatibility-only and are not claimed to match Merchant Center. Before 2026-09-06 the internal UUID was sent instead, so product-level reports do not join across that date. |
 | Unselected catalog items | A product card or newly opened PDP represents one variant at the displayed product price, preferring an available variant when prices tie; if no variant matches that price, use the first available variant, then the first variant. Listing and click events retain the product card's list index. This analytics representative does not preselect the customer's size/color or change the UI. The PDP emits a new `view_item` when the customer finishes selecting a different variant; incomplete selections and price/stock polling do not create extra views. Therefore a purchase of a different size has its own variant view, while the earlier generic card impression belongs to its representative variant. |
 | `purchase` | `transaction_id` is the real `orderNumber`, never a timestamp or random value, and fires **once** per order — guarded by an in-memory latch plus a `sessionStorage` key on the order id. |
+| `refund` | For orders placed on/after the verified GA4 production cutover `2026-09-06 00:00 Asia/Ho_Chi_Minh`, the first successful `PENDING|PROCESSING → CANCELLED` transition inserts one row in `ga4_event_outbox` inside the cancellation transaction. Earlier orders are ineligible so revenue that this implementation never collected cannot be subtracted. A backend dispatcher commits the row as `SENDING` before posting its stored, PII-free snapshot through GA4 Measurement Protocol. The unique `(order_id,event_name)` key prevents customer/admin repeats from creating a second business event. Failed or uncertain sends are terminal and are not automatically retried, because Measurement Protocol says not to retry the same request and GA4 documents transaction-id de-duplication for purchases, not refunds. `transaction_id` exactly matches `purchase`; this corrects GA4 revenue only and does not perform a financial refund. |
+| Intent and content | Contact clicks record `phone|zalo|messenger`, placement, and public product context when present. Catalog filters record only brand/size/price selections after their matching result set succeeds. Standard `search` records normalized `search_term`, integer `result_count` and `search_surface=header_quick|results_page`; header count means returned product suggestions (not articles), while results-page count means total matching products. One query may therefore produce one event on each surface. Product pages record custom scroll milestones at 10/25/50/75/90/100 percent and first reach of `description`, `specifications`, `video`, `reviews`, and `commitments`; session storage de-duplicates each path/milestone or path/section across reloads. The existing GA4 Enhanced Measurement 90-percent event stays enabled. |
+| Successful actions only | Login/sign-up fire after authentication succeeds; review after the API accepts it; size-guide use after a result is calculated; video/promotion/contact/chat after the requested UI action opens or navigation begins. Header search fires only for the exact settled, successful suggestion response (including zero products); direct search fires only after its result request succeeds. Loading, stale, failed and render-only states emit nothing. Initial URL filters, failed requests, render/refetch, and reload do not synthesize conversion events. |
+| Authenticated identity | After authentication the shared runtime sets GA4 `user_id` and Clarity custom id to `CustomerProfile.id` only. On logout it clears GA4 identity. Name, email, phone, address, order key and friendly-name aliases are forbidden. The existing GA4 property's Reporting identity must be `Blended` or `Observed` so User-ID participates in cross-device de-duplication; never register raw `user_id` as a custom definition. |
 | Item metadata | Catalog events retain the available brand/category. Cart and order events also carry `item_brand` and `item_category` from the response's current catalog metadata, and `item_variant` from the line's existing `variantName`. Blank or missing metadata is omitted, never invented. The metadata is available to both storefront languages. |
 | Merchant Center verification | The owner confirmed that Merchant Center is connected, has received 1,172 item IDs, and uses one ID per variant, with `VENTOLADY-NUXS` as the verified example. The existing `/google-merchant.xml` feed follows `GMC_RULE_003`: variant SKU for variants, product SKU for simple products. Keep that feed and its variant links unchanged. A valid GMC variant link determines the PDP's first `view_item`, including out-of-stock variants. |
-| Privacy | GA4 receives order number, SKU, product name, brand, category, variant description, quantity and price, plus the documented event/list context. It must never receive customer name, email, phone, address, or the order lookup `orderKey`. |
+| Privacy | GA4 receives internal customer id (only while authenticated), order number, SKU, product name, brand, category, variant description, quantity and price, plus the documented action/list/section/search context. Search terms are trimmed, internal whitespace is collapsed and the length is capped at 100 characters; an obvious email, phone number or opaque token is replaced in full with `[redacted]`. GA4 must never receive customer name, email, phone, address, chat/review text, head measurement, or the order lookup `orderKey`. |
 | CSP | No change required. `next.config.ts` already allows `https://www.googletagmanager.com` in `script-src` (which is where `gtag.js` is served from) and `https://www.google-analytics.com` in `connect-src`. |
+
+Before production rollout, create these **event-scoped custom definitions in the existing GA4
+property**. Custom definitions do not install another tag and must be created before collection
+because GA4 does not populate them retroactively:
+
+| GA4 custom definition | Event parameter | Type | Business use |
+|---|---|---|---|
+| Contact channel | `contact_channel` | Dimension | Compare phone, Zalo and Messenger clicks. |
+| Action placement | `placement` | Dimension | Compare product page, mobile bar, assistant and other placements. |
+| Product context id | `product_id` | Dimension | Attribute contact/video/review/size intent to the product being viewed. |
+| Product context name | `product_name` | Dimension | Human-readable companion to product context id. |
+| Content section | `section_name` | Dimension | Reach rate for description, specifications, video, reviews and commitments. |
+| Catalog filter type | `filter_type` | Dimension | Split brand, size and price demand. |
+| Catalog filter value | `filter_value` | Dimension | Identify the exact brand, size or price range requested. |
+| Search surface | `search_surface` | Dimension | Compare demand observed in header suggestions with direct result pages. |
+| Size result | `result_size` | Dimension | See which helmet sizes the guide recommends. |
+| Video id | `video_id` | Dimension | Identify opened videos. |
+| Video provider | `video_provider` | Dimension | Compare YouTube, uploaded and legacy providers. |
+| Scroll percent | `percent_scrolled` | Metric (standard integer) | Build 10/25/50/75/90/100 reach rates. |
+| Result count | `result_count` | Metric (standard integer) | Distinguish filters/searches that return many, few or no products. |
+| Review rating | `rating` | Metric (standard integer) | Aggregate submitted review intent by star rating. |
+| Review photo count | `photo_count` | Metric (standard integer) | Measure use of review photos. |
+
+Recommended GA4 Explorations join event name with these definitions; no second script, tag or
+container is permitted. Product commerce reporting continues to use GA4's recommended `items`
+fields (`item_id`, `item_name`, `item_brand`, `item_category`, `item_variant`) rather than custom
+copies.
+
+Before production verification, the existing web stream's **Redact data** setting must have email
+redaction enabled and URL-query redaction for the case-sensitive parameters `key`, `token`,
+`tiep`, `s` and `q`. These cover the order lookup secret, one-time authentication tokens, encoded
+return paths and search terms embedded in page URLs. Preview each parameter in GA4's redaction
+tester, then confirm DebugView contains the
+redacted value rather than the original. This is defense in depth for automatic Enhanced
+Measurement URL metadata; the application's explicit business-event parameters remain PII-free
+independently.
 
 Validation scope (2026-09-07): this change was developed and checked on the local machine.
 Local catalog records may differ from VPS data; local checks do not establish the current VPS
@@ -433,8 +480,11 @@ and the example above are owner-reported Merchant Center evidence.
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
 | `NEXT_PUBLIC_GA4_MEASUREMENT_ID` | Yes, to enable measurement | *(empty)* | GA4 measurement id, shape `G-XXXXXXXXXX`. Production: `G-REZM4NT0CS`. Leave empty on staging/local so test traffic never pollutes the property. Validated at build time by `bigbike-web/env.ts`; a malformed value fails the build rather than reaching the browser. |
+| `BIGBIKE_GA4_API_SECRET` | Yes, to dispatch cancellation corrections | *(empty)* | Server-only Measurement Protocol API secret for the same GA4 web stream. Never expose it as `NEXT_PUBLIC_*`. Blank keeps outbox rows pending and sends no network request. |
+| `NEXT_PUBLIC_META_PIXEL_ID` | Yes, to enable Meta measurement | *(empty)* | The approved existing Pixel only: `460465848002810`. A blank value renders no Meta script, image fallback or browser event. `bigbike-web/env.ts` rejects any other non-empty value at build time so a new or wrong Pixel cannot silently replace its historical audiences. |
+| `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Yes, to enable recordings | *(empty)* | Public Clarity project id. Blank renders no Clarity script, which is intentional locally/staging. Validated at build time. |
 
-**This variable must be declared in three places, not two.** Unlike a backend
+**Each public variable must be declared in three places, not two.** Unlike a backend
 variable, a `NEXT_PUBLIC_*` value is compiled into the browser bundle by
 `next build`, so it needs:
 
@@ -447,12 +497,108 @@ Declaring it only under `environment:` is one half of the defect that kept the
 previous Google Tag Manager install silent; the other half was that
 `NEXT_PUBLIC_GTM_ID` was left blank in every env file. Both were confirmed inside
 the running container on 2026-09-06.
-**Changing this value therefore requires rebuilding the web image — a restart is
-not enough.** See `DEPLOYMENT_GUIDE.md` §"Storefront analytics (Google Analytics 4)".
+**Changing any public measurement value therefore requires rebuilding the web image — a restart is
+not enough.** See `DEPLOYMENT_GUIDE.md` §"Storefront analytics (GA4, Meta Pixel and Microsoft Clarity)".
 
 **On the VPS, always `docker compose --env-file .env.vps …`.** Keep
 `.env.example`, `.env.vps.example` and `bigbike-web/.env.example` in step when
 this contract changes; never commit a populated `.env` / `.env.vps`.
+
+### Backend cancellation correction
+
+The backend uses the same `NEXT_PUBLIC_GA4_MEASUREMENT_ID` only as the destination stream id;
+`BIGBIKE_GA4_API_SECRET` stays server-side. Before a successful checkout, the storefront asks the
+existing Google tag for its pseudonymous `client_id` and sends that value with the order request.
+The order stores it only when it has Google's documented numeric-dot-numeric shape. The outbox
+reuses that id to associate a later cancellation with the original browser; old orders or browsers
+where GA4 is blocked use one shared non-customer fallback rather than inventing one new user per
+cancelled order. The JSON snapshot may also contain the internal customer UUID as `user_id`, plus
+order number, currency/value and item SKU/name/variant/quantity/price. It never stores
+contact/shipping data. Orders placed before `2026-09-06 00:00 Asia/Ho_Chi_Minh`, when the owner
+confirmed production GA4 collection began, are not enqueued if cancelled later.
+The dispatcher commits a due row as `SENDING` before it sends `refund`, then marks a successful
+2xx delivery `SENT`. HTTP rejection, network uncertainty or any unexpected delivery failure is
+terminal `FAILED`; a process interruption can leave `SENDING`. Neither state is automatically
+resent. Operations must compare that order/transaction id in GA4 before deciding any manual
+reconciliation, because an HTTP response can be lost after Google accepted the request. Disabled
+configuration is a safe no-op and leaves rows `PENDING`.
+
+GA4 Measurement Protocol may accept an HTTP request before the event appears in reports. Release
+verification must therefore cover both the actual outbound request body with a non-production
+test collector and the live property's DebugView/Realtime after production configuration. Never
+send a test order to the production property from local code.
+
+## Meta Pixel (storefront)
+
+The only approved browser Meta installation is the existing BigBike Pixel
+`460465848002810`. It preserves the shop's historical audiences; **do not create a new Pixel**.
+Exactly one base installer may exist in the repository, in
+`bigbike-web/app/[locale]/layout.tsx`. It uses the direct Meta `fbevents.js` loader with
+`strategy="afterInteractive"` and `data-cfasync="false"`, and renders only when
+`NEXT_PUBLIC_META_PIXEL_ID` is non-blank. It is not installed through Google Tag Manager,
+Cloudflare/Zaraz or any screen/component. Conversions API is explicitly deferred.
+
+Meta's library owns its browser-history PageView behavior. The storefront initializes it once and
+does **not** call a manual `PageView` on route changes; adding another page-view call would make a
+single navigation count twice. The only CSP addition is
+`https://connect.facebook.net` in `script-src` for the loader. Existing narrowly scoped `https:`
+image/connect allowances already cover Meta's event/image requests; do not broaden another CSP
+directive or add a wildcard.
+
+`bigbike-web/lib/analytics.ts` is the only event path. It maps the same successful boundaries and
+the same selling-variant SKU used by GA4 and the Merchant Center feed:
+
+| Storefront boundary | Meta standard event | Required payload / guard |
+|---|---|---|
+| Product view | `ViewContent` | Variant SKU in `content_ids` and `contents[].id`; integer VND `value`; `content_type: "product"`. |
+| Successful cart API mutation | `AddToCart` | Same SKU/quantity/integer VND payload; never emit for a failed add. |
+| Checkout opened | `InitiateCheckout` | Current cart SKU/quantity/integer VND payload. |
+| COD payment confirmed | `AddPaymentInfo` | Current cart SKU/quantity/integer VND payload; no transfer payment is inferred. |
+| Completed order | `Purchase` | Order SKU/quantity/integer VND payload once only, with `eventID` `purchase_<orderNumber>` for a future server-side de-duplication path. |
+| Successful search | `Search` | Sanitized, normalized `search_string`; email, phone and token-like input remains redacted by the shared helper. |
+| Phone, Zalo or Messenger action begins | `Contact` | `content_name` is only `phone`, `zalo` or `messenger`; never send the visitor's contact data. |
+
+Meta receives no event for list view, remove-from-cart, cart view or shipping-address selection,
+because those actions have no required standard event in this scope. Product identity is the exact
+variant SKU (or the simple-product SKU), never an internal UUID or parent product id. Money is a
+numeric integer with `currency: "VND"`, never a formatted string such as `"2.500.000"`. Do not
+send customer name, email, phone, address, order key, chat/review text or a manually hashed
+identity field; automatic advanced matching is an owner-managed Meta setting.
+
+`NEXT_PUBLIC_META_PIXEL_ID` follows the same three-place public-build contract as GA4 and Clarity:
+declare it in `build.args:` and `environment:` for `bigbike-web` in `docker-compose.yaml`, and as
+an `ARG` plus `ENV` before `RUN npm run build` in `bigbike-web/Dockerfile`. Keep the blank
+placeholder synchronized in `.env.example`, `.env.vps.example` and `bigbike-web/.env.example`.
+The public value is baked into the browser build, so changing it requires a new build and deploy;
+a process restart alone cannot enable or replace the Pixel. The bilingual privacy policy must be
+updated in the same release whenever this installation status changes.
+
+## Microsoft Clarity (storefront)
+
+Clarity is installed once in `bigbike-web/app/[locale]/layout.tsx` and only when
+`NEXT_PUBLIC_CLARITY_PROJECT_ID` is non-blank. Components still report named actions only through
+`bigbike-web/lib/analytics.ts`; they never call `clarity` directly. The shared authenticated
+runtime calls Identify after authentication resolves with the internal customer id only, without
+a custom session id, page id or friendly name.
+
+Clarity must not record private content. The assistant dialog; all authentication forms; signed-in
+header identity; account and order areas; checkout; confirmation; and the complete review section
+are rooted at `data-clarity-mask="true"`. Inputs remain masked by Clarity as an additional
+safeguard. This preserves layout/click evidence while preventing customer name, transcript,
+address, contact, order and review contents from being uploaded.
+
+Clarity URL masking is a separate project setting and currently requires a support request. Before
+putting `NEXT_PUBLIC_CLARITY_PROJECT_ID` on the server, the project administrator must have Clarity
+mask the case-sensitive URL parameters `key`, `token`, `tiep`, `s` and `q`, then verify a recording
+shows masked values. Keep the id blank until that check passes; element masking does not mask page
+URLs.
+
+The storefront CSP grants only the additional Clarity origins required by Microsoft's current
+installation contract: `https://www.clarity.ms` in `script-src`, and
+`https://*.clarity.ms` plus `https://c.bing.com` in `connect-src`/`img-src`. Do not add a generic
+wildcard or relax any other directive. The bilingual privacy policy names GA4, Meta Pixel and Clarity,
+describes measurement and masking in plain language, and follows the owner's decision not to add
+a cookie-consent banner.
 
 ## Offsite backup target (Synology NAS over Tailscale)
 
@@ -501,6 +647,9 @@ Evidence:
 
 ## Video ngắn của trợ lý (2026-09-08)
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 Theo `CHAT_RULE_062–065`, dùng nguyên Gemini 3.7 Flash và private MinIO của ảnh. Backend dùng `ffprobe` xác minh nội dung/thời lượng, `ffmpeg` giải mã toàn clip và chuẩn hóa H.264/AAC MP4, bỏ metadata/chapters/attachments, giới hạn CPU/tệp tạm và thời gian tiến trình. Chỉ đọc tệp cục bộ đã nhận, không nhận URL do khách cung cấp và không cho bộ giải mã mở mạng. Chuẩn hóa để payload native video nằm dưới giới hạn inline của provider; không cắt thời lượng để biến tệp quá dài thành hợp lệ. Lỗi giải mã hoặc thiếu công cụ đóng tính năng video và có thông báo Việt/Anh.
 
 Provider nhận **toàn clip có tiếng** bằng inline video; khung hình lấy mẫu cục bộ chỉ phục vụ so sánh dấu vân tay catalog. Cả xem/nghe và tư vấn chữ dùng chung 60 giây từ `received_at`, tối đa bốn provider calls. Lời nói/ảnh là input không đáng tin về quy định shop; tra dữ liệu hiện hành để trả giá, tồn, chính sách/đơn. Không ghi raw payload, tiếng nói hoặc video vào log. Cleanup tệp tạm trong `finally`, diệt đúng tiến trình con khi hết giờ; không trả kết quả nền sau deadline.
@@ -513,7 +662,7 @@ Runtime backend phải có `ffmpeg`/`ffprobe`. Hai property nội bộ `bigbike.
 
 ### Image reliability — 2026-09-08
 
-CHAT_RULE_057/066–069 thay giới hạn ảnh cũ: 3/lượt, 9/hội thoại, 8 MB/ảnh và setting 60/ngày. Cùng model cố định; JSON schema đầy đủ, ảnh trong lô có chỉ số, lỗi cắt/rỗng/sai schema được retry trong 65 giây/tối đa bốn provider calls chung với chữ. Không log payload/ảnh/biên lai/khóa. Biên lai chỉ tạo notification nội bộ có chat.read, không email/Telegram. CLI dùng đường lưu media hiện có và chỉ mục cục bộ; không chạy scheduler/HTTP server hoặc gọi Gemini khi chuyển kho.
+CHAT_RULE_057/067–069 thay giới hạn ảnh cũ: 3/lượt, 9/hội thoại, 8 MB/ảnh và setting 60/ngày. Cùng model cố định; JSON schema đầy đủ, ảnh trong lô có chỉ số, lỗi cắt/rỗng/sai schema được retry trong 65 giây/tối đa bốn provider calls chung với chữ. Không log payload/ảnh/khóa và không tạo thông báo thanh toán. CLI dùng đường lưu media hiện có và chỉ mục cục bộ; không chạy scheduler/HTTP server hoặc gọi Gemini khi chuyển kho.
 
 Công cụ owner chạy: Python chuẩn + `psql` đọc/lập manifest, tải ảnh công khai từ origin owner chỉ định (kiểm tra IP công khai, chặn đổi DNS/redirect nội bộ), gọi API upload media hiện có để chuẩn hóa/dedup, rồi cập nhật có điều kiện đúng các trường ảnh. Dùng `PATCH /admin/products/{id}` với payload rỗng sau mỗi sản phẩm để đi qua đường đồng bộ thư mục/cache/revalidation hiện có. Nếu bước này lỗi, manifest giữ `REFRESH_PENDING` để chạy lại; không báo sản phẩm đã hoàn tất. Chỉ đọc/ghi `products`, `product_variants`, `product_variant_gallery_images`, thư viện media và chỉ mục ảnh công khai; bỏ nguyên khối video. Main Java riêng chỉ dựng lại dấu vân tay bằng cùng thuật toán runtime, JDBC và MinIO; không khởi động Spring, Flyway hoặc scheduler. Manifest lưu ngoài Git, ghi bền trước thay đổi và có so sánh giá trị trước–sau khi resume/rollback; rollback giữ media mới để không làm hỏng tham chiếu dùng chung.
 

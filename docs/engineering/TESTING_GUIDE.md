@@ -26,6 +26,12 @@ không dừng MinIO production để thử trang xin lỗi. `OWNER_CONFIRMED_202
 
 ## E2E test-data safety
 
+The COD-only payment cutover is the exception explicitly requested by the shop owner for one
+controlled live smoke test. Use the configured shop mailbox as the customer email, a unique
+`E2E_PAYMENT_COD_` marker, an available product and synthetic customer/contact data. Verify the
+confirmation page, customer email and admin order, then cancel only that marked test order with the
+existing cancellation flow. Do not reuse real customer data or delete shop orders.
+
 ### Google Merchant source and landing pages
 
 The web unit suite covers complete pagination, upstream failures, eligibility, XML escaping, real SKU uniqueness, variant grouping, price/stock/image projection, exact variant links and fail-closed HTTP responses (`__tests__/merchant/`). Existing purchase/JSON-LD tests cover initial selection and customer changes. The read-only `e2e/google-merchant.e2e.ts` downloads the actual feed and checks variant landing pages at the canonical 375/768/1440 viewport sizes, including an unavailable variant. It checks server-rendered offers, selected options, visible price, canonical URL, runtime errors and horizontal overflow. It never edits shop products or creates carts/orders; Google account receipt/approval is a separate operational check.
@@ -46,6 +52,14 @@ thương hiệu, guard kiểm tra cây danh mục và toàn bộ liên kết s�
 reference không xác định. Các quy tắc này khớp API/state hiện hành trong
 `docs/engineering/API_CONTRACT.md`, quyền trong `docs/engineering/PERMISSION_MATRIX.md`
 và quy tắc liên kết danh mục/thương hiệu/media trong `docs/business/BUSINESS_RULES.md`.
+
+Kịch bản `media-folder-sidebar.spec.ts` chỉ kiểm giao diện cây thư mục, nên dùng guard
+cục bộ thay cho lượt dọn toàn bộ module: tạo thư mục mang tiền tố
+`E2E_MEDIA_FOLDER_<run>_`, giữ ID trả về và xóa đúng các ID đó theo thứ tự con trước cha
+trong `finally`. Không đổi tên/xóa thư mục shop hoặc tạo/chuyển/xóa file. Bản dựng
+riêng trong `bigbike-admin/e2e/media-sidebar/` bọc App thật bằng `I18nextProvider`
+để kiểm nhãn Việt/Anh qua browser; nhãn giao diện chạy thật vẫn cố định tiếng Việt.
+Chạy từ `bigbike-admin`: `E2E_BASE_URL=http://localhost:4281 E2E_BACKEND_ORIGIN=<origin admin được backend chấp nhận> npx playwright test --config e2e/media-sidebar/playwright.config.ts`.
 
 Lệnh vận hành từ thư mục gốc (mặc định chỉ liệt kê, không có request xoá):
 
@@ -132,13 +146,18 @@ The product editor must be tested with every attribute type, not only colour:
 
 - A legacy product with complete dictionary links saves without edits; changing
   only a variant price or availability must not produce an option error.
-- A new attribute with no values can receive its first value inside the product
-  editor, and the selected value is sent with its `attributeValueId`.
+- An existing or backend-provisioned attribute with no values can receive its
+  first value inside the product editor, and the selected value is sent with its
+  `attributeValueId`.
 - A missing value is reported on the exact variant option with a bilingual
   instruction to choose from the list; unrelated variants are not marked.
+- The editor renders every returned attribute type dynamically, keeps colour and
+  size first, shows values only for checked types, and exposes no type
+  create/rename/delete controls in either the builder or variant detail.
 - The V1053 migration is tested for alias mapping, exact public-label
   preservation, no writes to already-linked rows, safe rollback and a second
-  idempotent run.
+  idempotent run. The guarded V1089 cleanup is tested for the all-four target
+  set, zero-reference enforcement and a safe second invocation.
 
 Status: `REQUIRED_FOR_PRODUCT_RULE_008_AND_ATTRIBUTE_RULE_001`
 
@@ -167,6 +186,9 @@ GitHub Actions currently runs:
 | Trợ lý BigBike | Tư vấn core, một model cố định với same-model retry, quota, direct contact, nhớ trong phiên, cart và ảnh riêng tư VI/EN. Web phải có bài kiểm khung chat: nhãn AI ngắn, ba nút ở đầu khung điện thoại và thêm nút mở rộng/thu gọn trên máy tính (2026-09-07), khung 544px/mở rộng tối đa 928px vừa màn hình, thẻ hai cột chỉ khi mở rộng, giữ hội thoại/câu đang nhập/ảnh chờ/lựa chọn khi đổi kích thước, màn mở đầu lời chào + bốn gợi ý, tỉ lệ đầu+đáy ≤40% và đáy đoạn chat bám sát đáy khung sau khi trả lời xong (`CHAT_RULE_061`). **Bắt buộc có bài kiểm thử Testcontainers + PostgreSQL (`spring.flyway.enabled=true`, hồ sơ `tc`) chèn mọi giá trị `chat_messages.source` mà backend có thể sinh** — bộ test H2 mặc định tắt Flyway nên không bao giờ thấy ràng buộc CHECK, và đó là lý do lỗi mất câu trả lời sống được nhiều ngày. Không chạy bulk Gemini thật. | `REQUIRED_FOR_CHAT_RULE_001_020_040_059_061` |
 
 ## Trợ lý BigBike — ma trận kiểm thử (owner decision 2026-08-29)
+
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
 
 - Backend: tư vấn sản phẩm/so sánh/size/giá/tồn/policy/đơn dùng nguồn thật; safety chặn bịa giá, giảm/quà/giao hàng, khan hiếm và lộ PII.
 - Backend: Gemini 3.7 Flash là model duy nhất; timeout/`429`/`5xx`/network/empty-invalid payload chỉ retry chính model trong 65 giây/tối đa 4 provider calls; final failure mở các kênh liên hệ trực tiếp, không tự handoff và không thử model khác.
@@ -198,6 +220,60 @@ Các context PostgreSQL profile `tc` chạy toàn bộ migration từ kho trốn
 - Browser verification uses an isolated build against the running local backend and real published catalog variants in a fresh guest session. Cover 320/375/430px mobile, touch emulation, 768/1024/1440px full page, a six-line cart, fixed sheet footer, 44px touch targets, free shipping, matching quantities/totals, offline edits and recovery, delete-to-empty, and checkout navigation in both languages. Check that only one checkout action is visible, that the chat launcher clears the mobile cart action bar, and that resizing to desktop closes the sheet and releases scroll lock. Do not submit a real order; remove the guest-session test lines afterward.
 - References: `API_FLOW_MAP.md` § Cart review; `BUSINESS_RULES.md` `SHIP_RULE_001`; `bigbike-web/STYLEGUIDE.md` § Giỏ hàng nhanh trên điện thoại.
 
+## Storefront measurement regression
+
+Automated tests must prove the shared helper is the only component-facing measurement path and
+that blank environment ids produce no third-party request. Required coverage:
+
+- standard commerce payloads include `add_payment_info` with `payment_type=COD`; confirming the
+  same cart again/reloading cannot repeat that step, and no transfer method appears;
+- assistant open and phone/Zalo/Messenger clicks are measured at all shared placements, with PDP
+  product context when available and no phone number/contact text in event parameters;
+- brand/size/price filters emit only after matching results succeed, while initial URL state,
+  failed requests and refetches do not; promotion, size result, successful login/sign-up, accepted
+  review and video-open actions each emit once at the documented success boundary;
+- the header emits one `search` for each exact settled suggestion result (including zero products),
+  and a direct result page emits its own `search` with the total matching products. Tests assert
+  both `search_surface` values, prevent render/stale/error duplicates, and prove email/phone/token
+  terms are sent only as `[redacted]`;
+- scroll 10/25/50/75/90/100 and PDP section reach use per-session/path de-duplication across
+  remount/reload; GA4's automatic scroll event is not fired manually;
+- authenticated Identify uses only the internal customer id; logout clears GA4 identity; masked
+  private surfaces and exact Clarity CSP/env gates are asserted;
+- Meta coverage initializes only the approved `460465848002810` Pixel when its public id is set,
+  and proves that a blank id has no Meta request. Assert one direct base installer, the exact
+  `connect.facebook.net` `script-src` allowance and no Google Tag Manager/Zaraz path. Do not
+  simulate a manual PageView for client navigation: Meta's library owns that behavior;
+- the shared helper maps only `ViewContent`, successful `AddToCart`, `InitiateCheckout`,
+  COD-confirmed `AddPaymentInfo`, once-only `Purchase`, sanitized `Search` and channel-only
+  `Contact` to Meta. Every commerce payload uses the same variant SKU as GA4/feed and numeric
+  integer VND. Assert no Meta event for listing, remove-from-cart, cart view or address selection;
+  assert `Purchase` has `eventID` `purchase_<orderNumber>` and is still suppressed when the
+  thank-you page reloads;
+- both customer and admin cancellation paths insert one sanitized outbox row atomically. Repeated
+  cancellation/scheduler calls do not add or resend a row; disabled configuration sends nothing;
+  orders placed before the `2026-09-06 00:00 Asia/Ho_Chi_Minh` GA4 cutover enqueue nothing;
+  the row is committed as `SENDING` before the network call; a mocked collector receives the real
+  `refund` HTTP body with the original `transaction_id`, VND value and items; HTTP/network failure
+  is terminal `FAILED` for manual GA4 reconciliation, never an automatic resend. Checkout tests also prove a
+  valid Google-tag `client_id` is stored but never returned, while malformed/missing ids are safely
+  discarded and cannot block an order.
+
+Focused Playwright runs against an isolated/local stack and intercepts GA4/Meta/Clarity hosts. It must
+exercise the highest-volume/read-only paths: assistant open/contact, a successful filter, a
+homepage promotion, product-section reach and full-page scroll. It asserts actual outbound
+requests, blank-local script gates, exact CSP hosts and masking, not just helper calls. State-
+changing success boundaries (COD confirmation, video/review, auth identity and customer/admin
+cancellation) stay in component/API/integration tests with controlled records; the backend HTTP
+client test sends the real `refund` body to a local collector. Never point tests at the live GA4
+or Meta Pixel, submit real customer data, or mutate a real shop order. Production release verification
+uses one owner-marked test order and GA4 DebugView/Realtime plus Meta Test Events, then cancels
+that same test order and checks the revenue correction; do not create a transfer order. DebugView must also show `key`,
+`token`, `tiep`, `s` and `q` URL values redacted, and Clarity must remain disabled until its project-level URL
+masking for those parameters is visible in a test recording.
+
+Status: `REQUIRED_FOR_ANALYTICS_RULE_001_006`
+
 ## Current Testing Gaps
 
 | Gap | Status | Evidence |
@@ -209,6 +285,9 @@ Các context PostgreSQL profile `tc` chạy toàn bộ migration từ kho trốn
 
 ### Xác nhận trợ lý và video bằng dữ liệu thật — đợt 08/09/2026
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 Chỉ chạy provider thật khi owner đã duyệt ngân sách, đếm trước/sau từng đợt và tách slot chữ/ảnh/video. Đợt này: tối đa 160 slot chữ, tám ảnh, tám video; không reset bộ đếm. So câu trả lời với hàng/biến thể/chính sách đang công bố, kiểm Việt/Anh và chuỗi đổi chủ đề/quay lại nhiều mẫu. Test giả lập kiểm giới hạn/quyền/lỗi, không thay bằng chứng chất lượng AI.
 
 Video cần tệp có hình/tiếng thật: nhiều góc sản phẩm; thao tác; lời nhắn; không lời nhắn; câu nói trong âm thanh; hành động cuối đoạn. Kiểm thêm MP4/MOV/WebM, tệp hỏng/giả MIME/quá 15 giây/quá 40 MB, một video/lượt, hai/hội thoại, mười/ngày, ảnh XOR video, retry không tính lại, đồng hồ chung tối đa 60 giây, hết hạn bảy ngày/khách xóa lịch sử, ownership và `chat.read`, lịch sử web/admin, nội dung Việt/Anh. Mọi dữ liệu thử có manifest riêng; không gọi công cụ dọn E2E toàn hệ thống.
@@ -216,7 +295,7 @@ Video cần tệp có hình/tiếng thật: nhiều góc sản phẩm; thao tác
 
 ### Image assistant regression — 2026-09-08
 
-Bắt buộc kiểm fixture Việt–Anh: logo hãng có/không kinh doanh/hết hàng; screenshot găng tay có logo shop; không rõ mẫu; JSON bị cắt/rỗng/sai schema rồi retry; nhiều ảnh/thứ tự/xung đột/quota một phần; cạnh tranh PostgreSQL/reset ngày/idempotency; ghi nhớ ảnh không có chữ và hỏi tiếp; notification biên lai đúng quyền/không trùng/không đổi thanh toán/xóa theo transcript. CLI phải có dry-run/apply/resume/verify/rollback trên dữ liệu thử riêng, không dữ liệu khách. Kiểm PostgreSQL cho ảnh phải dựng Hibernate SessionFactory với `hbm2ddl.auto=validate` trên schema migration và đọc/ghi entity thật; kiểm SQL bằng JDBC đơn thuần không bắt được lệch kiểu entity/cột. Browser kiểm 1440/768/375, lỗi tải, Việt–Anh; provider giả chỉ trong test, không vào runtime. Không gọi Gemini thật để chạy bộ đề; ghi Not run cho kiểm trên production chưa chạy.
+Bắt buộc kiểm fixture Việt–Anh: logo hãng có/không kinh doanh/hết hàng; screenshot găng tay có logo shop; không rõ mẫu; JSON bị cắt/rỗng/sai schema rồi retry; nhiều ảnh/thứ tự/xung đột/quota một phần; cạnh tranh PostgreSQL/reset ngày/idempotency; ghi nhớ ảnh không có chữ và hỏi tiếp; ảnh tài liệu không tạo hành động thanh toán hoặc thông báo nội bộ, còn ảnh sản phẩm vẫn đi đúng luồng hỏi hàng. CLI phải có dry-run/apply/resume/verify/rollback trên dữ liệu thử riêng, không dữ liệu khách. Kiểm PostgreSQL cho ảnh phải dựng Hibernate SessionFactory với `hbm2ddl.auto=validate` trên schema migration và đọc/ghi entity thật; kiểm SQL bằng JDBC đơn thuần không bắt được lệch kiểu entity/cột. Browser kiểm 1440/768/375, lỗi tải, Việt–Anh; provider giả chỉ trong test, không vào runtime. Không gọi Gemini thật để chạy bộ đề; ghi Not run cho kiểm trên production chưa chạy.
 
 Khi chạy toàn bộ backend trên VPS ít RAM, các Spring context thử phải dùng H2 riêng, tránh context bị loại khỏi cache xóa schema của context khác. Không lấy DB/MinIO/Gemini từ `.env.vps` cho kiểm thử. Lệnh kiểm toàn bộ có giới hạn tài nguyên (PostgreSQL Testcontainers vẫn tự tạo DB riêng):
 

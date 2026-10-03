@@ -4,15 +4,16 @@
 
 | Client surface | Endpoint(s) | Backend entrypoint | Core side effects / data | Status |
 |---|---|---|---|---|
-| Admin topbar quick search | `GlobalSearch` → `GET /api/v1/admin/quick-search?q=...`; selecting a row opens the existing detail route, and “Xem tất cả” opens the corresponding list with `?search=...` | `AdminQuickSearchController` → `AdminQuickSearchService` → order/customer/catalog/content/admin-user read repositories | Read-only, permission-scoped groups; accent-insensitive staff search, exact/prefix/contains ranking, five preview rows plus exact group totals, compact matching variant metadata, isolated group errors | `OWNER_CONFIRMED_FROM_HANDOFF_2026-08-28` |
-| Web search | Kết quả tìm kiếm: trang `/tim-kiem` gọi cùng lúc `GET /api/v1/products?q=...&sort=relevance` và `GET /api/v1/articles?q=...`; gợi ý gõ nhanh (dropdown header) gọi `GET /api/v1/search-suggest` qua route `/app/api/search-suggest`. Cả hai bề mặt dùng một quy tắc sản phẩm về phạm vi, ranh giới từ, độ bao phủ và thứ tự, với từ cuối (từ khách đang gõ dở) khớp theo đầu từ nên kết quả thu hẹp dần chứ không nhảy về trắng; **bài viết chạy đúng cùng quy tắc đó**, bỏ dấu và coi ký tự wildcard/biểu thức chính quy là ký tự thường. (`GET /api/v1/search` đã gỡ 2026-07-15, AUD-066 — không client nào dùng.) | `PublicSearchController`, `PublicProductController`, `ContentController` | Search result payload from global search service and public catalog/content reads | `OWNER_CONFIRMED_2026-09-07` |
+| Admin topbar quick search | `GlobalSearch` → `GET /api/v1/admin/quick-search?q=...`; selecting a row opens the existing detail route, and “Xem tất cả” opens the corresponding list with `?search=...` | `AdminQuickSearchController` → `AdminQuickSearchService` → order/customer/catalog/content/admin-user read repositories | Read-only, permission-scoped groups; accent-insensitive staff search, exact/prefix/contains ranking, five preview rows plus exact group totals, compact matching variant metadata, isolated group errors. Nhóm bài viết chỉ tra tiêu đề VI/EN, không tra thân bài, slug, mô tả SEO, tóm tắt hay tên tác giả | `OWNER_CONFIRMED_2026-09-20` |
+| Web search | Kết quả tìm kiếm: trang `/tim-kiem` gọi cùng lúc `GET /api/v1/products?q=...&sort=relevance` và `GET /api/v1/articles?q=...`; gợi ý gõ nhanh (dropdown header) gọi `GET /api/v1/search-suggest` qua route `/app/api/search-suggest`. Hai bề mặt vẫn dùng quy tắc sản phẩm về phạm vi, ranh giới từ, độ bao phủ và thứ tự; riêng bài viết chỉ so khớp tiêu đề VI/EN theo ranh giới từ và từ cuối đang gõ, không tra thân bài, slug, mô tả SEO, tóm tắt hay tác giả. (`GET /api/v1/search` đã gỡ 2026-07-15, AUD-066 — không client nào dùng.) | `PublicSearchController`, `PublicProductController`, `ContentController` | Search result payload from global search service and public catalog/content reads | `OWNER_CONFIRMED_2026-09-20` |
 | Web header category menu | `GET /api/v1/menus/primary?lang=vi|en` | `PublicMenuController` → `AdminMenuService` | Mục danh mục cấp 1 lấy `iconUrl` từ `category.image` và storefront tô theo màu chữ trong khung 24×24px; cấp 2/cấp 3 hoặc danh mục thiếu ảnh không có icon nhưng vẫn giữ mục menu. Cập nhật danh mục làm mới cache `menus`; không còn fallback theo đường dẫn WordPress cũ. | `OWNER_CONFIRMED_2026-08-29` |
 | Web catalog price filter | Catalog archive pages fetch `GET /api/v1/catalog/facets` without the active price bounds, render the returned dynamic `priceRange` histogram, and fetch `GET /api/v1/products` with exact `min_price`/`max_price` after a slider commit or an explicit `Apply`/`Áp dụng` action. Leaving one numeric box never applies by itself. Mobile edits remain a draft until the sheet's single `View N products` action. The range honors category/search/brand/color/gender/size context and keeps true endpoints stable while the customer drags; the web derives a round, density-aware display scale from the existing histogram and treats its final capped tick as open-ended. Each commit snaps only the handle the customer moved and carries the other committed bound unchanged into the result and URL. | `CatalogController` -> `CatalogReadService` -> `CatalogReadSupport` / catalog repositories | Effective sale price (valid sale below retail, otherwise retail), at most 24 density buckets, dual-handle keyboard/touch slider, exact integer input, bilingual full-number labels, and URL-safe clamp/swap only | `OWNER_CONFIRMED_2026-08-14_REFINED_2026-08-15` |
 | Web catalog size filters | Catalog archive pages fetch `GET /api/v1/catalog/facets` with the current category/search/brand/non-size filters, then fetch `GET /api/v1/products` with repeated `kich-co` values. Legacy unqualified values remain accepted. | `CatalogController` -> `CatalogReadService` -> configured size-scale catalog | Four ordered size groups without subgroups and OR-matched product list; size counts exclude the active size dimension but honor the remaining page context | `OWNER_CONFIRMED_2026-08-14` |
 | Web catalog filter workspace | The category/all/search/brand pages server-render the exact URL context, then use repeated `pwb-brand`/`filter_color`/`filter_finish`/`kich-co`, scalar gender/price and `in_stock` for later client updates. Desktop debounces one product+facet pair; while the mobile full-screen sheet is open only facets refresh until the customer applies. | `CatalogController` -> `CatalogReadService` -> visual-facet configuration + catalog/order repositories | OR inside a facet, AND across facets; canonical colors and finishes; descendant-aware category counts; exact `resultCount`; real best-selling order; no unfiltered-to-filtered content flash | `OWNER_CONFIRMED_2026-08-15` |
 | Admin size-scale manager | Product editor opens the manager, reads `GET /api/v1/admin/size-scale-groups` and `GET /api/v1/admin/size-scales`, then creates/updates one scale with `POST/PATCH /api/v1/admin/size-scales` using `{ name, groupId, values[] }`. | `AdminSizeScaleController` -> `AdminSizeScaleService` -> size-scale repositories | Server derives technical metadata, validates duplicates and usage conflicts, and preserves product-to-scale links | `OWNER_CONFIRMED_2026-08-14` |
 | Admin size filter-group manager | Same manager, second tab. Reads `GET /api/v1/admin/size-scale-groups?includeInactive=true`, then `POST/PATCH/DELETE /api/v1/admin/size-scale-groups` for add / rename / enable-disable / delete. | `AdminSizeScaleController` -> `AdminSizeScaleService` -> size-scale + group repositories -> `WebRevalidationService` | Server derives the immutable group key and sort order; delete blocked with `409` while scales reference the group; deactivating keeps all rows but drops the group from the public size facet; storefront cache revalidated on every write | `OWNER_CONFIRMED_2026-09-04` |
-| Tin tức list page (`/tin-tuc`, `/en/tin-tuc`) | `GET /api/v1/articles` | `ContentController` -> `ContentReadService` | Paginated article list; content-category filter/sidebar/drawer no longer exists | `CONFIRMED_FROM_OWNER_DECISION` (2026-08-03) |
+| Tin tức list page (`/tin-tuc`, `/en/tin-tuc`) | `GET /api/v1/articles` | `ContentController` -> `ContentReadService` | Paginated article list; content-category filter/sidebar/drawer no longer exists; đoạn giới thiệu trên thẻ được rút từ đầu thân bài, không đọc trường tóm tắt riêng | `ARTICLE_RULE_010` |
+| Article detail recommendations | `GET /api/v1/articles/{slug}/recommendations?lang=` | `ContentController` -> article recommendation reader -> article repository | Tối đa 5 bài được nhân viên chọn tay, mới hơn trước; nếu không có bài hợp lệ thì dùng bài mới nhất. Khối cuối có tối đa 4 bài mới nhất; bài đang đọc và mọi bài trùng giữa hai khối đều bị loại. | `ARTICLE_RULE_004` |
 | Địa chỉ VN (storefront) | không gọi API — dùng dữ liệu tích hợp sẵn `VN_PROVINCES` (`vn-address-data.ts`, hai cấp tỉnh/thành → phường/xã). Backend API `GET /api/v1/address/provinces[...]` đã gỡ 2026-07-15 (AUD-056, owner decision #8 — không có caller). | — | Không có side effect | `REMOVED` |
 | Cart UI | `/api/v1/cart`, `/api/v1/cart/items` | `CartController` -> `CartService` | Session/customer cart, item snapshots | `CONFIRMED_FROM_CODE` |
 | Checkout UI | `POST /api/v1/checkout` | `CheckoutController` -> `CheckoutService` | Order/payment/shipping snapshots, per-variant `isAvailable` gate (no quantity decrement, V261), notifications, WS event | `CONFIRMED_FROM_CODE` |
@@ -121,6 +122,34 @@ Status: `OWNER_CONFIRMED_2026-08-15`
 
 Status: `CONFIRMED_FROM_CODE`
 
+### Storefront measurement and cancellation revenue correction
+
+`storefront action -> shared analytics helper -> one GA4 install + one direct Meta Pixel (+ optional Clarity action)`
+
+`customer/admin cancellation -> order transaction -> ga4_event_outbox -> scheduled Measurement Protocol dispatcher -> GA4 refund`
+
+- Browser actions never call GA4/Meta/Clarity directly. The shared runtime de-duplicates scroll,
+  section, purchase and authenticated-social-flow events and attaches only public product context.
+- A settled header suggestion result and a successfully loaded direct search-result page each emit
+  one standard `search` event through the helper. `search_surface` keeps the two observations
+  separate; the header counts returned product suggestions and the page counts all matching
+  products. Private-looking search terms are replaced with `[redacted]` before dispatch.
+- Checkout records standard `add_payment_info` only when the customer confirms COD. There is no
+  bank-transfer branch.
+- Meta receives only `ViewContent`, successful `AddToCart`, `InitiateCheckout`, COD-confirmed
+  `AddPaymentInfo`, once-only `Purchase`, sanitized `Search` and channel-only `Contact`. Its
+  commerce ids use the same selling variant SKU as GA4/feed, values are numeric integer VND, and
+  `Purchase` carries `eventID` `purchase_<orderNumber>` for a future CAPI de-duplication path.
+  Meta owns automatic PageView history tracking; the storefront does not add a route-change PageView.
+- Both cancellation callers enqueue eligible orders placed since the 2026-09-06 GA4 cutover inside
+  the order transaction; the unique order/event key prevents repeated cancellation calls from
+  creating another correction. Delivery commits `SENDING` before the network call and never
+  automatically resends a failed or uncertain request.
+- Clarity is optional and masks assistant/auth/account/checkout/order/review content.
+
+Status: `OWNER_CONFIRMED_2026-09-12`; see `ANALYTICS_RULE_001`–`006` and
+`INTEGRATION_GUIDE.md` §§ Google Analytics 4 / Meta Pixel / Microsoft Clarity.
+
 ### POS — REMOVED (owner decision 2026-06-23, online-only)
 
 The admin POS flow was removed entirely. There is no `admin POS UI -> AdminPosController -> PosOrderService` path anymore; all sales flow through the storefront checkout (`Checkout UI` row above).
@@ -151,6 +180,9 @@ Status: `REMOVED`
 
 ### Trợ lý BigBike
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 `CHAT_RULE_001` (owner decision 2026-09-07): FloatingChat ẩn launcher ở checkout, edit-account và edit-address, gồm cả URL Việt/Anh và dấu `/` cuối; khi điều hướng vào các trang này thì đóng panel, giữ nguyên hội thoại. `CheckoutClient -> nút Cần hỗ trợ?/Need help? (type=button) -> sự kiện mở chat phía trình duyệt -> FloatingChat hiện có`. Nút nằm cạnh xác nhận đặt hàng, bị khóa trong lúc gửi đơn; không submit form, không tải lại trang và không thay đổi API checkout/chat. Đóng panel trả focus về nút đã mở nó. Giỏ hàng và các trang xác nhận/tra cứu/lịch sử đơn tiếp tục dùng launcher nổi.
 
 `widget + pageContext -> ownership/idempotency -> local safety + clarity/fast-path -> short transaction -> nếu cần AI: atomic reserve 1 slot daily -> Gemini 3.7 Flash -> verified tool calls/guard -> short transaction lưu final -> response/stream progress`
@@ -163,19 +195,25 @@ Một logical turn tối đa bốn provider calls trong 65 giây. Timeout/quá t
 
 `product card -> live variant revalidate -> cart thường -> checkout`. Chat không ghi nguồn đơn hay doanh thu; backend vẫn hậu kiểm giá/tồn/biến thể như mọi lần thêm giỏ.
 
-`multipart upload -> ownership + AI service availability + 1/turn,3/thread,20/day -> MIME/decode/re-encode (JPEG/PNG/WebP, decoder dùng chung cho ảnh khách và ảnh catalog) -> private MinIO -> PENDING/ATTACHED -> Gemini 3.7 Flash phân loại intent -> verified catalog fingerprint matching -> wording “trông giống” -> **nếu khách có gõ câu hỏi: tiếp tục chính fast-path/AI của chat chữ, ghép thành một câu trả lời** -> response`. Mục đích ảnh do chính tấm ảnh quyết định; lời nhắn không tự chuyển hướng sang tra đơn hay từ chối đoán size (owner decision 2026-09-07). Ảnh hoá đơn, ảnh đầu/người, hàng hỏng, ảnh ngoài phạm vi và ảnh bị chặn **dừng lượt**, không nối tiếp. Hai chặng provider chia chung ngân sách thời gian của lượt (dưới 75s của SSE). Xóa history/retention xóa object trước metadata; không có nhánh chuyển ảnh cho nhân viên.
+`multipart upload -> ownership + AI service availability + 1/turn,3/thread,20/day -> MIME/decode/re-encode (JPEG/PNG/WebP, decoder dùng chung cho ảnh khách và ảnh catalog) -> private MinIO -> PENDING/ATTACHED -> Gemini 3.7 Flash phân loại intent -> verified catalog fingerprint matching -> wording “trông giống” -> **nếu khách có gõ câu hỏi: tiếp tục chính fast-path/AI của chat chữ, ghép thành một câu trả lời** -> response`. Mục đích ảnh do chính tấm ảnh quyết định; lời nhắn không tự chuyển hướng sang tra đơn hay từ chối đoán size (owner decision 2026-09-07). Ảnh tài liệu thanh toán được xử lý như tài liệu chung, không tạo thông báo và không gọi endpoint thanh toán; ảnh sản phẩm, ảnh đầu/người, hàng hỏng, ảnh ngoài phạm vi và ảnh bị chặn vẫn theo các nhánh hiện có. Hai chặng provider chia chung ngân sách thời gian của lượt (dưới 75s của SSE). Xóa history/retention xóa object trước metadata; không có nhánh chuyển ảnh cho nhân viên.
 
 Status: `OWNER_CONFIRMED_2026-08-29`
 
-## Manual transfer receipt — 2026-09-07
+## COD-only checkout — owner decision 2026-09-09
 
-Checkout → existing confirmation route with step=bank-transfer → order lookup + public settings → confirmation. Both customer actions navigate only. Admin receipt POST → locked order/payment transaction + audit → after-commit order-topic refresh. Completion PATCH and allowed-transitions read the same payment guard; see PAY_RULE_002.
+Checkout → revalidate cart → create COD order and payment snapshot → normal confirmation. No transfer step, public bank settings lookup or receipt endpoint. Historical order reads continue to expose the stored method and read-only payment details.
 
 
 ### Video ngắn trong chat — 08/09/2026
+
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
 
 `FloatingChat -> chọn ảnh hoặc video -> POST /chat/videos -> nhận videoId -> POST /chat/messages hoặc /chat/stream với videoIds -> kiểm ownership/giới hạn -> xem toàn bộ video + nghe âm thanh -> trả lời câu gõ/câu nói bằng dữ liệu shop -> một tin trợ lý`. Các chặng cùng hạn 60 giây kể từ nhận xong tệp. Không lời hỏi: quay sản phẩm thì tìm mẫu cùng nhóm/trông giống; quay thao tác thì mô tả điều thấy và hỏi rõ mục đích. Quá giờ mời gửi ảnh. Web/admin đọc video bằng đường nội dung riêng tư, không qua kho media công khai; transcript giữ dấu hết hạn sau bảy ngày. Thông báo lỗi và công bố ở Chính sách bảo mật đủ Việt/Anh (`CHAT_RULE_062`–`065`).
 
 ### Image flow — 2026-09-08
 
-Website giữ một requestId cho mỗi upload và một requestId cho tin nhắn; truyền imageIds có thứ tự. Image analysis → verified image evidence → catalog filter/text advisor/response guard → conversation context. Stats thêm quota ảnh cho Settings và Hội thoại. Receipt notification → private transcript; không gọi endpoint thanh toán từ chat. CLI chuyển kho/dựng chỉ mục là luồng vận hành riêng, owner chạy sau triển khai.
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
+Website giữ một requestId cho mỗi upload và một requestId cho tin nhắn; truyền imageIds có thứ tự. Image analysis → verified image evidence → catalog filter/text advisor/response guard → conversation context. Stats thêm quota ảnh cho Settings và Hội thoại. Ảnh tài liệu không tạo thông báo hoặc gọi endpoint thanh toán; luồng ảnh sản phẩm vẫn giữ nguyên. CLI chuyển kho/dựng chỉ mục là luồng vận hành riêng, owner chạy sau triển khai.

@@ -54,7 +54,7 @@ File này liên quan trực tiếp đến:
 | Category | `deleted` + `isVisible` | `deleted`: `false`, `true`; `isVisible`: `true`, `false` | `deleted` is the independent Trash lifecycle; `isVisible` independently controls storefront display. Soft-delete/restore cascade the tree; hiding is rejected when a direct child remains visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `CategoryMutationService.java`, `CatalogReadService.java` |
 | Brand | `visible` | `true`, `false` | Delete sets visible false; public only visible. | Backend service | `CONFIRMED_BACKEND_ENFORCED` for visibility; no full transition map | `BrandMutationService.java`, `CatalogReadService.java` |
 | Order | `status` | `PENDING`, `PROCESSING`, `COMPLETED`, `CANCELLED` | Một state machine duy nhất; không còn shipment-tracking metadata (đã gỡ bỏ 2026-07-23). | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java`, `CheckoutService.java` |
-| Payment record | `status` on Payment | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` | BANK_TRANSFER: admin xác nhận PENDING → SUCCEEDED; là điều kiện hoàn thành đơn. COD không có trạng thái/thao tác thanh toán trên UI; không thêm trạng thái trên Order. | Backend service + DB constraint | `STATUS_ONLY` | `CheckoutService.java`, `WordPressOrderMapper.java`, payment persistence |
+| Payment record | `status` on Payment | `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` | New checkout creates COD snapshots and exposes no receipt action. The same vocabulary and method names remain readable on historical payment records. | Backend service + DB constraint | `STATUS_ONLY` | `CheckoutService.java`, `WordPressOrderMapper.java`, payment persistence |
 | Inventory / Stock | `stockState`, availability flag | `IN_STOCK`, `OUT_OF_STOCK` | `stockState` mirrors the boolean availability toggle (V261). New variants default available; a new no-variant product defaults `IN_STOCK` unless admin marks it Hết. Selling/cancelling does not change availability. | Backend policy/service | `CONFIRMED_BACKEND_ENFORCED` | `ProductStockState.java`, `InventoryPolicyService.java`, `ProductMutationService.java`, `CheckoutService.java`, `BUSINESS_RULES.md` STOCK_RULE_001–009 |
 | Admin User | `status`, `role` | Status: `INVITED`, `ACTIVE`, `DISABLED`, `SUSPENDED`; Roles: `SUPER_ADMIN`, `ADMIN`, `EDITOR`, `SHOP_MANAGER` (built-in, V211) + custom roles. New users start `INVITED` (no password) and become `ACTIVE` on accepting an email invite. | Status/role update validation; self-deactivation and Super Admin demotion guardrails; invite token lifecycle. | Backend service | `CONFIRMED_BACKEND_ENFORCED` | `AdminAdminUsersService.java`, `AdminInviteService.java`, `SecurityConfig.java` |
 | Content Article | `publishStatus` | Same `PublishStatus` enum; active values: `DRAFT`, `PUBLISHED`, `TRASH`; legacy `HIDDEN`/`ARCHIVED`/`PENDING`/`PRIVATE` all migrated to `DRAFT` (V324). | Publish transitions enforced on update (DRAFT ↔ PUBLISHED both directions); delete sequences `PUBLISHED → DRAFT → TRASH` in one request (soft-delete, restore `TRASH` → `DRAFT`). | Backend service | `CONFIRMED_BACKEND_ENFORCED`; public filtering `CONFIRMED_FROM_CODE` (2026-08-06) | `AdminContentController.java`, `AdminContentMutationService.java`, `AdminMutationValidators.java` |
@@ -305,7 +305,7 @@ From `AdminOrderService.ALLOWED_ORDER_STATUSES`:
 
 From checkout behavior:
 
-- New checkout orders start at `PENDING`. `COD` and `BANK_TRANSFER` are manual payment methods; BANK_TRANSFER exposes the existing payment record status, initially PENDING; COD has no payment-status UI.
+- New checkout orders start at `PENDING` and use `COD` only. COD has no payment-status UI or receipt action; historical payment records remain readable.
 - `PROCESSING → COMPLETED` is the shop's direct confirmation of successful delivery, including COD collection. There is no intermediate shipment hand-off step.
 
 ### Terminal States
@@ -319,7 +319,7 @@ From checkout behavior:
 | From | To | Actor / Role | Preconditions | Side Effects | Enforcement | Evidence |
 |---|---|---|---|---|---|---|
 | `PENDING` | `PROCESSING` | Admin / `orders.write` | Order exists. | Audit log, status email, websocket event. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
-| `PROCESSING` | `COMPLETED` | Admin / `orders.write` | Delivery confirmed by the shop; BANK_TRANSFER must have one matching full-amount SUCCEEDED payment. | Sets `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
+| `PROCESSING` | `COMPLETED` | Admin / `orders.write` | Delivery confirmed by the shop. | Sets `completedAt`, audit, notification, websocket. | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `PENDING` | `CANCELLED` | Admin / `orders.write` | Order exists, has not been processed, and request includes non-blank `cancelReason`. | Set `cancelledAt`, store `cancel_reason`, audit, notification, websocket. (No stock restore — availability is a manual boolean.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 | `PROCESSING` | `CANCELLED` | Admin / `orders.write` | Order exists, has not been completed, and request includes non-blank `cancelReason`. | Set `cancelledAt`, store `cancel_reason`, audit, notification, websocket. (No stock restore — availability is a manual boolean.) | `CONFIRMED_BACKEND_ENFORCED` | `AdminOrderService.java` |
 
@@ -367,11 +367,12 @@ From checkout behavior:
 - Fresh tests for every allowed and forbidden transition.
 - Migration verification against the production order snapshot before applying V350.
 
-## 7. Manual bank-transfer receipt — owner decision 2026-09-07
+## 7. Historical payment records — owner decision 2026-09-09
 
-No payment status is stored on OrderEntity. Operational BANK_TRANSFER orders in PENDING/PROCESSING permit orders.write to confirm the existing payment PENDING → SUCCEEDED via POST /admin/orders/{orderId}/confirm-bank-transfer. Receipt and audit are atomic and do not change order status. Historical and terminal orders reject before writes; repeated confirmation on an eligible already-paid order is a no-op. No reversal or partial payment is supported.
-
-The separate `payments` snapshot rows remain readable in order detail. Their technical status vocabulary is fixed to `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` (`PAY_RULE_003`). BANK_TRANSFER completion requires exactly one matching SUCCEEDED payment (same total/currency). Missing, multiple, failed/cancelled or mismatched records cannot be confirmed or used to complete an order. COD completion is unchanged; legacy payment records remain read-only. No existing row is automatically marked paid.
+New orders do not enter a bank-transfer state machine. Existing payment rows keep the technical
+status vocabulary `PENDING`, `SUCCEEDED`, `FAILED`, `CANCELLED` and remain read-only in order
+history. The cutover changes only the two explicitly identified unconfirmed orders from
+`BANK_TRANSFER` to `COD`; it does not mark them paid or rewrite any other order.
 
 ## 8. Shipping / Fulfillment State Machine — Removed
 
@@ -772,6 +773,9 @@ Evidence:
 
 ## 15A. Review Moderation State Machine
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 ### State field and initial state
 
 `reviews.status` accepts `PENDING`, `APPROVED`, `SPAM`, `TRASH`. A review
@@ -828,6 +832,9 @@ Status: `OWNER_CONFIRMED_2026-07-28`. Canonical rules:
 
 ## 15A. Trợ lý BigBike — vòng hỏi lại khi chọn hàng (quyết định owner 2026-09-06)
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 Khi khách nói chung chung, trợ lý hỏi lại theo thứ tự cố định và mỗi câu đều kèm nút bấm.
 Trạng thái nằm trong `chat_conversations.context_json`, sống theo hội thoại, không có dữ liệu cá nhân.
 
@@ -855,6 +862,9 @@ Status: `OWNER_CONFIRMED_2026-09-06`; `CHAT_RULE_017`, `CHAT_RULE_034`–`CHAT_R
 
 ## 15B. Trợ lý BigBike — không còn giao người thật (quyết định owner 2026-08-30)
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 Từ quyết định của chủ shop ngày 2026-08-30, state machine giao người thật đã bị gỡ bỏ.
 Không còn `chat_handoff_requests`, các trạng thái `WAITING|ACTIVE|RETURNED_TO_AI`,
 claim, tin nhắn nhân viên, trả lại AI, đóng handoff, email hoặc thông báo cho handoff.
@@ -866,6 +876,9 @@ assertion để không chạy khi dữ liệu handoff/tin nhắn nhân viên cò
 Status: `OWNER_CONFIRMED_2026-08-30`; `CHAT_RULE_008`, `009`, `011`, `040`, `045`–`047`.
 
 ## 15C. Trợ lý BigBike — vòng đời ảnh khách gửi
+
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
 
 | From | To | Guard / side effect |
 |---|---|---|
@@ -892,6 +905,9 @@ nối tiếp tư vấn chữ theo `owner decision 2026-09-07`; `CHAT_RULE_057`�
 
 ## 15D. Review Invitation Delivery State Machine
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 State field: `review_invitation_deliveries.status`; initial state `PENDING`.
 
 | From | To | Trigger / rule |
@@ -915,7 +931,7 @@ State field: `review_invitation_deliveries.status`; initial state `PENDING`.
 | Order | `CANCELLED` | Inventory | No stock change (V261). | Availability is a manual boolean — cancelling does not restore quantity. | `CONFIRMED_FROM_CODE` |
 | Order | `COMPLETED` | Order timestamps | `completedAt` set if null. | Record completion time. | `CONFIRMED_BACKEND_ENFORCED` |
 | Order | `CANCELLED` | Order timestamps | `cancelledAt` set if null. | Record cancellation time. | `CONFIRMED_BACKEND_ENFORCED` |
-| Payment record | `SUCCEEDED` | Payment snapshot | `paidAt` may be present for a successful historical/manual record. | For BANK_TRANSFER, full receipt permits subsequent delivery completion; legacy records remain readable. | `STATUS_ONLY` |
+| Payment record | `SUCCEEDED` | Payment snapshot | `paidAt` may be present for a successful historical/manual record. | Historical payment details remain readable; no new receipt action is available. | `STATUS_ONLY` |
 | Content | `PUBLISHED` | Public Web / SEO | `publishedAt` set; web revalidation triggered. | Public content lifecycle. | `CONFIRMED_BACKEND_ENFORCED`; public filtering `CONFIRMED_FROM_CODE` (2026-08-06) |
 | Media | `DELETED` | Media Library | Excluded by default from admin media list. | Avoid showing deleted media. | `CONFIRMED_BACKEND_ENFORCED` |
 | Admin User | `DISABLED` / `SUSPENDED` | Auth/API | Blocks login (`AdminAuthService.login`) **and every subsequent authenticated request**, not just login. | Security — fixed 2026-07-06: `JwtAuthFilter` now re-checks the admin's current status/role from DB (cached, evicted on write) on every request instead of trusting the JWT claims alone, so a lock/suspend/demote takes effect on the admin's very next request instead of surviving up to the ~15min access-token TTL. | `CONFIRMED_BACKEND_ENFORCED` — `JwtAuthFilter.java`, `AdminAccountStatusService.java`, `AdminAdminUsersService.java` (evicts cache on status/role change) |
@@ -971,7 +987,7 @@ Notes:
 
 | Entity / State Machine | Status | Gap |
 |---|---|---|
-| Payment Provider/Webhook lifecycle | `NOT_FOUND_IN_REPO` | No automatic payment gateway. New storefront orders use manual `COD` or `BANK_TRANSFER`; shop staff confirm by phone before operational processing, and bank-account details appear after order creation and remain on confirmation, from existing public payment settings. `BACS` is legacy-order compatibility only. No payment redirect or provider webhook; the Alepay/ZaloPay plan was dropped. |
+| Payment Provider/Webhook lifecycle | `NOT_FOUND_IN_REPO` | No automatic payment gateway. New storefront orders use COD only; shop staff confirm by phone before operational processing. Historical payment methods remain readable. No payment redirect, provider webhook or public bank-account settings; the Alepay/ZaloPay plan was dropped. |
 | Shipping Provider/Tracking automation | `NOT_FOUND_IN_REPO` | No carrier integration found; shipment-tracking metadata was removed entirely (2026-07-23). |
 | Serial lifecycle | `REMOVED` | Serial-number tracking was removed platform-wide (2026-06-23, V259). There is no serial lifecycle. Inventory is manual boolean availability only. |
 | Settings lifecycle | `STATUS_ONLY` / `NEEDS_VERIFICATION` | Settings APIs exist; no state machine confirmed. |
@@ -989,7 +1005,7 @@ Notes:
 | Product mutation | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ProductMutationService.java` | Product create/update/publish/soft-delete uses transition validation. | High |
 | Public product/category/brand visibility | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/catalog/CatalogReadService.java` | Product `PUBLISHED` and category/brand visible filters. | High |
 | Order/payment transitions | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminOrderService.java` | Order/payment allowed transition maps, timestamps, audit, notification/websocket side effects. (No stock restore — availability is a manual boolean, V261.) | High |
-| Checkout initial state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java` | Manual `COD`/`BANK_TRANSFER` initial order state, payment-record snapshot, per-variant `isAvailable` gate, order creation. Legacy BACS/null remains read-compatible only. (No quantity decrement — V261.) | High |
+| Checkout initial state | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java` | COD-only initial order state, payment-record snapshot, per-variant `isAvailable` gate, order creation. Historical payment methods remain read-compatible only. (No quantity decrement — V261.) | High |
 | Customer account status | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCustomerService.java`, `service/customer/CustomerSessionService.java`, `security/CustomerSessionFilter.java` | Four allowed stored statuses, validation, synthetic-customer transition guard, non-active session revocation, and authentication rejection. | High |
 | Inventory states | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/domain/catalog/ProductStockState.java` | Product stock states. | High |
 | Inventory availability | `bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminInventoryController.java` | Per-variant / per-product boolean availability toggle (V261); `stockState` mirrors it. | High |
@@ -1049,6 +1065,9 @@ Trang xin lỗi tự động do Nginx phục vụ khi upstream thật sự khôn
 
 ## 15D. Trợ lý BigBike — vòng đời video ngắn (08/09/2026)
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
 | From | To | Điều kiện / tác động |
 |---|---|---|
 | — | `PENDING` | Chủ hội thoại hợp lệ; MP4/MOV/WebM đọc được, ≤15 giây/40 MB; dưới hai video/hội thoại, cùng lượt không có ảnh. Lưu bản chuẩn hóa riêng tư, giữ âm thanh, ghi mốc nhận xong và hạn trả lời +60 giây. |
@@ -1063,5 +1082,8 @@ Trang xin lỗi tự động do Nginx phục vụ khi upstream thật sự khôn
 Nguồn: `CHAT_RULE_062`–`065`. Không thêm trạng thái hội thoại hay quyền quản trị.
 
 ### Ảnh chat nhiều tệp — 2026-09-08
+
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
 
 PENDING → ATTACHED chỉ sau kiểm toàn bộ quyền/thứ tự ảnh. ATTACHED → PROCESSING khi giữ được lượt đọc; ảnh chưa đủ lượt → LIMIT_SKIPPED. PROCESSING → READY khi có kết quả hợp lệ, UNRECOGNIZED khi đã xem nhưng chưa rõ, ANALYSIS_FAILED khi hết thử do lỗi kỹ thuật; REJECTED_UNSAFE vẫn chặn đọc và xóa object như trước. Retry cùng logical turn dùng lại quota/deadline/kết quả đã lưu. Biên lai READY tạo thông báo tham chiếu tin nhắn, không tạo trạng thái chat nhân viên, đơn hàng hoặc thanh toán.

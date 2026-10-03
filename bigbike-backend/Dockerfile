@@ -14,7 +14,8 @@ RUN --mount=type=cache,target=/root/.m2 \
 FROM eclipse-temurin:17-jre-alpine AS runner
 WORKDIR /app
 
-RUN apk add --no-cache ffmpeg && addgroup -S bigbike && adduser -S bigbike -G bigbike
+RUN addgroup -S bigbike \
+    && adduser -S bigbike -G bigbike
 USER bigbike
 
 COPY --from=builder /build/app.jar app.jar

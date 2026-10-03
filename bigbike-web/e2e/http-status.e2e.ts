@@ -51,6 +51,27 @@ test.describe("Không tìm thấy → 404 thật, không phải 200", () => {
     // Thẻ noindex phải nằm trong HTML thô — bot không chạy JavaScript.
     expect(html).toMatch(/<meta name="robots"[^>]*content="[^"]*noindex/i);
   });
+
+  test("đường dẫn lạ có ô tìm kiếm và lối đi tiếp", async ({ page }) => {
+    const response = await page.goto("/duong-dan-cu-khong-con-2026/", {
+      waitUntil: "domcontentloaded",
+    });
+    expect(response?.status()).toBe(404);
+
+    const search = page.getByRole("searchbox", {
+      name: "Tìm sản phẩm hoặc thương hiệu",
+    });
+    await expect(search).toBeVisible();
+    await expect(page.getByRole("link", { name: "Xem sản phẩm" })).toHaveAttribute("href", "/sp/");
+    await expect(page.getByRole("link", { name: "Đọc tin tức" })).toHaveAttribute(
+      "href",
+      "/tin-tuc/",
+    );
+
+    await search.fill("balo");
+    await search.press("Enter");
+    await expect(page).toHaveURL(/\/tim-kiem\/?\?s=balo/);
+  });
 });
 
 test.describe("Trang thật vẫn 200", () => {

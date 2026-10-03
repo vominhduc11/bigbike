@@ -235,7 +235,7 @@ function ResetPasswordForm({ token }: { token: string }) {
 
 export default function ForgotPasswordFlow({ token, returnTo }: ForgotPasswordFlowProps) {
   return (
-    <div>
+    <div data-clarity-mask="true">
       {token ? <ResetPasswordForm token={token} /> : <RequestResetForm />}
       <GuestStorefrontExit returnTo={returnTo} />
     </div>

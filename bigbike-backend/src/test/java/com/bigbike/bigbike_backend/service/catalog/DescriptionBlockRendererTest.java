@@ -103,6 +103,29 @@ class DescriptionBlockRendererTest {
     }
 
     @Test
+    void articleImage_preservesOriginalCaptionParagraphAndEscapesEditedText() {
+        var block = DescriptionBlock.ImageBlock.builder()
+                .type("image")
+                .url("https://cdn.bigbike.vn/img/helmet.jpg")
+                .caption("Mũ <đỏ> & xanh")
+                .captionHtmlTemplate("<p style=\"text-align: center;\"><em>{{caption}}</em></p>")
+                .build();
+
+        String articleHtml = renderer.renderArticleBlocksToHtml(List.of(block));
+        assertThat(articleHtml).contains("<p style=\"text-align: center\"><em>Mũ &lt;đỏ&gt; &amp; xanh</em></p>");
+        assertThat(articleHtml).doesNotContain("<figcaption>");
+        assertThat(renderer.renderBlocksToHtml(List.of(block))).contains("<figcaption>")
+                .doesNotContain("<p style=");
+    }
+
+    @Test
+    void articleStyleFilter_dropsExecutableCssAndEventHandlers() {
+        String html = renderer.sanitizeArticleHtml(
+                "<p style=\"text-align: center; color: url(javascript:alert(1))\" onclick=\"alert(1)\">An toàn</p>");
+        assertThat(html).contains("text-align: center").doesNotContain("url(").doesNotContain("onclick");
+    }
+
+    @Test
     void video_rendersBbVideoDiv() {
         var block = new DescriptionBlock.VideoBlock();
         block.setProvider("youtube");

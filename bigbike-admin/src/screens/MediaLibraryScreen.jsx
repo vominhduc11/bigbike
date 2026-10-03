@@ -550,7 +550,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
         />
       )}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[auto_minmax(0,1fr)]">
+      <div className="grid items-start gap-4 lg:grid-cols-[clamp(20rem,24vw,24rem)_minmax(0,1fr)]">
         <MediaFolderSidebar
           folderFilter={query.folderFilter}
           tag={query.tag}
@@ -561,7 +561,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
           onSelectTag={(v) => updateQuery({ tag: v })}
         />
 
-        <DetailSection className="min-w-0" contentClassName="space-y-4" ref={dropZoneRef}>
+        <DetailSection
+          className="min-w-0"
+          contentClassName="@container/media space-y-4"
+          ref={dropZoneRef}
+        >
           {/* ── Filter bar ─────────────────────────────────────────── */}
           <ResponsiveFilterBar
             ariaLabel={t('media.filtersAria')}
@@ -828,7 +832,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
             state.items.length > 0 && (
               <>
                 <div
-                  className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
+                  className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-2 lg:@lg/media:grid-cols-3 lg:@min-[43rem]/media:grid-cols-4 lg:@min-[54rem]/media:grid-cols-5 lg:@min-[65rem]/media:grid-cols-6"
                   ref={gridRef}
                   aria-busy={isRefreshing || undefined}
                 >

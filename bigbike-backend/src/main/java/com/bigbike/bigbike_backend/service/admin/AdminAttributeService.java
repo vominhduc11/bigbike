@@ -18,6 +18,7 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariant
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class AdminAttributeService {
+
+    private static final Set<String> USED_VALUE_ENGLISH_EDITABLE_ATTRIBUTE_CODES = Set.of("bo", "co-oc");
 
     private final AttributeJpaRepository attributeRepo;
     private final AttributeValueJpaRepository valueRepo;
@@ -215,30 +218,46 @@ public class AdminAttributeService {
     }
 
     /**
-     * Rename an unused value. Used values are immutable so public variant names,
-     * filters and media matching cannot change underneath existing products.
+     * Rename an unused value. Used values keep their Vietnamese label and slug so
+     * public variant names, filters and media matching cannot change underneath
+     * existing products. Only Bo and bolt-size values may update English text.
      */
     @Transactional
     public AttributeValueResponse updateValueLabel(String valueId, UpdateAttributeValueRequest request, UUID adminId) {
         AttributeValueEntity entity = valueRepo.findById(valueId)
                 .orElseThrow(() -> new NotFoundException("Attribute value not found: " + valueId));
         long usageCount = variantOptionRepo.countByAttributeValue_Id(valueId);
-        if (usageCount > 0) {
-            throw new ConflictException(
-                    "Giá trị \"" + entity.getLabel() + "\" đang được " + usageCount
-                            + " biến thể sử dụng, không thể đổi tên.");
-        }
         String before = attributeValueSnapshot(entity);
-        entity.setLabel(request.label().trim());
-        // Presence-flag: omit labelEn → unchanged; send blank → clears the English label.
-        if (request.labelEn() != null) {
+        if (usageCount > 0) {
+            if (!allowsUsedEnglishLabelUpdate(entity, request)) {
+                throw new ConflictException(
+                        "Giá trị \"" + entity.getLabel() + "\" đang được " + usageCount
+                                + " biến thể sử dụng, không thể đổi tên.");
+            }
             entity.setLabelEn(normalizeOptional(request.labelEn()));
+        } else {
+            entity.setLabel(request.label().trim());
+            // Presence-flag: omit labelEn → unchanged; send blank → clears the English label.
+            if (request.labelEn() != null) {
+                entity.setLabelEn(normalizeOptional(request.labelEn()));
+            }
         }
         AttributeValueEntity saved = valueRepo.save(entity);
         auditLogWriter.save(auditLogFactory.build(
                 "ADMIN", adminId, "ATTRIBUTE_VALUE_UPDATED", "ATTRIBUTE", null, before, attributeValueSnapshot(saved)));
         catalogReferenceCacheEvictor.evictAllAfterCommit();
         return toValueResponse(saved);
+    }
+
+    private static boolean allowsUsedEnglishLabelUpdate(
+            AttributeValueEntity entity,
+            UpdateAttributeValueRequest request
+    ) {
+        AttributeEntity attribute = entity.getAttribute();
+        return request.labelEn() != null
+                && request.label().trim().equals(entity.getLabel())
+                && attribute != null
+                && USED_VALUE_ENGLISH_EDITABLE_ATTRIBUTE_CODES.contains(attribute.getCode());
     }
 
     /** Trim an optional text field; blank/null → null (so a cleared English label stores NULL). */

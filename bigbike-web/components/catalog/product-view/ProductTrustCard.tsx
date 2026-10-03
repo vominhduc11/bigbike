@@ -2,7 +2,17 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { useLocale } from "next-intl";
-import { BadgeCheck, ClipboardCheck, MapPin, MessageCircle, Package, Phone, Shield, Tag, type LucideIcon } from "lucide-react";
+import {
+  BadgeCheck,
+  ClipboardCheck,
+  MapPin,
+  MessageCircle,
+  Package,
+  Phone,
+  Shield,
+  Tag,
+  type LucideIcon,
+} from "lucide-react";
 import { Tr } from "@/components/i18n/Tr";
 import { Button } from "@/components/ui/button";
 import { useLocalizedField } from "@/components/i18n/LocalizedContent";
@@ -18,18 +28,38 @@ type TrustItem = { key: "price" | "stock"; labelKey: string; value: ReactNode };
  * Ô số liệu THỜI GIAN THỰC của khối "Mua tại BigBike.vn" (#12): Giá + Kho, cùng nguồn nút mua
  * (giảm giá + tắt-bán thủ công). Cam kết/Liên hệ render riêng trong <ProductTrustCard>.
  */
-export function buildTrustItems({ product, previewMode }: { product: Product; previewMode: boolean }): TrustItem[] {
+export function buildTrustItems({
+  product,
+  previewMode,
+}: {
+  product: Product;
+  previewMode: boolean;
+}): TrustItem[] {
   const items: TrustItem[] = [];
   if (product.price?.retailPrice != null) {
-    items.push({ key: "price", labelKey: "trustPrice", value: <TrustLivePrice product={product} previewMode={previewMode} /> });
+    items.push({
+      key: "price",
+      labelKey: "trustPrice",
+      value: <TrustLivePrice product={product} previewMode={previewMode} />,
+    });
   }
   if (product.stockState) {
-    items.push({ key: "stock", labelKey: "trustStock", value: <TrustLiveStock product={product} previewMode={previewMode} /> });
+    items.push({
+      key: "stock",
+      labelKey: "trustStock",
+      value: <TrustLiveStock product={product} previewMode={previewMode} />,
+    });
   }
   return items;
 }
 
-type Cell = { key: string; icon: LucideIcon; tone: "red" | "dark"; value: ReactNode; label?: ReactNode };
+type Cell = {
+  key: string;
+  icon: LucideIcon;
+  tone: "red" | "dark";
+  value: ReactNode;
+  label?: ReactNode;
+};
 
 type TrustContactProps = {
   hotline: string;
@@ -70,7 +100,9 @@ export function ProductTrustCard({
 }: { items: TrustItem[]; viCommitments: ProductCommitment[] } & TrustContactProps) {
   const locale = useLocale();
   const enCommitments = useLocalizedField<ProductCommitment[]>("commitments");
-  const commitments = (locale === "en" ? enCommitments ?? viCommitments : viCommitments).filter((c) => c.title);
+  const commitments = (locale === "en" ? (enCommitments ?? viCommitments) : viCommitments).filter(
+    (c) => c.title,
+  );
 
   const cells: Cell[] = items.map((item) => ({
     key: item.key,
@@ -132,7 +164,10 @@ export function ProductTrustCard({
                   className={`flex size-7 shrink-0 items-center justify-center ${cell.tone === "red" ? "bg-brand-soft" : "bg-secondary"}`}
                   aria-hidden="true"
                 >
-                  <Icon className={`size-3.5 ${cell.tone === "red" ? "text-brand" : "text-foreground"}`} strokeWidth={1.8} />
+                  <Icon
+                    className={`size-3.5 ${cell.tone === "red" ? "text-brand" : "text-foreground"}`}
+                    strokeWidth={1.8}
+                  />
                 </span>
                 <span
                   className={`font-body text-a4-content font-semibold ${cell.tone === "red" ? "text-brand" : "text-foreground"}`}
@@ -140,7 +175,9 @@ export function ProductTrustCard({
                   {cell.value}
                 </span>
                 {cell.label ? (
-                  <span className="font-cta text-b5-label font-semibold uppercase tracking-wide text-muted-foreground">{cell.label}</span>
+                  <span className="font-cta text-b5-label font-semibold uppercase tracking-wide text-muted-foreground">
+                    {cell.label}
+                  </span>
                 ) : null}
               </div>
             );
@@ -158,6 +195,8 @@ export function ProductTrustCard({
               <a
                 href={telHref(hotline)}
                 className="inline-flex items-center gap-2 font-body text-a3-section font-semibold !text-brand transition-colors hover:!text-brand-hover"
+                data-analytics-contact-channel="phone"
+                data-analytics-location="product_trust_card"
               >
                 <Phone className="size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                 {hotline}
@@ -188,7 +227,13 @@ export function ProductTrustCard({
               variant="primary"
               className="w-full shrink-0 !border-primary !bg-primary !text-primary-foreground transition-colors hover:!border-brand-hover hover:!bg-brand-hover sm:w-auto"
             >
-              <a href={zaloHref(zaloLink)} target="_blank" rel="noopener noreferrer">
+              <a
+                href={zaloHref(zaloLink)}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-analytics-contact-channel="zalo"
+                data-analytics-location="product_trust_card"
+              >
                 <MessageCircle className="size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                 <Tr ns="PdpBuyBox" k="zaloConsult" />
               </a>

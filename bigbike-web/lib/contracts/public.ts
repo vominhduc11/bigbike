@@ -155,6 +155,8 @@ export type ProductPrice = {
 type ProductVariantOption = {
   name: string;
   value: string;
+  /** English-only, display-only label for a color swatch's accessible name. */
+  accessibilityLabel?: string | null;
 };
 
 export type ProductVariant = {
@@ -472,22 +474,24 @@ export type Article = {
   /** Optional English URL slug (V216). Canonical `slug` stays vi; null/absent when unset. */
   slugEn?: string | null;
   title: string;
-  excerpt?: string;
   body: string;
   coverImage?: ImageAsset;
   /** ACF product_image overlay used by the Experience Carousel. Null when not set. */
   productImage?: ImageAsset | null;
   publishStatus: PublishStatus;
-  /** Khi true, bài thuộc nhóm "Tin nổi bật" — lọc qua `GET /api/v1/articles?featured=true`. */
+  /** Nhân viên chọn tay bài vào khối "Tin nổi bật" ở trang bài viết. */
   featured?: boolean;
   /** Khi true, bài được chọn vào carousel "Góc trải nghiệm" trang chủ — lọc qua `?homeExperience=true` (V272). */
   homeExperience?: boolean;
-  /** Tên tác giả theo ngôn ngữ; để trống thì web ẩn dòng tác giả và JSON-LD không khai author. */
-  authorName?: string | null;
   seo?: SeoMeta;
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ArticleRecommendations = {
+  featured: Article[];
+  related: Article[];
 };
 
 export type PublicMenuItem = {

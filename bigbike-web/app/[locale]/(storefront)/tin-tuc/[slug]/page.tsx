@@ -4,7 +4,12 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { PageHero } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
-import { getArticleBySlug, listArticles, listPublicSettings } from "@/lib/api/public-api";
+import {
+  getArticleBySlug,
+  getArticleRecommendations,
+  listArticles,
+  listPublicSettings,
+} from "@/lib/api/public-api";
 import type { Article } from "@/lib/contracts/public";
 import {
   buildArticleBreadcrumbJsonLd,
@@ -15,6 +20,7 @@ import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { readDefaultHeroAssets, readHeroSettings } from "@/lib/utils/page-hero";
 import { pickSetting } from "@/lib/utils/settings";
+import { normalizeMetaDescription } from "@/lib/utils/text";
 import { toArticleListPath, toArticlePath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 import { Tr } from "@/components/i18n/Tr";
@@ -64,9 +70,13 @@ export async function generateMetadata({ params }: ArticleDetailPageProps): Prom
   const article = result.data;
   const preferredSlug = locale === "en" ? article.slugEn?.trim() || article.slug : article.slug;
   const canonicalPath = toArticlePath(preferredSlug, locale);
+  const description =
+    article.seo?.description?.trim() ||
+    normalizeMetaDescription(article.body) ||
+    t("articleDefaultDescription");
   return buildPublicMetadata({
     title: article.seo?.title ?? article.title,
-    description: article.seo?.description ?? article.excerpt ?? t("articleDefaultDescription"),
+    description,
     canonicalPath,
     locale,
     noIndex: article.seo?.noIndex ?? false,
@@ -143,10 +153,7 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   }
 
   const article = result.data;
-  const [featuredResult, latestResult] = await Promise.all([
-    listArticles({ page: 1, size: 8, sort: "publishedAt:desc", featured: true, lang: locale }),
-    listArticles({ page: 1, size: 8, sort: "publishedAt:desc", lang: locale }),
-  ]);
+  const recommendationsResult = await getArticleRecommendations(article.slug, locale);
 
   const siteName = pickSetting(settingsResult.data ?? [], ["site_name"]);
   const preferredSlug = locale === "en" ? article.slugEn?.trim() || article.slug : article.slug;
@@ -157,15 +164,14 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
   const breadcrumbJsonLd = serializeJsonLd(buildArticleBreadcrumbJsonLd(article, canonicalPath));
 
   // SEO sống ở server component; phần thân hiển thị do <ArticleView> đảm nhiệm (dùng
-  // chung với khung xem trước của admin).
-  const latestArticles = excludeArticle(latestResult.data ?? [], article.slug);
-  const featuredArticles = excludeArticle(featuredResult.data ?? [], article.slug);
-  const highlightedArticles = (featuredArticles.length ? featuredArticles : latestArticles).slice(
-    0,
-    5,
-  );
-  const newestArticles = latestArticles.slice(0, 5);
-  const relatedArticles = latestArticles.slice(0, 4);
+  // chung với khung xem trước của admin). The backend owns the normal ranking and fallback;
+  // this local fallback only protects the article page during a partial API outage.
+  const recommendations = recommendationsResult.data ?? (await newestFallback(article, locale));
+  const highlightedArticles = excludeArticle(recommendations.featured, article.id).slice(0, 5);
+  const highlightedIds = new Set(highlightedArticles.map((item) => item.id));
+  const relatedArticles = excludeArticle(recommendations.related, article.id)
+    .filter((item) => !highlightedIds.has(item.id))
+    .slice(0, 4);
 
   return (
     <>
@@ -177,13 +183,21 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         heroBgUrl={heroBgUrl}
         heroIllustrationUrl={heroIllustrationUrl}
         highlighted={highlightedArticles}
-        newest={newestArticles}
         related={relatedArticles}
       />
     </>
   );
 }
 
-function excludeArticle(articles: Article[], currentSlug: string): Article[] {
-  return articles.filter((item) => item.slug !== currentSlug);
+async function newestFallback(article: Article, locale: Locale) {
+  const result = await listArticles({ page: 1, size: 10, sort: "publishedAt:desc", lang: locale });
+  const candidates = excludeArticle(result.data ?? [], article.id);
+  return {
+    featured: candidates.slice(0, 5),
+    related: candidates.slice(5, 9),
+  };
+}
+
+function excludeArticle(articles: Article[], currentArticleId: string): Article[] {
+  return articles.filter((item) => item.id !== currentArticleId);
 }

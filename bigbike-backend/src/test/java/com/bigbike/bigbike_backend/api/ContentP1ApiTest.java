@@ -2,6 +2,8 @@ package com.bigbike.bigbike_backend.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -28,71 +30,151 @@ class ContentP1ApiTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    private final com.fasterxml.jackson.databind.ObjectMapper json = new com.fasterxml.jackson.databind.ObjectMapper();
+
     @BeforeEach
     void setup() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
     @Test
+    void recoversLegacyArticleOnReadWithoutWritingAndKeepsOriginalBlocksWhenAddingContent() throws Exception {
+        String slug = "article-recovery-" + java.util.UUID.randomUUID();
+        var payload = json.createObjectNode();
+        payload.put("slug", slug).put("title", "Bài kiểm tra khôi phục")
+                .put("publishStatus", "DRAFT")
+                .put("body", "<p>Nội dung gốc <a href=\"/tin-tuc/\">Tin tức</a></p>"
+                        + "<table><tr><th>Cỡ</th><td>M</td></tr></table>");
+        payload.putObject("translations").putObject("en")
+                .put("title", "Article recovery test").put("body", "<p>Keep English</p>");
+        String created = mockMvc.perform(post("/api/v1/admin/content/articles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "content.update")
+                        .content(json.writeValueAsBytes(payload)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String id = json.readTree(created).path("data").path("id").asText();
+        jdbc.update("UPDATE articles SET body_blocks=NULL WHERE id=?", id);
+        var before = jdbc.queryForMap("SELECT body,body_en,updated_at FROM articles WHERE id=?", id);
+
+        String detail = mockMvc.perform(get("/api/v1/admin/content/article/{id}", id)
+                        .header("X-Admin-Permissions", "content.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bodyBlocks[0].type").value("paragraph"))
+                .andExpect(jsonPath("$.data.bodyBlocks[1].type").value("table"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(jdbc.queryForObject("SELECT body_blocks FROM articles WHERE id=?", String.class, id)).isNull();
+        assertThat(jdbc.queryForMap("SELECT body,body_en,updated_at FROM articles WHERE id=?", id)).isEqualTo(before);
+
+        var blocks = (com.fasterxml.jackson.databind.node.ArrayNode) json.readTree(detail).path("data").path("bodyBlocks");
+        blocks.addObject().put("type", "paragraph").put("html", "<p>Phần bổ sung</p>");
+        var update = json.createObjectNode().set("bodyBlocks", blocks);
+        mockMvc.perform(patch("/api/v1/admin/content/articles/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "content.update")
+                        .content(json.writeValueAsBytes(update)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bodyBlocks.length()").value(3));
+        String body = jdbc.queryForObject("SELECT body FROM articles WHERE id=?", String.class, id);
+        assertThat(body).contains("Nội dung gốc", "<table>", "href=\"/tin-tuc/\"", "Phần bổ sung");
+        assertThat(jdbc.queryForObject("SELECT body_en FROM articles WHERE id=?", String.class, id))
+                .isEqualTo(before.get("body_en"));
+
+        mockMvc.perform(patch("/api/v1/admin/content/articles/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "content.update")
+                        .content("{\"body\":\"<p>New HTML import</p>\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bodyBlocks.length()").value(1))
+                .andExpect(jsonPath("$.data.bodyBlocks[0].html").value("<p>New HTML import</p>"));
+    }
+
+    @Test
+    void savesAndUpdatesTheManualFeaturedArticleFlag() throws Exception {
+        String suffix = String.valueOf(System.nanoTime());
+        String slug = "manual-featured-" + suffix;
+        String response = mockMvc.perform(post("/api/v1/admin/content/articles")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "content.update")
+                        .content("""
+                                {
+                                  "slug": "%s",
+                                  "title": "Manual featured %s",
+                                  "body": "<p>Body</p>",
+                                  "publishStatus": "PUBLISHED",
+                                  "featured": true,
+                                  "translations": { "en": { "title": "Manual featured %s" } }
+                                }
+                                """.formatted(slug, suffix, suffix)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.featured").value(true))
+                .andReturn().getResponse().getContentAsString();
+        String id = json.readTree(response).path("data").path("id").asText();
+
+        mockMvc.perform(patch("/api/v1/admin/content/articles/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-Admin-Permissions", "content.update")
+                        .content("{\"featured\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.featured").value(false));
+    }
+
+    @Test
     void articleApiDoesNotExposeContentCategoryFieldsOrEndpoint() throws Exception {
         long ts = System.currentTimeMillis();
-        String slug = "content-category-removed-" + ts;
-        String uniqueMarker = "NoContentCategory" + ts;
-        String title = "Content category removed " + uniqueMarker;
+        String slug = "article-retired-fields-" + ts;
+        String titleMarker = "Article retired fields " + ts;
+        String bodyMarker = "BodyOnlyRetiredFields" + ts;
         String createPayload = """
                 {
                   "slug": "%s",
                   "title": "%s",
-                  "body": "<p>test</p>",
-                  "authorName": "Tác giả kiểm thử",
+                  "body": "<p>%s</p>",
+                  "excerpt": "Trường cũ không được lưu",
+                  "authorName": "Tên tác giả cũ không được lưu",
                   "publishStatus": "PUBLISHED",
-                  "translations": { "en": { "title": "%s EN", "authorName": "Test Author" } }
+                  "translations": { "en": { "title": "%s EN", "excerpt": "Old EN excerpt", "authorName": "Old EN author" } }
                 }
-                """.formatted(slug, title, title);
+                """.formatted(slug, titleMarker, bodyMarker, titleMarker);
 
-        mockMvc.perform(post("/api/v1/admin/content/articles")
+        String createdResponse = mockMvc.perform(post("/api/v1/admin/content/articles")
                         .contentType(MediaType.APPLICATION_JSON)
                         .characterEncoding(StandardCharsets.UTF_8)
                         .header("X-Admin-Permissions", "content.update")
                         .content(createPayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.slug").value(slug))
-                .andExpect(jsonPath("$.data.authorName").value("Tác giả kiểm thử"))
+                .andExpect(jsonPath("$.data.excerpt").doesNotExist())
+                .andExpect(jsonPath("$.data.authorName").doesNotExist())
                 .andExpect(jsonPath("$.data.category").doesNotExist())
                 .andExpect(jsonPath("$.data.categoryId").doesNotExist())
-                .andExpect(jsonPath("$.data.categories").doesNotExist());
+                .andExpect(jsonPath("$.data.categories").doesNotExist())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String articleId = json.readTree(createdResponse).path("data").path("id").asText();
 
         mockMvc.perform(get("/api/v1/articles")
-                        .param("q", uniqueMarker))
+                        .param("q", titleMarker))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pagination.totalItems").value(1))
-                .andExpect(jsonPath("$.data[0].authorName").value("Tác giả kiểm thử"))
+                .andExpect(jsonPath("$.data[0].excerpt").doesNotExist())
+                .andExpect(jsonPath("$.data[0].authorName").doesNotExist())
                 .andExpect(jsonPath("$.data[0].category").doesNotExist())
                 .andExpect(jsonPath("$.data[0].categories").doesNotExist());
 
-        String noAuthorSlug = "article-without-author-" + ts;
-        String noAuthorMarker = "NoAuthor" + ts;
-        String noAuthorPayload = """
-                {
-                  "slug": "%s",
-                  "title": "%s",
-                  "body": "<p>test</p>",
-                  "publishStatus": "PUBLISHED",
-                  "translations": { "en": { "title": "%s EN" } }
-                }
-                """.formatted(noAuthorSlug, noAuthorMarker, noAuthorMarker);
-
-        mockMvc.perform(post("/api/v1/admin/content/articles")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .header("X-Admin-Permissions", "content.update")
-                        .content(noAuthorPayload))
-                .andExpect(status().isOk());
-
         mockMvc.perform(get("/api/v1/articles")
-                        .param("q", noAuthorMarker))
+                        .param("q", bodyMarker))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].authorName").doesNotExist());
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
+
+        mockMvc.perform(get("/api/v1/admin/content/article/{id}", articleId)
+                        .header("X-Admin-Permissions", "content.read"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.translations.en.excerpt").doesNotExist())
+                .andExpect(jsonPath("$.data.translations.en.authorName").doesNotExist());
 
         mockMvc.perform(get("/api/v1/content-categories"))
                 .andExpect(status().isNotFound());

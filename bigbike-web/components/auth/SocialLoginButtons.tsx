@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { Locale } from "@/i18n/locale";
 import { oauthAuthorizeUrl } from "@/lib/api/client-api";
 import { markCustomerAuthenticated } from "@/lib/auth/auth-store";
+import { markPendingAuthentication } from "@/lib/analytics";
 
 function FacebookIcon() {
   return (
@@ -69,12 +70,13 @@ export function SocialLoginButtons({
       ? { privacyConsent: true as const, privacyPolicyLocale: registrationConsent.locale }
       : undefined;
 
-  function handleOAuthClick(event: MouseEvent<HTMLElement>) {
+  function handleOAuthClick(provider: "facebook" | "google", event: MouseEvent<HTMLElement>) {
     if (isRegistration && !consent) {
       event.preventDefault();
       registrationConsent?.onRequired();
       return;
     }
+    markPendingAuthentication(isRegistration ? "sign_up" : "login", provider);
     markCustomerAuthenticated();
   }
 
@@ -93,7 +95,7 @@ export function SocialLoginButtons({
         >
           <a
             href={oauthAuthorizeUrl(provider, returnTo, consent)}
-            onClick={handleOAuthClick}
+            onClick={(event) => handleOAuthClick(provider, event)}
             aria-label={label(provider)}
           >
             {provider === "facebook" ? <FacebookIcon /> : <GoogleIcon />}

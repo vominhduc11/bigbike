@@ -10,7 +10,6 @@ import {
   Image,
   KeyRound,
   LayoutDashboard,
-  MessageCircle,
   Package,
   Settings,
   Shield,
@@ -100,14 +99,6 @@ const ReviewDetailScreen = lazyScreen(
   () => import('./screens/ReviewDetailScreen'),
   'ReviewDetailScreen',
 )
-const ChatConversationListScreen = lazyScreen(
-  () => import('./screens/ChatConversationListScreen'),
-  'ChatConversationListScreen',
-)
-const ChatConversationDetailScreen = lazyScreen(
-  () => import('./screens/ChatConversationDetailScreen'),
-  'ChatConversationDetailScreen',
-)
 const SettingsScreen = lazyScreen(() => import('./screens/SettingsScreen'), 'SettingsScreen')
 const SliderListScreen = lazyScreen(() => import('./screens/SliderListScreen'), 'SliderListScreen')
 const HomeVideoListScreen = lazyScreen(
@@ -139,7 +130,6 @@ const SCREEN_PRELOADERS = {
   '/admin/orders': OrderListScreen,
   '/admin/customers': CustomerListScreen,
   '/admin/reviews': ReviewListScreen,
-  '/admin/chat': ChatConversationListScreen,
   '/admin/products': ProductListScreen,
   '/admin/discontinued-products': LegacyDiscontinuedProductsScreen,
   '/admin/featured-products': FeaturedProductsScreen,
@@ -191,7 +181,6 @@ const NAV_GROUP_DEFS = [
         icon: Users,
       },
       { path: '/admin/reviews', labelKey: 'nav.reviews', policyKey: 'reviewsRead', icon: Star },
-      { path: '/admin/chat', labelKey: 'nav.chat', policyKey: 'chatRead', icon: MessageCircle },
     ],
   },
   {
@@ -349,10 +338,6 @@ function parseRoute(pathname) {
   if (module === 'reviews' && !id) return { kind: 'screen', name: 'reviews' }
   if (module === 'reviews' && id) return { kind: 'screen', name: 'review-detail', reviewId: id }
 
-  if (module === 'chat' && !id) return { kind: 'screen', name: 'chat-conversations' }
-  if (module === 'chat' && id)
-    return { kind: 'screen', name: 'chat-conversation-detail', conversationId: id }
-
   if (module === 'media') return { kind: 'screen', name: 'media-library' }
   if (module === 'menus') return { kind: 'screen', name: 'menus' }
   if (module === 'sliders') return { kind: 'screen', name: 'sliders' }
@@ -371,7 +356,7 @@ function parseRoute(pathname) {
 // Vai trò bắt buộc cho từng route (ngoài permission). Chỉ Dashboard cần, để khớp backend.
 function AdminApp() {
   const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname))
-  const [search, setSearch] = useState(() => window.location.search)
+  const [, setSearch] = useState(() => window.location.search)
   const authState = useAuth()
   const { status: authStatus, reconcileAccess, invalidateSession } = authState
   const { t } = useTranslation()
@@ -438,8 +423,6 @@ function AdminApp() {
         ['customer-summary'],
         ['reviews'],
         ['review-summary'],
-        ['chat-conversations'],
-        ['chat-stats'],
       ]) {
         if (queryKey[0] === 'inventory-summary' && !canReadInventory) continue
         queryClient.invalidateQueries({ queryKey })
@@ -836,18 +819,6 @@ function AdminApp() {
           navigate={navigate}
           canUpdate={hasPermission('reviews.write')}
           isSuperAdmin={userRoles.includes('SUPER_ADMIN')}
-        />
-      )
-      break
-    case 'chat-conversations':
-      screen = <ChatConversationListScreen navigate={navigate} />
-      break
-    case 'chat-conversation-detail':
-      screen = (
-        <ChatConversationDetailScreen
-          conversationId={route.conversationId}
-          messageId={new URLSearchParams(search).get('message')}
-          navigate={navigate}
         />
       )
       break

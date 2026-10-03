@@ -11,13 +11,10 @@ class RateLimitPolicyCatalogTest {
 
     @Test
     void coversNewSideEffectingAndExpensiveSurfaces() {
-        assertTier("POST", "/api/v1/chat/leads", RateLimitTier.CHAT);
-        assertTier("POST", "/api/v1/chat/leads/decline", RateLimitTier.CHAT);
-        assertTier("POST", "/api/v1/chat/images", RateLimitTier.CHAT);
         assertTier("POST", "/api/v1/customer/me/avatar", RateLimitTier.CUSTOMER_MEDIA);
         assertTier("POST", "/api/v1/admin/media", RateLimitTier.ADMIN_MEDIA);
-        assertTier("POST", "/api/v1/admin/products/import/validate", RateLimitTier.ADMIN_IMPORT_VALIDATE);
-        assertTier("POST", "/api/v1/admin/products/import/commit", RateLimitTier.ADMIN_IMPORT_COMMIT);
+        assertTier("POST", "/api/v1/admin/products/import/validate", RateLimitTier.ADMIN_MUTATION);
+        assertTier("POST", "/api/v1/admin/products/import/commit", RateLimitTier.ADMIN_MUTATION);
         assertTier("GET", "/api/v1/admin/reports/orders/export", RateLimitTier.ADMIN_EXPORT);
         assertTier("GET", "/api/v1/auth/admin/invite", RateLimitTier.PASSWORD_RESET);
         assertTier("POST", "/api/internal/redirects/hit/abc", RateLimitTier.INTERNAL);
@@ -27,7 +24,6 @@ class RateLimitPolicyCatalogTest {
     @Test
     void trailingAndEncodedSeparatorsCannotSkipSensitivePolicy() {
         assertTier("POST", "/api/v1/customer/auth/login/", RateLimitTier.LOGIN);
-        assertTier("POST", "/api/v1/chat%2Fleads", RateLimitTier.CHAT);
         assertTier("POST", "/api/v1/products/p/reviews/photos/", RateLimitTier.REVIEW_PHOTO);
     }
 

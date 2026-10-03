@@ -100,8 +100,7 @@ public final class PermissionCatalog {
             write("admin-users.write", true, "admin-users.read", "roles.read"),
             read("roles.read"),
             write("roles.write", true, "roles.read"),
-            entry("audit-logs.read", "audit-logs", Kind.READ, true),
-            entry("chat.read", "chat", Kind.READ, true)
+            entry("audit-logs.read", "audit-logs", Kind.READ, true)
         ))
     );
 

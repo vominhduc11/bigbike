@@ -7,11 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { OrderAddress, OrderDetail } from "@/lib/contracts/commerce";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
-import { sectionHeading } from "@/lib/ui-classes";
-import { cn } from "@/lib/utils";
 import { formatAddress, formatVnd, telHref, zaloHref } from "@/lib/utils/format";
-import { BankTransferStatus } from "@/components/checkout/BankTransferStatus";
-import { bankTransferStatus, orderPaymentMethod, resolveBankTransfer } from "@/lib/utils/orders";
+import { orderPaymentMethod } from "@/lib/utils/orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,10 +28,6 @@ type Props = {
   settingsRecord: Record<string, string>;
   isLoading?: boolean;
   hasError?: boolean;
-  transferStep?: boolean;
-  settingsLoading?: boolean;
-  settingsError?: boolean;
-  retrySettings?: () => void;
   retryOrder?: () => void;
 };
 
@@ -52,23 +45,11 @@ export function OrderConfirmView({
   settingsRecord,
   isLoading = false,
   hasError = false,
-  transferStep = false,
-  settingsLoading = false,
-  settingsError = false,
-  retrySettings,
   retryOrder,
 }: Props) {
   const locale = useLocale() as Locale;
   const t = useTranslations("OrderConfirm");
   const tCommon = useTranslations("Common");
-  const router = useRouter();
-  const showTransferStep = Boolean(
-    order &&
-    transferStep &&
-    orderPaymentMethod(order) === "BANK_TRANSFER" &&
-    !["COMPLETED", "CANCELLED"].includes(order.status) &&
-    bankTransferStatus(order) !== "SUCCEEDED",
-  );
 
   if (!orderNumber || !orderKey) {
     return (
@@ -87,53 +68,8 @@ export function OrderConfirmView({
     <OrderShell>
       {order ? (
         <>
-          {showTransferStep ? (
-            <div className="mb-6 border-l-4 border-brand bg-secondary p-6">
-              <h1 className="font-cta text-a2-heading uppercase">{t("transferStepTitle")}</h1>
-              <p className="mt-3 text-a4-content">
-                {t("transferStepBody", { orderNumber: order.orderNumber })}
-              </p>
-            </div>
-          ) : (
-            <SuccessBanner orderNumber={order.orderNumber} />
-          )}
-          <BankTransferStatus order={order} />
-          {!showTransferStep && (
-            <NextSteps
-              phone={findAddress(order.addresses, "BILLING")?.phone ?? "—"}
-              isTransfer={["BANK_TRANSFER", "BACS"].includes(orderPaymentMethod(order))}
-            />
-          )}
-          <BankTransferInfo
-            order={order}
-            settings={settings}
-            loading={settingsLoading}
-            error={settingsError}
-            retry={retrySettings}
-          />
-          {showTransferStep && (
-            <div className="my-6 grid gap-3 sm:grid-cols-2">
-              <Button
-                onClick={() =>
-                  router.replace(
-                    toOrderConfirmPath(order.orderNumber, order.orderKey ?? undefined, locale),
-                  )
-                }
-              >
-                {t("transferContinue")}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() =>
-                  router.replace(
-                    toOrderConfirmPath(order.orderNumber, order.orderKey ?? undefined, locale),
-                  )
-                }
-              >
-                {t("transferLater")}
-              </Button>
-            </div>
-          )}
+          <SuccessBanner orderNumber={order.orderNumber} />
+          <NextSteps phone={findAddress(order.addresses, "BILLING")?.phone ?? "—"} />
           <OrderDetails order={order} />
           <CustomerDetails order={order} />
 
@@ -256,7 +192,11 @@ function HotlineBar({ hotline, zalo }: { hotline: string; zalo: ZaloContact | nu
         <>
           <span>{t("hotlineUrgentPrompt")}</span>
           <span>
-            <a href={telHref(hotline)} className="text-white">
+            <a
+              href={telHref(hotline)}
+              className="text-white"
+              data-analytics-location="order_confirmation"
+            >
               <strong className="text-brand">{hotline}</strong>
             </a>
           </span>
@@ -281,6 +221,7 @@ function ZaloSupportButton({ zalo }: { zalo: ZaloContact | null }) {
       href={zaloHref(zalo.hrefValue)}
       target="_blank"
       rel="noopener noreferrer"
+      data-analytics-location="order_confirmation"
       className="flex w-full items-center justify-center gap-2 bg-blue px-6 py-4 font-cta text-b4-action font-bold uppercase text-white hover:bg-blue/90"
     >
       <svg
@@ -357,7 +298,9 @@ function OrderShell({ children }: { children: React.ReactNode }) {
       showHero={false}
       mainClassName="bb-checkout-page"
     >
-      <div className="mx-auto max-w-170 px-4 py-8 max-sm:px-3 max-sm:py-4">{children}</div>
+      <div className="mx-auto max-w-170 px-4 py-8 max-sm:px-3 max-sm:py-4" data-clarity-mask="true">
+        {children}
+      </div>
     </StaticPageShell>
   );
 }
@@ -382,7 +325,7 @@ function SuccessBanner({ orderNumber }: { orderNumber: string }) {
 }
 
 // Khung hiển thị 3 bước tiếp theo của quy trình giao nhận
-function NextSteps({ phone, isTransfer }: { phone: string; isTransfer: boolean }) {
+function NextSteps({ phone }: { phone: string }) {
   const t = useTranslations("OrderConfirm");
   const richBold = { b: (chunks: React.ReactNode) => <strong>{chunks}</strong> };
   return (
@@ -411,8 +354,8 @@ function NextSteps({ phone, isTransfer }: { phone: string; isTransfer: boolean }
           3
         </div>
         <div className="pt-1 text-a4-content leading-relaxed text-foreground [&>strong]:mb-0.5 [&>strong]:block">
-          <strong>{t(isTransfer ? "step3TransferTitle" : "step3Title")}</strong>
-          {t(isTransfer ? "step3TransferBody" : "step3Body")}
+          <strong>{t("step3Title")}</strong>
+          {t("step3Body")}
         </div>
       </div>
     </div>
@@ -554,79 +497,6 @@ function OrderDetails({ order }: { order: OrderDetail }) {
   );
 }
 
-// Bảng thông tin chuyển khoản dùng chung cho BANK_TRANSFER và BACS. BigBike đối soát thủ công — số tài khoản do admin
-// tự nhập ở Cài đặt → Thanh toán (group "payment", public). Chưa cấu hình thì hiện fallback
-// hotline thay vì box trống.
-function BankTransferInfo({
-  order,
-  settings,
-  loading,
-  error,
-  retry,
-}: {
-  order: OrderDetail;
-  settings: Map<string, string>;
-  loading: boolean;
-  error: boolean;
-  retry?: () => void;
-}) {
-  const t = useTranslations("OrderConfirm");
-  const bank = resolveBankTransfer(orderPaymentMethod(order), error ? new Map() : settings);
-  if (!bank) return null; // không phải đơn chuyển khoản → không hiển thị
-
-  const { configured, holder, number, bankName, branch } = bank;
-  const hotline = settings.get("hotline")?.trim() ?? "";
-  const transferNote = `BIGBIKE ${order.orderNumber}`;
-
-  return (
-    <section>
-      <h2 className={cn(sectionHeading, "m-0 mb-4")}>{t("bankTitle")}</h2>
-      <div className="border border-border p-4 text-a4-content leading-7 text-foreground">
-        {loading ? (
-          <p role="status">{t("bankLoading")}</p>
-        ) : configured ? (
-          <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-            <dt className="text-muted-foreground">{t("bankHolder")}</dt>
-            <dd className="m-0 font-semibold">{holder}</dd>
-            <dt className="text-muted-foreground">{t("bankNumber")}</dt>
-            <dd className="m-0 font-semibold">{number}</dd>
-            {bankName && (
-              <>
-                <dt className="text-muted-foreground">{t("bankName")}</dt>
-                <dd className="m-0">{bankName}</dd>
-              </>
-            )}
-            {branch && (
-              <>
-                <dt className="text-muted-foreground">{t("bankBranch")}</dt>
-                <dd className="m-0">{branch}</dd>
-              </>
-            )}
-            <dt className="text-muted-foreground">{t("bankAmount")}</dt>
-            <dd className="m-0 font-semibold text-brand">{formatVnd(order.totalAmount)}</dd>
-            <dt className="text-muted-foreground">{t("bankTransferNote")}</dt>
-            <dd className="m-0 font-semibold">{transferNote}</dd>
-          </dl>
-        ) : (
-          <div className="text-muted-foreground" role="status">
-            <p className="m-0">{t(error ? "bankLoadFailed" : "bankSupport")}</p>
-            {hotline && (
-              <a className="mt-2 block text-blue underline" href={telHref(hotline)}>
-                {hotline}
-              </a>
-            )}
-            {retry && (
-              <Button className="mt-3" variant="outline" onClick={retry}>
-                {t("retryLoad")}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
 // Bảng thông tin nhận hàng của khách
 function CustomerDetails({ order }: { order: OrderDetail }) {
   const t = useTranslations("OrderConfirm");
@@ -702,6 +572,10 @@ function legacyPaymentMethodLabel(
       return t("paymentBankTransfer");
     case "BACS":
       return t("paymentBacs");
+    case "CHECK":
+      return t("paymentCheck");
+    case "CARD":
+      return t("paymentCard");
     default:
       return method;
   }

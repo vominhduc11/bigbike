@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-/** Language-level normalization shared by storefront, admin and BigBike Assistant product search. */
+/** Language-level normalization shared by storefront and admin product search. */
 public final class ProductSearchTerms {
 
     private static final Set<String> STOP_WORDS = Set.of(

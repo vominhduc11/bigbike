@@ -11,6 +11,7 @@ import com.bigbike.bigbike_backend.domain.content.ArticleTranslations;
 import com.bigbike.bigbike_backend.persistence.entity.content.ArticleEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.InheritConfiguration;
 import org.mapstruct.ReportingPolicy;
 import java.util.List;
 
@@ -25,6 +26,16 @@ public interface ArticleMapper {
     @Mapping(target = "heroKicker", ignore = true)
     AdminContentItem toAdminContentItem(Article article);
 
+    @InheritConfiguration(name = "toAdminContentItem")
+    @Mapping(target = "bodyBlocks", expression = "java(editableBlocks(article))")
+    AdminContentItem toEditableContentItem(Article article);
+
+    default List<DescriptionBlock> editableBlocks(Article article) {
+        if (article.bodyBlocks() != null && !article.bodyBlocks().isEmpty()) return article.bodyBlocks();
+        if (article.body() == null || article.body().isBlank()) return article.bodyBlocks();
+        return new com.bigbike.bigbike_backend.service.content.BodyBlockParser().parseArticleHtmlToBlocks(article.body());
+    }
+
     default Article toDomain(ArticleEntity entity, String locale, boolean includeTranslations) {
         if (entity == null) {
             return null;
@@ -34,7 +45,6 @@ public interface ArticleMapper {
                 entity.getSlug(),
                 entity.getSlugEn(),
                 pick(entity.getTitle(), entity.getTitleEn(), locale),
-                pick(entity.getExcerpt(), entity.getExcerptEn(), locale),
                 pick(entity.getBody(), entity.getBodyEn(), locale),
                 toImageAsset(
                         entity.getCoverImageId(),
@@ -70,8 +80,7 @@ public interface ArticleMapper {
                 entity.getPublishedAt(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                includeTranslations ? entity.getBodyBlocks() : null,
-                pick(entity.getAuthorName(), entity.getAuthorNameEn(), locale)
+                includeTranslations ? entity.getBodyBlocks() : null
         );
     }
 
@@ -109,9 +118,7 @@ public interface ArticleMapper {
         return new ArticleTranslations(
                 new ArticleTranslations.ArticleContent(
                         entity.getTitleEn(),
-                        entity.getExcerptEn(),
                         entity.getBodyEn(),
-                        entity.getAuthorNameEn(),
                         entity.getSeoTitleEn(),
                         entity.getSeoDescriptionEn()
                 )

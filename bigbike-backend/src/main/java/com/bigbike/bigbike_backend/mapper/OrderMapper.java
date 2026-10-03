@@ -36,12 +36,10 @@ public interface OrderMapper {
     @Mapping(target = "payments", source = "payments")
     @Mapping(target = "historyClassification", source = "classification")
     @Mapping(target = "orderScope", expression = "java(classification == null ? \"OPERATIONAL\" : \"HISTORICAL\")")
-    @Mapping(target = "canConfirmBankTransfer", source = "canConfirmBankTransfer")
     AdminOrderDetailResponse toAdminDetailResponse(
             OrderEntity entity, String customerName, List<OrderLineItemResponse> lineItems,
             List<OrderAddressResponse> addresses, List<OrderShippingItemResponse> shippingItems,
-            List<OrderPaymentResponse> payments, OrderHistoryClassificationResponse classification,
-            boolean canConfirmBankTransfer);
+            List<OrderPaymentResponse> payments, OrderHistoryClassificationResponse classification);
 
     @Mapping(target = "orderKey", source = "orderKey")
     @Mapping(target = "lineItems", source = "lineItems")

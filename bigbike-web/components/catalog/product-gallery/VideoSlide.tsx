@@ -13,6 +13,7 @@ import {
   tiktokEmbedUrl,
   videoThumbUrl,
 } from "./media";
+import { trackVideoOpen } from "@/lib/analytics";
 
 type VideoSlideProps = {
   video: VideoAsset;
@@ -43,6 +44,14 @@ export function VideoSlide({ video, active, onPlay, onPause, onEnded }: VideoSli
   const ytFrameId = `yt-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   function activate() {
+    trackVideoOpen({
+      id: video.id?.trim() || ytId || "product-gallery-video",
+      title: video.title,
+      provider:
+        video.provider ||
+        (ytId ? "youtube" : tiktokId ? "tiktok" : isFacebook ? "facebook" : "upload"),
+      placement: "product_gallery",
+    });
     setActivated(true);
     // YouTube and internal video begin from this same customer gesture. TikTok
     // and Facebook report playback unreliably, so ProductGallery keeps its

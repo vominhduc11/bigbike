@@ -16,12 +16,20 @@ function safePath(value: string | null, fallback: string): string {
   return value;
 }
 
+// Proxy truyền ngôn ngữ + danh mục qua header khi rewrite (xem `rewriteToSeoPage`
+// trong proxy.ts); tham số trên URL chỉ còn dùng khi gọi thẳng route này.
+function seoParam(request: Request, url: URL, name: string): string | null {
+  return request.headers.get(`x-bigbike-seo-${name}`) ?? url.searchParams.get(name);
+}
+
 export function GET(request: Request): NextResponse {
   const url = new URL(request.url);
-  const english = url.searchParams.get("locale") === "en";
+  const english = seoParam(request, url, "locale") === "en";
   const home = english ? "/en/" : "/";
-  const category = safePath(url.searchParams.get("category"), english ? "/en/products/" : "/sp/");
-  const title = english ? "This product is no longer available" : "Sản phẩm này không còn kinh doanh";
+  const category = safePath(seoParam(request, url, "category"), english ? "/en/products/" : "/sp/");
+  const title = english
+    ? "This product is no longer available"
+    : "Sản phẩm này không còn kinh doanh";
   const message = english
     ? "The product page has been retired. Please browse products in the same category or return to the homepage."
     : "Sản phẩm này đã ngừng kinh doanh. Bạn có thể xem các sản phẩm cùng danh mục hoặc quay về trang chủ.";

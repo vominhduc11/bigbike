@@ -35,12 +35,7 @@ import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime, normalizeSeoText, stripHtml } from '../lib/formatters'
 import { setContentLang, useContentLang, overlayEnNames } from '../lib/contentLang'
 import { queryKeys } from '../lib/queryKeys'
-import {
-  createProductSchema,
-  zodErrors,
-  normalizeVariantToken,
-  isColorAttributeName,
-} from '../lib/schemas'
+import { createProductSchema, zodErrors } from '../lib/schemas'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
 import { StatePanel } from '../components/StatePanel'
 import { ScreenSkeleton } from '../components/ScreenSkeleton'
@@ -124,7 +119,7 @@ import {
 // (V246) SuitabilityEditor đã gỡ — "Phù hợp với ai" giờ nhập qua KHỐI suitability trong trình dựng mô tả.
 
 import { CommitmentEditor, SpecStatEditor, TrustBadgesEditor } from './product-detail/RowEditors'
-import { VariantsEditor, VariantMatrixWizard } from './product-detail/VariantEditors'
+import { VariantsEditor } from './product-detail/VariantEditors'
 // ── Prototype form layout ───────────────────────────────────────────────────────
 
 import { RelatedProductRow, RoleBadge, AssignmentBanner } from './product-detail/Layout'
@@ -225,9 +220,6 @@ export function ProductDetailScreen({
   // Autosave / draft recovery
   const autosaveKey = getAutosaveKey(productId, isCreate)
   const [draftRecovery, setDraftRecovery] = useState(null)
-
-  // Variant matrix wizard
-  const [showMatrixWizard, setShowMatrixWizard] = useState(false)
 
   // Discount helper for salePrice
   const [showDiscountHelper, setShowDiscountHelper] = useState(false)
@@ -1402,7 +1394,7 @@ export function ProductDetailScreen({
                   <CollapsibleSection
                     title={t('products.detail.groupSales', { defaultValue: 'Bán hàng & hình ảnh' })}
                     hint={t('products.detail.groupSalesHint', {
-                      defaultValue: 'Thông tin để bán: cơ bản, ảnh, giá, biến thể',
+                      defaultValue: 'Thông tin để bán: cơ bản, ảnh, giá, lựa chọn',
                     })}
                     open={openGroups.sales}
                     onToggle={() => toggleGroup('sales')}
@@ -1871,18 +1863,7 @@ export function ProductDetailScreen({
                           {t('products.detail.variantsEmptyWarning')}
                         </Alert>
                       )}
-                      {form.variants.length > 0 && (
-                        <div className="bb-alert info tight">
-                          <Info size={14} className="mt-1 shrink-0" />
-                          <span>{t('products.detail.variantPricingHint')}</span>
-                        </div>
-                      )}
-                      <div
-                        className={cn(
-                          'grid grid-cols-1 @xl:grid-cols-2 gap-x-4 gap-y-5',
-                          form.variants.length > 0 && 'mt-5',
-                        )}
-                      >
+                      <div className={cn('grid grid-cols-1 @xl:grid-cols-2 gap-x-4 gap-y-5')}>
                         <Field
                           label={t('products.detail.retailPrice')}
                           required={!hasVariants}
@@ -2029,7 +2010,7 @@ export function ProductDetailScreen({
                         <div className="flex items-center gap-2">
                           <span className="bb-count-pill">
                             {form.variants.length}{' '}
-                            {t('products.detail.variantUnit', { defaultValue: 'biến thể' })}
+                            {t('products.detail.variantUnit', { defaultValue: 'lựa chọn' })}
                           </span>
                           <RoleBadge role="content" />
                         </div>
@@ -2045,7 +2026,9 @@ export function ProductDetailScreen({
                         }}
                         disabled={isReadOnly}
                         validationErrors={validationErrors}
-                        onOpenMatrixWizard={() => setShowMatrixWizard(true)}
+                        productSku={form.sku}
+                        commonRetailPrice={form.retailPrice}
+                        commonSalePrice={form.salePrice}
                         contentLang={contentLang}
                         sizeScaleId={form.sizeScaleId}
                         sizeScales={sizeScales}
@@ -2874,42 +2857,6 @@ export function ProductDetailScreen({
                 {primaryLabel}
               </Button>
             </StickyActionBar>
-
-            {showMatrixWizard && (
-              <VariantMatrixWizard
-                sizeScaleId={form.sizeScaleId}
-                sizeScales={sizeScales}
-                onGenerate={(newVariants) => {
-                  const existing = form.variants
-                  function variantSig(options) {
-                    return JSON.stringify(
-                      [...(options || [])]
-                        .map((o) => ({
-                          k: isColorAttributeName(o.name)
-                            ? '__color__'
-                            : normalizeVariantToken(o.name),
-                          v: normalizeVariantToken(o.value),
-                        }))
-                        .sort((a, b) => a.k.localeCompare(b.k))
-                        .map(({ k, v }) => `${k}:::${v}`),
-                    )
-                  }
-                  const existingSigs = new Set(existing.map((v) => variantSig(v.options)))
-                  const deduped = newVariants.filter(
-                    (nv) => !existingSigs.has(variantSig(nv.options)),
-                  )
-                  const skipped = newVariants.length - deduped.length
-                  if (skipped > 0) {
-                    toast.info(t('products.detail.matrix.skipDuplicates', { count: skipped }))
-                  }
-                  if (deduped.length > 0) {
-                    updateField('variants', [...existing, ...deduped])
-                    toast.success(t('products.detail.matrix.added', { count: deduped.length }))
-                  }
-                }}
-                onClose={() => setShowMatrixWizard(false)}
-              />
-            )}
           </Screen>
         </div>
         <LivePreview

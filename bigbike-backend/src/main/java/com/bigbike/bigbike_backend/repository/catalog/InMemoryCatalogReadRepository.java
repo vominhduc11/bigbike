@@ -476,40 +476,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
                 findAllPublishedProductsForListing(locale), String.join(" ", tokens), limit);
     }
 
-    @Override
-    public List<Product> searchPublishedProductsForAssistant(
-            List<String> tokens,
-            String categorySlug,
-            String brandSlug,
-            Long minPrice,
-            Long maxPrice,
-            com.bigbike.bigbike_backend.service.common.SortSpec sortSpec,
-            String locale,
-            int limit
-    ) {
-        if (tokens == null || tokens.isEmpty() || limit <= 0) {
-            return List.of();
-        }
-        Comparator<Product> comparator = assistantComparator(sortSpec);
-        return products.stream()
-                .filter(product -> product.publishStatus() == PublishStatus.PUBLISHED)
-                .filter(product -> !product.discontinued())
-                .filter(product -> categorySlug == null || categorySlug.isBlank()
-                        || safeCategories(product).stream().anyMatch(category -> categorySlug.equals(category.slug())))
-                .filter(product -> brandSlug == null || brandSlug.isBlank()
-                        || (product.brand() != null && brandSlug.equals(product.brand().slug())))
-                .filter(product -> matchesAssistantTokens(product, tokens))
-                .filter(product -> matchesRetailPrice(product, minPrice, maxPrice))
-                .sorted(comparator)
-                .limit(Math.min(limit, 100))
-                .toList();
-    }
-
-    private static boolean matchesAssistantTokens(Product product, List<String> tokens) {
-        return ProductSearchTerms.matchesProductIdentifiers(
-                product.name(), englishName(product), product.slug(), product.slugEn(), product.sku(), tokens);
-    }
-
     private static String englishName(Product product) {
         return product.translations() == null || product.translations().en() == null
                 ? null : product.translations().en().name();
@@ -529,22 +495,6 @@ public class InMemoryCatalogReadRepository implements CatalogReadRepository {
         BigDecimal sale = product.price().salePrice();
         if (retail == null) return null;
         return sale != null && sale.signum() > 0 && sale.compareTo(retail) < 0 ? sale : retail;
-    }
-
-    private static Comparator<Product> assistantComparator(
-            com.bigbike.bigbike_backend.service.common.SortSpec sortSpec) {
-        String field = sortSpec == null ? "createdAt" : sortSpec.field();
-        Comparator<Product> comparator = switch (field) {
-            case "name" -> Comparator.comparing(product -> normalizeDiscovery(product.name()));
-            case "price" -> Comparator.comparing(product -> {
-                BigDecimal price = effectiveSellingPrice(product);
-                return price == null ? BigDecimal.ZERO : price;
-            });
-            default -> Comparator.comparing(product -> product.createdAt() == null ? Instant.EPOCH : product.createdAt());
-        };
-        return sortSpec != null
-                && sortSpec.direction() == com.bigbike.bigbike_backend.service.common.SortDirection.DESC
-                ? comparator.reversed() : comparator;
     }
 
     private static String normalizeDiscovery(String value) {

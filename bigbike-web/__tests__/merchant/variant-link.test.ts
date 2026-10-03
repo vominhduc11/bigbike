@@ -25,6 +25,17 @@ describe("Merchant variant landing links", () => {
     );
   });
 
+  it("maps a linked legacy size to the shared picker label in either language", () => {
+    const linked = {
+      ...merchantVariants().variants![0],
+      options: [{ name: "Kích cỡ", value: "BXL" }],
+    };
+    expect(variantOptions(linked, ["Size"])).toEqual({ Size: "BXL" });
+    expect(
+      variantOptions({ ...linked, options: [{ name: "Size", value: "XL" }] }, ["Kích cỡ"]),
+    ).toEqual({ "Kích cỡ": "XL" });
+  });
+
   it("emits the selected SKU's price, image, stock and group in server-side structured data", () => {
     const product = merchantVariants();
     const schema = buildProductJsonLd(product, "/product/san-pham-kiem-thu/", "variant-red");

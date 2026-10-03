@@ -47,44 +47,6 @@ public class StorePolicyService {
         return Jsoup.parse(get(rawTopic, lang).bodyHtml()).text().replaceAll("\\s+", " ").trim();
     }
 
-    /**
-     * The published policy split at its own headings, in document order. BigBike Assistant answers
-     * the part of the policy the customer actually asked about; pasting the whole page into a chat
-     * bubble was unreadable on a phone.
-     */
-    public List<PolicySection> sections(String rawTopic, String lang) {
-        Document document = Jsoup.parse(get(rawTopic, lang).bodyHtml());
-        List<PolicySection> sections = new java.util.ArrayList<>();
-        StringBuilder lead = new StringBuilder();
-        String heading = null;
-        StringBuilder body = new StringBuilder();
-        for (Element node : document.select("h2, h3, p, li, tr")) {
-                if ("tr".equals(node.tagName()) && node.select("td").isEmpty()) continue;
-                if ("h2".equalsIgnoreCase(node.tagName())) {
-                    if (heading != null) sections.add(section(heading, body));
-                    heading = node.text().replaceAll("\\s+", " ").trim();
-                    body = new StringBuilder();
-                } else if (node.parents().stream().anyMatch(parent -> java.util.Set.of("li", "tr").contains(parent.tagName()))) {
-                    continue;
-                } else if (heading == null) {
-                    lead.append('\n').append(node.text());
-                } else {
-                    body.append('\n').append(node.text());
-                }
-        }
-        if (heading != null) sections.add(section(heading, body));
-        String intro = lead.toString().replaceAll("\\s+", " ").trim();
-        if (!intro.isBlank()) sections.add(0, new PolicySection("", intro));
-        return List.copyOf(sections);
-    }
-
-    private static PolicySection section(String heading, StringBuilder body) {
-        return new PolicySection(heading, body.toString().replaceAll("[\\t\\r ]+", " ").trim());
-    }
-
-    /** One heading of a published policy plus its plain text. */
-    public record PolicySection(String heading, String text) {}
-
     private static String pick(SiteSettingEntity setting, String lang) {
         String value = "en".equals(lang) ? setting.getSettingValueEn() : setting.getSettingValue();
         if (value == null || value.isBlank()) value = setting.getSettingValue();

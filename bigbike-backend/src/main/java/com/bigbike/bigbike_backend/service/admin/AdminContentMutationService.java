@@ -27,6 +27,8 @@ import java.util.List;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import java.util.UUID;
+import java.util.Objects;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,8 @@ import static com.bigbike.bigbike_backend.service.admin.ContentFieldApplier.gene
 
 @Service
 public class AdminContentMutationService {
+
+    private static final ObjectMapper BLOCK_COMPARISON_MAPPER = new ObjectMapper();
 
     private final ArticleJpaRepository articleJpaRepository;
     private final ContentReadRepository contentReadRepository;
@@ -371,22 +375,23 @@ public class AdminContentMutationService {
         if (create || request.getTitle() != null) {
             entity.setTitle(AdminMutationValidators.trimToNull(request.getTitle()));
         }
-        if (create || request.getExcerpt() != null) {
-            entity.setExcerpt(AdminMutationValidators.trimToNull(request.getExcerpt()));
-        }
-        if (create || request.getAuthorName() != null) {
-            entity.setAuthorName(AdminMutationValidators.trimToNull(request.getAuthorName()));
-        }
         if (request.isBodyBlocksPresent()) {
+            boolean blocksChanged = create || !Objects.equals(
+                    BLOCK_COMPARISON_MAPPER.valueToTree(entity.getBodyBlocks()),
+                    BLOCK_COMPARISON_MAPPER.valueToTree(request.getBodyBlocks()));
             entity.setBodyBlocks(request.getBodyBlocks());
-            String rendered = request.getBodyBlocks() != null && !request.getBodyBlocks().isEmpty()
-                    ? descriptionBlockRenderer.renderBlocksToHtml(request.getBodyBlocks())
-                    : "";
-            entity.setBody(rendered);
+            if (blocksChanged) {
+                String rendered = request.getBodyBlocks() != null && !request.getBodyBlocks().isEmpty()
+                        ? descriptionBlockRenderer.renderArticleBlocksToHtml(request.getBodyBlocks())
+                        : "";
+                entity.setBody(rendered);
+            }
         } else if (create || request.getBody() != null) {
             // A2: Sanitize body
-            String sanitizedBody = descriptionBlockRenderer.sanitizeHtml(AdminMutationValidators.trimToNull(request.getBody()));
+            String sanitizedBody = descriptionBlockRenderer.sanitizeArticleHtml(AdminMutationValidators.trimToNull(request.getBody()));
             entity.setBody(sanitizedBody);
+            entity.setBodyBlocks(new com.bigbike.bigbike_backend.service.content.BodyBlockParser()
+                    .parseArticleHtmlToBlocks(sanitizedBody));
         }
         if (create || request.getPublishStatus() != null) {
             PublishStatus nextStatus = request.getPublishStatus() == null ? PublishStatus.DRAFT : request.getPublishStatus();
@@ -399,15 +404,14 @@ public class AdminContentMutationService {
             entity.setPublishStatus(nextStatus);
         }
 
-        // Featured flag (V222): optional on update — null leaves the current value untouched;
-        // on create a missing flag defaults to false.
+        // Manual "Tin nổi bật" pick: optional on update; create defaults to false.
         if (create) {
             entity.setFeatured(Boolean.TRUE.equals(request.getFeatured()));
         } else if (request.getFeatured() != null) {
             entity.setFeatured(request.getFeatured());
         }
 
-        // Homepage Experience pick flag (V272): same optional-on-update semantics as featured.
+        // Homepage Experience pick flag (V272): optional on update and independent of article ranking.
         if (create) {
             entity.setHomeExperience(Boolean.TRUE.equals(request.getHomeExperience()));
         } else if (request.getHomeExperience() != null) {
@@ -438,20 +442,18 @@ public class AdminContentMutationService {
         if (en != null) {
             entity.setSlugEn(AdminMutationValidators.trimToNull(en.getSlug()));
             entity.setTitleEn(AdminMutationValidators.trimToNull(en.getTitle()));
-            entity.setExcerptEn(AdminMutationValidators.trimToNull(en.getExcerpt()));
-            entity.setAuthorNameEn(AdminMutationValidators.trimToNull(en.getAuthorName()));
             
-            // A3: Sanitize en.body
-            String sanitizedBodyEn = descriptionBlockRenderer.sanitizeHtml(AdminMutationValidators.trimToNull(en.getBody()));
-            entity.setBodyEn(sanitizedBodyEn);
+            // Preserve legacy formatting when the EN editor sent its unchanged value back.
+            if (!Objects.equals(entity.getBodyEn(), en.getBody())) {
+                String sanitizedBodyEn = descriptionBlockRenderer.sanitizeArticleHtml(AdminMutationValidators.trimToNull(en.getBody()));
+                entity.setBodyEn(sanitizedBodyEn);
+            }
             
             entity.setSeoTitleEn(AdminMutationValidators.trimToNull(en.getSeoTitle()));
             entity.setSeoDescriptionEn(AdminMutationValidators.trimToNull(en.getSeoDescription()));
         } else if (create) {
             entity.setSlugEn(null);
             entity.setTitleEn(null);
-            entity.setExcerptEn(null);
-            entity.setAuthorNameEn(null);
             entity.setBodyEn(null);
             entity.setSeoTitleEn(null);
             entity.setSeoDescriptionEn(null);

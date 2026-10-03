@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
   trigger: vi.fn(),
   setValue: vi.fn(),
   register: vi.fn(),
+  useForm: vi.fn(),
+  getFieldState: vi.fn(() => ({ isTouched: false })),
+  getAnalyticsClientId: vi.fn(),
   translate: (key: string) => key,
   address: {
     fullName: "Test",
@@ -36,13 +39,18 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: mocks.replace }
 vi.mock("next-intl", () => ({ useLocale: () => "vi", useTranslations: () => mocks.translate }));
 vi.mock("react-hook-form", () => ({
   useWatch: () => mocks.address,
-  useForm: () => ({
-    register: mocks.register,
-    trigger: mocks.trigger,
-    setValue: mocks.setValue,
-    getValues: () => mocks.address,
-    formState: { errors: {} },
-  }),
+  useForm: (options: unknown) => {
+    mocks.useForm(options);
+    return {
+      register: mocks.register,
+      trigger: mocks.trigger,
+      setValue: mocks.setValue,
+      getValues: (field?: keyof typeof mocks.address) =>
+        field ? mocks.address[field] : mocks.address,
+      getFieldState: mocks.getFieldState,
+      formState: { errors: {} },
+    };
+  },
 }));
 vi.mock("@/lib/api/client-api", () => ({ submitCheckout: mocks.submit }));
 vi.mock("@/lib/auth/auth-store", () => ({
@@ -55,19 +63,23 @@ vi.mock("@/lib/query/hooks", () => ({
   useProfile: () => ({}),
   useAddresses: () => ({}),
 }));
-vi.mock("@/lib/analytics", () => ({ trackBeginCheckout: vi.fn(), trackAddShippingInfo: vi.fn() }));
+vi.mock("@/lib/analytics", () => ({
+  trackBeginCheckout: vi.fn(),
+  trackAddShippingInfo: vi.fn(),
+  getAnalyticsClientId: mocks.getAnalyticsClientId,
+}));
 vi.mock("@/lib/observability/storefront-error", () => ({ reportStorefrontFailure: vi.fn() }));
 
 const order = {
   id: "order-1",
   orderNumber: "BB-1",
   orderKey: "key",
-  paymentMethod: "BANK_TRANSFER",
+  paymentMethod: "COD",
   priceChanges: [],
 } as unknown as OrderSummary;
 const payload = {
-  paymentMethod: "BANK_TRANSFER",
   billingAddress: mocks.address,
+  locale: "vi",
 } as CheckoutPayload;
 const submitEvent = { preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>;
 beforeEach(() => {
@@ -78,6 +90,35 @@ beforeEach(() => {
   mocks.cart = { ...mocks.cart, id: "cart-1", items: [{ id: "item-1" }] } as Cart;
   mocks.trigger.mockResolvedValue(true);
   mocks.submit.mockResolvedValue(order);
+  mocks.getAnalyticsClientId.mockResolvedValue("123456789.987654321");
+  mocks.useForm.mockReset();
+  mocks.getFieldState.mockReturnValue({ isTouched: false });
+});
+
+it("validates both address forms on first blur, then revalidates corrections on change", () => {
+  renderHook(() => useCheckout());
+  expect(mocks.useForm).toHaveBeenCalledTimes(2);
+  for (const [options] of mocks.useForm.mock.calls) {
+    expect(options).toMatchObject({ mode: "onTouched", reValidateMode: "onChange" });
+  }
+});
+
+it("bridges province blur into validation without changing the flat display source", () => {
+  const { result } = renderHook(() => useCheckout());
+
+  act(() => result.current.onVnChange("province", "HCM"));
+  act(() => result.current.onVnBlur("province"));
+  expect(mocks.setValue).toHaveBeenCalledWith("province", "HCM", {
+    shouldTouch: true,
+    shouldValidate: true,
+  });
+
+  act(() => result.current.onVnChangeShip("ward", "Ward"));
+  act(() => result.current.onVnBlurShip("ward"));
+  expect(mocks.setValue).toHaveBeenCalledWith("ward", "Ward", {
+    shouldTouch: true,
+    shouldValidate: true,
+  });
 });
 
 it("locks before asynchronous form validation so repeated clicks submit once", async () => {
@@ -95,7 +136,11 @@ it("locks before asynchronous form validation so repeated clicks submit once", a
     await Promise.all([first, second]);
   });
   expect(mocks.submit).toHaveBeenCalledOnce();
-  expect(mocks.replace).toHaveBeenCalledWith(expect.stringContaining("step=bank-transfer"));
+  expect(mocks.submit).toHaveBeenCalledWith(
+    expect.objectContaining({ analyticsClientId: "123456789.987654321" }),
+    expect.any(String),
+  );
+  expect(mocks.replace).toHaveBeenCalledWith(expect.stringContaining("so=BB-1"));
 });
 
 it("recovers a lost response with the stored request and key even after cart conversion", async () => {
@@ -119,7 +164,7 @@ it("restores a created order with price changes without another checkout call", 
   await waitFor(() => expect(result.current.pendingOrderNav?.orderNumber).toBe("BB-1"));
   expect(mocks.submit).not.toHaveBeenCalled();
   act(() => result.current.confirmPendingOrder());
-  expect(mocks.replace).toHaveBeenCalledWith(expect.stringContaining("step=bank-transfer"));
+  expect(mocks.replace).toHaveBeenCalledWith(expect.stringContaining("so=BB-1"));
 });
 
 it("keeps failed form validation from creating a checkout attempt", async () => {

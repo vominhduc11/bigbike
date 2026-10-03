@@ -91,6 +91,9 @@ public class OrderEntity {
     @Column(length = 100)
     private String source;
 
+    @Column(name = "ga4_client_id", length = 128)
+    private String ga4ClientId;
+
     @Column(nullable = false, length = 2)
     private String locale = "vi";
 

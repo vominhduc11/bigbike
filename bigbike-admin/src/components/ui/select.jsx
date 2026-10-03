@@ -2,7 +2,20 @@ import * as SelectPrimitive from '@radix-ui/react-select'
 import { Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export const Select = SelectPrimitive.Root
+export function Select({ onValueChange, ...props }) {
+  return (
+    <SelectPrimitive.Root
+      {...props}
+      onValueChange={(value) => {
+        // Radix can briefly report an empty value while a controlled Select is
+        // synchronizing on mount. Empty is never a valid BigBike SelectItem value,
+        // so it must not overwrite the form value already supplied by the caller.
+        if (value === '') return
+        onValueChange?.(value)
+      }}
+    />
+  )
+}
 export const SelectGroup = SelectPrimitive.Group
 export const SelectValue = SelectPrimitive.Value
 

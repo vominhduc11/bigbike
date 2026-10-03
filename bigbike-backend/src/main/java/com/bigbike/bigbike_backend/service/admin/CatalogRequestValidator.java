@@ -467,7 +467,16 @@ public class CatalogRequestValidator {
         String base = mediaUrlProperties.getPublicBaseUrl();
         for (int i = 0; i < blocks.size(); i++) {
             DescriptionBlock block = blocks.get(i);
+            if (block instanceof DescriptionBlock.TableBlock) {
+                errors.add(new ApiErrorDetail(fieldPrefix + "[" + i + "]", "INVALID_VALUE",
+                        "Khối bảng chỉ dùng cho bài viết tin tức."));
+                continue;
+            }
             if (block instanceof DescriptionBlock.ImageBlock imageBlock) {
+                if (imageBlock.getCaptionHtmlTemplate() != null) {
+                    errors.add(new ApiErrorDetail(fieldPrefix + "[" + i + "].captionHtmlTemplate",
+                            "INVALID_VALUE", "Định dạng chú thích này chỉ dùng cho bài viết tin tức."));
+                }
                 String u = AdminMutationValidators.trimToNull(imageBlock.getUrl());
                 if (u != null && (existing == null || !existing.contains(u))) {
                     AdminMutationValidators.validateWhitelistedMediaUrl(u, fieldPrefix + "[" + i + "].url", base, errors);

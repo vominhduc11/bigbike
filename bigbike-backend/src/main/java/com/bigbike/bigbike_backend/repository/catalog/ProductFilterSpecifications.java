@@ -193,7 +193,7 @@ public final class ProductFilterSpecifications {
 
     /**
      * Staff/admin search keeps every entered token and also searches selling SKUs on variants.
-     * Public catalog and assistant callers deliberately continue using productTextSearch().
+     * Public catalog callers deliberately continue using productTextSearch().
      */
     public static Predicate adminProductTextSearch(
             Root<ProductEntity> root,

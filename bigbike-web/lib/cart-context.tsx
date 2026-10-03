@@ -95,7 +95,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       qc.setQueryData(queryKeys.cart(), updated);
       // Single choke point for `add_to_cart`: `addCartItem` throws on failure, so reaching this
       // line means the backend accepted the item. Covers the PDP button, the mobile sticky bar
-      // (which clicks that same button) and the assistant's product card.
+      // (which clicks that same button).
       //
       // The line is found by diffing the cart, not by matching the id we sent: the server owns
       // line identity and may clamp the quantity to available stock, so the diff reports what

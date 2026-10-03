@@ -37,6 +37,8 @@ class ContentPublicApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].excerpt").doesNotExist())
+                .andExpect(jsonPath("$.data[0].authorName").doesNotExist())
                 .andExpect(jsonPath("$.pagination.page").value(1))
                 .andExpect(jsonPath("$.pagination.pageSize").value(2))
                 .andExpect(jsonPath("$.pagination.totalItems").value(greaterThanOrEqualTo(6)))
@@ -65,6 +67,18 @@ class ContentPublicApiTest {
     }
 
     @Test
+    void shouldFilterPublishedArticlesByManualFeaturedFlag() throws Exception {
+        mockMvc.perform(get("/api/v1/articles")
+                        .param("featured", "true")
+                        .param("size", "10")
+                        .param("sort", "publishedAt:desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(2))
+                .andExpect(jsonPath("$.data[0].featured").value(true))
+                .andExpect(jsonPath("$.data[1].featured").value(true));
+    }
+
+    @Test
     void shouldExcludeDraftArticlesFromPublicListing() throws Exception {
         mockMvc.perform(get("/api/v1/articles")
                         .param("q", "nhap")
@@ -80,6 +94,8 @@ class ContentPublicApiTest {
                 .andExpect(jsonPath("$.data.id").value("article_chon_mu_fullface"))
                 .andExpect(jsonPath("$.data.slug").value("chon-mu-fullface-phu-hop"))
                 .andExpect(jsonPath("$.data.publishStatus").value("PUBLISHED"))
+                .andExpect(jsonPath("$.data.excerpt").doesNotExist())
+                .andExpect(jsonPath("$.data.authorName").doesNotExist())
                 .andExpect(jsonPath("$.meta.requestId").exists());
     }
 

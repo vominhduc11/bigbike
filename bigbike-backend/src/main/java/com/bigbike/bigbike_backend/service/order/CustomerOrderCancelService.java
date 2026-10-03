@@ -6,6 +6,7 @@ import com.bigbike.bigbike_backend.api.order.dto.OrderDetailResponse;
 import com.bigbike.bigbike_backend.persistence.entity.commerce.order.OrderEntity;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
+import com.bigbike.bigbike_backend.service.analytics.Ga4RefundOutboxService;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import com.bigbike.bigbike_backend.service.checkout.OrderNotificationService;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
@@ -31,6 +32,7 @@ public class CustomerOrderCancelService {
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
     private final OrderNotificationService orderNotificationService;
+    private final Ga4RefundOutboxService ga4RefundOutboxService;
 
     @Transactional
     public OrderDetailResponse cancel(UUID customerId, UUID orderId) {
@@ -55,6 +57,7 @@ public class CustomerOrderCancelService {
         order.setUpdatedAt(now);
 
         orderRepo.save(order);
+        ga4RefundOutboxService.enqueueCancellationRefund(order);
 
         // Inventory is boolean availability only (owner decision 2026-06-23) — nothing to restore.
         webRevalidationService.revalidateProductsForOrder(orderId);

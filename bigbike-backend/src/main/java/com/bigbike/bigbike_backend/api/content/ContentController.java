@@ -4,6 +4,8 @@ import com.bigbike.bigbike_backend.api.common.ApiDataResponse;
 import com.bigbike.bigbike_backend.api.common.ApiListResponse;
 import com.bigbike.bigbike_backend.api.common.ApiResponseFactory;
 import com.bigbike.bigbike_backend.domain.content.Article;
+import com.bigbike.bigbike_backend.domain.content.ArticleRecommendations;
+import com.bigbike.bigbike_backend.service.content.ArticleRecommendationService;
 import com.bigbike.bigbike_backend.service.content.ContentReadService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
@@ -27,6 +29,7 @@ public class ContentController {
     private static final String SLUG_REGEX = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
 
     private final ContentReadService contentReadService;
+    private final ArticleRecommendationService articleRecommendationService;
     private final ApiResponseFactory apiResponseFactory;
 
     @GetMapping("/articles")
@@ -40,7 +43,8 @@ public class ContentController {
             @RequestParam(defaultValue = "vi") @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
             HttpServletRequest request
     ) {
-        return apiResponseFactory.list(contentReadService.listArticles(page, size, sort, q, featured, homeExperience, lang), request);
+        return apiResponseFactory.list(contentReadService.listArticles(
+                page, size, sort, q, featured, homeExperience, lang), request);
     }
 
     @GetMapping("/articles/{slug}")
@@ -50,5 +54,14 @@ public class ContentController {
             HttpServletRequest request
     ) {
         return apiResponseFactory.data(contentReadService.getArticleBySlug(slug, lang), request);
+    }
+
+    @GetMapping("/articles/{slug}/recommendations")
+    public ApiDataResponse<ArticleRecommendations> getArticleRecommendations(
+            @PathVariable @Pattern(regexp = SLUG_REGEX, message = "Invalid slug.") String slug,
+            @RequestParam(defaultValue = "vi") @Pattern(regexp = "^(vi|en)$", message = "Invalid lang.") String lang,
+            HttpServletRequest request
+    ) {
+        return apiResponseFactory.data(articleRecommendationService.getRecommendations(slug, lang), request);
     }
 }

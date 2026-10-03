@@ -31,7 +31,13 @@ import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { LivePreview } from '../components/LivePreview'
 import { useAutoHideSidebar } from '../components/AdminShell'
 import { Screen, ScreenHeader, StickyActionBar, Tabs } from '../components/layout'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SeoIndexField } from '../components/SeoIndexField'
@@ -179,24 +185,13 @@ export function ContentDetailScreen({
   const isDirty = useMemo(() => JSON.stringify(form) !== initialSnapshot, [form, initialSnapshot])
   const isReadOnly = !canUpdate || isSubmitting
   const persistedTrash = !isCreate && state.item?.publishStatus === 'TRASH'
-  // A freshly loaded legacy article can briefly have its form field unset while
-  // the persisted record already has a valid status. Use that persisted value
-  // as the form's effective value so the control and a subsequent save stay safe.
-  const selectedPublishStatus = form.publishStatus || state.item?.publishStatus || 'DRAFT'
   // Publish targets limited to what the backend accepts from the persisted state.
   // On create there is no persisted state, so all standard targets are offered.
   const publishOptions = useMemo(() => {
-    const options = persistedTrash
+    return persistedTrash
       ? ['TRASH']
       : allowedPublishOptions(isCreate ? null : state.item?.publishStatus)
-
-    // Radix Select only renders the selected label when its value has a matching
-    // SelectItem. Keep the loaded value available while the form and persisted
-    // record are being synchronized, so a published article never appears blank.
-    return selectedPublishStatus && !options.includes(selectedPublishStatus)
-      ? [selectedPublishStatus, ...options]
-      : options
-  }, [isCreate, persistedTrash, selectedPublishStatus, state.item?.publishStatus])
+  }, [isCreate, persistedTrash, state.item?.publishStatus])
   const formRef = useRef(null)
 
   // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu — phủ CẢ điều hướng nội bộ
@@ -371,7 +366,7 @@ export function ContentDetailScreen({
 
   async function handlePrimarySave() {
     if (!persistedTrash) {
-      await saveCandidate({ ...form, publishStatus: selectedPublishStatus })
+      await saveCandidate(form)
       return
     }
     if (restoreConfirmingRef.current) return
@@ -718,7 +713,12 @@ export function ContentDetailScreen({
                   size="sm"
                   type="button"
                   onClick={() => {
-                    setForm(draftRecovery.form)
+                    setForm({
+                      ...draftRecovery.form,
+                      bodyBlocks:
+                        draftRecovery.form.bodyBlocks ??
+                        buildFormFromItem(normalizedType, draftRecovery.form).bodyBlocks,
+                    })
                     setEnSlugManuallyEdited(Boolean(draftRecovery.form?.translations?.en?.slug))
                     setDraftRecovery(null)
                   }}
@@ -857,67 +857,6 @@ export function ContentDetailScreen({
 
                     {/* Ô "Danh mục" đã gỡ: sau khi gộp nhóm bài viết còn 1 "Tin tức" (V275),
                       backend tự gán mọi bài vào nhóm này nên không cần cho admin chọn. */}
-
-                    <Field
-                      full
-                      label={t('content.detail.excerpt')}
-                      count={`${langValue('excerpt').length} / 5000`}
-                      countWarn={langValue('excerpt').length > 4500}
-                      error={
-                        isEnLang
-                          ? validationErrors['translations.en.excerpt']
-                          : validationErrors.excerpt
-                      }
-                      helper={isEnLang ? t('content.detail.enFieldHint') : undefined}
-                    >
-                      <Textarea
-                        value={isEnLang ? (form.translations?.en?.excerpt ?? '') : form.excerpt}
-                        onChange={(e) =>
-                          isEnLang
-                            ? updateTranslation('excerpt', e.target.value)
-                            : updateField('excerpt', e.target.value)
-                        }
-                        disabled={isReadOnly}
-                        maxLength={5000}
-                      />
-                    </Field>
-
-                    <Field
-                      full
-                      label={t('content.detail.authorName', { defaultValue: 'Tác giả' })}
-                      count={`${langValue('authorName').length} / 255`}
-                      countWarn={langValue('authorName').length > 240}
-                      error={
-                        isEnLang
-                          ? validationErrors['translations.en.authorName']
-                          : validationErrors.authorName
-                      }
-                      helper={
-                        isEnLang
-                          ? t('content.detail.enFieldHint')
-                          : t('content.detail.authorNameHint', {
-                              defaultValue: 'Không bắt buộc. Để trống nếu chưa chốt tên tác giả.',
-                            })
-                      }
-                    >
-                      <Input
-                        value={
-                          isEnLang ? (form.translations?.en?.authorName ?? '') : form.authorName
-                        }
-                        onChange={(e) =>
-                          isEnLang
-                            ? updateTranslation('authorName', e.target.value)
-                            : updateField('authorName', e.target.value)
-                        }
-                        onBlur={() =>
-                          validateFieldOnBlur(
-                            isEnLang ? 'translations.en.authorName' : 'authorName',
-                          )
-                        }
-                        disabled={isReadOnly}
-                        maxLength={255}
-                      />
-                    </Field>
                   </div>
                 </DetailSection>
 
@@ -1014,18 +953,12 @@ export function ContentDetailScreen({
                       error={validationErrors.publishStatus}
                     >
                       <Select
-                        value={selectedPublishStatus}
+                        value={form.publishStatus}
                         onValueChange={(val) => updateField('publishStatus', val)}
                         disabled={isReadOnly || persistedTrash}
                       >
                         <SelectTrigger>
-                          {/* Render the loaded label directly. Radix can miss the initial
-                            item-text lookup even though the matching option is present. */}
-                          <span>
-                            {t(`status.publish.${selectedPublishStatus}`, {
-                              defaultValue: t('common.unknown'),
-                            })}
-                          </span>
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {publishOptions.map((status) => (
@@ -1037,17 +970,26 @@ export function ContentDetailScreen({
                       </Select>
                     </Field>
                     <div className="@xl:col-span-2 flex flex-col gap-2">
-                      <label className="flex items-center gap-3 p-3 border border-border text-sm cursor-pointer hover:bg-muted w-fit">
-                        <Checkbox
-                          checked={form.featured}
-                          onCheckedChange={(checked) => updateField('featured', checked === true)}
-                          disabled={isReadOnly}
+                      <div className="flex w-fit items-center gap-1">
+                        <label className="flex cursor-pointer items-center gap-3 border border-border p-3 text-sm hover:bg-muted">
+                          <Checkbox
+                            checked={form.featured}
+                            onCheckedChange={(checked) => updateField('featured', checked === true)}
+                            disabled={isReadOnly}
+                          />
+                          <span>
+                            {t('content.detail.featured', {
+                              defaultValue: 'Bài viết nổi bật',
+                            })}
+                          </span>
+                        </label>
+                        <HelpTooltip
+                          content={t('content.detail.featuredHint', {
+                            defaultValue:
+                              'Bật để đưa bài này vào khối Tin nổi bật ở trang bài viết. Các bài đã chọn được xếp theo ngày đăng mới hơn trước.',
+                          })}
                         />
-                        <span>{t('content.detail.featured')}</span>
-                      </label>
-                      <span className="text-xs text-muted-foreground">
-                        {t('content.detail.featuredHint')}
-                      </span>
+                      </div>
                       <div className="flex w-fit items-center gap-1">
                         <label className="flex items-center gap-3 border border-border p-3 text-sm cursor-pointer hover:bg-muted">
                           <Checkbox
@@ -1107,7 +1049,7 @@ export function ContentDetailScreen({
                           })}
                       </div>
                       <div className="text-sm leading-relaxed text-google-description break-words">
-                        {normalizeSeoText(langValue('seoDescription') || langValue('excerpt')) ||
+                        {normalizeSeoText(langValue('seoDescription') || langValue('body')) ||
                           t('content.detail.serpDescFallback', {
                             defaultValue: 'Mô tả ngắn sẽ hiển thị ở đây.',
                           })}

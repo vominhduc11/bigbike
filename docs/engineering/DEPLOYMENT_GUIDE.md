@@ -18,6 +18,32 @@ env-file differs. `docker compose` loads exactly one env-file, so each file must
 - **Local:** `docker compose up -d --build` (reads `.env`, see `.env.example`). `CONFIRMED_FROM_CONFIG`
 - **VPS:** `docker compose --env-file .env.vps up -d --build` (see `.env.vps.example`). `CONFIRMED_FROM_CONFIG`
 
+### Nạp riêng bản web đã build
+
+`docker compose --env-file .env.vps build bigbike-web` tạo image mới; container đang chạy tiếp tục dùng image cũ. Khi chủ shop yêu cầu áp dụng thay đổi lên website, nạp image đã kiểm tra bằng `docker compose --env-file .env.vps up -d --no-deps --no-build bigbike-web`. Giữ image trước đó để có thể hoàn tác; xác nhận container dùng đúng image mới, trạng thái healthy và nội dung hiển thị qua `https://bigbike.vn/`.
+
+Đợt chính sách ngày 2026-10-01: chủ shop yêu cầu khắc phục footer vẫn cũ sau khi build. Bản triển khai trước đó có 9 mục chính sách và 2 hướng dẫn size; ngày 2026-10-02 chủ shop xác nhận cách tách thành 9 mục là hiểu sai. Mốc 11 liên kết chỉ mô tả bản cũ, không phải tiêu chí hiện hành.
+
+Bổ sung ngày 2026-10-02 theo hai ảnh và `POLICY_PAGE_RULE_004/010`: chủ shop yêu cầu bỏ logo/liên kết Bộ Công Thương, công bố đầy đủ thông tin hộ kinh doanh và người đại diện, giữ Bảo hành cùng hai hướng dẫn size, rồi build và nạp lại `bigbike-web` bằng `.env.vps`. Kiểm cả VI/EN trên máy tính/điện thoại và xác nhận không còn logo Bộ Công Thương trên website sau khi nạp. `OWNER_REQUESTED_2026-10-02`
+
+Kết quả 2026-10-02: đã chạy `docker compose --env-file .env.vps build bigbike-web`, rồi `docker compose --env-file .env.vps up -d --no-deps --no-build bigbike-web`. Container `bigbike-web` dùng image `sha256:6c0e971eb550ab30805abd623d8759c3502b54d8b3048b2cb642aa642d08bd57`, trạng thái `healthy`; image trước được giữ ở tag `bigbike-web:before-footer-20261002`. HTML qua `https://bigbike.vn/` và hai hướng dẫn size đã có GPKD/người đại diện mới, không còn logo hoặc liên kết Bộ Công Thương.
+
+Kiểm tra đạt: web lint, 115 file/784 bài Vitest, build production trong Docker; chân trang VI/EN ở 375/768/1440px và 21 lượt kiểm chính sách/điều hướng. Kiểm trình duyệt đi qua HTTPS tới Nginx trên máy chủ với dữ liệu thật. Các lượt tải tự động ban đầu bị giới hạn tốc độ Nginx; khi chạy lại cùng các kiểm tra với nhịp yêu cầu 120ms trong bản runner tạm, toàn bộ 21 lượt đạt. Không thay đổi cấu hình giới hạn tốc độ hoặc thêm dữ liệu giả vào ứng dụng.
+
+Đợt sửa tiếp ngày 2026-10-02: tiêu chí mới là bảy mục đúng tên/thứ tự SEO, nguyên văn phần “Copy bên dưới”, một trang gộp cung cấp dịch vụ/đổi trả/hoàn tiền, giữ Bảo hành/hai hướng dẫn size ở nhóm riêng, đủ năm dòng hộ kinh doanh và không có nhãn/liên kết Bộ Công Thương. Chủ shop tiếp tục yêu cầu sửa và đã cho phép build/nạp web bằng `.env.vps`. Sau khi kiểm tra dùng lại hai lệnh nạp riêng web bên trên; xác minh cả URL Giao hàng cũ chuyển về trang gộp. Kết quả của đợt trước không thay cho việc kiểm tra bản sửa này.
+
+Kết quả bản sửa bảy mục ngày 2026-10-02: build bằng `.env.vps` thành công, đã nạp riêng `bigbike-web` với `up -d --no-deps --no-build`. Container dùng image `sha256:81db810e8504bd5939576fda617965b28d66ccf2e45f48c3c0709a11f12007f1`, trạng thái `healthy`; image trước giữ ở tag `bigbike-web:before-seven-policies-20261002`. Backend, admin và các dịch vụ dữ liệu tiếp tục chạy, không được recreate trong đợt này.
+
+Kiểm tra bản sửa đạt: lint/guard, 115 file và 785 bài Vitest, Docker production build; 17 lượt Playwright đọc/điều hướng VI/EN, trong đó cả bảy thân bài VI render thật khớp bản nguồn `POLICY_PUBLICATION_2026-10-02.md`. Footer đạt ở 375/768/1440px cho VI/EN: bảy mục đúng thứ tự, ba liên kết giữ riêng, đủ năm đoạn pháp lý, logo BigBike tải được và không có Bộ Công Thương. Bảo hành và hai trang size đọc được; URL Giao hàng VI/EN trả 301 đúng đích; sitemap khai bảy mục chính cùng Bảo hành cho mỗi ngôn ngữ, không khai URL Giao hàng chuyển hướng. HTML tải từ website công khai cũng có đúng bảy mục và thông tin pháp lý mới.
+
+Ảnh và log kiểm trình duyệt ở `/tmp/bigbike-seven-policies-qa-20261002/`; log build/lint/Vitest ở `/tmp/bigbike-seven-policies-{docker-build,lint,tests}-20261002.log`. Runner tạm tiếp tục dùng HTTPS tới Nginx thật và nhịp yêu cầu 120ms để tránh giới hạn tốc độ; không mock nội dung hoặc sửa giới hạn tốc độ.
+
+Bổ sung theo phản hồi “Thông tin có tới 10 link” ngày 2026-10-02: bản trước mới chia bảy và ba liên kết bằng đường kẻ dưới cùng tiêu đề. Chủ shop đã chọn chuyển ba liên kết giữ lại sang nhóm riêng **Bảo hành và hướng dẫn**. Tách thành hai nhóm có tiêu đề và vùng mở/thu riêng: Thông tin chứa bảy mục, Bảo hành và hướng dẫn chứa ba mục giữ lại. Dùng lại `.env.vps` để build/nạp riêng web sau kiểm tra, xác minh số liên kết theo từng nhóm trên VI/EN và 375/768/1440px.
+
+Kết quả tách nhóm footer ngày 2026-10-02: lint/guard và 3 file/14 bài Vitest về nội dung/song ngữ đạt; Docker production build bằng `.env.vps` thành công. Đã nạp riêng `bigbike-web` với `up -d --no-deps --no-build`; container dùng image `sha256:cbc3cb6ae45c11fe701281add4749cf7076c6463f864a2e74716ff0e5892afce`, trạng thái `healthy`. Image trước giữ ở tag `bigbike-web:before-footer-groups-20261002`.
+
+HTML tải từ website công khai cho cả VI/EN có hai tiêu đề riêng, đúng bảy liên kết trong Thông tin và ba liên kết trong Bảo hành và hướng dẫn. Sáu lượt kiểm trình duyệt ở 375/768/1440px cho VI/EN đạt: đếm liên kết trong từng nhóm, mở/thu độc lập dưới 992px, không tràn ngang, đủ năm đoạn pháp lý và không có nhãn/liên kết Bộ Công Thương. Đã xem ảnh desktop/mobile; ảnh/log/report ở `/tmp/bigbike-footer-groups-qa-20261002/`, log build/lint/Vitest ở `/tmp/bigbike-footer-groups-{docker-build,lint,tests}-20261002.log`. Backend, admin và các dịch vụ dữ liệu giữ nguyên container trong đợt nạp này.
+
 Only `bigbike-web` has links that genuinely change per environment: its client bundle calls
 the backend + MinIO **directly from the customer's browser**, so `NEXT_PUBLIC_API_BASE_URL`
 and `BIGBIKE_LEGACY_UPLOADS_BASE` must be public addresses rather than `localhost`. Since the
@@ -83,6 +109,20 @@ Always copy the active files to candidates, add the intended delta, run `nginx -
 after it passes, and then mirror the accepted live files back to `deploy/nginx/` and
 `deploy/nginx/live-reference/`. A repository mirror is evidence and rollback context, never
 permission to overwrite a newer active file without a fresh diff. `CONFIRMED_FROM_LIVE_CONFIG_2026-09-12`
+
+The `admin.bigbike.vn` HTTPS vhost must stream proxied request and response bodies at server scope:
+keep `proxy_request_buffering off`, `proxy_buffering off` and `proxy_max_temp_file_size 0`. The
+admin host sits behind Cloudflare and forwards to one local container, so it must not spill product
+JSON uploads, media responses, exports or large SPA assets into `/var/lib/nginx/body` or
+`/var/lib/nginx/proxy`. On 2026-09-13 those temporary directories became unwritable to Nginx;
+two product-import validation requests returned Nginx `500` before reaching the backend, while
+large product images were returned as truncated `200` responses. Server-wide streaming removes
+that failure dependency for every current and future admin proxy location. Before and after every
+admin-vhost rollout, run `deploy/nginx/tests/admin-proxy-streaming-config-test.sh` against the
+candidate/active file, verify `nginx -t`, and confirm a JSON import dry-run plus a media response
+larger than the proxy memory buffers complete without a new `Permission denied` entry. Do not
+change the API allowlist, rate-limit or outage behavior as part of this safeguard.
+`OWNER_CONFIRMED_AND_DEPLOYED_2026-09-13`
 
 ### Cửa ảnh công khai (`media.bigbike.vn`)
 
@@ -270,7 +310,7 @@ build upload values (`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`) are op
 credentials for the build operator only, never browser configuration. `CONFIRMED_FROM_CODE` —
 `sentry.*.config.ts`, `instrumentation.ts`, storefront reporting helper.
 
-### Storefront analytics (Google Analytics 4)
+### Storefront analytics (GA4, Meta Pixel and Microsoft Clarity)
 
 `bigbike-web` reports to GA4 property `G-REZM4NT0CS` through `gtag.js`, loaded once from
 `app/[locale]/layout.tsx`. Google Tag Manager was removed on 2026-09-06. To enable a deployment,
@@ -280,7 +320,25 @@ script at all, which is the intended state for local and staging so test traffic
 live property. The root `.env.example`, `.env.vps.example` and `bigbike-web/.env.example` carry the
 blank placeholder; never commit the populated env file.
 
-Unlike a backend variable, this one must be declared in **three** places to reach the browser:
+Set `NEXT_PUBLIC_CLARITY_PROJECT_ID` the same way only for deployments that should record Clarity.
+A blank value renders no Clarity script. Its CSP allowance is restricted to `www.clarity.ms`,
+`*.clarity.ms` and `c.bing.com`; private assistant/auth/account/checkout/order/review regions must
+remain masked. Changing any public measurement id requires rebuilding the web image.
+
+Set `NEXT_PUBLIC_META_PIXEL_ID=460465848002810` only in the production deployment that is approved
+to collect Meta measurement; leave it blank elsewhere. This is BigBike's existing Pixel and must
+never be replaced with a newly created Pixel because its historical audiences belong to this id. A
+blank value renders no Meta loader, image fallback or browser event. It is a direct installation,
+not a Google Tag Manager, Cloudflare/Zaraz or Conversions API integration. The only Meta CSP change
+is `https://connect.facebook.net` in `script-src`; do not widen another source list.
+
+Cancellation revenue correction runs from the backend. Set the same
+`NEXT_PUBLIC_GA4_MEASUREMENT_ID` on the backend service and set the server-only
+`BIGBIKE_GA4_API_SECRET`; leave the secret blank locally/staging unless that environment owns an
+isolated GA4 property. Blank configuration keeps queued rows pending and makes no outbound call.
+Never expose the secret through a `NEXT_PUBLIC_*` variable.
+
+Unlike a backend variable, each public id must be declared in **three** places to reach the browser:
 `build.args:` and `environment:` on the `bigbike-web` service in `docker-compose.yaml`, plus a
 matching `ARG` + `ENV` pair before `RUN npm run build` in `bigbike-web/Dockerfile`. The previous
 Google Tag Manager install failed on both counts, verified in the running container on 2026-09-06:
@@ -290,28 +348,67 @@ client chunk still read it at runtime instead of carrying a literal, unlike `NEX
 and `NEXT_PUBLIC_API_BASE_URL` beside it. **A restart does not pick up a changed measurement id;
 a rebuild does.**
 
-Exactly one measurement install may exist in the repo. A second one double-counts every metric the
-property reports, revenue included. Analytics events carry only order number, SKU, product name,
-quantity, price and currency. They must not carry customer name, email, phone, address, or the
-order lookup `orderKey`. No CSP change is required: `next.config.ts` already allows
-`https://www.googletagmanager.com` in `script-src` (the host that serves `gtag.js`) and
-`https://www.google-analytics.com` in `connect-src`. `OWNER_CONFIRMED_2026-09-06` —
+Exactly one GA4 browser install and exactly one Meta Pixel base install may exist in the repo. The
+backend Measurement Protocol sender is restricted to cancellation `refund` events and is not a
+second page/browser install. Another browser install double-counts every metric the property
+reports, revenue included. Analytics events may also carry internal customer id and documented
+non-PII action/product context. They must not carry customer name, email, phone, address,
+chat/review text, head measurement, or the order lookup `orderKey`. GA4 needs no CSP change:
+`next.config.ts` already allows `https://www.googletagmanager.com` in `script-src` (the host that
+serves `gtag.js`) and `https://www.google-analytics.com` in `connect-src`. Meta uses only
+`https://connect.facebook.net` for its script loader; Clarity uses only the exact hosts above.
+
+Meta page views are owned by Meta's own library: do not add a manual `PageView` when the customer
+navigates client-side. The shared helper emits only `ViewContent`, `AddToCart` after a successful
+cart mutation, `InitiateCheckout`, `AddPaymentInfo` after COD confirmation, `Purchase`, `Search`
+and `Contact`. Commerce content ids are the exact variant SKU already used by GA4 and the product
+feed; monetary values are integer VND. `Purchase` carries `eventID` `purchase_<orderNumber>` and
+the existing thank-you-page order guard, so the later Conversions API work can de-duplicate without
+double-counting. It must not emit list-view, remove-from-cart, cart-view or shipping-address events.
+
+After deployment, verify one non-production-marked browser session in GA4 DebugView/Realtime:
+assistant open/contact, product-section reach, COD confirmation and purchase. Cancel only that
+same marked test order through the normal workflow, then verify one `refund` with the identical
+transaction id and inspect the outbox status without editing it. HTTP 2xx alone is not proof that
+GA4 has processed the event. In Meta Events Manager/Test Events, confirm exactly one Pixel
+`460465848002810`, one PageView for each navigation, and the sequence PageView → ViewContent →
+AddToCart → InitiateCheckout → AddPaymentInfo → Purchase. Refreshing the thank-you page must not
+create a second Purchase. Check Vietnamese/English and desktop/mobile; verify SKU parity with GA4.
+`OWNER_CONFIRMED_2026-09-12` —
 `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `INTEGRATION_GUIDE.md`
-§"Google Analytics 4 (storefront)".
+§§"Google Analytics 4 (storefront)" / "Meta Pixel (storefront)" / "Microsoft Clarity (storefront)".
+
+Before the first production deploy, register the event-scoped dimensions and integer metrics in
+`INTEGRATION_GUIDE.md` §"Google Analytics 4 (storefront)" in the **existing** GA4 property. Do
+not create a new property, stream, tag or Google Tag Manager container. These definitions expose
+contact channel/placement, product context, content-section reach, selected filters, size results,
+video identity, scroll percent and result counts in Explorations; GA4 does not backfill custom
+definitions for events collected before registration.
+
+In that same existing property, set Reporting identity to `Blended` or `Observed` so the built-in
+User-ID feature can connect authenticated activity across devices. Do not register `user_id` as a
+custom dimension: it is a reserved, high-cardinality system identifier and the raw value is not a
+business reporting dimension.
+
+In the GA4 web stream's **Redact data** setting, enable email redaction and add the exact URL query
+parameters `key`, `token` and `tiep`; prove each one with the built-in preview and DebugView. Before
+setting `NEXT_PUBLIC_CLARITY_PROJECT_ID`, ask Clarity support to mask those same case-sensitive URL
+parameters and confirm them in a recording. Element masks do not cover page URLs, so Clarity must
+remain disabled until URL masking is confirmed.
 
 - **Public Review CSRF boundary** — `CustomerCsrfFilter` exempts CSRF validation only for `POST /api/v1/products/{productId}/reviews` and `POST /api/v1/products/{productId}/reviews/photos`. These two endpoints intentionally support guests, and the storefront calls them directly on the API host with credentials so an existing customer session can supply authoritative identity. The exemption must match the HTTP method and complete path shape; it must never use the broad `/api/v1/products/` prefix or exempt neighboring/future product mutations. Exact-origin credentialed CORS and the dedicated per-IP `REVIEW` / `REVIEW_PHOTO` limits remain mandatory. `CONFIRMED_FROM_CODE_AND_SECURITY_REVIEW_2026-07-28`
 - **`BIGBIKE_TRUSTED_PROXIES`** — comma-separated exact proxy addresses or narrow, private CIDRs (minimum IPv4 `/24`, IPv6 `/64`) trusted to set `X-Forwarded-For`. Per-IP rate limiting consumes forwarding data only when the direct peer matches this list and the header contains exactly one IP. The minimum prefix is enforced at startup, so a `/16` or `/12` bridge range fails the boot — the checked-in Compose default `172.20.0.0/16` is therefore **not** bootable as-is and every environment must set an explicit narrow value. The `bigbike-dev` bridge allocates `172.20.0.x`, so `172.20.0.0/24` is the correct entry for the single-VPS Compose deployment. Do not use broad Docker ranges such as `172.16.0.0/12`; first verify the real ingress/container hop with `docker inspect` and `nginx -T`. Every public nginx proxy location must remove client-provided forwarding data and emit one canonical client address; BFF/admin internal proxies may forward only that single canonical value. `CONFIRMED_FROM_CODE_AND_CONFIG_2026-08-12`
 - **Rate limiting and Redis** — production uses `BIGBIKE_RATE_LIMIT_STORE=redis` and a separate `BIGBIKE_RATE_LIMIT_HMAC_SECRET` (32+ chars); do not reuse JWT, internal API, mail or provider secrets. `BIGBIKE_RATE_LIMIT_REDIS_URL` accepts `rediss://` for a managed HA Redis-compatible service, or plaintext `redis://` **only** when the host stays inside the deployment network — a single-label service name (`redis`) or a loopback/private address. A publicly routable host over plaintext `redis://` is rejected at startup, because counters and HMAC-keyed bucket ids would cross the public internet in the clear. The single-VPS Compose deployment runs the in-network `redis` service, which exposes no host port (`OWNER_CONFIRMED_2026-08-12`: managed TLS Redis deferred; revisit before horizontal scaling). Backend production startup still rejects a missing Redis/HMAC configuration, unsafe proxy CIDR, or an accidental local-only limiter. Compose explicitly passes the documented per-tier `BIGBIKE_RATE_LIMIT_TIERS_<TIER>_{LIMIT,WINDOW}` overrides; leave them empty unless an owner-approved, expiry-bound change has staging evidence. Configure Redis memory quota/`noeviction`, alert at capacity pressure, and verify failover on staging before horizontal scaling. `RATE_LIMITING.md` is the canonical tier/failure policy. `OWNER_CONFIRMED_2026-08-12`
-- **Nginx rate response** — set `limit_req_status 429` and `limit_conn_status 429` in the shared config. All versioned public hosts return the standard `RATE_LIMIT_EXCEEDED` JSON + `Retry-After`; native `429` stays separate from `error_page 502 503 504`. Keep proxy interception off on paths that can receive backend `429`, so the backend envelope and computed `Retry-After` pass through unchanged. `OWNER_CONFIRMED_2026-08-12`
+- **Nginx rate response** — every deployed limiter must return `429`, not an outage `503`, with `Retry-After` and `Cache-Control: no-store`. The 2026-09-12 admin boundary declares this status and its JSON handler in the admin vhost itself, applies only the request-rate limit selected above, and leaves `/ws` exempt. Keep proxy interception off on paths that can receive backend `429`, so the backend envelope and computed `Retry-After` pass through unchanged. Other host-rate changes remain separate deployments and must be verified from the active config, not inferred from repository files. `OWNER_CONFIRMED_2026-09-12`
 - **Actuator** — only `GET /actuator/health` is public. The nginx API config (`deploy/nginx/api.bigbike.vn.conf`) returns `403` for every other `/actuator/` path; Prometheus must scrape the backend over the private network, not the public host. `CONFIRMED_FROM_CONFIG`
-- **Media upload body size** — backend accepts media uploads up to 200 MB (raised from 50 MB to allow video uploads; enforced by `MAX_UPLOAD_BYTES` in `AdminMediaService` and `spring.servlet.multipart.max-file-size=200MB` / `max-request-size=210MB`). The nginx API config sets `client_max_body_size 210m` on `^~ /api/v1/admin/media` and keeps `10m` for all other routes. Exceeding the cap returns `413` with a `FILE_TOO_LARGE` JSON error. `CONFIRMED_FROM_CONFIG`
+- **Media upload body size** — backend and the inner admin container accept media uploads up to 200 MB/210 MiB, but the production host-level admin vhost currently keeps its existing `client_max_body_size 20m`. The public API hostname returns `404` for `/api/v1/admin/media` after the hostname-boundary rollout; it is no longer an alternate upload door. This rollout does not change the effective host upload cap. `CONFIRMED_FROM_LIVE_CONFIG_2026-09-12`
 - **Legacy video CSP compatibility** — storefront `frame-src` and admin preview CSP include exactly `https://www.tiktok.com` and `https://www.facebook.com` in addition to YouTube so previously stored video records can still render. These origins are read-only compatibility allowances; every write contract accepts only YouTube or internal Media Library video (`MEDIA_RULE_004`). Do not add shortened-link or wildcard social domains. `CONFIRMED_FROM_OWNER_DECISION`
 - **Internal endpoints** — `/api/internal/**` require the `X-Internal-Token` header (matched in constant time) when `BIGBIKE_INTERNAL_TOKEN` is set; deny-by-default when unset. `CONFIRMED_FROM_CONFIG`
 - **`BIGBIKE_INTERNAL_TOKEN` / `INTERNAL_API_TOKEN` must both be set** to the same secret value in the environment used by `docker-compose.yaml` (`.env`/`.env.vps`) — generate with `openssl rand -base64 32`. If either is missing or mismatched, the redirect feature fails safe (every lookup gets `401` and falls through to normal routing) but silently does nothing end-to-end; `bigbike-web/proxy.ts` logs the failure on every request. `CONFIRMED_FROM_CONFIG`
 
 ## Schema And Migration Notes
 
-- Flyway runs every versioned migration under `bigbike-backend/src/main/resources/db/migration`. Existing migrations are never edited. Production history reserves immutable `V1075`–`V1077` for the media-folder rollout; the policy freeze and review-invitation setting cleanup therefore follow as `V1078` and `V1079`. `V1070__remove_staff_chat_and_retired_assistant_settings.sql` is the additive cleanup for the owner decision 2026-08-30: it removes retired assistant settings, handoff tables/columns/data and `chat.reply`, while retaining core transcript/image/quota structures. `V1079__remove_review_invitation_settings.sql` is the additive cleanup for the owner decision 2026-09-01: it removes only the three retired review-invitation rows from `site_settings`; campaign/delivery/item/opt-out/quota data remains intact. Its preflight assertions must pass because the owner confirmed no live invitation data exists. Verify directory sequence and `flyway_schema_history` before rollout. `OWNER_CONFIRMED_2026-09-01`
+- Flyway runs every versioned migration under `bigbike-backend/src/main/resources/db/migration`. Existing migrations are never edited. Production history reserves immutable `V1075`–`V1077` for the media-folder rollout; the policy freeze and review-invitation setting cleanup therefore follow as `V1078` and `V1079`. `V1070__remove_staff_chat_and_retired_assistant_settings.sql` is the additive cleanup for the owner decision 2026-08-30: it removes retired assistant settings, handoff tables/columns/data and `chat.reply`, while retaining core transcript/image/quota structures. `V1079__remove_review_invitation_settings.sql` is the additive cleanup for the owner decision 2026-09-01: it removes only the three retired review-invitation rows from `site_settings`; campaign/delivery/item/opt-out/quota data remains intact. `V1083__cod_only_payment_cutover.sql` is the guarded 2026-09-09 cutover: it verifies and changes only the two named unconfirmed orders, removes the four public bank settings, removes retired payment-notification data and its chat reference column, and aborts on any baseline mismatch. Verify directory sequence and `flyway_schema_history` before rollout. `OWNER_CONFIRMED_2026-09-09`
 - Notification retention uses `V1067__admin_notification_retention_and_remove_legacy_read_state.sql` to remove the obsolete shared `admin_notifications.is_read` column/index while retaining `admin_notification_reads`; the backend scheduler removes rows older than six calendar months daily at 03:50 Vietnam time in batches. After rollout, verify the Flyway history, absence of the old column/index, and a successful cleanup log. `OWNER_CONFIRMED_2026-08-28`
 - The one-time WordPress live migration must follow [LIVE_MIGRATION_RUNBOOK.md](LIVE_MIGRATION_RUNBOOK.md). The normal Spring `mode=import` runner is legacy rehearsal tooling and is not an authorized production write path. `CONFIRMED_FROM_CODE_2026-08-03`
 - Receipt tables (`V52/V53/V55`) were dropped in `V120`; the serial movement table (`V57`) and all other serial tables were dropped in `V259` (serial tracking removed 2026-06-23). POS order snapshot columns were added in `V71` and still exist, but the POS feature itself was removed 2026-06-23 (online-only) — the columns are now only written with online values. `CONFIRMED_FROM_CONFIG`
@@ -393,9 +490,9 @@ The hosting provider blocks **all outbound UDP**. Consequences, all measured 202
 
 ## Deployment Caveats
 
-- **Chat post-deploy check:** confirm the public chat header identifies `Trợ lý BigBike` in Vietnamese and `BigBike Assistant` in English, that the short AI label `TRỢ LÝ AI · HỖ TRỢ 24/7` / `AI ASSISTANT · 24/7 SUPPORT` is the only sub-line and the long “not a human staff member” sentence is gone (owner decision 2026-09-06, `CHAT_RULE_001`), that the header carries exactly three icon buttons — contact, delete conversation, close — with no separate strip for the delete button (`CHAT_RULE_049` still requires the delete control to exist), that opening the chat with no messages shows the greeting plus exactly four tappable suggestions (`CHAT_RULE_061`), that **no image-privacy line remains in the chat frame** (owner decision 2026-09-06, `CHAT_RULE_059` — the wording now lives only on the privacy-policy page), **no memory disclosure line and no memory on/off toggle remain** (owner decision 2026-09-05, `CHAT_RULE_049`), the input is immediately visible, the image button appears only when the AI service is configured, and the Hotline/Zalo/Messenger card opens without any request to `/chat/handoffs`, email or notification. Confirm admin can still view transcript/history and images with `chat.read`, while no queue, claim or staff reply appears. The sole chat notification is an accepted transfer receipt under CHAT_RULE_066; it links to the exact private message and requires `chat.read`. Watch backend/nginx logs only for status/connection ids, never transcript/token/PII. **Also grep the backend log for `ck_chat_message_source` after deploy — any hit means the assistant composed a reply the database refused, and the customer saw an error screen.**
+- **Chat post-deploy check:** confirm the public chat header identifies `Trợ lý BigBike` in Vietnamese and `BigBike Assistant` in English, that the short AI label `TRỢ LÝ AI · HỖ TRỢ 24/7` / `AI ASSISTANT · 24/7 SUPPORT` is the only sub-line and the long “not a human staff member” sentence is gone (owner decision 2026-09-06, `CHAT_RULE_001`), that the header carries exactly three icon buttons — contact, delete conversation, close — with no separate strip for the delete button (`CHAT_RULE_049` still requires the delete control to exist), that opening the chat with no messages shows the greeting plus exactly four tappable suggestions (`CHAT_RULE_061`), that **no image-privacy line remains in the chat frame** (owner decision 2026-09-06, `CHAT_RULE_059` — the wording now lives only on the privacy-policy page), **no memory disclosure line and no memory on/off toggle remain** (owner decision 2026-09-05, `CHAT_RULE_049`), the input is immediately visible, the image button appears only when the AI service is configured, and the Hotline/Zalo/Messenger card opens without any request to `/chat/handoffs`, email or notification. Confirm admin can still view transcript/history and images with `chat.read`, while no queue, claim, staff reply or payment notification appears. Watch backend/nginx logs only for status/connection ids, never transcript/token/PII. **Also grep the backend log for `ck_chat_message_source` after deploy — any hit means the assistant composed a reply the database refused, and the customer saw an error screen.**
 
-- Internal redirect endpoints (`/api/internal/**`) are protected by both the `X-Internal-Token` app-level check and an nginx-level block (`deploy/nginx/api.bigbike.vn.conf`, returns `403`) — see PERMISSION_MATRIX.md "Internal Redirect Caveat". `CONFIRMED_FROM_CONFIG`
+- Internal redirect endpoints (`/api/internal/**`) are protected by the `X-Internal-Token` application check. The active `api.bigbike.vn` vhost does not add a second Nginx block; the 2026-09-12 hostname boundary intentionally leaves non-admin/non-auth API behavior unchanged. The admin vhost returns `404` because this path is outside its five allowed API groups. See PERMISSION_MATRIX.md "Internal Redirect Caveat". `CONFIRMED_FROM_LIVE_CONFIG_AND_CODE_2026-09-12`
 - The host's nginx `default_server` for both HTTP and HTTPS must return `404` for a direct server IP or an unrecognised `Host`; it must not proxy, redirect, or serve a shared site's virtual host. Before reload: inspect the exact active file, run `nginx -t`, reload nginx only after it passes, then test the raw IP and the named BigBike host separately. `OWNER_CONFIRMED_2026-08-15`
 - No confirmed external payment webhook or shipping carrier deployment contract exists in repo. `NOT_FOUND_IN_REPO`
 
@@ -437,8 +534,8 @@ Do not change the outage templates, `render-fallback-pages.sh`, or the Nginx `er
 
 ### Verification after deploy
 
-- **Rate-limit preflight (read-only):** run `docker ps`, then `nginx -T | rg -n 'limit_req_status|limit_conn_status|error_page 429|X-Forwarded-For'`; verify the active files—not only repository copies—show `429`, no `$proxy_add_x_forwarded_for` on a public-to-backend hop, and one known canonical header per hop. Run `bash deploy/nginx/tests/rate-limit-config-test.sh` in the checkout before copying any Nginx file. Do not reload Nginx from this verification step.
-- **Rate-limit behavior (staging/approved preview only):** make one normal API request and inspect `status`, `Retry-After`, `Cache-Control`, `error.code`, `meta.requestId` and `meta.timestamp` after a controlled threshold test. It must be `429 RATE_LIMIT_EXCEEDED`, never `503` or the outage body. Do not run a burst/load test against production without an approved window.
+- **Rate-limit preflight (read-only):** run `docker ps`, then inspect `nginx -T` and the active host files—not only repository copies. For `admin.bigbike.vn`, verify the local `429` handler, two `general_limit` request-limit placements, absence of a host connection cap, and the `/ws` exemption. The API and storefront retain their older request-limit behavior and require a separate approved rollout if their response contract changes. Run `bash deploy/nginx/tests/rate-limit-config-test.sh` in the checkout before copying any Nginx file. Do not add client-IP trust/allow rules or reload Nginx from this verification step.
+- **Rate-limit behavior (staging/approved preview only):** on the admin hostname, make one normal request and inspect `status`, `Retry-After`, `Cache-Control`, `error.code`, `meta.requestId` and `meta.timestamp` after a controlled threshold test. It must be `429 RATE_LIMIT_EXCEEDED`, never `503` or the outage body. Do not run a burst/load test against production without an approved window.
 - **Redis behavior (staging):** run two backend replicas against the managed endpoint, consume one test bucket through replica A and confirm replica B sees the same remaining state. Test a rolling restart and provider failover; sensitive routes must remain fail-closed, while cart/checkout fallback is bounded and alerts fire. These tests are a release gate for horizontal scaling.
 
 - Confirm `V1071` is recorded in `flyway_schema_history`, the database is still reachable, `maintenance_state` is absent, all five obsolete setting keys are absent, and no `DEVELOPER` role/user/permission references remain.
@@ -450,7 +547,26 @@ Do not change the outage templates, `render-fallback-pages.sh`, or the Nginx `er
 
 Run the migration and the code removal in the same controlled deployment window so an old backend is never expected to use the dropped table. The agent must not start, restart or stop Docker; live checks remain owner-operated when the stack is available.
 
+## Gỡ trợ lý — triển khai 2026-10-02
+
+`CHAT_RULE_070`: triển khai web/admin/backend cùng thay đổi, áp dụng V1093 để bỏ cài đặt trợ lý và quyền chat. Bỏ BIGBIKE_CHAT_MODEL, BIGBIKE_CHAT_TIMEOUT_SECONDS, override rate-limit CHAT và cấu hình dựng chỉ mục BIGBIKE_IMAGE_INDEX_*. GEMINI_API_KEY và cấu hình kiểm duyệt đánh giá vẫn dùng như trước. MINIO_CHAT_PRIVATE_BUCKET còn dùng bảo vệ/dọn tệp lịch sử đến hạn; không đổi policy của kho cũ thành public. Backend không cần ffmpeg/ffprobe để tư vấn video nữa. Không rebuild/restart container đang chạy trong phiên sửa mã nếu chưa có chỉ thị vận hành của owner.
+
+Bổ sung chỉ thị vận hành của chủ shop ngày 2026-10-02: “làm xong rồi thì build docker file .env.vps lại thành bản mới luôn nha”. Build cả `bigbike-backend`, `bigbike-admin`, `bigbike-web` bằng `docker compose --env-file .env.vps build`; giữ image đang chạy trước khi nạp bản mới. Nạp backend trước với `up -d --no-deps --no-build`, xác nhận healthy và V1093 thành công, rồi nạp admin/web với cùng các cờ. Xác minh website công khai có Hotline/Zalo/Messenger, không còn trợ lý hoặc hội thoại/cài đặt trợ lý trong quản trị; giữ nguyên các dịch vụ dữ liệu và file `.env.vps`. URL công khai của bản web phải lấy từ `.env.vps` để không đóng gói nhầm địa chỉ của môi trường local.
+
+Sau khi nạp bản gỡ trợ lý, chủ shop xác nhận phần chức năng đã ổn nhưng giao diện FloatingChat chưa giống hoàn toàn bản đầu, và yêu cầu kiểm tra lịch sử Git. Khôi phục hình thức widget theo `d7b8a1ec`/`CHAT_RULE_070`, rồi build và nạp lại riêng `bigbike-web` bằng `.env.vps`; backend/admin đã gỡ trợ lý và V1093 tiếp tục dùng bản đã kiểm tra. Kiểm VI/EN ở 375/768/1440px, hình/nhãn/kích thước cũ và FAB không đổi vị trí khi mở/đóng. Lượt kiểm qua HTTPS trực tiếp tới Nginx dùng nhịp yêu cầu 120ms như đợt chính sách để không vượt giới hạn tốc độ đang có; không sửa Nginx hoặc giả dữ liệu. Lượt công khai qua Cloudflare vẫn ghi nhận riêng cảnh báo CSP của beacon thống kê có sẵn; không coi đó là lỗi từ widget mới.
+
+Kết quả triển khai và xác minh ngày 2026-10-02:
+
+- Đã build ba app bằng `.env.vps`, nạp backend trước rồi admin/web; V1093 áp dụng thành công. Nhóm cài đặt trợ lý và quyền chat đều còn 0 bản ghi. Số dữ liệu lịch sử trước/sau vẫn là 273 hội thoại, 23 ảnh, 0 video và 160 định danh khách; không xóa hàng loạt dữ liệu cũ.
+- Đã build lại riêng web sau khi khôi phục giao diện Git, rồi nạp bằng `docker compose --env-file .env.vps up -d --no-deps --no-build bigbike-web`. Image cuối: web `sha256:f12fcbb050e8ed64995db9973bd74c6a8da178f4cd45f4ac7f1a03a83f148f7c`, admin `sha256:145eae9297b426e54b929992dd722b6ff2a42422a8090ffb0db41f65a6d1818c`, backend `sha256:8e3ffe620cde1d420235e91dbd901ba5abb30ef03eb19c592af7cc19f61cb531`. `docker inspect bigbike-web bigbike-admin bigbike-backend` xác nhận cả ba running/healthy. Các dịch vụ dữ liệu và hai file env thật không bị sửa.
+- Bản giao diện cuối đạt 5/5 kiểm thử widget và 6/6 lượt Playwright với dữ liệu thật, HTTPS tới máy chủ đang chạy, VI/EN tại 375/768/1440px. Kiểm nút 48/66px, vị trí mở/đóng, nền xám, ảnh đã tải thành công, liên kết ba kênh, Escape/trả focus, không tràn ngang và không phát request chat. Đã xem ảnh thực tế mobile/desktop; ba asset trên web trả HTTP 200 và khớp byte với source. ESLint, kiểm định dạng và guard dữ liệu web đạt.
+- Kiểm thử backend dành cho phần gỡ trợ lý và OpenAPI đều đạt. Bộ backend đầy đủ vẫn có một lỗi sẵn có ở `ArticleExcerptAuthorRemovalMigrationPostgresTest`, liên quan V1091 dọn trường bài viết; migration/test đó không được sửa trong task này. Cảnh báo CSP của beacon thống kê Cloudflare được ghi riêng như trên.
+- Giữ image trước đợt gỡ trợ lý với tag `before-assistant-removal-20261002`; riêng bản web liên hệ trước đợt chỉnh giao diện còn ở `bigbike-web:before-contact-appearance-20261002`. Không prune image hoặc đụng volume dữ liệu.
+
 ## Trợ lý BigBike giai đoạn 4 — cấu hình và runbook
+
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
 
 - Local dùng `.env`; VPS hiện tại bắt buộc dùng `.env.vps` qua `docker compose --env-file .env.vps ...`. Hai file thật không commit và không được copy đè qua nhau; mọi biến mới chỉ commit trong `.env.example` và `.env.vps.example`.
 - Trợ lý chỉ chạy `gemini-3.7-flash`; cấu hình triển khai vẫn khai `BIGBIKE_CHAT_MODEL=gemini-3.7-flash` để nhận diện rõ dịch vụ, nhưng backend khóa cứng ID này và bỏ qua mọi giá trị khác. Không có fallback model, catalog cache hoặc evaluation/cost environment. `BIGBIKE_CHAT_TIMEOUT_SECONDS=65` và `MINIO_CHAT_PRIVATE_BUCKET` vẫn áp dụng. Review moderation giữ các biến riêng, không đổi. Không có biến `GEMINI_MODEL` — backend không đọc tên đó ở bất kỳ đâu; nếu file triển khai còn dòng này thì phải xoá, vì nó khiến người đọc tưởng trợ lý chạy model khác.
@@ -462,6 +578,9 @@ Các bước live có chi phí hoặc cần account thật phải do owner chạ
 
 
 ## Triển khai video ngắn của trợ lý (2026-09-08)
+
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
 
 Bổ sung `ffmpeg` vào image backend mới (giữ user không đặc quyền), migration video và các bản web/admin có cùng contract. Chỉ chuẩn bị/build bản riêng; dịch vụ dùng chung chỉ được nạp sau khi owner duyệt gói thay đổi và kết quả thử thật. Không tự sửa file `.env` đang chạy.
 
@@ -479,6 +598,36 @@ Rollback: the previous web/admin release may stop new video submissions, while t
 
 ### Bàn giao ảnh Trợ lý — 2026-09-08
 
-Triển khai backend có V1082 trước frontend; migration bổ sung cột nullable và setting ảnh 60/ngày, giữ bộ đếm và setting chữ. Owner kiểm quyền chat.read cho người tiếp nhận biên lai. Chuyển ảnh catalog là thao tác riêng qua công cụ/hướng dẫn IMAGE_ASSISTANT_OPERATIONS.md; không tự chạy theo migration/startup. Sau 7 ngày đối chiếu quota ảnh, lượt bị bỏ vì hết hạn mức và hóa đơn Gemini trước khi chỉnh trần. Không coi 60 ảnh/ngày là dự toán tiền.
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+
+Triển khai backend có V1082 trước frontend; migration bổ sung cột nullable và setting ảnh 60/ngày, giữ bộ đếm và setting chữ. Bản COD-only tiếp theo áp dụng V1083 để gỡ dữ liệu cài đặt ngân hàng, luồng thông báo thanh toán và chuyển đúng hai đơn đang xử lý sang COD theo runbook. Chuyển ảnh catalog là thao tác riêng qua công cụ/hướng dẫn IMAGE_ASSISTANT_OPERATIONS.md; không tự chạy theo migration/startup. Sau 7 ngày đối chiếu quota ảnh, lượt bị bỏ vì hết hạn mức và hóa đơn Gemini trước khi chỉnh trần. Không coi 60 ảnh/ngày là dự toán tiền.
 
 Đợt sửa ảnh này đã được owner yêu cầu triển khai trên VPS và đưa toàn bộ thay đổi lên GitHub bằng `docker compose --env-file .env.vps up -d --build` sau khi hoàn tất kiểm tra. Quyền này bao gồm việc áp dụng V1082 khi backend khởi động, không bao gồm chạy công cụ chuyển 91 sản phẩm hoặc sử dụng ảnh/hội thoại thật làm dữ liệu thử. Kiểm sau triển khai bằng health, contract công khai và số tổng hợp; không tiêu hạn mức AI để smoke test.
+
+### Admin lựa chọn sản phẩm và khôi phục khối bài viết — 2026-09-19
+
+Phạm vi release theo `PRODUCT_RULE_022` / `ARTICLE_RULE_008`: admin và backend; dùng `.env.vps` trên VPS, không thay đổi biến môi trường hoặc dựng lại web. Build bằng `docker compose --env-file .env.vps build bigbike-admin bigbike-backend`, sau đó nạp hai image đã kiểm tra theo quy tắc vận hành tại `AGENTS.md` §5.6.
+
+Chủ shop đã xác nhận **đồng ý nạp hai dịch vụ đã kiểm thử** ngày 2026-09-19, sau khi xem kết quả build/kiểm tra và phạm vi khôi phục 104 bài. Nạp backend bằng `docker compose --env-file .env.vps up -d --no-deps --no-build bigbike-backend`; kiểm tra healthy và migration trước khi nạp `bigbike-admin` với cùng các cờ. Không dựng lại hoặc khởi động lại web, PostgreSQL, Redis hay MinIO trong đợt này.
+
+- Backend mới phải hỗ trợ khối `table` trước khi ghi dữ liệu khối bảng. V1086 chạy trong giao dịch, chỉ điền `articles.body_blocks` còn thiếu; HTML VI/EN, thời gian, trạng thái và mọi trường khác giữ nguyên. Bài rỗng nhận `[]`. V1087 cài trigger xóa phần khối lỗi thời khi SQL/import chỉ sửa HTML; tác vụ nền mỗi 60 giây điền tối đa 25 bài bằng cập nhật có điều kiện để bảo vệ sửa đồng thời.
+- Trước khi nạp: sao lưu riêng articles và bảng cỡ; đối chiếu dấu kiểm của toàn bộ trường bài viết ngoài `body_blocks` cùng sản phẩm/lựa chọn/thuộc tính/ảnh lựa chọn. Validate Flyway bằng đúng các cờ `SPRING_FLYWAY_IGNORE_MIGRATION_PATTERNS` và `SPRING_FLYWAY_OUT_OF_ORDER` hiện có của VPS, giữ nguyên ngoại lệ migration dev lịch sử. Pending của release này chỉ là V1086/V1087.
+- Sau khi nạp: xác nhận hai dịch vụ healthy, hai migration thành công, không còn bài thiếu khối và dấu kiểm dữ liệu gốc khớp. Chạy thử bằng tài khoản kiểm thử; chỉ tạo/xóa đúng ID dữ liệu E2E của lần chạy, không quét xóa dữ liệu toàn hệ thống.
+- Quay lại backend cũ cần xử lý phần `body_blocks` đã chuyển đổi trước, vì bản cũ chưa nhận subtype `table`. Giữ image trước release và bản sao lưu riêng; chỉ phục hồi phần khối của các ID đã chuyển đổi khi xác nhận không có lần sửa mới, tuyệt đối không chép đè HTML hay toàn bộ hàng articles. Không xóa lịch sử Flyway để ép chạy lại. Với backend mới, phần khối thiếu được phục hồi bằng đường đọc/tác vụ nền.
+
+Bằng chứng kiểm tra và dữ liệu tổng hợp: `docs/audits/ADMIN_PRODUCT_CHOICES_2026-09-19.md`. Không ghi bí mật môi trường hoặc nội dung bài thật vào báo cáo/Git.
+
+### Dynamic variant attributes and verified catalog cleanup — 2026-09-20
+
+This release updates the product editor and applies the verified attribute cleanup. The editor reads all existing attribute types from `GET /admin/attributes`, orders colour and size first, and keeps the backend type-mutation endpoints only as an operations/development backdoor. Staff can still add, rename and delete attribute **values**, subject to the existing usage guard. The size-chart block and storefront product data are unchanged.
+
+Before deployment, take a database backup outside the repository and record a read-only baseline for `attributes`, `attribute_values`, `product_variant_options`, products and variants. The expected live baseline from the verification pass is 12 attribute types and 273 values. The protected product/variant counts and option links must match after deployment. Do not put the dump or the baseline containing customer/order data into Git.
+
+Flyway migration `V1089__remove_unused_variant_attribute_types.sql` deletes only `dungtich`, `kich-thuoc-oc`, `cap` and `solo` (their five values). It stops before any delete if one target type is referenced by `product_variant_options` or if the four-code set is incomplete. A successful run therefore changes the expected catalog counts from 12 types / 273 values to 8 types / 268 values while leaving product and variant rows untouched. The migration is covered by a PostgreSQL Testcontainers test, including usage and partial-set aborts.
+
+For this release the owner explicitly authorized the complete rebuild and rollout with:
+
+    docker compose --env-file .env.vps up -d --build
+
+Afterward, check `docker compose ps`, backend health and Flyway history (`V1089` succeeded), confirm the four target codes are absent and the eight retained types/268 values remain, and compare the protected product/variant/option baseline. Run the admin product-choice smoke test at desktop, tablet and mobile widths. If the guarded migration stops, keep the previous application image running and restore from the external backup only after confirming the reason; never edit or delete a successful Flyway row to force a rerun.

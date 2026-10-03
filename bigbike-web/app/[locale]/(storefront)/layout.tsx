@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { Footer } from "@/components/layout/Footer";
 import { FooterMobileGate } from "@/components/layout/FooterMobileGate";
-import { FloatingChatLoader } from "@/components/layout/FloatingChatLoader";
+import { FloatingContactLoader } from "@/components/layout/FloatingContactLoader";
 import { Header } from "@/components/layout/Header";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { MobileCartSheet } from "@/components/layout/MobileCartSheet";
@@ -11,11 +11,7 @@ import { ScrollToTopFab } from "@/components/layout/ScrollToTopFab";
 import { SearchToggle } from "@/components/layout/SearchToggle";
 import { SettingsFocusScroller } from "@/components/layout/SettingsFocusScroller";
 import type { HeaderNavNode } from "@/components/layout/header-nav/shared";
-import {
-  getCatalogFacets,
-  getPublicMenu,
-  listProducts,
-} from "@/lib/api/public-api";
+import { getCatalogFacets, getPublicMenu, listProducts } from "@/lib/api/public-api";
 import type { Locale } from "@/i18n/locale";
 import { isLocale } from "@/i18n/locale";
 import { buildPublicMenuTree } from "@/lib/utils/public-menu";
@@ -96,8 +92,8 @@ export default async function StorefrontLayout({
         <Footer locale={locale} />
       </FooterMobileGate>
       <SettingsFocusScroller />
-      <div className="bb-floating-chat-anchor fixed z-[var(--bb-z-floating)] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
-        <FloatingChatLoader locale={locale} />
+      <div className="bb-floating-contact-anchor fixed z-[var(--bb-z-floating)] pointer-events-none [&>*]:pointer-events-auto [[data-scroll-locked]_&]:hidden">
+        <FloatingContactLoader locale={locale} />
       </div>
       <ScrollToTopFab />
     </>

@@ -57,13 +57,11 @@ const draftArticle = {
   slug: 'bai-nhap',
   slugEn: 'draft-article',
   title: 'Bài nháp',
-  excerpt: 'Tóm tắt',
   body: '<p>Nội dung</p>',
   publishStatus: 'DRAFT',
   translations: {
     en: {
       title: 'Draft article',
-      excerpt: 'Summary',
       body: '<p>Content</p>',
     },
   },
@@ -108,6 +106,14 @@ beforeEach(() => {
 })
 
 describe('ContentListScreen', () => {
+  it('không hiển thị số liệu lượt đọc hoặc trạng thái đồng bộ tự động', async () => {
+    renderScreen()
+
+    await screen.findByText('Bài nháp')
+    expect(screen.queryByTestId('article-view-metrics-status')).not.toBeInTheDocument()
+    expect(screen.queryByText('content.colViewsLast30Days')).not.toBeInTheDocument()
+  })
+
   it('hiển thị hành động theo trạng thái từng bài, không phụ thuộc bộ lọc hiện tại', async () => {
     const user = userEvent.setup()
     renderScreen()

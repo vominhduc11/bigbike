@@ -65,12 +65,23 @@ class AdminContentOpenApiContractTest {
     void articleSchemaCoversAdminReadAndWriteFields() {
         JsonNode article = document.path("components").path("schemas").path("ArticleResponse");
         assertThat(fieldNames(article.path("properties")))
-                .contains("id", "type", "slug", "slugEn", "title", "excerpt", "body",
+                .contains("id", "type", "slug", "slugEn", "title", "body",
                         "bodyBlocks", "coverImage", "productImage", "featured", "homeExperience",
                         "seo", "translations",
                         "publishStatus", "publishedAt", "createdAt", "updatedAt");
         assertThat(fieldNames(article.path("properties")))
-                .doesNotContain("category", "categoryId", "categories");
+                .doesNotContain("category", "categoryId", "categories", "excerpt", "authorName");
+        JsonNode adminArticle = document.path("components").path("schemas").path("AdminContentItem");
+        assertThat(fieldNames(adminArticle.path("properties")))
+                .contains("featured")
+                .doesNotContain("viewsLast30Days", "excerpt", "authorName");
+        assertThat(fieldNames(document.path("components").path("schemas")
+                .path("UpsertArticleRequest").path("properties")))
+                .contains("featured")
+                .doesNotContain("excerpt", "authorName");
+        assertThat(fieldNames(document.path("components").path("schemas")
+                .path("ArticleTranslationRequest").path("properties").path("en")))
+                .doesNotContain("excerpt", "authorName");
         assertThat(textValues(article.path("properties").path("publishStatus").path("enum")))
                 .containsExactly("DRAFT", "PUBLISHED", "TRASH");
         assertThat(document.path("components").path("schemas").path("UpsertArticleRequest")
@@ -79,7 +90,7 @@ class AdminContentOpenApiContractTest {
                 .doesNotContain("categoryId", "tin-tuc");
         assertThat(document.path("components").path("schemas").has("ContentCategorySummary")).isFalse();
         assertThat(document.path("paths").path("/api/v1/articles").path("get").path("parameters")
-                .findValuesAsText("name")).doesNotContain("category");
+                .findValuesAsText("name")).contains("featured").doesNotContain("category");
     }
 
     private static JsonNode parameterNamed(JsonNode parameters, String name) {

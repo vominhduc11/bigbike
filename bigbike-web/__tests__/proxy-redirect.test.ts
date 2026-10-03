@@ -11,10 +11,13 @@ function mockRedirect(source: string, target: string) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
     if (url.pathname === "/api/internal/redirect" && url.searchParams.get("path") === source) {
-      return new Response(JSON.stringify({
-        redirectId: "redirect-test",
-        target,
-      }), { status: 200, headers: { "content-type": "application/json" } });
+      return new Response(
+        JSON.stringify({
+          redirectId: "redirect-test",
+          target,
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
     }
     if (init?.method === "POST") return new Response(null, { status: 204 });
     return new Response(null, { status: 404 });
@@ -30,9 +33,9 @@ describe("legacy redirect proxy", () => {
   it("resolves /vi .html aliases in one 301 and preserves the query", async () => {
     mockRedirect("/sp/legacy-product.html", "/product/canonical-product/");
 
-    const response = await proxy(new NextRequest(
-      "https://bigbike.vn/vi/sp/legacy-product.html?utm_source=legacy",
-    ));
+    const response = await proxy(
+      new NextRequest("https://bigbike.vn/vi/sp/legacy-product.html?utm_source=legacy"),
+    );
 
     expect(response.status).toBe(301);
     expect(response.headers.get("location")).toBe(
@@ -43,9 +46,9 @@ describe("legacy redirect proxy", () => {
   it("keeps English locale while resolving a legacy .html alias", async () => {
     mockRedirect("/sp/legacy-product-en.html", "/product/canonical-product/");
 
-    const response = await proxy(new NextRequest(
-      "https://bigbike.vn/en/sp/legacy-product-en.html?ref=old",
-    ));
+    const response = await proxy(
+      new NextRequest("https://bigbike.vn/en/sp/legacy-product-en.html?ref=old"),
+    );
 
     expect(response.status).toBe(301);
     expect(response.headers.get("location")).toBe(
@@ -56,14 +59,10 @@ describe("legacy redirect proxy", () => {
   it("maps the old size query pagination to the current catalog in one 301", async () => {
     mockRedirect("/size/xxl", "/sp/?kich-co=XXL");
 
-    const response = await proxy(new NextRequest(
-      "https://bigbike.vn/size/xxl/?paged=2",
-    ));
+    const response = await proxy(new NextRequest("https://bigbike.vn/size/xxl/?paged=2"));
 
     expect(response.status).toBe(301);
-    expect(response.headers.get("location")).toBe(
-      "https://bigbike.vn/sp/?kich-co=XXL&page=2",
-    );
+    expect(response.headers.get("location")).toBe("https://bigbike.vn/sp/?kich-co=XXL&page=2");
   });
 
   it("serves terminal removals as 410 with an indexing-removal header", async () => {
@@ -71,12 +70,17 @@ describe("legacy redirect proxy", () => {
     fetchSpy.mockImplementation(async (input, init) => {
       const url = new URL(typeof input === "string" ? input : input.toString());
       if (url.pathname === "/api/internal/redirects/active") {
-        return new Response(JSON.stringify([{
-          id: "gone-test",
-          sourcePattern: "/removed-legacy-product",
-          targetUrl: "/",
-          statusCode: 410,
-        }]), { status: 200, headers: { "content-type": "application/json" } });
+        return new Response(
+          JSON.stringify([
+            {
+              id: "gone-test",
+              sourcePattern: "/removed-legacy-product",
+              targetUrl: "/",
+              statusCode: 410,
+            },
+          ]),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
       }
       if (init?.method === "POST") return new Response(null, { status: 204 });
       return new Response(null, { status: 404 });
@@ -86,6 +90,9 @@ describe("legacy redirect proxy", () => {
 
     expect(response.status).toBe(410);
     expect(response.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    // Route handler chỉ đọc được tham số qua request header, không qua query của rewrite.
+    expect(response.headers.get("x-middleware-request-x-bigbike-seo-locale")).toBe("vi");
+    expect(response.headers.get("x-middleware-request-x-bigbike-seo-category")).toMatch(/^\//);
   });
 
   it("normalizes ordinary /vi routes with 301", async () => {
@@ -112,9 +119,9 @@ describe("legacy redirect proxy", () => {
       "/en/categories/motorcycle-jackets-riding-pants",
     );
 
-    const response = await proxy(new NextRequest(
-      "https://bigbike.vn/en/categories/quan-ao-bao-ho-moto/?manufacturer=7",
-    ));
+    const response = await proxy(
+      new NextRequest("https://bigbike.vn/en/categories/quan-ao-bao-ho-moto/?manufacturer=7"),
+    );
 
     expect(response.status).toBe(301);
     expect(response.headers.get("location")).toBe(
@@ -183,12 +190,17 @@ describe("legacy redirect proxy", () => {
       const url = new URL(typeof input === "string" ? input : input.toString());
       if (url.pathname === "/api/internal/redirects/active") {
         activeCalls += 1;
-        return new Response(JSON.stringify([{
-          id: "bulk-redirect",
-          sourcePattern: "/sp/bulk-legacy.html",
-          targetUrl: "/product/bulk-target/",
-          statusCode: 301,
-        }]), { status: 200, headers: { "content-type": "application/json" } });
+        return new Response(
+          JSON.stringify([
+            {
+              id: "bulk-redirect",
+              sourcePattern: "/sp/bulk-legacy.html",
+              targetUrl: "/product/bulk-target/",
+              statusCode: 301,
+            },
+          ]),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
       }
       if (url.pathname === "/api/internal/redirect") {
         singleCalls += 1;
@@ -219,12 +231,17 @@ describe("legacy redirect proxy", () => {
       if (url.pathname === "/api/internal/redirects/active") {
         activeCalls += 1;
         if (activeCalls === 1) return new Response(null, { status: 503 });
-        return new Response(JSON.stringify([{
-          id: "recovered-redirect",
-          sourcePattern: "/sp/recovered-legacy.html",
-          targetUrl: "/product/recovered-target/",
-          statusCode: 301,
-        }]), { status: 200, headers: { "content-type": "application/json" } });
+        return new Response(
+          JSON.stringify([
+            {
+              id: "recovered-redirect",
+              sourcePattern: "/sp/recovered-legacy.html",
+              targetUrl: "/product/recovered-target/",
+              statusCode: 301,
+            },
+          ]),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
       }
       if (url.pathname === "/api/internal/redirect") {
         singleCalls += 1;
@@ -251,12 +268,17 @@ describe("legacy redirect proxy", () => {
       const url = new URL(typeof input === "string" ? input : input.toString());
       if (url.pathname === "/api/internal/redirects/active") {
         activeCalls += 1;
-        return new Response(JSON.stringify([{
-          id: "clear-redirect",
-          sourcePattern: "/sp/clear-legacy.html",
-          targetUrl: "/product/clear-target/",
-          statusCode: 301,
-        }]), { status: 200, headers: { "content-type": "application/json" } });
+        return new Response(
+          JSON.stringify([
+            {
+              id: "clear-redirect",
+              sourcePattern: "/sp/clear-legacy.html",
+              targetUrl: "/product/clear-target/",
+              statusCode: 301,
+            },
+          ]),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
       }
       if (init?.method === "POST") return new Response(null, { status: 204 });
       return new Response(null, { status: 404 });
@@ -279,9 +301,9 @@ describe("legacy redirect proxy", () => {
       if (match) {
         return existingSlugs.includes(decodeURIComponent(match[1]))
           ? new Response(JSON.stringify({ data: { slug: match[1] } }), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          })
+              status: 200,
+              headers: { "content-type": "application/json" },
+            })
           : new Response(null, { status: 404 });
       }
       if (init?.method === "POST") return new Response(null, { status: 204 });
@@ -301,6 +323,8 @@ describe("legacy redirect proxy", () => {
     expect(rewrite).toContain("/seo/not-found/");
     expect(rewrite).toContain("entity=article");
     expect(rewrite).toContain(`locale=${locale}`);
+    expect(response.headers.get("x-middleware-request-x-bigbike-seo-entity")).toBe("article");
+    expect(response.headers.get("x-middleware-request-x-bigbike-seo-locale")).toBe(locale);
   });
 
   it("keeps serving an article that still exists", async () => {
@@ -316,7 +340,11 @@ describe("legacy redirect proxy", () => {
 
     const response = await proxy(new NextRequest("https://bigbike.vn/tin-tuc/bai-con-song.html"));
 
-    expect(fetchSpy.mock.calls.some(([input]) => String(input).includes("/api/v1/articles/bai-con-song"))).toBe(true);
+    expect(
+      fetchSpy.mock.calls.some(([input]) =>
+        String(input).includes("/api/v1/articles/bai-con-song"),
+      ),
+    ).toBe(true);
     expect(response.headers.get("x-middleware-rewrite") ?? "").not.toContain("/seo/not-found/");
   });
 
@@ -325,7 +353,9 @@ describe("legacy redirect proxy", () => {
 
     const response = await proxy(new NextRequest("https://bigbike.vn/tin-tuc/"));
 
-    expect(fetchSpy.mock.calls.some(([input]) => String(input).includes("/api/v1/articles/"))).toBe(false);
+    expect(fetchSpy.mock.calls.some(([input]) => String(input).includes("/api/v1/articles/"))).toBe(
+      false,
+    );
     expect(response.headers.get("x-middleware-rewrite") ?? "").not.toContain("/seo/not-found/");
   });
 });

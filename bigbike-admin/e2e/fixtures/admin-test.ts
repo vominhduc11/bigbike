@@ -314,7 +314,20 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   // test only measures its own navigation. Recovers via form login if bounced.
   adminPage: async ({ page, collect, context, authHolder }, use) => {
     await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' })
-    if (await page.locator('.bb-login-shell').count()) {
+    const loginShell = page.locator('.bb-login-shell')
+    const adminApp = page.locator('.bb-app')
+    const landedOnLogin = await Promise.race([
+      loginShell
+        .waitFor({ state: 'attached', timeout: 20_000 })
+        .then(() => true)
+        .catch(() => null),
+      adminApp
+        .waitFor({ state: 'attached', timeout: 20_000 })
+        .then(() => false)
+        .catch(() => null),
+    ])
+
+    if (landedOnLogin === true) {
       // Rotating cookie died — re-login via API and re-seed, then reload.
       const session = await apiLoginSession(context.request)
       authHolder.cookie = session.refreshCookie
@@ -332,7 +345,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       ])
       await page.goto('/admin/dashboard', { waitUntil: 'domcontentloaded' })
     }
-    await page.locator('.bb-app').waitFor({ state: 'attached', timeout: 20_000 })
+    await adminApp.waitFor({ state: 'attached', timeout: 20_000 })
     await page
       .locator('.bb-page-content')
       .waitFor({ state: 'visible', timeout: 20_000 })

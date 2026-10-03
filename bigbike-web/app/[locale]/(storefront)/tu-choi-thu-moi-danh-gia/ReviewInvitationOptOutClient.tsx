@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "@/i18n/StorefrontLink";
 import { Button } from "@/components/ui/button";
 import { env } from "@/env";
+import { toHomePath } from "@/lib/utils/routes";
+import type { Locale } from "@/i18n/locale";
 
 const API_BASE_URL = (env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080").replace(/\/+$/, "");
 
@@ -12,6 +14,7 @@ type ViewState = "loading" | "ready" | "submitting" | "success" | "error" | "mis
 
 export function ReviewInvitationOptOutClient() {
   const t = useTranslations("ReviewInvitationOptOut");
+  const locale = useLocale() as Locale;
   const [token, setToken] = useState("");
   const [state, setState] = useState<ViewState>("loading");
 
@@ -86,7 +89,7 @@ export function ReviewInvitationOptOutClient() {
         )}
         {(state === "success" || state === "missing") && (
           <Button asChild variant="outline">
-            <Link href="/">{t("backHome")}</Link>
+            <Link href={toHomePath(locale)}>{t("backHome")}</Link>
           </Button>
         )}
       </div>

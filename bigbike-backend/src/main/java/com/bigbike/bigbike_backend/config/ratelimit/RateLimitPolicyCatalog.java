@@ -58,13 +58,6 @@ public class RateLimitPolicyCatalog {
             if ("/api/v1/checkout".equals(path)) {
                 return Optional.of(RateLimitTier.CHECKOUT);
             }
-            if ("/api/v1/chat/messages".equals(path)
-                    || "/api/v1/chat/images".equals(path)
-                    || "/api/v1/chat/videos".equals(path)
-                    || "/api/v1/chat/leads".equals(path)
-                    || "/api/v1/chat/leads/decline".equals(path)) {
-                return Optional.of(RateLimitTier.CHAT);
-            }
             if (isProductReviewPhotoPath(path)) {
                 return Optional.of(RateLimitTier.REVIEW_PHOTO);
             }
@@ -105,12 +98,6 @@ public class RateLimitPolicyCatalog {
         }
 
         if (path.startsWith("/api/v1/admin/")) {
-            if (HttpMethod.POST.name().equals(method) && "/api/v1/admin/products/import/validate".equals(path)) {
-                return Optional.of(RateLimitTier.ADMIN_IMPORT_VALIDATE);
-            }
-            if (HttpMethod.POST.name().equals(method) && "/api/v1/admin/products/import/commit".equals(path)) {
-                return Optional.of(RateLimitTier.ADMIN_IMPORT_COMMIT);
-            }
             if (isAdminMediaWrite(method, path)) {
                 return Optional.of(RateLimitTier.ADMIN_MEDIA);
             }
@@ -125,15 +112,15 @@ public class RateLimitPolicyCatalog {
     public boolean acceptsCustomerIdentity(RateLimitTier tier) {
         return switch (tier) {
             case CUSTOMER_MUTATION, CUSTOMER_MEDIA, CHECKOUT, REFRESH, RESEND_VERIFICATION,
-                    REVIEW, REVIEW_PHOTO, CHAT -> true;
+                    REVIEW, REVIEW_PHOTO -> true;
             default -> false;
         };
     }
 
     public boolean acceptsAdminIdentity(RateLimitTier tier) {
         return switch (tier) {
-            case ADMIN_MUTATION, ADMIN_MEDIA, ADMIN_IMPORT_VALIDATE, ADMIN_IMPORT_COMMIT,
-                    ADMIN_EXPORT, RESEND_VERIFICATION, WEBSOCKET_HANDSHAKE, WEBSOCKET_COMMAND -> true;
+            case ADMIN_MUTATION, ADMIN_MEDIA, ADMIN_EXPORT, RESEND_VERIFICATION,
+                    WEBSOCKET_HANDSHAKE, WEBSOCKET_COMMAND -> true;
             default -> false;
         };
     }

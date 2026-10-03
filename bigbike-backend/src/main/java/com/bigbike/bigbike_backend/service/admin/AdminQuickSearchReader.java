@@ -235,11 +235,7 @@ class AdminQuickSearchReader {
                 .map(article -> {
                     List<Field> fields = fields(
                             new Field("title", article.getTitle()),
-                            new Field("titleEn", article.getTitleEn()),
-                            new Field("slug", article.getSlug()),
-                            new Field("slugEn", article.getSlugEn()),
-                            new Field("excerpt", article.getExcerpt()),
-                            new Field("excerptEn", article.getExcerptEn()));
+                            new Field("titleEn", article.getTitleEn()));
                     return ranked(
                             query,
                             fields,

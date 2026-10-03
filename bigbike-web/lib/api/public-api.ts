@@ -4,6 +4,7 @@ import type {
   ApiErrorResponse,
   ApiListResponse,
   Article,
+  ArticleRecommendations,
   Brand,
   CatalogFacets,
   Category,
@@ -511,6 +512,18 @@ export function getArticleBySlug(slug: string, lang?: string): Promise<DataResul
     `article:${slug}`,
     `lang:${lang ?? "vi"}`,
   ]);
+}
+
+export function getArticleRecommendations(
+  slug: string,
+  lang?: string,
+): Promise<DataResult<ArticleRecommendations>> {
+  return loadDataWithQuery<ArticleRecommendations>(
+    `/api/v1/articles/${slug}/recommendations`,
+    { lang },
+    3600,
+    ["articles", `article:${slug}`, `lang:${lang ?? "vi"}`],
+  );
 }
 
 export function getPublicMenu(location: string, lang?: string): Promise<DataResult<PublicMenu>> {

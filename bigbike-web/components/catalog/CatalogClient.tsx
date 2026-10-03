@@ -16,7 +16,7 @@ import { isCurrentCatalogFacetResponse } from "@/lib/utils/catalog-facet-respons
 import { buildQueryString } from "@/lib/utils/query";
 import { DEFAULT_PRODUCT_PAGE_SIZE } from "@/lib/constants/catalog";
 import { CatalogResults } from "@/components/catalog/CatalogResults";
-import type { Ga4List } from "@/lib/analytics";
+import { trackCatalogFilter, type Ga4List } from "@/lib/analytics";
 import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
 import { CatalogFilterChips } from "@/components/catalog/CatalogFilterChips";
 import type { CatalogFacets, Product } from "@/lib/contracts/public";
@@ -77,10 +77,28 @@ export type CatalogClientProps = {
    * be reported twice.
    */
   analyticsList?: Ga4List;
+  /** Search-only fallback shown after a successful zero-product result. */
+  emptyRecommendations?: Product[];
+  emptyRecommendationsLabel?: string;
 };
+
+type MeasuredFilterState = { brand: string; size: string; price: string };
+
+function measuredFilterState(state: CatalogFilterState): MeasuredFilterState {
+  return {
+    brand: [...state.brand].sort().join("|"),
+    size: [...state.size].sort().join("|"),
+    price:
+      state.minPrice == null && state.maxPrice == null
+        ? ""
+        : `${state.minPrice ?? "min"}-${state.maxPrice ?? "max"}`,
+  };
+}
 
 export function CatalogClient({
   analyticsList,
+  emptyRecommendations = [],
+  emptyRecommendationsLabel,
   canonicalPath,
   facets = null,
   beforeGridHtml = null,
@@ -127,6 +145,9 @@ export function CatalogClient({
     });
   }, [searchParams, includeCategoryParam, queryParamKeys, defaultSortWhenQuery]);
   const [mobileDraft, setMobileDraft] = useState<CatalogFilterState>(catalog.currentFilters);
+  const lastMeasuredFiltersRef = useRef<MeasuredFilterState>(
+    measuredFilterState(catalog.currentFilters),
+  );
   const mobileDraftRef = useRef(mobileDraft);
   const mobileOpenRef = useRef(mobileOpen);
   const updateMobileDraft = useCallback((next: CatalogFilterState) => {
@@ -167,7 +188,7 @@ export function CatalogClient({
       ? { data: initialProducts, pagination: initialPagination }
       : undefined;
 
-  const { data, isLoading, isFetching, isError } = useQuery({
+  const { data, isLoading, isFetching, isError, isPlaceholderData } = useQuery({
     queryKey: ["catalog-products", debouncedProductQuery],
     queryFn: ({ signal }) => fetchPublicProductList(debouncedProductQuery, signal),
     enabled: !hasValidationErrors && !blockedByEmptyQuery,
@@ -266,6 +287,59 @@ export function CatalogClient({
     isFacetError;
   const pagination = blockedByEmptyQuery || catalogError ? null : (data?.pagination ?? null);
 
+  useEffect(() => {
+    // A click becomes business evidence only after the exact debounced query has succeeded.
+    if (
+      hasValidationErrors ||
+      blockedByEmptyQuery ||
+      isError ||
+      isFetching ||
+      isPlaceholderData ||
+      !data ||
+      JSON.stringify(productQuery) !== JSON.stringify(debouncedProductQuery)
+    ) {
+      return;
+    }
+
+    const next = measuredFilterState(catalog.currentFilters);
+    const previous = lastMeasuredFiltersRef.current;
+    const resultCount = data.pagination?.totalItems ?? data.data.length;
+    const labels = new Map<string, string>([
+      ...(activeFacets?.brands ?? []).map((item) => [item.key, item.label] as const),
+      ...(activeFacets?.sizeGroups ?? [])
+        .flatMap((group) => group.buckets)
+        .map((item) => [item.key, item.label] as const),
+    ]);
+    const displayValues = (value: string) =>
+      value
+        .split("|")
+        .filter(Boolean)
+        .map((item) => labels.get(item) ?? item)
+        .join(", ");
+
+    if (next.brand !== previous.brand) {
+      trackCatalogFilter("brand", displayValues(next.brand), resultCount);
+    }
+    if (next.size !== previous.size) {
+      trackCatalogFilter("size", displayValues(next.size), resultCount);
+    }
+    if (next.price !== previous.price) {
+      trackCatalogFilter("price", next.price, resultCount);
+    }
+    lastMeasuredFiltersRef.current = next;
+  }, [
+    activeFacets,
+    blockedByEmptyQuery,
+    catalog.currentFilters,
+    data,
+    debouncedProductQuery,
+    hasValidationErrors,
+    isError,
+    isFetching,
+    isPlaceholderData,
+    productQuery,
+  ]);
+
   // Lần tải đầu (chưa có data) → để CatalogResults hiện skeleton (tránh layout shift),
   // không hiện notice "Đang tải". Các lần đổi filter/trang giữ data cũ (placeholderData)
   // nên không bị nháy.
@@ -294,6 +368,14 @@ export function CatalogClient({
   const resolvedNotice = hasSizeEmptyState
     ? tCat("sizeNoResults", { size: catalog.filters.size.join(", ") })
     : notice;
+  const showEmptyRecommendations =
+    requireQuery &&
+    hasQuery &&
+    !hasValidationErrors &&
+    !catalogError &&
+    !firstLoading &&
+    products.length === 0 &&
+    emptyRecommendations.length > 0;
 
   const clearSizeHref = `${canonicalPath}${buildQueryString({
     size: catalog.size !== DEFAULT_PRODUCT_PAGE_SIZE ? catalog.size : undefined,
@@ -410,6 +492,13 @@ export function CatalogClient({
         isLoading={firstLoading}
         isRefetching={isRefetching}
         error={catalogError}
+        emptyRecommendations={showEmptyRecommendations ? emptyRecommendations : []}
+        emptyRecommendationsLabel={emptyRecommendationsLabel}
+        emptyRecommendationsAnalyticsList={
+          emptyRecommendationsLabel
+            ? { id: "search_recommendations", name: emptyRecommendationsLabel }
+            : undefined
+        }
         activeFilterCount={activeFilterCount}
         activeFilters={activeFilterChips}
         beforeGrid={

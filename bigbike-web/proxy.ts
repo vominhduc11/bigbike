@@ -444,6 +444,25 @@ function copyLegacySizePage(request: NextRequest, sourcePath: string, destinatio
   destination.searchParams.set("page", paged);
 }
 
+// Route handler của trang SEO không nhận được query gắn trên đích rewrite (thực tế
+// trên production: `?entity=article&locale=en` mất, trang báo sai "thương hiệu" và
+// sai ngôn ngữ). Gửi kèm từng tham số qua request header `x-bigbike-seo-<tên>`;
+// query vẫn giữ để đọc được đích rewrite khi kiểm thử.
+function rewriteToSeoPage(
+  request: NextRequest,
+  pathname: "/seo/gone/" | "/seo/not-found/",
+  params: Record<string, string>,
+  init?: { status?: number; headers?: Record<string, string> },
+): NextResponse {
+  const target = new URL(pathname, request.url);
+  const requestHeaders = new Headers(request.headers);
+  for (const [name, value] of Object.entries(params)) {
+    target.searchParams.set(name, value);
+    requestHeaders.set(`x-bigbike-seo-${name}`, value);
+  }
+  return NextResponse.rewrite(target, { ...init, request: { headers: requestHeaders } });
+}
+
 function redirectResponse(
   request: NextRequest,
   rule: RedirectLookup,
@@ -451,13 +470,12 @@ function redirectResponse(
   locale: "vi" | "en",
 ): NextResponse | null {
   if (rule.statusCode === 410) {
-    const goneUrl = new URL("/seo/gone/", request.url);
-    goneUrl.searchParams.set("locale", locale);
-    goneUrl.searchParams.set("category", translatePath(goneCategoryPath(currentPath), locale));
-    return NextResponse.rewrite(goneUrl, {
-      status: 410,
-      headers: { "X-Robots-Tag": "noindex, nofollow" },
-    });
+    return rewriteToSeoPage(
+      request,
+      "/seo/gone/",
+      { locale, category: translatePath(goneCategoryPath(currentPath), locale) },
+      { status: 410, headers: { "X-Robots-Tag": "noindex, nofollow" } },
+    );
   }
 
   // A managed target is either a root-relative path or an absolute http(s) URL
@@ -656,20 +674,14 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     if (brandSlug) {
       const brandExists = await lookupPublicBrandExists(brandSlug, locale);
       if (brandExists === false) {
-        const notFoundUrl = new URL("/seo/not-found/", request.url);
-        notFoundUrl.searchParams.set("locale", locale);
-        notFoundUrl.searchParams.set("entity", "brand");
-        return NextResponse.rewrite(notFoundUrl);
+        return rewriteToSeoPage(request, "/seo/not-found/", { locale, entity: "brand" });
       }
     }
     const articleSlug = articleSlugFromPath(pathname);
     if (articleSlug) {
       const articleExists = await lookupPublicArticleExists(articleSlug, locale);
       if (articleExists === false) {
-        const notFoundUrl = new URL("/seo/not-found/", request.url);
-        notFoundUrl.searchParams.set("locale", locale);
-        notFoundUrl.searchParams.set("entity", "article");
-        return NextResponse.rewrite(notFoundUrl);
+        return rewriteToSeoPage(request, "/seo/not-found/", { locale, entity: "article" });
       }
     }
     if (legacyEnglishTarget) {

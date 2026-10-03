@@ -1,17 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   GA_CURRENCY,
+  GA_PAYMENT_TYPE,
   GA_SHIPPING_TIER,
+  clearPendingAuthentication,
+  consumePendingAuthentication,
+  getAnalyticsClientId,
+  markPendingAuthentication,
+  setAnalyticsUserId,
   toGa4ItemFromProduct,
   toGa4ItemsFromCart,
   toGa4ItemsFromOrder,
   trackAddPaymentInfo,
   trackAddShippingInfo,
   trackAddToCart,
+  trackAuthentication,
   trackBeginCheckout,
+  trackCatalogFilter,
+  trackContactClick,
+  trackContentSection,
   trackPurchase,
   trackRemoveFromCart,
+  trackReviewSubmit,
+  trackScrollDepth,
+  trackSearch,
   trackSelectItem,
+  trackSelectPromotion,
+  trackSizeGuideUse,
+  trackVideoOpen,
   trackViewCart,
   trackViewItem,
   trackViewItemList,
@@ -27,6 +43,18 @@ function sentEvents(): Array<[string, Record<string, unknown>]> {
   return gtag.mock.calls
     .filter((call) => call[0] === "event")
     .map((call) => [call[1] as string, call[2] as Record<string, unknown>]);
+}
+
+/** Every standard Meta event, as [eventName, params, optional options]. */
+function sentMetaEvents(): Array<[string, Record<string, unknown>, Record<string, unknown>?]> {
+  const fbq = window.fbq as unknown as { mock: { calls: unknown[][] } };
+  return fbq.mock.calls
+    .filter((call) => call[0] === "track")
+    .map((call) => [
+      call[1] as string,
+      call[2] as Record<string, unknown>,
+      call[3] as Record<string, unknown> | undefined,
+    ]);
 }
 
 function product(overrides: Partial<Product> = {}): Product {
@@ -118,10 +146,15 @@ function order(overrides: Partial<OrderDetail> = {}): OrderDetail {
 
 beforeEach(() => {
   window.gtag = vi.fn();
+  window.fbq = vi.fn();
 });
 
 afterEach(() => {
+  clearPendingAuthentication();
+  document.querySelectorAll("[data-analytics-product-id]").forEach((node) => node.remove());
   delete window.gtag;
+  delete window.clarity;
+  delete window.fbq;
 });
 
 describe("item mapping", () => {
@@ -150,58 +183,61 @@ describe("item mapping", () => {
     });
   });
 
-  it.each(["vi", "en"])("keeps variant SKU and metadata through all ten events (%s)", (locale) => {
-    const catalog = merchantVariants();
-    const variant = catalog.variants![0];
-    catalog.price = variant.price!;
-    if (locale === "en") catalog.name = "Protective jacket";
-    const line = cartItem({
-      sku: variant.sku!,
-      productId: catalog.id,
-      productVariantId: variant.id,
-      productName: catalog.name,
-      variantName: variant.name,
-      unitPrice: 1100000,
-      brandName: catalog.brand!.name,
-      categoryName: catalog.category!.name,
-    });
-    const basket = cart({ items: [line] });
-    const list = { id: "jackets", name: "Áo bảo hộ" };
-    trackViewItemList([catalog], list);
-    trackSelectItem(catalog, list, 0);
-    trackViewItem(catalog, variant);
-    trackAddToCart(line, 1);
-    trackRemoveFromCart(line);
-    trackViewCart(basket);
-    trackBeginCheckout(basket);
-    trackAddShippingInfo(basket);
-    trackAddPaymentInfo(basket, "COD");
-    trackPurchase(order({ lineItems: [{ ...line, productThumbnailUrl: null }] }));
-    expect(sentEvents().map(([name]) => name)).toEqual([
-      "view_item_list",
-      "select_item",
-      "view_item",
-      "add_to_cart",
-      "remove_from_cart",
-      "view_cart",
-      "begin_checkout",
-      "add_shipping_info",
-      "add_payment_info",
-      "purchase",
-    ]);
-    for (const [, params] of sentEvents()) {
-      expect(params.items).toEqual([
-        expect.objectContaining({
-          item_id: variant.sku,
-          item_brand: catalog.brand!.name,
-          item_category: catalog.category!.name,
-          item_variant: variant.name,
-          price: 1100000,
-          currency: "VND",
-        }),
+  it.each(["vi", "en"])(
+    "keeps variant SKU and metadata through all ten commerce events (%s)",
+    (locale) => {
+      const catalog = merchantVariants();
+      const variant = catalog.variants![0];
+      catalog.price = variant.price!;
+      if (locale === "en") catalog.name = "Protective jacket";
+      const line = cartItem({
+        sku: variant.sku!,
+        productId: catalog.id,
+        productVariantId: variant.id,
+        productName: catalog.name,
+        variantName: variant.name,
+        unitPrice: 1100000,
+        brandName: catalog.brand!.name,
+        categoryName: catalog.category!.name,
+      });
+      const basket = cart({ items: [line] });
+      const list = { id: "jackets", name: "Áo bảo hộ" };
+      trackViewItemList([catalog], list);
+      trackSelectItem(catalog, list, 0);
+      trackViewItem(catalog, variant);
+      trackAddToCart(line, 1);
+      trackRemoveFromCart(line);
+      trackViewCart(basket);
+      trackBeginCheckout(basket);
+      trackAddShippingInfo(basket);
+      trackAddPaymentInfo(basket);
+      trackPurchase(order({ lineItems: [{ ...line, productThumbnailUrl: null }] }));
+      expect(sentEvents().map(([name]) => name)).toEqual([
+        "view_item_list",
+        "select_item",
+        "view_item",
+        "add_to_cart",
+        "remove_from_cart",
+        "view_cart",
+        "begin_checkout",
+        "add_shipping_info",
+        "add_payment_info",
+        "purchase",
       ]);
-    }
-  });
+      for (const [, params] of sentEvents()) {
+        expect(params.items).toEqual([
+          expect.objectContaining({
+            item_id: variant.sku,
+            item_brand: catalog.brand!.name,
+            item_category: catalog.category!.name,
+            item_variant: variant.name,
+            price: 1100000,
+            currency: "VND",
+          }),
+        ]);
+      }
+    },
+  );
 
   it("omits unknown catalog metadata without guessing or breaking older commerce responses", () => {
     for (const item of [
@@ -255,10 +291,78 @@ describe("item mapping", () => {
 });
 
 describe("events", () => {
+  it("reads GA4's own browser id for a later server-side cancellation", async () => {
+    window.gtag = vi.fn((...args: unknown[]) => {
+      if (args[0] === "get") (args[3] as (value: string) => void)("123456789.987654321");
+    });
+
+    await expect(getAnalyticsClientId("G-TEST1234", 50)).resolves.toBe("123456789.987654321");
+    expect(window.gtag).toHaveBeenCalledWith(
+      "get",
+      "G-TEST1234",
+      "client_id",
+      expect.any(Function),
+    );
+  });
+
+  it("drops missing or malformed browser ids without blocking checkout", async () => {
+    await expect(getAnalyticsClientId(undefined, 0)).resolves.toBeUndefined();
+    window.gtag = vi.fn((...args: unknown[]) => {
+      if (args[0] === "get") (args[3] as (value: string) => void)("not-a-client-id");
+    });
+    await expect(getAnalyticsClientId("G-TEST1234", 50)).resolves.toBeUndefined();
+  });
+
   it("stays silent when GA4 is not configured instead of throwing", () => {
     delete window.gtag;
+    delete window.fbq;
     expect(() => trackViewItem(product())).not.toThrow();
     expect(() => trackPurchase(order())).not.toThrow();
+  });
+
+  it("maps only Meta's supported commerce events from the same GA4 item source", () => {
+    const catalog = product();
+    const line = cartItem({ brandName: "AGV", categoryName: "Mũ bảo hiểm" });
+    const basket = cart({ items: [line] });
+
+    trackViewItemList([catalog], { id: "helmets", name: "Mũ bảo hiểm" });
+    trackSelectItem(catalog, { id: "helmets", name: "Mũ bảo hiểm" });
+    trackViewItem(catalog);
+    trackAddToCart(line, 1);
+    trackRemoveFromCart(line);
+    trackViewCart(basket);
+    trackBeginCheckout(basket);
+    trackAddShippingInfo(basket);
+    trackAddPaymentInfo(basket);
+    trackPurchase(order({ lineItems: [{ ...line, productThumbnailUrl: null }] }));
+
+    expect(sentMetaEvents().map(([name]) => name)).toEqual([
+      "ViewContent",
+      "AddToCart",
+      "InitiateCheckout",
+      "AddPaymentInfo",
+      "Purchase",
+    ]);
+    const [viewName, viewPayload] = sentMetaEvents()[0];
+    expect(viewName).toBe("ViewContent");
+    expect(viewPayload).toMatchObject({
+      content_ids: ["AGV-K6-RED-L"],
+      content_type: "product",
+      currency: "VND",
+      value: 2500000,
+      num_items: 1,
+      contents: [{ id: "AGV-K6-RED-L", quantity: 1, item_price: 2500000 }],
+    });
+    const [, purchasePayload, purchaseOptions] = sentMetaEvents()[sentMetaEvents().length - 1];
+    expect(purchasePayload).toMatchObject({
+      content_ids: ["AGV-K6-RED-L"],
+      currency: "VND",
+      value: 5000000,
+      contents: [{ id: "AGV-K6-RED-L", quantity: 2, item_price: 2500000 }],
+    });
+    expect(purchaseOptions).toEqual({ eventID: "purchase_BB2609060001" });
+    expect(typeof purchasePayload.value).toBe("number");
+    expect(Number.isInteger(purchasePayload.value as number)).toBe(true);
   });
 
   it("reports a product list with its identity and positions", () => {
@@ -275,6 +379,52 @@ describe("events", () => {
   it("skips an empty list rather than reporting a phantom impression", () => {
     trackViewItemList([], { id: "search_results", name: "Kết quả tìm kiếm" });
     expect(sentEvents()).toHaveLength(0);
+  });
+
+  it("reports normalized search terms, result counts and their separate surfaces", () => {
+    trackSearch("  mũ   bảo hiểm  ", 5.9, "header_quick");
+    trackSearch("mũ bảo hiểm", 27, "results_page");
+
+    expect(sentEvents()).toEqual([
+      [
+        "search",
+        {
+          search_term: "mũ bảo hiểm",
+          result_count: 5,
+          search_surface: "header_quick",
+        },
+      ],
+      [
+        "search",
+        {
+          search_term: "mũ bảo hiểm",
+          result_count: 27,
+          search_surface: "results_page",
+        },
+      ],
+    ]);
+    expect(sentMetaEvents()).toEqual([
+      ["Search", { search_string: "mũ bảo hiểm" }, undefined],
+      ["Search", { search_string: "mũ bảo hiểm" }, undefined],
+    ]);
+  });
+
+  it.each([
+    "khach@example.com",
+    "0906 902 404",
+    "550e8400-e29b-41d4-a716-446655440000",
+    "eyJhbGciOiJIUzI1NiJ9abcdefghijk",
+  ])("redacts a private-looking search term instead of leaking it: %s", (term) => {
+    trackSearch(term, -3, "header_quick");
+    expect(sentEvents()[0]).toEqual([
+      "search",
+      {
+        search_term: "[redacted]",
+        result_count: 0,
+        search_surface: "header_quick",
+      },
+    ]);
+    expect(sentMetaEvents()[0]).toEqual(["Search", { search_string: "[redacted]" }, undefined]);
   });
 
   it("attributes a click back to the list it came from", () => {
@@ -301,11 +451,13 @@ describe("events", () => {
     expect(params.currency).toBe("VND");
   });
 
-  it("passes the chosen payment method through", () => {
-    trackAddPaymentInfo(cart(), "BANK_TRANSFER");
+  it("reports payment information only as the confirmed COD method", () => {
+    trackAddPaymentInfo(cart());
     const [name, params] = sentEvents()[0];
     expect(name).toBe("add_payment_info");
-    expect(params.payment_type).toBe("BANK_TRANSFER");
+    expect(params.payment_type).toBe(GA_PAYMENT_TYPE);
+    expect(params.payment_type).not.toMatch(/bank|transfer/i);
+    expect(params.value).toBe(5000000);
   });
 
   it("uses the real order number as transaction_id, never a generated value", () => {
@@ -329,5 +481,78 @@ describe("events", () => {
     expect(serialized).not.toContain("khach@example.com");
     expect(serialized).not.toContain("0900000000");
     expect(serialized).not.toContain("secret-lookup-key");
+  });
+
+  it("adds only public product context to direct contact actions", () => {
+    const root = document.createElement("main");
+    root.dataset.analyticsProductId = "product-1";
+    root.dataset.analyticsProductName = "Mũ bảo hiểm";
+    root.dataset.analyticsProductBrand = "AGV";
+    root.dataset.analyticsProductCategory = "Mũ";
+    document.body.append(root);
+
+    trackContactClick("phone", "mobile_purchase_bar");
+
+    expect(sentEvents()).toEqual([
+      [
+        "contact_click",
+        expect.objectContaining({
+          contact_channel: "phone",
+          placement: "mobile_purchase_bar",
+          item_brand: "AGV",
+        }),
+      ],
+    ]);
+    expect(JSON.stringify(sentEvents())).not.toMatch(/090|tel:|zalo\.me|email/i);
+    expect(sentMetaEvents()).toEqual([["Contact", { content_name: "phone" }, undefined]]);
+  });
+
+  it("uses recommended names where GA4 defines them and bounded custom parameters elsewhere", () => {
+    trackSelectPromotion({ id: "hero-1", name: "Banner LS2", placement: "homepage_hero" });
+    trackAuthentication("login", "google");
+    trackCatalogFilter("size", "M, L", 12);
+    trackSizeGuideUse("M");
+    trackReviewSubmit({ productId: "p1", rating: 5, photoCount: 2 });
+    trackVideoOpen({ id: "v1", title: "Giới thiệu", provider: "youtube", placement: "pdp" });
+    trackScrollDepth(50, "/product/test/");
+    trackContentSection("reviews", "/product/test/");
+
+    expect(sentEvents().map(([name]) => name)).toEqual([
+      "select_promotion",
+      "login",
+      "catalog_filter",
+      "size_guide_use",
+      "review_submit",
+      "video_open",
+      "scroll_depth",
+      "view_content_section",
+    ]);
+    expect(sentEvents()[0][1]).toMatchObject({
+      promotion_id: "hero-1",
+      promotion_name: "Banner LS2",
+      creative_slot: "homepage_hero",
+    });
+    expect(sentEvents()[2][1]).toMatchObject({
+      filter_type: "size",
+      filter_value: "M, L",
+      result_count: 12,
+    });
+  });
+
+  it("sends internal identity only and consumes a pending social success once", () => {
+    window.clarity = vi.fn();
+    setAnalyticsUserId("internal-customer-42");
+    expect(window.gtag).toHaveBeenCalledWith("set", { user_id: "internal-customer-42" });
+    expect(window.clarity).toHaveBeenCalledWith("identify", "internal-customer-42");
+
+    markPendingAuthentication("sign_up", "facebook");
+    expect(consumePendingAuthentication()).toMatchObject({
+      event: "sign_up",
+      method: "facebook",
+    });
+    expect(consumePendingAuthentication()).toBeNull();
+
+    setAnalyticsUserId();
+    expect(window.gtag).toHaveBeenLastCalledWith("set", { user_id: null });
   });
 });

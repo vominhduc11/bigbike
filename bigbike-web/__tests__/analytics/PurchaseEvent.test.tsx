@@ -28,11 +28,13 @@ const order = {
 beforeEach(() => {
   window.sessionStorage.clear();
   window.gtag = vi.fn();
+  window.fbq = vi.fn();
 });
 
 afterEach(() => {
   window.sessionStorage.clear();
   delete window.gtag;
+  delete window.fbq;
 });
 
 it("reports one purchase across StrictMode, order polling and three same-tab page remounts", () => {
@@ -71,4 +73,19 @@ it("reports one purchase across StrictMode, order polling and three same-tab pag
     />,
   );
   expect(window.gtag).toHaveBeenCalledTimes(2);
+  expect(window.fbq).toHaveBeenCalledTimes(2);
+  expect(window.fbq).toHaveBeenNthCalledWith(
+    1,
+    "track",
+    "Purchase",
+    expect.objectContaining({
+      content_ids: ["E2E_GMC_BLUE_M"],
+      currency: "VND",
+      value: 1100000,
+    }),
+    { eventID: "purchase_ANALYTICS-ORDER-1" },
+  );
+  expect(window.fbq).toHaveBeenNthCalledWith(2, "track", "Purchase", expect.any(Object), {
+    eventID: "purchase_ANALYTICS-ORDER-2",
+  });
 });

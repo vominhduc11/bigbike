@@ -29,6 +29,15 @@ export const env = createEnv({
       .string()
       .regex(/^G-[A-Z0-9]{4,}$/, "must look like G-XXXXXXXXXX")
       .optional(),
+    // Microsoft Clarity project id. Blank/unset means no recording script is rendered.
+    NEXT_PUBLIC_CLARITY_PROJECT_ID: z
+      .string()
+      .regex(/^[a-z0-9]+$/i, "must be an alphanumeric Clarity project id")
+      .optional(),
+    // Meta Pixel is deliberately limited to the shop's existing audience source. Blank/unset
+    // keeps the browser completely silent; accepting another id here would accidentally strand
+    // four years of remarketing history on a new pixel.
+    NEXT_PUBLIC_META_PIXEL_ID: z.literal("460465848002810").optional(),
     NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
     // Canonical site origin — used client-side for absolute URL generation
     NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
@@ -53,6 +62,8 @@ export const env = createEnv({
     BIGBIKE_REDIRECT_CACHE_TTL_SECONDS: process.env.BIGBIKE_REDIRECT_CACHE_TTL_SECONDS || undefined,
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || undefined,
     NEXT_PUBLIC_GA4_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || undefined,
+    NEXT_PUBLIC_CLARITY_PROJECT_ID: process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID || undefined,
+    NEXT_PUBLIC_META_PIXEL_ID: process.env.NEXT_PUBLIC_META_PIXEL_ID || undefined,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN || undefined,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || undefined,
     NEXT_PUBLIC_ADMIN_ORIGIN: process.env.NEXT_PUBLIC_ADMIN_ORIGIN || undefined,

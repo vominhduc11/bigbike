@@ -29,41 +29,42 @@ const COLOR_ATTRIBUTE_KEYS = new Set([
   "pa mau sac",
 ]);
 
+const SIZE_ATTRIBUTE_KEYS = new Set(["size", "kich co"]);
+
 /** Color-attribute heuristic. Diacritic-insensitive and slug/code tolerant. */
 export function isColorAttribute(name: string): boolean {
   return COLOR_ATTRIBUTE_KEYS.has(normalizeValue(name));
 }
 
-/** Look up a variant's value for an attribute name. Match is normalised. */
-export function getOptionValue(
-  variant: ProductVariant,
-  attributeName: string,
-): string | undefined {
-  const norm = normalizeValue(attributeName);
-  return (variant.options ?? []).find(
-    (o) => normalizeValue(o.name) === norm,
-  )?.value;
+/** Share recognized color/size identities across dictionary and legacy bilingual labels. */
+export function normalizeAttributeName(name: string): string {
+  if (isColorAttribute(name)) return "color";
+  const normalized = normalizeValue(name);
+  return SIZE_ATTRIBUTE_KEYS.has(normalized) ? "size" : normalized;
 }
 
-/** Set of all attribute names that appear in any variant's options. */
+/** Look up a variant's value for an attribute name. Match is normalised. */
+export function getOptionValue(variant: ProductVariant, attributeName: string): string | undefined {
+  const norm = normalizeAttributeName(attributeName);
+  return (variant.options ?? []).find((o) => normalizeAttributeName(o.name) === norm)?.value;
+}
+
+/** One display name per normalized attribute, preserving the first label and order. */
 export function collectAttributeNames(variants: ProductVariant[]): Set<string> {
-  const names = new Set<string>();
+  const names = new Map<string, string>();
   for (const v of variants) {
     for (const o of v.options ?? []) {
       const n = (o.name ?? "").trim();
-      if (n) names.add(n);
+      const key = normalizeAttributeName(n);
+      if (n && !names.has(key)) names.set(key, n);
     }
   }
-  return names;
+  return new Set(names.values());
 }
 
-function getColorSelection(
-  selection: Record<string, string>,
-): Record<string, string> {
+function getColorSelection(selection: Record<string, string>): Record<string, string> {
   return Object.fromEntries(
-    Object.entries(selection).filter(
-      ([name, value]) => Boolean(value) && isColorAttribute(name),
-    ),
+    Object.entries(selection).filter(([name, value]) => Boolean(value) && isColorAttribute(name)),
   );
 }
 
@@ -92,18 +93,16 @@ export function findMatchingVariant(
       // Every picked attribute must match this variant's value.
       const matchesAllPicks = selectionEntries.every(([key, val]) => {
         const variantValue = getOptionValue(v, key);
-        return variantValue
-          ? normalizeValue(variantValue) === normalizeValue(val)
-          : false;
+        return variantValue ? normalizeValue(variantValue) === normalizeValue(val) : false;
       });
       if (!matchesAllPicks) return false;
       if (!requireAll) return true;
       // requireAll: variant cannot define attributes the customer hasn't picked.
       return (v.options ?? []).every((o) => {
-        const picked = selection[o.name] ?? "";
-        return picked
-          ? normalizeValue(picked) === normalizeValue(o.value)
-          : false;
+        const picked = selectionEntries.find(
+          ([name]) => normalizeAttributeName(name) === normalizeAttributeName(o.name),
+        )?.[1];
+        return picked ? normalizeValue(picked) === normalizeValue(o.value) : false;
       });
     }) ?? null
   );

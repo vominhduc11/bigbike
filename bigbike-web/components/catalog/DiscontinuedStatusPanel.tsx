@@ -48,22 +48,41 @@ export function DiscontinuedStatusPanel({
       data-discontinued-status
     >
       <div className="flex flex-col gap-1.5">
-        <p data-discontinued-label className="m-0 inline-flex min-h-8 items-center border border-brand px-3 py-1.5 font-cta text-b5-label font-bold uppercase tracking-wide text-brand">
+        <p
+          data-discontinued-label
+          className="m-0 inline-flex min-h-8 items-center border border-brand px-3 py-1.5 font-cta text-b5-label font-bold uppercase tracking-wide text-brand"
+        >
           {t("discontinuedLabel")}
         </p>
-        <h1 id="discontinued-product-title" className="m-0 font-body text-a1-title font-semibold leading-title text-foreground">
+        <h1
+          id="discontinued-product-title"
+          className="m-0 font-body text-a1-title font-semibold leading-title text-foreground"
+        >
           {name}
         </h1>
       </div>
-      <p data-discontinued-description className="m-0 mt-6 text-a4-content leading-relaxed text-muted-foreground">{t("discontinuedDescription")}</p>
+      <p
+        data-discontinued-description
+        className="m-0 mt-6 text-a4-content leading-relaxed text-muted-foreground"
+      >
+        {t("discontinuedDescription")}
+      </p>
 
       <div data-discontinued-actions className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         {equivalentHref ? (
-          <Button asChild variant="primary" className="min-h-11 rounded-none px-5 py-3 font-cta text-b4-action font-bold uppercase">
+          <Button
+            asChild
+            variant="primary"
+            className="min-h-11 rounded-none px-5 py-3 font-cta text-b4-action font-bold uppercase"
+          >
             <a href={equivalentHref}>{t("discontinuedEquivalentLink")}</a>
           </Button>
         ) : categorySlug ? (
-          <Button asChild variant="primary" className="min-h-11 rounded-none px-5 py-3 font-cta text-b4-action font-bold uppercase">
+          <Button
+            asChild
+            variant="primary"
+            className="min-h-11 rounded-none px-5 py-3 font-cta text-b4-action font-bold uppercase"
+          >
             <LocalizedLink kind="category" viSlug={categorySlug} enSlug={categorySlugEn}>
               {t("discontinuedCategoryLink")}
             </LocalizedLink>
@@ -71,8 +90,18 @@ export function DiscontinuedStatusPanel({
         ) : null}
 
         {zaloUrl ? (
-          <Button asChild variant="outline" className="min-h-11 rounded-none border-2 border-zalo px-5 py-3 font-cta text-b4-action font-bold uppercase text-zalo hover:bg-zalo-soft hover:text-zalo">
-            <a href={zaloHref(zaloUrl)} target="_blank" rel="noopener noreferrer">
+          <Button
+            asChild
+            variant="outline"
+            className="min-h-11 rounded-none border-2 border-zalo px-5 py-3 font-cta text-b4-action font-bold uppercase text-zalo hover:bg-zalo-soft hover:text-zalo"
+          >
+            <a
+              href={zaloHref(zaloUrl)}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-analytics-contact-channel="zalo"
+              data-analytics-location="discontinued_product"
+            >
               <ZaloIcon className="size-5 shrink-0" />
               {t("contact.zaloLink")}
             </a>
@@ -85,21 +114,44 @@ export function DiscontinuedStatusPanel({
         )}
       </div>
 
-      <div data-discontinued-meta className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4 text-a5-meta text-muted-foreground">
+      <div
+        data-discontinued-meta
+        className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4 text-a5-meta text-muted-foreground"
+      >
         {displayBrandName ? (
           <span>
-            {t("brand")}: {brand?.slug ? <LocalizedLink kind="brand" viSlug={brand.slug} className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">{displayBrandName}</LocalizedLink> : displayBrandName}
+            {t("brand")}:{" "}
+            {brand?.slug ? (
+              <LocalizedLink
+                kind="brand"
+                viSlug={brand.slug}
+                className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline"
+              >
+                {displayBrandName}
+              </LocalizedLink>
+            ) : (
+              displayBrandName
+            )}
           </span>
         ) : null}
         {categorySlug ? (
           <span>
-            {t("category")}: {hasSuggestions ? (
-              <LocalizedLink kind="category" viSlug={categorySlug} enSlug={categorySlugEn} className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline">{categoryName || categorySlug}</LocalizedLink>
-            ) : (categoryName || categorySlug)}
+            {t("category")}:{" "}
+            {hasSuggestions ? (
+              <LocalizedLink
+                kind="category"
+                viSlug={categorySlug}
+                enSlug={categorySlugEn}
+                className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline"
+              >
+                {categoryName || categorySlug}
+              </LocalizedLink>
+            ) : (
+              categoryName || categorySlug
+            )}
           </span>
         ) : null}
       </div>
-
     </section>
   );
 }

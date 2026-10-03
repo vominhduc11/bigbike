@@ -174,11 +174,10 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
    - else return `oauth_registration_consent_required` to localized registration without creating
      a customer or session.
      **A password account is never adopted here, even with a matching verified email** — updated
-     2026-08-07, CUSTOMER_RULE_010 (previously: a *verified* password account was adopted; only an
-     *unverified* one was protected). When the matched account has a password, `email` is set to
-     `null` on the new customer to avoid colliding with `customers_email_unique`; see
-     `DATA_CONTRACT.md`'s `customer_oauth_links` section for the resulting Google+Facebook
-     non-merge edge case this can create.
+     2026-08-07, CUSTOMER_RULE_010. Since 2026-09-26 (CUSTOMER_RULE_013) the sign-in is instead
+     refused with `oauth_email_registered` whenever the provider email belongs to a password
+     account other than the one this identity is already linked to — checked before the link
+     lookup, so it also blocks older social accounts that were created with `email = null`.
    - **on every login through this step — creation, first link, and every repeat sign-in —**
      `display_name` and `avatar_url` are overwritten with the provider's current values
      (`CustomerOAuthService.syncProfileFromProvider`, CUSTOMER_RULE_010). The avatar is stored as a
@@ -188,7 +187,8 @@ Status: `CONFIRMED_FROM_CODE` — `PublicCacheHeaderFilter.java`, `SecurityConfi
      provider that stops returning a photo (Facebook's `is_silhouette` placeholder) clears
      `avatar_url` back to `null`. This sync is the *only* way a social account's profile changes —
      see the profile-lock note below.
-5. A non-`ACTIVE` account is refused here (`oauth_blocked`) rather than being handed a session it
+5. A sign-in whose provider profile carries no verified email is refused before any lookup
+   (`oauth_email_required`, CUSTOMER_RULE_013). A non-`ACTIVE` account is refused here (`oauth_blocked`) rather than being handed a session it
    cannot use.
 6. Backend issues a 30-day session, links any guest orders on a confirmed email, and redirects to
    the storefront.
@@ -215,6 +215,8 @@ localized registration (`/dang-ky/` or `/en/register/`) so the customer can agre
 | `oauth_cancelled` | Customer declined on the consent screen, or came back without a code | `Auth.social.errorCancelled` |
 | `oauth_unconfigured` | That provider has no client id/secret on this deployment | `Auth.social.errorUnconfigured` |
 | `oauth_blocked` | The account behind the identity is not `ACTIVE` | `Auth.social.errorBlocked` |
+| `oauth_email_registered` | The provider email already belongs to a BigBike password account (CUSTOMER_RULE_013) | `Auth.social.errorEmailRegistered` |
+| `oauth_email_required` | The provider returned no verified email (CUSTOMER_RULE_013) — checked before any account lookup, so it applies to new and existing identities | `Auth.social.errorEmailRequired` |
 | `oauth_failed` | State mismatch, token exchange failure, provider outage | `Auth.social.errorFailed` |
 | `oauth_registration_consent_required` | The provider identity would create a customer but no registration consent was present | `Auth.social.errorRegistrationConsentRequired` |
 
@@ -235,7 +237,7 @@ and no other link) — the storefront disables the button, and `DELETE` refuses 
 
 | Method | Path | Current purpose | Response shape | Status | Evidence |
 |---|---|---|---|---|---|
-| `GET` | `/api/v1/customer/me` | Current customer profile (requires `ROLE_CUSTOMER`). Response includes `oauthManaged` (added 2026-08-07) — `true` when the customer has ≥1 `customer_oauth_links` row; the frontend renders the profile/avatar UI read-only in that case. The assistant may use this response only to prefill/display the quick contact card; the lead endpoint still resolves `ACCOUNT` contact data from the server-side principal/account record | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `ChatService.java` |
+| `GET` | `/api/v1/customer/me` | Current customer profile (requires `ROLE_CUSTOMER`). Response includes `oauthManaged` (added 2026-08-07) — `true` when the customer has ≥1 `customer_oauth_links` row; the frontend renders the profile/avatar UI read-only in that case. | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java` |
 | `PATCH` | `/api/v1/customer/me` | Update own profile. Changing `email`, `phone` or `newPassword` requires `currentPassword`. **Refused with `403 FORBIDDEN` outright when `oauthManaged`** (CUSTOMER_RULE_010, before any field-level checks) | `ApiDataResponse<CustomerSummary>` | `CONFIRMED_FROM_CODE` | `CustomerController.java`, `CustomerAuthService.updateProfile` |
 
 - **Changing `email` through the customer's own `PATCH /api/v1/customer/me` clears `email_verified_at`** and sends a fresh verification email to the new address. Guest-order auto-linking (`GuestOrderLinkingService`) stays disabled until the new email is verified again — linking requires proven ownership of the address (security fix AUD-001, 2026-07-15). The admin customer endpoint does not accept email changes (`CUSTOMER_RULE_004`).
@@ -274,7 +276,7 @@ changes. `CONFIRMED_FROM_CODE` — `SaveCustomerAddressRequest`.
 | `GET` | `/api/v1/orders/lookup?orderNumber=...&orderKey=...` | Public guest-order lookup — no auth, no CSRF (safe GET). Both params required (`400 VALIDATION_ERROR` when blank); returns the order detail only when `orderNumber` + secret `orderKey` match (`orderKey` được phát trong URL xác nhận sau checkout). Caller: trang xác nhận đơn `don-hang/xac-nhan` (`public-api.ts getOrderLookup` → `OrderConfirmClient.tsx`). *(Bổ sung vào contract 2026-07-15, AUD-076 — endpoint đã tồn tại từ trước.)* | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `OrderLookupController.java`, `OrderReadService.guestLookup` |
 | `GET` | `/api/v1/customer/orders` | List own orders. Each item includes `channel` — now always `"WEB"` (POS / `"IN_STORE"` removed 2026-06-23, online-only). | `ApiListResponse<OrderListItemResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
 | `GET` | `/api/v1/customer/orders/{orderId}` | Get own order detail. Response includes `channel` — now always `"WEB"` (POS / `"IN_STORE"` removed 2026-06-23, online-only). Response no longer includes `notes`; admin cancellation reason is not customer-visible. | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java` |
-| `PATCH` | `/api/v1/customer/orders/{orderId}/cancel` | Customer cancels own order only while the order is `PENDING` or `PROCESSING`; `COMPLETED`/`CANCELLED` return `409`. Sets `CANCELLED`, does not restore stock, and sends the existing audit, WebSocket, inbox and email side effects. | `ApiDataResponse<OrderDetailResponse>` | `CONFIRMED_FROM_CODE` | `CustomerOrderController.java`, `CustomerOrderCancelService.java` |
+| `PATCH` | `/api/v1/customer/orders/{orderId}/cancel` | Customer cancels own order only while the order is `PENDING` or `PROCESSING`; `COMPLETED`/`CANCELLED` return `409`. Sets `CANCELLED`, does not restore stock, sends the existing audit, WebSocket, inbox and email side effects, and atomically queues one reporting-only GA4 revenue reversal. The response shape is unchanged. | `ApiDataResponse<OrderDetailResponse>` | `OWNER_CONFIRMED_2026-09-09` | `ORDER_RULE_004`, `ANALYTICS_RULE_004`, `CustomerOrderCancelService.java` |
 
 **Customer order tracking (polling).** The signed-in order-detail page refreshes the existing own-order endpoint every 15 seconds while the page is visible and refetches when the tab regains focus. The guest confirmation page applies the same short polling to the existing `orderNumber` + `orderKey` lookup after the first successful lookup. Both stop polling for `COMPLETED` or `CANCELLED`; no customer WebSocket channel or new endpoint is introduced. Status: `CONFIRMED_FROM_CODE` — `bigbike-web` order query hooks and confirmation client.
 
@@ -373,7 +375,7 @@ The content-category feature is removed across database, backend, storefront and
 
 ## Static CMS Pages + Guide Page — REMOVED (2026-06-24)
 
-> **REMOVED (2026-06-24).** Module "Trang tĩnh CMS" (pages) và Guide Page Builder vẫn đã gỡ. Tám route thông tin hiện hành, danh sách và sidebar vẫn cố định trong `bigbike-web`. Theo quyết định owner ngày 2026-09-01, tiêu đề/thân bài song ngữ của Bảo hành và Đổi trả được đóng cứng trong bốn resource backend dùng chung; quyết định này thay thế ngoại lệ ngày 2026-08-23 về việc admin sửa policy trong Settings. Đây không phải khôi phục pages CRUD.
+> **REMOVED (2026-06-24).** Module "Trang tĩnh CMS" (pages) và Guide Page Builder vẫn đã gỡ. Danh sách route thông tin và sidebar vẫn cố định trong `bigbike-web`; từ 2026-10-01 có mười bốn route thông tin, gồm chín chính sách (xem bổ sung bên dưới). Theo quyết định owner ngày 2026-09-01, tiêu đề/thân bài song ngữ của Bảo hành và Đổi trả được đóng cứng trong bốn resource backend dùng chung; quyết định này thay thế ngoại lệ ngày 2026-08-23 về việc admin sửa policy trong Settings. Đây không phải khôi phục pages CRUD.
 >
 > **Endpoint đã gỡ:**
 > - Public `GET /api/v1/pages`, `GET /api/v1/pages/{slug}` — không còn.
@@ -381,7 +383,9 @@ The content-category feature is removed across database, backend, storefront and
 > - Toàn bộ admin CRUD pages (`POST`/`PATCH`/`DELETE /api/v1/admin/content/pages`, type `PAGE` trong `GET /api/v1/admin/content`) + reference `GET /api/v1/admin/content/reference/pages` — không còn.
 > - Admin guide-page `GET`/`PUT /api/v1/admin/guide-page` — không còn.
 >
-> Bảng `pages` + `guide_page_layout` đã drop ở `V271__drop_pages_and_guide_page.sql`. Module Nội dung admin vẫn **chỉ quản lý bài viết**; sidebar chính sách là danh sách cố định 3 trang và menu location `policy` không trở lại. Hai policy không còn được chỉnh qua Settings; dữ liệu cố định do `StorePolicyService` đọc từ `policy-content/` và Trợ lý dùng lại cùng service. Thông tin liên hệ trong policy vẫn được hydrate động từ nhóm `contact`.
+> Bảng `pages` + `guide_page_layout` đã drop ở `V271__drop_pages_and_guide_page.sql`. Module Nội dung admin vẫn **chỉ quản lý bài viết**; menu location `policy` không trở lại. Hai policy không còn được chỉnh qua Settings; dữ liệu cố định do `StorePolicyService` đọc từ `policy-content/` và Trợ lý dùng lại cùng service. Thông tin liên hệ trong policy vẫn được hydrate động từ nhóm `contact`.
+
+**Sửa công bố chính sách 2026-10-02:** website có đúng bảy mục mới theo `POLICY_PAGE_RULE_001`–`003` trong `BUSINESS_RULES.md`, chép nguyên văn tài liệu SEO. Trang Cung cấp dịch vụ/đổi trả/hoàn tiền gộp tại URL `chinh-sach-doi-tra-hang` (`/en/policy/return-policy/`); URL Giao hàng cũ VI/EN chuyển 301 tới trang này. Registry `lib/content/policy-pages.ts` tách bảy mục chính khỏi Bảo hành được giữ riêng; sitemap chỉ khai trang chính và Bảo hành. Bảy thân bài VI/EN cố định ở web, kèm công bố bảo mật bổ sung hiện hành. Trang Bảo hành tiếp tục đọc endpoint bên dưới; nguồn Đổi trả của Trợ lý vẫn giữ nguyên thời hạn và điều kiện hiện hành. Khối hỗ trợ bổ sung dùng `GET /api/v1/settings/public?lang=vi|en`, có liên kết Liên hệ khi thiếu dữ liệu. Không thêm endpoint CMS, setting hoặc quyền mới. Việc triển khai trước đó thành chín mục đã được chủ shop chỉ ra là hiểu sai yêu cầu.
 
 ### `GET /api/v1/policies/{topic}`
 
@@ -392,20 +396,37 @@ The content-category feature is removed across database, backend, storefront and
 `GET /api/v1/articles/{slug}` — public, no auth. Returns `ApiDataResponse<Article>` for one
 `PUBLISHED` article. Served by `ContentController.getArticleBySlug`.
 
-### Article list — `GET /api/v1/articles` query param `featured` (V222)
+### Article recommendations — `GET /api/v1/articles/{slug}/recommendations`
 
-`GET /api/v1/articles` — public, no auth. Accepts an optional boolean query param `featured`:
+`GET /api/v1/articles/{slug}/recommendations?lang=vi|en` is public and resolves the same
+published article as `GET /api/v1/articles/{slug}`. It returns `ApiDataResponse<ArticleRecommendations>`:
 
-- `featured=true` → returns **only** featured articles (used by the storefront "Tin nổi bật" widget).
-- `featured=false` or param omitted → no featured filtering (default list behaviour, unchanged).
+```json
+{
+  "data": {
+    "featured": ["Article"],
+    "related": ["Article"]
+  }
+}
+```
 
-Other existing list params (e.g. `category`, `q`, paging) are unaffected.
+- `featured` contains at most 5 manually selected, published articles, newest-first, excluding the
+  current article. If no manually selected article remains eligible after that exclusion, it falls
+  back to the newest published articles so the sidebar is not empty.
+- `related` contains at most 4 published articles, newest-first, excluding both the current article
+  and every id already returned in `featured`.
+- The response never exposes a public per-article view count. The service can return fewer cards
+  only when the published corpus itself is smaller than the requested count.
 
-Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles` (`featured` query param).
+`GET /api/v1/articles?featured=true` returns the manually selected published articles. `featured`
+is also a boolean on public and admin article payloads. This does not affect `homeExperience`,
+which remains the separate manual homepage carousel filter.
+
+Status: `OWNER_CONFIRMED_2026-09-20` — `ARTICLE_RULE_004`.
 
 ### Article list — customer search query `q`
 
-`GET /api/v1/articles?q=...` accepts the same trimmed maximum length of 100 characters as product search. It matches public article title and excerpt without Vietnamese accents and without case sensitivity, using the **same word-boundary rule as product search**, with the final query word matched by word prefix (`SEARCH_RULE_002`). Articles no longer match a fragment sitting inside another word. `%`, `_` and `\\` are literal input, never SQL wildcard syntax. The SQL predicate remains a substring prefilter and the word-boundary rule is applied in the service layer, so PostgreSQL and the H2 test profile agree. The header typeahead and the full `/tim-kiem` page call this endpoint with the active locale; the full page renders matching articles below product results. Status: `OWNER_CONFIRMED_2026-09-07` — `SEARCH_RULE_004`.
+`GET /api/v1/articles?q=...` accepts the same trimmed maximum length of 100 characters as product search. It matches only the public article title in the active locale (`title` or `title_en`) without Vietnamese accents and without case sensitivity, using the **same word-boundary rule as product search**, with the final query word matched by word prefix (`SEARCH_RULE_002`). It does not match slug, body, SEO description, excerpt or author fields. `%`, `_` and `\\` are literal input, never SQL wildcard syntax. The SQL predicate remains a substring prefilter and the word-boundary rule is applied in the service layer, so PostgreSQL and the H2 test profile agree. The header typeahead and the full `/tim-kiem` page call this endpoint with the active locale; the full page renders matching articles below product results. Status: `OWNER_CONFIRMED_2026-09-20` — `SEARCH_RULE_004`.
 
 ### Article list — `GET /api/v1/articles` query param `homeExperience` (V272)
 
@@ -414,28 +435,32 @@ Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles` (`featured` q
 - `homeExperience=true` → returns **only** articles admin đã chọn vào carousel "Góc trải nghiệm cùng BigBike" trên trang chủ.
 - `homeExperience=false` or param omitted → no filtering (default list behaviour, unchanged).
 
-Combinable với các param khác (`category`, `featured`, `q`, paging). **Storefront fallback:** trang chủ gọi `?homeExperience=true&size=3`; nếu rỗng (admin chưa chọn bài nào) thì fall back về `?size=3&sort=publishedAt:desc` — 3 bài viết mới nhất (sau V275 chỉ còn 1 nhóm "Tin tức"). Logic fallback nằm ở web (`app/page.tsx`), không ở backend.
+Combinable với các param khác (`q`, paging). **Storefront fallback:** trang chủ gọi `?homeExperience=true&size=3`; nếu rỗng (admin chưa chọn bài nào) thì fall back về `?size=3&sort=publishedAt:desc` — 3 bài viết mới nhất (sau V275 chỉ còn 1 nhóm "Tin tức"). Logic fallback nằm ở web (`app/page.tsx`), không ở backend.
 
 Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles` (`homeExperience` query param), `ArticleJpaRepository.findPublishedArticleIds`.
 
-### Article payload — author, `featured` + `seo.noIndex` (V1037/V222)
+### Article payload — `featured` + `homeExperience` + `seo.noIndex` (V272)
 
 Both the public `Article` shape (`GET /api/v1/articles`, `GET /api/v1/articles/{slug}`) and admin `AdminContentItem` now carry:
 
-- `authorName` — nullable localized author name. Admin writes it through the Vietnamese field `authorName` and `translations.en.authorName`; English reads fall back to Vietnamese. Blank values are omitted from the public byline and Article JSON-LD.
-- `featured` — top-level boolean. `true` = bài viết được đánh dấu nổi bật.
+- No separate excerpt or author field. Article cards and SEO metadata derive a short plain-text fallback from the beginning of `body` when needed; an explicit `seo.description` always wins. The public article detail shows the publication date only, and Article JSON-LD has no `author` member.
+- `featured` — top-level boolean (V222). `true` = nhân viên đã chọn bài vào "Tin nổi bật" ở trang bài viết.
 - `homeExperience` — top-level boolean (V272). `true` = bài được chọn vào carousel "Góc trải nghiệm" trang chủ.
 - `seo.noIndex` — boolean inside the `seo` object. `true` = trang đặt `noindex` (không cho search engine index bài này). The `seo` object may be `null` when no SEO field is set → treat `noIndex` as `false`.
 
 **Admin upsert** (`POST` / `PATCH /api/v1/admin/content/articles`) accepts cả:
 
-- top-level `featured` (boolean) — via `UpsertArticleRequest.featured`.
+- top-level `featured` (boolean, V222) — via `UpsertArticleRequest.featured`.
 - top-level `homeExperience` (boolean, V272) — via `UpsertArticleRequest.homeExperience`.
 - `seo.noIndex` (boolean) — via `SeoMetaRequest.noIndex`.
 
 On update (`PATCH`), `null` cho bất kỳ field nào = giữ nguyên giá trị hiện có (presence-flag pattern).
 
-Status: `CONFIRMED_FROM_CODE` — `ContentController.listArticles`, `UpsertArticleRequest.featured`, `UpsertArticleRequest.homeExperience`, `SeoMetaRequest.noIndex`, migration `V222__add_article_featured_and_seo_no_index.sql`, `V272__add_article_home_experience.sql`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article featured + seo_no_index (V222)" và §"Article home_experience (V272)".
+Status: `OWNER_CONFIRMED_2026-09-20` — `ARTICLE_RULE_004`, `UpsertArticleRequest.featured`,
+`UpsertArticleRequest.homeExperience`, `SeoMetaRequest.noIndex`, migration
+`V222__add_article_featured_and_seo_no_index.sql` và
+`V1092__restore_manual_article_featured.sql`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md)
+§"Article `featured` + `seo_no_index` (V222)" và §"Article home_experience (V272)".
 
 > **Đã mở rộng ở V371** — `seo.noIndex` không còn là trường riêng của bài viết, và có thêm `seo.noIndexEn` ở phía ghi. Xem §"SEO `noIndex` cho cả 4 loại (V371)" ngay dưới.
 
@@ -493,7 +518,7 @@ Status: `CONFIRMED_FROM_CODE` — `AdminMutationValidators.validateSeoMeta`,
 
 When `publishStatus` is omitted, the endpoint returns every non-trashed article (`publishStatus != TRASH`). The Trash view is explicit: `publishStatus=TRASH`. This is a backend filter, so `totalItems` and pagination never count hidden Trash rows in the default view.
 
-The optional `q` search is accent-insensitive and keeps every entered token; it matches the article title, English title, slug, English slug, excerpt or English excerpt. `%`, `_` and `\\` are literal characters.
+The optional `q` search is accent-insensitive and keeps every entered token; it matches only the article title and English title. It does not match slug, English slug, body, SEO description or removed excerpt/author fields. `%`, `_` and `\\` are literal characters.
 
 | Field | Notes |
 |---|---|
@@ -536,11 +561,14 @@ Status: `CONFIRMED_FROM_CODE` — `V167__drop_article_product_map.sql`, `Article
 
 ### Article / Page body blocks — `bodyBlocks` (V140)
 
-Admin detail reads (`AdminContentItem`) của Article bao gồm `bodyBlocks: DescriptionBlock[] | null`. `null` = chưa có blocks; `[]` = body bị xoá rỗng. **Public read** (`GET /api/v1/articles/{slug}`) **không** trả `bodyBlocks` — web tiếp tục đọc `body` HTML như cũ. (Page body blocks không còn — module pages đã gỡ 2026-06-24.)
+Admin detail reads (`AdminContentItem`) của Article bao gồm `bodyBlocks: DescriptionBlock[] | null`. Khi thiếu khối mà có HTML, máy chủ dựng khối trong bộ nhớ để sửa ngay; GET không ghi dữ liệu. `[]` cùng body rỗng = nội dung đã xóa. **Public read** (`GET /api/v1/articles/{slug}`) **không** trả `bodyBlocks` — web tiếp tục đọc `body` HTML như cũ. (Page body blocks không còn — module pages đã gỡ 2026-06-24.)
 
 **Upsert mutation:**
-- Gửi key `bodyBlocks: [...]` trong `UpsertArticleRequest` → server render HTML từ blocks, ghi đè cả `body_blocks` lẫn `body`.
-- Bỏ key `bodyBlocks` hoàn toàn → `body` được patch bình thường; `body_blocks` không bị đụng (presence-flag pattern, giống `products.descriptionBlocks`).
+- Gửi key `bodyBlocks: [...]` trong `UpsertArticleRequest` → nếu khối thay đổi, server render HTML từ blocks và đồng bộ cả `body_blocks` lẫn `body`; nếu khối không đổi, giữ nguyên byte HTML `body` hiện có khi Lưu. `image.captionHtmlTemplate` là field tùy chọn chỉ cho bài viết, giữ trình bày dòng chú thích cũ khi dòng ấy đã được đưa vào ô caption; renderer chỉ thay `{{caption}}` bằng chữ đã escape và lọc HTML an toàn.
+- Khi quản trị gửi lại bản EN không sửa, giữ nguyên byte `body_en`; chỉ lọc và ghi lại khi chính nội dung EN thay đổi.
+- Màn quản trị bỏ hẳn key `bodyBlocks` khỏi PATCH khi danh sách khối đã lưu không đổi. Nhờ vậy Lưu các thông tin khác không đưa lại khối legacy chưa hợp lệ qua validation/render và không làm mất HTML cũ; khi người dùng sửa khối thì vẫn gửi cả danh sách theo hợp đồng trên.
+- Bỏ key `bodyBlocks` và có `body` → patch HTML và tự sinh khối tương ứng; không có cả hai key → giữ nguyên. Không còn giữ khối cũ khi nội dung HTML đã bị thay thế (`ARTICLE_RULE_008`, owner 2026-09-18).
+- Bài viết tối đa 400 khối; thêm subtype `table` có `html` bắt buộc, tối đa 50.000 ký tự, được lọc HTML an toàn khi render. Table chỉ có trong trình soạn bài viết, không thêm vào mô tả sản phẩm.
 - **Tạo mới (`POST`):** nội dung là bắt buộc — chấp nhận **hoặc** `body` **hoặc** `bodyBlocks` non-empty. Gửi `bodyBlocks` mà bỏ `body` vẫn hợp lệ (server tự render `body` từ blocks); chỉ báo lỗi `body REQUIRED` khi thiếu cả hai.
 - Khối `video` trong bài viết khi ghi chỉ dùng `provider` `youtube|upload`; URL YouTube phải hợp lệ, còn `upload` phải là media nội bộ. `tiktok`, `facebook`, provider lạ hoặc provider không khớp URL trả `400 INVALID_VALUE`. PATCH không gửi `bodyBlocks` giữ nguyên dữ liệu cũ; nếu gửi lại `bodyBlocks`, mọi khối video legacy phải được thay nguồn. Đường đọc/render vẫn chấp nhận dữ liệu TikTok/Facebook cũ. Mô tả chi tiết sản phẩm không còn tạo block video; video sản phẩm là mục riêng (`videos[]`).
 
@@ -548,7 +576,7 @@ Status: `CONFIRMED_FROM_CODE` — `UpsertArticleRequest.bodyBlocksPresent`, `Adm
 
 ### Article EN translations on admin read — `translations` (V138/V1037)
 
-Admin detail reads (`AdminContentItem`) của Article bao gồm `translations: { en: {...} } | null` — bản dịch tiếng Anh để form admin nạp lại tab EN. `null` trên list reads; non-null trên detail reads (`GET /api/v1/admin/content/{type}/{id}`). Shape `en`: `title`, `excerpt`, `body`, `authorName`, `seoTitle`, `seoDescription`. **Public read trả `authorName` đã resolve theo locale** (đọc cột canonical + fallback VI, không trả khối `translations`). (Page translations không còn — module pages đã gỡ 2026-06-24.)
+Admin detail reads (`AdminContentItem`) của Article bao gồm `translations: { en: {...} } | null` — bản dịch tiếng Anh để form admin nạp lại tab EN. `null` trên list reads; non-null trên detail reads (`GET /api/v1/admin/content/{type}/{id}`). Shape `en`: `title`, `body`, `seoTitle`, `seoDescription`. **Public read không trả khối `translations`, không có `authorName` và không có trường tóm tắt**; web tự rút đoạn giới thiệu/SEO fallback từ `body` theo `ARTICLE_RULE_010`–`011`. (Page translations không còn — module pages đã gỡ 2026-06-24.)
 
 Status: `CONFIRMED_FROM_CODE` — `AdminContentItem.translations` (kiểu `ArticleTranslations`, serialize thẳng `{ en: {...} }`), `AdminContentReadService.fromArticle`, `ContentFieldApplier.toAdminContentItem`. Xem [DATA_CONTRACT.md](DATA_CONTRACT.md) §"Article bilingual content (V138)".
 
@@ -724,20 +752,20 @@ or order state changes. See `DATA_CONTRACT.md` §"Cart/order analytics metadata"
 
 | Endpoint | Current contract | Status | Evidence |
 |---|---|---|---|
-| `POST /api/v1/checkout` | Revalidates price/availability state and creates order/payment rows. Availability is gated per-variant by `isAvailable` (boolean), or by `stockState` for no-variant products; there is **no quantity decrement** (V261). The old product-level `forceOutOfStock` hard override (`STOCK_RULE_004`) was removed (V342, 2026-07-19). Billing **and** resolved shipping address require `province` + `ward` + `addressLine1` (two-tier VN address; blank strings in a custom shipping block fall back to billing). No shipping-method choice and **no shipping fee** (`shippingAmount = 0`, owner decision 2026-06-23, `SHIP_RULE_001`). `paymentMethod` accepts `COD` or `BANK_TRANSFER`; omitted is normalised to `COD` and any other explicit code is rejected (`PAY_RULE_001`, owner decision 2026-07-21). Optional `locale` accepts only `vi|en`, defaults to `vi`, and is a passive order snapshot used only to select the language of a later review invitation; it does not change price, payment or order processing. | `OWNER_CONFIRMED_2026-08-31` | `CheckoutService.java`, `CheckoutSupport.java`, checkout and invitation tests |
+| `POST /api/v1/checkout` | Revalidates price/availability state and creates order/payment rows. Availability is gated per-variant by `isAvailable` (boolean), or by `stockState` for no-variant products; there is **no quantity decrement** (V261). The old product-level `forceOutOfStock` hard override (`STOCK_RULE_004`) was removed (V342, 2026-07-19). Billing **and** resolved shipping address require `province` + `ward` + `addressLine1` (two-tier VN address; blank strings in a custom shipping block fall back to billing). No shipping-method choice and **no shipping fee** (`shippingAmount = 0`, owner decision 2026-06-23, `SHIP_RULE_001`). `paymentMethod` accepts only `COD` or omission; explicit `BANK_TRANSFER`, `BACS`, `CHECK`, `CARD` and other values are rejected before persistence. Optional `locale` accepts only `vi|en`, defaults to `vi`, and is a passive order snapshot used only to select the language of a later review invitation. Optional `analyticsClientId` is the pseudonymous GA4 browser id read through the official Google tag API; the backend accepts only the numeric-dot-numeric shape, otherwise discards it, and snapshots it solely to join a later cancellation correction to the original browser. It contains no customer-entered data and changes no price, payment or order processing. | `OWNER_CONFIRMED_2026-09-09` | `CheckoutService.java`, `CheckoutSupport.java`, checkout and invitation tests |
 > **Removed (2026-07-15).** `POST /api/v1/orders/quick-buy` (single-item direct purchase) was deleted — endpoint, `CheckoutService.quickBuy`, `QuickBuyRequest` DTO, security matcher and tests (owner decision, reversing AUD-010). The storefront has no quick-buy entry point; customers order through the cart.
 
 > **Removed (2026-06-23, online-only).** `POST /api/v1/admin/pos/orders` (immediate in-store sale) and `GET /api/v1/admin/pos/products/search` (POS product search) were deleted along with the POS module. See "POS Contract" below.
 
 ## Checkout Options Contract — REMAINS REMOVED (2026-07-21)
 
-`GET /api/v1/checkout/options` không được khôi phục. Owner đã chốt đúng hai lựa chọn storefront
-ổn định là `COD` và `BANK_TRANSFER`; web hiển thị cố định hai lựa chọn này và backend vẫn là lớp
+`GET /api/v1/checkout/options` không được khôi phục. Owner đã chốt storefront chỉ dùng
+`COD`; web hiển thị một dòng thông báo duy nhất và backend vẫn là lớp
 kiểm soát cuối ở `POST /checkout`, nên không cần endpoint danh sách động. Các quy tắc thanh toán/vận
 chuyển được enforce ở `POST /checkout`:
-- `paymentMethod` omitted → normalise thành `COD`; `COD`/`BANK_TRANSFER` → hợp lệ; mã khác
-  (kể cả `BACS`) → `400 VALIDATION_ERROR`. `BANK_TRANSFER` là mã mới, tách khỏi logic legacy
-  `BACS`. Đơn cũ mang `BACS`/`null` vẫn đọc/hiển thị bình thường. Không có cổng thanh toán tự động.
+- `paymentMethod` omitted → normalise thành `COD`; chỉ `COD` hợp lệ; mã khác
+  (kể cả `BANK_TRANSFER`, `BACS`, `CHECK` và `CARD`) → `400 VALIDATION_ERROR`. Đơn cũ mang
+  các phương thức này vẫn đọc/hiển thị bình thường. Không có cổng thanh toán tự động.
 - Shipping method đã gỡ từ 2026-06-23 (`SHIP_RULE_001`, `V264`): không chọn phương thức, không phí
   (`shippingAmount = 0`), field `shippingMethodId` bị bỏ (client cũ gửi lên sẽ bị ignore).
 
@@ -1092,8 +1120,45 @@ A variant option (`variants[].options[]`) is returned with these fields:
 |---|---|---|
 | `name`, `value` | ✅ human label / preserved legacy display text (e.g. `Màu sắc` / `Đen bóng`) | ✅ dictionary label used by the editor |
 | `attributeValueId` | ❌ omitted | ✅ the linked dictionary value id |
+| `accessibilityLabel` | Optional; only an English public color option carries the localized screen-reader name | ❌ omitted |
 
-`value` is the human **label** (`Đen bóng`), not the stored slug (`den-bong`). `attributeValueId` is mandatory on every admin product-upsert option; the backend rejects a blank, unknown, or mismatched value/attribute reference with `400 VALIDATION_ERROR`. Validation details target the exact option (`variants.<variantIndex>.options.<optionIndex>.attributeValueId`) so the admin can mark only the offending row. Returning the exact value id lets the admin form round-trip the dictionary link without reconstructing it from display text. It is **admin-only** (`@JsonInclude(NON_NULL)`); the public storefront response never carries it. Legacy rows repaired by the catalog-link migration retain a private display snapshot so their public option names and values remain unchanged.
+`value` is the human **label** (`Đen bóng`), not the stored slug (`den-bong`). `attributeValueId` is mandatory on every admin product-upsert option; the backend rejects a blank, unknown, or mismatched value/attribute reference with `400 VALIDATION_ERROR`. Validation details target the exact option (`variants.<variantIndex>.options.<optionIndex>.attributeValueId`) so the admin can mark only the offending row. Returning the exact value id lets the admin form round-trip the dictionary link without reconstructing it from display text. It is **admin-only** (`@JsonInclude(NON_NULL)`); the public storefront response never carries it. `accessibilityLabel` is the converse: it is public-only and optional, does not replace `name` or `value`, and exists solely for a color chip's screen-reader text on `lang=en`. Its translation uses the visual-color configuration, not `attribute_values.label_en`; it never changes the value used for variant selection. Legacy rows repaired by the catalog-link migration retain a private display snapshot so their public option names and values remain unchanged.
+
+Storefront selection compatibility (2026-09-14): attribute grouping, complete variant matching,
+and initial selections from `?variant=` use the same existing case/diacritic/spacing-insensitive
+name comparison. Color names already recognized by the storefront (`color`, `colour`,
+`Màu sắc` and its supported legacy codes) share one attribute identity, including mixed
+English/legacy-Vietnamese responses. Labels such as `màu sắc` and `Màu sắc` render one picker group,
+using the first encountered trimmed label, with one shared selection. Matching a complete
+color/size choice must still resolve the exact variant, its price and availability; color preview
+uses that same color selection. Size labels `Size` and `Kích cỡ` also share one attribute identity
+under the same name comparison, including preserved legacy labels mixed with dictionary labels.
+They render one size picker with one selected value; switching sizes replaces the previous choice,
+and a linked `?variant=` starts with that same shared selection. Size values (including `BXL`),
+unrelated attribute names, price/stock rules and color-only gallery previews remain unchanged.
+Storefront size-group labels (owner-confirmed 2026-09-14): the visible heading and accessible
+radio-group name use the current UI locale (`Kích cỡ` in Vietnamese, `Size` in English), reusing
+`Catalog.filterSize`. This applies only to names recognized as the shared size identity.
+Display translation must not replace the original selection keys or rename size values such as
+`XL`, `BXL`, `XXL`; unrelated attributes retain their existing labels. Switching the UI locale updates
+this heading even when the public API returns the same preserved dictionary/legacy text in both
+languages. This label-only correction does not change language-navigation or selection persistence.
+Storefront gender-picker labels (owner-requested 2026-09-14): headings named `Gender` or
+`Giới tính` under the existing case/diacritic/spacing-insensitive comparison display
+`Giới tính` / `Gender` using `Catalog.filterGender`. Within those groups only, the known values
+`Nam` / `Male` and `Nữ` / `Female` display `Nam` / `Nữ` in Vietnamese and `Male` / `Female`
+in English, matching the catalog-filter vocabulary. Unknown values and other attributes retain
+their supplied text. Translation is presentation-only: raw attribute names, option values,
+linked-variant selection, stock gating and cart variant IDs remain unchanged. Gender buttons
+may grow horizontally to fit translated text while retaining the existing height and touch target.
+This does not change product gender flags, catalog filter keys, or language-navigation persistence.
+Known color-group headings likewise use `Catalog.filterColor` (`Màu sắc` / `Color`), including
+preserved legacy names. Color option names/values remain supplied catalog data; the web must not
+invent translations of commercial color names or alter the value used for variant selection.
+This is a storefront read correction: public API labels, dictionary
+links, stored variants and API response fields remain unchanged. Evidence:
+`bigbike-web/lib/utils/variant-match.ts`, `bigbike-web/lib/utils/product-variant-link.ts`,
+`bigbike-web/components/catalog/PurchaseSection.tsx`. See `STOCK_RULE_005` and `GMC_RULE_004`.
 
 Colour variants render on the storefront using the **variant's own gallery image** (the first image of the matching variant), not a per-term colour swatch or hex value. The swatch/hex feature (`colorHex`, `swatchImageUrl`, per-option `swatchImageId`, and the `attribute_values.color_hex` / `attribute_values.swatch_image_id` / `product_variant_options.swatch_image_id` columns) was removed.
 
@@ -1108,21 +1173,23 @@ The attribute/value dictionary for every variant attribute is read and curated t
 | Endpoint | Body | Response | Notes |
 |---|---|---|---|
 | `GET /attributes` | — | **bare array** of `{ id, code, name, nameEn, kind, valueCount }` | Not wrapped in the `{data}` envelope. |
-| `GET /attributes/{attributeId}/values` | — | **bare array** of `{ id, attributeId, slug, label, labelEn, sortOrder, usageCount }` | Not wrapped. The same endpoint is used for color, size, model and any custom variation attribute. `usageCount > 0` disables rename/delete in the editor; the backend also returns `409` if a used value is changed. |
+| `GET /attributes/{attributeId}/values` | — | **bare array** of `{ id, attributeId, slug, label, labelEn, sortOrder, usageCount }` | Not wrapped. The same endpoint is used for color, size, model and any custom variation attribute. `usageCount > 0` disables Vietnamese rename/delete in the editor; only values under immutable codes `bo` and `co-oc` may update `labelEn` while used. |
 | `POST /attributes` | `{ name, nameEn? }` | `{ data: AttributeSummaryResponse }` | Creates a brand-new attribute type (e.g. "Chất liệu"). `code` (the immutable machine key) is auto-derived from `name` via the same diacritic-insensitive kebab-case rule as attribute values; `kind` is always `"select"`, `is_variation` always `true`. A name whose derived code collides with an existing attribute → `409 CONFLICT`; a name that yields an empty code → `400 VALIDATION_ERROR`. Requires `products.update`. |
 | `PATCH /attributes/{id}` | `{ name }` | `{ data: AttributeSummaryResponse }` | Renames an attribute's display name. **Only `name` changes; `code` is immutable** (variant options resolve to their attribute via the code). Requires `products.update`. |
 | `DELETE /attributes/{id}` | — | `204 No Content` | Deletes an attribute type. **Blocked with `409 CONFLICT`** when any `product_variant_options` row still resolves to it (see `ATTRIBUTE_RULE_001`). Deleting an unused attribute cascades its (also-unused) values at the DB level (`fk_attribute_values_attribute_id ... on delete cascade`). Requires `products.update`. |
-| `POST /attributes/{attributeId}/values` | `{ label, slug? }` | `{ data: AttributeValueResponse }` | Adds a new value. `slug` defaults to a diacritic-insensitive kebab-case form of `label` (same rule as product slugs, matching storefront colour-filter keys). Duplicate slug within the same attribute → `409 CONFLICT`; a label that yields an empty slug → `400 VALIDATION_ERROR`. Requires `products.update`. |
-| `PATCH /attribute-values/{id}` | `{ label, labelEn? }` | `{ data: AttributeValueResponse }` | Renames an unused value. **Only the labels change; `slug` is immutable.** A value used by any variant returns `409 CONFLICT` so public names and filters cannot change accidentally. Requires `products.update`. |
+| `POST /attributes/{attributeId}/values` | `{ label, labelEn?, slug? }` | `{ data: AttributeValueResponse }` | Adds a new value. `slug` defaults to a diacritic-insensitive kebab-case form of `label` (same rule as product slugs, matching storefront colour-filter keys). Duplicate slug within the same attribute → `409 CONFLICT`; a label that yields an empty slug → `400 VALIDATION_ERROR`. Requires `products.update`. |
+| `PATCH /attribute-values/{id}` | `{ label, labelEn? }` | `{ data: AttributeValueResponse }` | Renames an unused value. **Only the labels change; `slug` is immutable.** A value used by any variant returns `409 CONFLICT`, except an unchanged Vietnamese `label` plus a supplied `labelEn` for immutable attribute code `bo` or `co-oc`; that narrow update changes only English text. Requires `products.update`. |
 | `DELETE /attribute-values/{id}` | — | `204 No Content` | Deletes a single unused value. **Blocked with `409 CONFLICT`** when any `product_variant_options` row still resolves to it (`ATTRIBUTE_RULE_001`). Requires `products.update`. |
 
 The two `GET` endpoints return bare arrays (legacy shape); the admin client (`fetchAttributes` / `fetchAttributeValues`) tolerates both bare arrays and `{data}`. The `POST`/`PATCH`/`DELETE` endpoints use the standard `ApiResponseFactory` envelope (`DELETE` returns an empty `204` body).
 
+The product editor only consumes the two `GET` endpoints and the attribute-value endpoints. It lists every returned attribute type dynamically (colour and size first, then the remaining names alphabetically) and has no create, rename or delete control for attribute types. The type-mutation endpoints remain part of the backend contract as an operations/development backdoor; their request and response shapes are unchanged.
+
 Status: `CONFIRMED_FROM_CODE`
 
-Evidence: `AdminAttributeController.java` (`createAttribute`, `deleteAttribute`, `deleteAttributeValue`), `AdminAttributeService.java` (`createAttribute`, `deleteAttribute`, `deleteAttributeValue`), `ProductVariantOptionJpaRepository.java` (`countByAttribute_Id`, `countByAttributeValue_Id`), `CreateAttributeRequest.java`, `bigbike-admin/src/lib/adminApi.js` (`createAttribute`, `deleteAttribute`, `deleteAttributeValue`), `bigbike-admin/src/screens/product-detail/VariantEditors.jsx` (`CreateAttributeModal`, delete actions in `AttributeRenameModal` / `AttributeValueManagerModal`).
+Evidence: `AdminAttributeController.java` (`createAttribute`, `updateAttribute`, `deleteAttribute`, `deleteAttributeValue`), `AdminAttributeService.java` (the same type/value methods and usage guards), `ProductVariantOptionJpaRepository.java` (`countByAttribute_Id`, `countByAttributeValue_Id`), `CreateAttributeRequest.java`, `bigbike-admin/src/lib/adminApi.js` (`fetchAttributes`, `fetchAttributeValues`, value CRUD), `bigbike-admin/src/screens/product-detail/VariantEditors.jsx` (dynamic type checkboxes and `AttributeValueManagerModal`), `bigbike-admin/src/screens/product-detail/constants.js` (`orderVariantAttributes`).
 
-Evidence: `AdminAttributeController.java` (`listAttributes`, `listAttributeValues`, `updateAttribute`, `createAttributeValue`, `updateAttributeValue`), `AdminAttributeService.java` (`updateAttributeName` name-only, `createValue` slug derivation via `ProductSlugGenerator.toSlug` + dedup, `updateValueLabel` label-only), `adminApi.js` (`fetchAttributes`/`fetchAttributeValues` tolerant readers, `updateAttribute`, `createAttributeValue`/`updateAttributeValueLabel`), `ProductDetailScreen.jsx` (`AttributeRenameModal`, `AttributeValueManagerModal`).
+Evidence: `AdminAttributeController.java` (`listAttributes`, `listAttributeValues`, `updateAttribute`, `createAttributeValue`, `updateAttributeValue`), `AdminAttributeService.java` (`updateAttributeName` name-only, `createValue` slug derivation via `ProductSlugGenerator.toSlug` + dedup, `updateValueLabel` label-only), `adminApi.js` (`fetchAttributes`/`fetchAttributeValues` tolerant readers, `createAttributeValue`/`updateAttributeValueLabel`), `VariantEditors.jsx` (`orderVariantAttributes` checkbox list, `AttributeValueManagerModal`).
 
 ### Variant color representation image (2026-07-03)
 
@@ -1231,6 +1298,12 @@ Lets a shop owner create/update many products at once from a single JSON file (t
 | `POST /api/v1/admin/products/import/validate` | multipart `file` (a JSON array of `ProductImportRow`). Parses + resolves references + runs the same validation `POST /api/v1/admin/products` would, but never persists. Returns `ImportReportResponse`. |
 | `POST /api/v1/admin/products/import/commit` | Same multipart contract (client re-sends the identical file it already validated — stateless, no server-side temp storage between calls) + optional `skipRowKeys` (comma-separated) to exclude rows the admin unchecked in the review table. For each row that still validates clean, calls the real `createProduct`/`updateProduct` directly — zero drift from the single-product API. Each row commits (or fails) independently; one bad row never rolls back rows already saved earlier in the same file. |
 | `GET /api/v1/admin/products/import/export/{id}` | Same round-trip shape, scoped to **one product** — a one-element `ProductImportRow[]` array (not a bare object) so the file re-imports unchanged. Filename is `product-{sku}.json`. `404 NOT_FOUND` if `id` doesn't match a product. Added V2026-07-06 for a per-product "Export JSON" button on the product detail screen (`ProductDetailScreen.jsx`). The former catalog-wide download was removed on 2026-07-19. |
+
+**Import request protection (owner decision 2026-09-16):** validate and commit have no separate
+6/hour or 2/hour allowances. Both use the ordinary admin mutation policy (60/minute, account + IP),
+and only one product import may be processing globally at a time. A concurrent request can still
+return `429` with `Retry-After`; `products.update` remains mandatory. The two-step validate → commit
+workflow and the request/response shapes do not change.
 
 `ImportRowResult` carries `rowNumber`/`rowKey`/`productId`/`productName`/`action`/`status`/`errors`/`warnings` — no variant counters since 2026-08-08. `ImportRowResult.rowKey` includes the one-based JSON row number plus its SKU/slug fallback. The key is stable when the identical file is re-sent and stays unique even when two rows repeat the same SKU; the admin must send back the exact keys returned by validate in `skipRowKeys`.
 
@@ -1518,7 +1591,9 @@ nguyên shape** — không thêm khối `translations`.
 trả `name` (tên thuộc tính, vd "Màu sắc"→"Color") và `value` (giá trị, vd "Đỏ"→"Red")
 ở bản tiếng Anh, **lùi về tiếng Việt theo từng trường** khi cột `_en` rỗng. `bigbike-web`
 gọi snapshot với `lang` = locale hiện tại để khối chọn màu/size đổi ngôn ngữ đồng bộ với
-phần còn lại của trang. `pricing`/`stock` không có text dịch nên không đổi theo `lang`.
+phần còn lại của trang. Riêng lựa chọn màu public bằng English có thể kèm
+`accessibilityLabel`: đây là tên ẩn từ cấu hình màu cho máy đọc màn hình, không thay
+`value` hay khóa chọn biến thể. `pricing`/`stock` không có text dịch nên không đổi theo `lang`.
 
 **Đọc admin — cả 2 bản:** `GET /api/v1/admin/products/{id}` trả các trường chính
 ở bản tiếng Việt **và** thêm:
@@ -1958,20 +2033,14 @@ Evidence: `AdminQuickSearchController`, `AdminQuickSearchService`, `AdminOrderSu
 |---|---|---|---|---|---|
 | `GET` | `/api/v1/admin/orders` | `orders.read` | Existing page/status/search/date/sort query plus `orderScope=ALL|OPERATIONAL|HISTORICAL` (API default `ALL`) and optional `attention=OVERDUE`. Overdue is valid only for operational PENDING and uses the owner-fixed 2-day threshold retained under `order_overdue_days`; the Settings screen has no editor for this value. Text/date semantics remain unchanged. | `OWNER_CONFIRMED_2026-09-01` | `ORDER_RULE_011`–`015`, `AdminOrderSupport` |
 | `GET` | `/api/v1/admin/orders/{orderId}` | `orders.read` | Existing snapshots plus `orderScope` and nullable `historyClassification { batchKey, labelVi, labelEn, reasonVi, reasonEn, classifiedAt }`. Customer/guest APIs do not expose this internal metadata. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_013`, `AdminOrderDetailResponse` |
-| `GET` | `/api/v1/admin/orders/{orderId}/allowed-transitions` | `orders.read` | Returns legal lifecycle values for operational orders; omits COMPLETED for BANK_TRANSFER without a valid full SUCCEEDED payment; returns an empty list for an active historical order. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `STATE_MACHINES.md` §6 |
-| `PATCH` | `/api/v1/admin/orders/{orderId}/status` | `orders.write` | Existing transition contract remains; active historical orders always return `409 HISTORICAL_ORDER_READ_ONLY` before same-status handling or side effects. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `AdminOrderService.updateOrderStatus` |
+| `GET` | `/api/v1/admin/orders/{orderId}/allowed-transitions` | `orders.read` | Returns legal lifecycle values for operational orders; returns an empty list for an active historical order. | `OWNER_CONFIRMED_2026-08-31` | `ORDER_RULE_014`, `STATE_MACHINES.md` §6 |
+| `PATCH` | `/api/v1/admin/orders/{orderId}/status` | `orders.write` | Existing transition contract remains; active historical orders always return `409 HISTORICAL_ORDER_READ_ONLY` before same-status handling or side effects. A successful first transition to `CANCELLED` atomically queues one reporting-only GA4 revenue reversal; the response shape is unchanged. | `OWNER_CONFIRMED_2026-09-09` | `ORDER_RULE_014`, `ANALYTICS_RULE_004`, `AdminOrderService.updateOrderStatus` |
 | `GET` | `/api/v1/admin/orders/{orderId}/audit` | `orders.read` | Returns the order's internal audit trail in reverse chronological order. | `CONFIRMED_FROM_CODE` | `AdminOrderController.listAuditTrail`, `AdminOrderService.listAuditTrail` |
-| `POST` | `/api/v1/admin/orders/{orderId}/confirm-bank-transfer` | `orders.write` | Confirms full bank receipt for an eligible active operational order; no body; returns updated detail without changing order status. See the guards and errors below. | `OWNER_CONFIRMED_2026-09-07` | `PAY_RULE_002`, `AdminOrderService.confirmBankTransfer` |
-
-### Manual bank receipt — 2026-09-07
-
-POST /api/v1/admin/orders/{orderId}/confirm-bank-transfer requires orders.write, has no body, and returns 200 ApiDataResponse<AdminOrderDetailResponse>. Only operational PENDING/PROCESSING BANK_TRANSFER orders qualify. The sole payment must match method, total and currency. PENDING becomes SUCCEEDED; an already SUCCEEDED matching record returns unchanged. Audit action ORDER_BANK_TRANSFER_CONFIRMED records actor/time, paymentStatus before/after, paymentId, amount and currency. All writes are one transaction under the order lock; competing status/cancellation commands use the same lock.
-
-Errors: 401 unauthenticated, 403 forbidden, 404 missing order; 409 HISTORICAL_ORDER_READ_ONLY, BANK_TRANSFER_NOT_APPLICABLE (method/terminal order), BANK_TRANSFER_PAYMENT_INVALID (missing/multiple/mismatched/unsupported record), BANK_TRANSFER_PAYMENT_REQUIRED (completion before receipt). PATCH status and GET allowed-transitions share the receipt guard; same-status requests remain no-ops after the historical guard.
-
-Admin/customer/guest detail add nullable paymentMethod from Order. Admin detail adds canConfirmBankTransfer (resource eligibility, independent of caller permission); existing payments[] retains status and paidAt. No payment status field is added to Order. The current admin orders topic emits ORDER_PAYMENT_CONFIRMED after commit for query refresh only, without a new inbox item or customer email.
-
-Web checkout routes BANK_TRANSFER to the existing confirmation URL with step=bank-transfer, preserving so/key and locale. This GET-only step reads the existing order lookup and public settings; both actions remove step. Public settings bank_account_holder, bank_account_number, bank_name and optional bank_branch are the only bank source. No payment redirect, options endpoint or customer payment mutation is added.
+Admin/customer/guest detail continue to expose nullable `paymentMethod` and historical `payments[]` with
+read-only status and paidAt. Admin detail no longer exposes `canConfirmBankTransfer`. No payment status
+field is added to Order and no receipt command is available. New checkout opens the normal confirmation
+URL directly; old `step=bank-transfer` query values are ignored. Public payment settings contain no
+bank-account keys.
 
 ## Customer Admin
 
@@ -2041,7 +2110,7 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 - `CATEGORY` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, introContent, imageUrl, iconUrl, menuIconUrl, bannerUrl, parentId, sortOrder, showOnHomepage; before-snapshot bug fixed same as PRODUCT.
 - `BRAND` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, logoUrl, bannerUrl; before-snapshot bug fixed same as PRODUCT.
 - `INVENTORY` — manual availability changes (`AdminInventoryService`)
-- `CONTENT` — article create/update/soft-delete/restore/hard-delete (AdminContentMutationService). Snapshot (fixed 2026-07-04) adds excerpt, coverImageUrl, categoryId; before-snapshot bug fixed on update/soft-delete/restore.
+- `CONTENT` — article create/update/soft-delete/restore/hard-delete (AdminContentMutationService). Snapshot gồm các trường quản trị còn hiệu lực như tiêu đề, slug, trạng thái và ảnh bìa; không ghi tóm tắt hoặc tên tác giả. `V1091` làm sạch các khóa cũ trong snapshot bài viết đã lưu; before-snapshot bug fixed on update/soft-delete/restore.
 - `CUSTOMER` — `AdminCustomerService`: `CUSTOMER_UPDATED`, `CUSTOMER_STATUS_UPDATED`, and `CUSTOMER_AVATAR_REMOVED` (the avatar action is emitted only when a stored avatar is actually cleared).
 - `MEDIA` — AdminMediaService
 - `MENU` / `MENU_ITEM` — AdminMenuService
@@ -2345,6 +2414,11 @@ Automatic outage responses for a genuinely unreachable upstream remain an infras
 
 ## Trợ lý BigBike (owner decision 2026-08-30; display-name decision 2026-09-01; chat-frame decision 2026-09-06)
 
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
+OpenAPI hiện hành không còn endpoint, schema hoặc nhóm API của trợ lý. API đọc chính sách bảo hành/đổi trả tiếp tục phục vụ website; mô tả của API này không còn ghi trợ lý là bên sử dụng.
+
+
 Theo quyết định của chủ shop ngày 2026-09-01, tên hiển thị là **Trợ lý BigBike** / **BigBike Assistant**. Theo quyết định ngày 2026-09-06, câu công bố AI dài và dòng trạng thái “Trợ lý sẵn sàng” / “Assistant ready” đã bị bỏ khỏi khung chat và thay bằng một nhãn ngắn duy nhất “TRỢ LÝ AI · HỖ TRỢ 24/7” / “AI ASSISTANT · 24/7 SUPPORT” (mode `CONTACT` vẫn hiện “Kênh liên hệ shop” / “Shop contact channels”). Đây là thay đổi chữ hiển thị phía web, không thay đổi endpoint. Cùng đợt này trường `images.disclosure` bị gỡ khỏi `GET /chat/availability` — đó là thay đổi response shape duy nhất.
 
 Mọi response dùng envelope chuẩn `ApiDataResponse`. Chat không nhận `customerId`, email, số điện thoại, model id, telemetry model hay nguồn attribution từ trình duyệt. Trả lời khách phải phân biệt ba trạng thái tồn kho theo `CHAT_RULE_060` (không kinh doanh / có bán nhưng hết hàng / chưa đủ thông tin); câu "có bán nhưng đang tạm hết hàng" kèm mẫu tương đương và thẻ liên hệ là một câu trả lời hợp lệ, không phải khẳng định vắng mặt toàn kho. Model trả lời khách được khóa ở cấu hình máy chủ là **Gemini 3.7 Flash**; kiểm duyệt đánh giá sản phẩm là integration riêng, không thuộc hợp đồng này.
@@ -2367,7 +2441,7 @@ Response `data`: `{ conversationId, assistantMessageId, mode, reason, answer, an
 - `actions` chỉ là allowlist server-owned; chỉ có `CALL_HOTLINE`, `OPEN_ZALO`, `OPEN_MESSENGER` cho liên hệ trực tiếp. Không có `CONTACT_STAFF`, `leadOffer`, `leadPrompt`, interaction id hoặc proof gắn đơn.
 - Customer turn có trần cố định 40; clarification và retry cùng `requestId` không tính. Khi đạt trần, backend tạo hội thoại nối tiếp cùng thread/context đã làm sạch, không trả hard `TURN_LIMIT` và không chặn khách.
 - Transaction không giữ lock/connection trong lúc provider chờ. Storefront không tạo request liên hệ khi khách mở thẻ contact.
-- Lượt gửi kèm `imageIds` **và** `message`: `answer` là một chuỗi ghép — câu nhận diện ảnh, một dòng trống, rồi câu trả lời của phần tư vấn chữ; `products` là danh sách gộp (thẻ của ảnh trước, khử trùng theo slug, tối đa tám). Chỉ có **một** `assistantMessageId` cho lượt đó, đúng bằng dòng đã lưu. Vì có thêm câu nhận diện nên `answer` của lượt ghép có thể vượt mốc 2.000 ký tự mà lớp kiểm áp cho phần do model sinh; câu chữ **không** bị cắt bớt, cắt sẽ làm mất vế “trông giống/looks similar” (`CHAT_RULE_058`). Ảnh chứng từ/biên lai, ảnh đầu/người, hàng hỏng, ảnh ngoài phạm vi và ảnh bị chặn dùng luồng riêng, không ghép với tư vấn bán hàng; biên lai chuyển khoản tiếp nhận theo CHAT_RULE_066.
+- Lượt gửi kèm `imageIds` **và** `message`: `answer` là một chuỗi ghép — câu nhận diện ảnh, một dòng trống, rồi câu trả lời của phần tư vấn chữ; `products` là danh sách gộp (thẻ của ảnh trước, khử trùng theo slug, tối đa tám). Chỉ có **một** `assistantMessageId` cho lượt đó, đúng bằng dòng đã lưu. Vì có thêm câu nhận diện nên `answer` của lượt ghép có thể vượt mốc 2.000 ký tự mà lớp kiểm áp cho phần do model sinh; câu chữ **không** bị cắt bớt, cắt sẽ làm mất vế “trông giống/looks similar” (`CHAT_RULE_058`). Ảnh không phải sản phẩm, ảnh đầu/người, hàng hỏng, ảnh ngoài phạm vi và ảnh bị chặn dùng luồng riêng, không ghép với tư vấn bán hàng và không tạo thao tác thanh toán.
 
 Trước quota/AI, backend xử lý fast-path policy/shop/order, nội dung ngoài phạm vi/an toàn và vòng làm rõ bằng dữ kiện đã xác minh. Từ 2026-09-06 fast-path còn phủ **câu hỏi quy định pháp luật về trang bị** (từ chối lịch sự kèm phần shop trả lời được) và **câu mặc cả giá** (`CHAT_RULE_008`, đặt sau nhánh ngoài phạm vi để "giá vàng có giảm không" không bị hiểu là mặc cả). Các nhánh này có `ai_called=false` và không dùng quota. Chỉ lượt cần AI mới giữ đúng một slot daily atomically; retry cùng logical turn không giữ slot thứ hai.
 
@@ -2456,4 +2530,6 @@ template/abbreviation editor, memory days, lịch trực, email handoff. Hạn m
 
 `GET /admin/chat/stats` giữ trường chữ cũ và thêm `images` (used/limit/remaining), quyền `chat.read` hoặc `settings.read`. `ai_assistant_image_daily_limit` chỉ sửa qua Settings hiện có, không publicAllowed. Limit hiện hành không phải số liệu lịch sử và không reset used.
 
-Thông báo thêm loại `CHAT_BANK_TRANSFER_RECEIPT` với payload `{schemaVersion:1,conversationId,messageId}`; `orderId/orderNumber` rỗng. GET notifications và POST mark-all-read nhận thêm scope `chat.read`, lọc scope ở server. Nhấn thông báo mở Hội thoại đúng tin; đọc ảnh vẫn đi endpoint private. Không có endpoint thanh toán mới hay lệnh thanh toán từ chat.
+Không có loại thông báo biên lai chuyển khoản mới. GET notifications và POST mark-all-read chỉ lọc
+theo `orders.read` và `inventory.read`; `chat.read` vẫn bảo vệ màn Hội thoại riêng. Ảnh tài liệu
+thanh toán không gọi endpoint thanh toán và không tạo thông báo.

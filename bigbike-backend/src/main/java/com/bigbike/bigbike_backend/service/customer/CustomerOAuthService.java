@@ -186,7 +186,9 @@ public class CustomerOAuthService {
      * A password account is <b>never</b> adopted, even with a matching verified email — password
      * accounts and social accounts are deliberately separate identities (owner decision
      * 2026-08-07, BUSINESS_RULES.md CUSTOMER_RULE_010): a customer's profile is either
-     * self-managed (password account) or provider-managed (social account), never both.
+     * self-managed (password account) or provider-managed (social account), never both. Since
+     * 2026-09-26 such a sign-in is refused outright, as is one without a verified email
+     * (CUSTOMER_RULE_013).
      */
     @Transactional
     public CustomerEntity linkOrCreate(
@@ -195,40 +197,40 @@ public class CustomerOAuthService {
                 registrationConsent == null ? OAuthRegistrationConsent.none() : registrationConsent;
         Instant now = Instant.now();
 
+        // No verified email from the provider → no sign-in at all, new or existing identity
+        // (owner decision 2026-09-26, BUSINESS_RULES.md CUSTOMER_RULE_013).
+        if (!info.emailVerified() || info.email() == null || info.email().isBlank()) {
+            throw new OAuthException(OAuthError.EMAIL_REQUIRED, "Provider returned no verified email.");
+        }
+
+        String email = info.email().toLowerCase(Locale.ROOT).trim();
+        Optional<CustomerEntity> byEmail = customerRepo.findByEmail(email);
         Optional<CustomerOAuthLinkEntity> link = linkRepo.findByProviderAndSubject(provider, info.subject());
+
+        // The address belongs to a password account: it is a self-managed identity, never adopted
+        // by a social login — and the customer is sent to sign in with the password instead of
+        // getting a separate empty-email account (owner decision 2026-09-26, CUSTOMER_RULE_013).
+        // Only a grandfathered link onto that very account still gets through.
+        if (byEmail.isPresent() && byEmail.get().getPasswordHash() != null
+                && link.map(l -> !l.getCustomerId().equals(byEmail.get().getId())).orElse(true)) {
+            throw new OAuthException(
+                    OAuthError.EMAIL_REGISTERED, "Provider email belongs to a password account.");
+        }
+
         if (link.isPresent()) {
             CustomerEntity customer = customerRepo.findById(link.get().getCustomerId())
                     .orElseThrow(() -> new OAuthException("Linked customer no longer exists."));
             return touchLogin(customer, info, now);
         }
 
-        // Only trust a provider email when the provider asserts it is verified — anti-takeover.
-        String email = (info.emailVerified() && info.email() != null && !info.email().isBlank())
-                ? info.email().toLowerCase(Locale.ROOT).trim()
-                : null;
-
-        if (email != null) {
-            Optional<CustomerEntity> byEmail = customerRepo.findByEmail(email);
-            if (byEmail.isPresent()) {
-                CustomerEntity existing = byEmail.get();
-                if (existing.getPasswordHash() == null) {
-                    addLink(existing, provider, info.subject(), now);
-                    // This provider just proved ownership of the address — mark it verified if a
-                    // prior passwordless login (e.g. a migrated/synthetic account) never was, so
-                    // guest-order auto-linking in touchLogin can pick up matching guest orders.
-                    if (existing.getEmailVerifiedAt() == null) existing.setEmailVerifiedAt(now);
-                    return touchLogin(existing, info, now);
-                }
-                // The matched account has a password — it is a self-managed identity, never
-                // adopted by a social login regardless of email-verification state. Fall through
-                // and create a separate account; the email stays with its password-account owner.
-                // (Known trade-off: if that same email is later used to log in with the OTHER
-                // social provider too, it will likewise fail to match this row — since we null
-                // the email below to avoid the unique-index collision — and end up as a THIRD,
-                // still-separate account instead of merging with this one. Accepted narrow edge
-                // case; see DATA_CONTRACT.md customer_oauth_links section.)
-                email = null;
-            }
+        if (byEmail.isPresent()) {
+            CustomerEntity existing = byEmail.get();
+            addLink(existing, provider, info.subject(), now);
+            // This provider just proved ownership of the address — mark it verified if a
+            // prior passwordless login (e.g. a migrated/synthetic account) never was, so
+            // guest-order auto-linking in touchLogin can pick up matching guest orders.
+            if (existing.getEmailVerifiedAt() == null) existing.setEmailVerifiedAt(now);
+            return touchLogin(existing, info, now);
         }
 
         if (!effectiveConsent.permitsNewCustomer()) {
@@ -241,7 +243,7 @@ public class CustomerOAuthService {
         created.setEmail(email);
         created.setStatus(STATUS_ACTIVE);
         created.setSynthetic(false);
-        if (email != null) created.setEmailVerifiedAt(now);
+        created.setEmailVerifiedAt(now);
         created.setLastLoginAt(now);
         created.setCreatedAt(now);
         created.setUpdatedAt(now);
@@ -249,9 +251,7 @@ public class CustomerOAuthService {
         CustomerEntity saved = customerRepo.saveAndFlush(created);
         privacyConsentService.record(saved.getId(), effectiveConsent.privacyPolicyLocale());
         addLink(saved, provider, info.subject(), now);
-        if (saved.getEmailVerifiedAt() != null) {
-            guestOrderLinkingService.linkVerifiedEmailOrders(saved.getId());
-        }
+        guestOrderLinkingService.linkVerifiedEmailOrders(saved.getId());
         return saved;
     }
 
@@ -278,6 +278,12 @@ public class CustomerOAuthService {
         requireActive(customer);
         syncProfileFromProvider(customer, info);
         backfillEmailIfMissing(customer, info, now);
+        if (customer.getEmail() == null) {
+            // The provider's email could not be adopted because another customer owns it — the
+            // account would still have no email, so it may not sign in (CUSTOMER_RULE_013).
+            throw new OAuthException(
+                    OAuthError.EMAIL_REGISTERED, "Provider email belongs to another customer.");
+        }
         customer.setLastLoginAt(now);
         customer.setUpdatedAt(now);
         CustomerEntity saved = customerRepo.save(customer);

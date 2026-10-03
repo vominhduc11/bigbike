@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isCustomerCancellable, orderFilterHref, resolveBankTransfer } from "@/lib/utils/orders";
+import { isCustomerCancellable, orderFilterHref } from "@/lib/utils/orders";
 
 describe("isCustomerCancellable", () => {
   it("allows PENDING and PROCESSING", () => {
@@ -25,51 +25,5 @@ describe("orderFilterHref", () => {
   it("appends the status query when a status is given", () => {
     expect(orderFilterHref(base, "PENDING")).toBe(`${base}?status=PENDING`);
     expect(orderFilterHref(base, "COMPLETED")).toBe(`${base}?status=COMPLETED`);
-  });
-});
-
-describe("resolveBankTransfer", () => {
-  const full = new Map<string, string>([
-    ["bank_account_holder", " Nguyen Van A "],
-    ["bank_account_number", "0123456789"],
-    ["bank_name", "Vietcombank"],
-    ["bank_branch", "HCM"],
-  ]);
-
-  it("returns null for non-transfer payment methods", () => {
-    expect(resolveBankTransfer("COD", full)).toBeNull();
-    expect(resolveBankTransfer("BANK_TRANSFER", full)?.configured).toBe(true);
-    expect(resolveBankTransfer("", full)).toBeNull();
-    expect(resolveBankTransfer(null, full)).toBeNull();
-    expect(resolveBankTransfer(undefined, full)).toBeNull();
-  });
-
-  it("resolves a configured account (BACS is case-insensitive, values trimmed)", () => {
-    const r = resolveBankTransfer("bacs", full);
-    expect(r).not.toBeNull();
-    expect(r?.configured).toBe(true);
-    expect(r?.holder).toBe("Nguyen Van A");
-    expect(r?.number).toBe("0123456789");
-    expect(r?.bankName).toBe("Vietcombank");
-    expect(r?.branch).toBe("HCM");
-  });
-
-  it("is not configured until bank, holder and number are filled in", () => {
-    expect(resolveBankTransfer("BACS", new Map())?.configured).toBe(false);
-    expect(
-      resolveBankTransfer(
-        "BANK_TRANSFER",
-        new Map([
-          ["bank_account_holder", "A"],
-          ["bank_account_number", "1"],
-        ]),
-      )?.configured,
-    ).toBe(false);
-    expect(resolveBankTransfer("BACS", new Map([["bank_account_holder", "A"]]))?.configured).toBe(
-      false,
-    );
-    expect(resolveBankTransfer("BACS", new Map([["bank_account_number", "1"]]))?.configured).toBe(
-      false,
-    );
   });
 });

@@ -2,9 +2,12 @@ package com.bigbike.bigbike_backend.service.catalog;
 
 import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.safety.Safelist;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Converts a list of {@link DescriptionBlock} objects to a sanitized HTML string
@@ -29,20 +32,41 @@ import java.util.List;
 public class DescriptionBlockRenderer {
 
     private static final Safelist SAFELIST = buildSafelist();
+    private static final Safelist ARTICLE_SAFELIST = buildSafelist()
+            .addProtocols("a", "href", "tel")
+            .addTags("h1", "h4", "h5", "h6", "span")
+            .addAttributes(":all", "style")
+            .addAttributes("h1", "id").addAttributes("h2", "id").addAttributes("h3", "id")
+            .addAttributes("h4", "id").addAttributes("h5", "id").addAttributes("h6", "id")
+            .addAttributes("ol", "start")
+            .preserveRelativeLinks(true);
+    // Only used by Jsoup to validate relative URLs; never emitted or fetched.
+    private static final String ARTICLE_PARSE_BASE = "https://article.invalid/";
+    private static final Set<String> ARTICLE_STYLE_PROPERTIES = Set.of(
+            "font-weight", "text-align", "color", "font-style", "height", "width");
 
     /**
      * Renders {@code blocks} to sanitized HTML. Returns an empty string when
      * {@code blocks} is null or empty.
      */
     public String renderBlocksToHtml(List<DescriptionBlock> blocks) {
+        return renderBlocks(blocks, "", SAFELIST, false);
+    }
+
+    public String renderArticleBlocksToHtml(List<DescriptionBlock> blocks) {
+        return renderBlocks(blocks, ARTICLE_PARSE_BASE, ARTICLE_SAFELIST, true);
+    }
+
+    private String renderBlocks(List<DescriptionBlock> blocks, String baseUri, Safelist safelist, boolean article) {
         if (blocks == null || blocks.isEmpty()) return "";
 
         StringBuilder sb = new StringBuilder();
         for (DescriptionBlock block : blocks) {
-            sb.append(renderBlock(block));
+            sb.append(block instanceof DescriptionBlock.ImageBlock image && article
+                    ? renderArticleImage(image) : renderBlock(block));
         }
 
-        return Jsoup.clean(sb.toString(), "", SAFELIST);
+        return Jsoup.clean(article ? filterArticleStyles(sb.toString()) : sb.toString(), baseUri, safelist);
     }
 
     public String sanitizeHtml(String html) {
@@ -50,9 +74,63 @@ public class DescriptionBlockRenderer {
         return Jsoup.clean(html, "", SAFELIST);
     }
 
+    public String sanitizeArticleHtml(String html) {
+        if (html == null) return null;
+        return Jsoup.clean(filterArticleStyles(html), ARTICLE_PARSE_BASE, ARTICLE_SAFELIST);
+    }
+
+    private static String filterArticleStyles(String html) {
+        Document document = Jsoup.parseBodyFragment(html);
+        for (Element element : document.body().getAllElements()) {
+            if (!element.hasAttr("style")) continue;
+            StringBuilder safe = new StringBuilder();
+            for (String declaration : element.attr("style").split(";")) {
+                String[] pair = declaration.split(":", 2);
+                if (pair.length != 2) continue;
+                String property = pair[0].trim().toLowerCase(java.util.Locale.ROOT);
+                String value = pair[1].trim();
+                if (!ARTICLE_STYLE_PROPERTIES.contains(property)
+                        || value.length() > 100
+                        || !value.matches("(?i)[#a-z0-9.,%()\\s+-]+")
+                        || value.toLowerCase(java.util.Locale.ROOT).matches(".*(?:url|expression|var|import|calc|behavior).*")) {
+                    continue;
+                }
+                if (!safe.isEmpty()) safe.append("; ");
+                safe.append(property).append(": ").append(value);
+            }
+            if (safe.isEmpty()) element.removeAttr("style");
+            else element.attr("style", safe.toString());
+        }
+        return document.body().html();
+    }
+
+    private String renderArticleImage(DescriptionBlock.ImageBlock image) {
+        String template = image.getCaptionHtmlTemplate();
+        if (template == null || !isCaptionTemplate(template)) return renderImage(image);
+        String caption = image.getCaption() == null ? "" : image.getCaption();
+        DescriptionBlock.ImageBlock withoutCaption = DescriptionBlock.ImageBlock.builder()
+                .url(image.getUrl()).alt(image.getAlt()).build();
+        return renderImage(withoutCaption) + template.replace("{{caption}}", escapeHtml(caption));
+    }
+
+    public static boolean isCaptionTemplate(String template) {
+        if (template.length() > 5000 || template.indexOf("{{caption}}") < 0
+                || template.indexOf("{{caption}}") != template.lastIndexOf("{{caption}}")) return false;
+        Document document = Jsoup.parseBodyFragment(template);
+        if (document.body().childrenSize() != 1 || !document.body().child(0).tagName().equals("p")) return false;
+        for (Element element : document.body().getAllElements()) {
+            if (!Set.of("body", "p", "em", "i", "span", "b", "strong", "br").contains(element.tagName())) return false;
+            for (org.jsoup.nodes.Attribute attribute : element.attributes()) {
+                if (!attribute.getKey().equals("style") || attribute.getValue().contains("{{caption}}")) return false;
+            }
+        }
+        return document.body().text().contains("{{caption}}");
+    }
+
     private String renderBlock(DescriptionBlock block) {
         if (block instanceof DescriptionBlock.HeadingBlock b)   return renderHeading(b);
         if (block instanceof DescriptionBlock.ParagraphBlock b) return renderParagraph(b);
+        if (block instanceof DescriptionBlock.TableBlock b)     return b.getHtml() == null ? "" : b.getHtml();
         if (block instanceof DescriptionBlock.ListBlock b)      return renderList(b);
         if (block instanceof DescriptionBlock.ImageBlock b)     return renderImage(b);
         if (block instanceof DescriptionBlock.VideoBlock b)     return renderVideo(b);

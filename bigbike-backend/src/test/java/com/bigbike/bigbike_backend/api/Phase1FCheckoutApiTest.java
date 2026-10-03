@@ -83,8 +83,8 @@ class Phase1FCheckoutApiTest {
         categoryRepo.save(cat);
     }
 
-    // GET /checkout/options remains removed: COD and BANK_TRANSFER are the two fixed storefront
-    // choices (PAY_RULE_001); the backend validates their enum through POST /checkout.
+    // GET /checkout/options remains removed: the storefront has no payment-method selector,
+    // and POST /checkout accepts only COD (PAY_RULE_001).
 
     @Test
     void checkoutOptions_endpointRemoved_isNoLongerPublic() throws Exception {
@@ -262,25 +262,53 @@ class Phase1FCheckoutApiTest {
     }
 
     @Test
-    void checkout_guestBankTransfer_createsOrder_status_PENDING() throws Exception {
+    void checkout_snapshotsValidGa4ClientId_withoutExposingItInResponse() throws Exception {
         GuestSession session = newGuestSessionWithItem(4500000);
         MvcResult result = mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"paymentMethod\":\"BANK_TRANSFER\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .content("{\"paymentMethod\":\"COD\",\"analyticsClientId\":\"123456789.987654321\","
+                                + "\"billingAddress\":" + VALID_BILLING + "}")
                         .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("PENDING"))
-                .andExpect(jsonPath("$.data.paymentMethod").value("BANK_TRANSFER"))
+                .andExpect(jsonPath("$.data.analyticsClientId").doesNotExist())
                 .andReturn();
 
         String orderNumber = extractJsonValue(result.getResponse().getContentAsString(), "orderNumber");
-        assertThat(orderRepo.findByOrderNumber(orderNumber).orElseThrow().getPaymentMethod())
-                .isEqualTo("BANK_TRANSFER");
+        assertThat(orderRepo.findByOrderNumber(orderNumber).orElseThrow().getGa4ClientId())
+                .isEqualTo("123456789.987654321");
+    }
+
+    @Test
+    void checkout_discardsMalformedGa4ClientId_insteadOfRejectingOrder() throws Exception {
+        GuestSession session = newGuestSessionWithItem(4500000);
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"analyticsClientId\":\"private@example.com\","
+                                + "\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String orderNumber = extractJsonValue(result.getResponse().getContentAsString(), "orderNumber");
+        assertThat(orderRepo.findByOrderNumber(orderNumber).orElseThrow().getGa4ClientId()).isNull();
+    }
+
+    @Test
+    void checkout_explicitBankTransfer_isRejected_asCODOnly() throws Exception {
+        GuestSession session = newGuestSessionWithItem(4500000);
+        mockMvc.perform(post("/api/v1/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"BANK_TRANSFER\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.error.details[0].field").value("paymentMethod"))
+                .andExpect(jsonPath("$.error.details[0].code").value("UNSUPPORTED"));
     }
 
     @Test
     void checkout_explicitBACS_isRejected_asLegacyOnly() throws Exception {
-        // BACS remains reserved for imported legacy orders; new checkout uses BANK_TRANSFER.
+        // BACS remains reserved for imported legacy orders; it is not a new checkout option.
         GuestSession session = newGuestSessionWithItem(2000000);
         mockMvc.perform(post("/api/v1/checkout")
                         .contentType(MediaType.APPLICATION_JSON)

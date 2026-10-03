@@ -3,6 +3,7 @@
 // and to satisfy fast-refresh (non-component exports live in .js).
 
 import { generateId } from '@/lib/utils'
+import { articleBodyBlocks } from '@/lib/articleBodyBlocks'
 
 // Content chỉ còn ARTICLE (PAGE đã gỡ khỏi backend) — luôn resolve về ARTICLE/articles.
 export function normalizeContentType(_value) {
@@ -38,16 +39,7 @@ export function canonicalUrlFromSlug(slug) {
 // Validation-error field prefixes per section key — single source of truth
 // for derived `sectionErrors` and tab-error counts.
 export const SECTION_FIELD_PREFIXES = {
-  basic: [
-    'title',
-    'slug',
-    'excerpt',
-    'authorName',
-    'translations.en.title',
-    'translations.en.slug',
-    'translations.en.excerpt',
-    'translations.en.authorName',
-  ],
+  basic: ['title', 'slug', 'translations.en.title', 'translations.en.slug'],
   body: ['body', 'bodyBlocks', 'translations.en.body'],
   media: ['coverImageUrl'],
   seo: [
@@ -105,8 +97,6 @@ export function buildEmptyForm(contentType) {
   return {
     slug: '',
     title: '',
-    excerpt: '',
-    authorName: '',
     body: '',
     publishStatus: 'DRAFT',
     featured: false,
@@ -121,6 +111,7 @@ export function buildEmptyForm(contentType) {
     productImageUrl: '',
     productImageAlt: '',
     bodyBlocks: null,
+    _initialBodyBlocks: undefined,
     seoTitle: '',
     seoDescription: '',
     seoOgImageUrl: '',
@@ -133,9 +124,7 @@ export function buildEmptyForm(contentType) {
       en: {
         slug: '',
         title: '',
-        excerpt: '',
         body: '',
-        authorName: '',
         seoTitle: '',
         seoDescription: '',
       },
@@ -146,12 +135,17 @@ export function buildEmptyForm(contentType) {
 export function buildFormFromItem(contentType, item) {
   const fallback = buildEmptyForm(contentType)
   if (!item) return fallback
+  const hasStoredBlocks =
+    Array.isArray(item.bodyBlocks) && (item.bodyBlocks.length || !item.body?.trim())
+  const bodyBlocks = hasStoredBlocks
+    ? item.bodyBlocks.map((b) => (b._key ? b : { ...b, _key: generateId() }))
+    : item.body?.trim()
+      ? articleBodyBlocks(item.body)
+      : null
   return {
     ...fallback,
     slug: item.slug || '',
     title: item.title || '',
-    excerpt: item.excerpt || '',
-    authorName: item.authorName || '',
     body: item.body || '',
     publishStatus: item.publishStatus === 'UNKNOWN' ? 'DRAFT' : item.publishStatus,
     featured: Boolean(item.featured),
@@ -165,9 +159,8 @@ export function buildFormFromItem(contentType, item) {
     coverImageMimeType: item.coverImage?.mimeType || '',
     productImageUrl: item.productImage?.rawUrl || item.productImage?.url || '',
     productImageAlt: item.productImage?.alt || '',
-    bodyBlocks: Array.isArray(item.bodyBlocks)
-      ? item.bodyBlocks.map((b) => (b._key ? b : { ...b, _key: generateId() }))
-      : null,
+    bodyBlocks,
+    _initialBodyBlocks: hasStoredBlocks ? JSON.parse(JSON.stringify(bodyBlocks)) : undefined,
     seoTitle: item.seo?.title || '',
     seoDescription: item.seo?.description || '',
     seoOgImageUrl: item.seo?.ogImage?.rawUrl || item.seo?.ogImage?.url || '',
@@ -181,9 +174,7 @@ export function buildFormFromItem(contentType, item) {
         // slug tiếng Anh nằm ở field top-level `slugEn` của response, không trong translations.en
         slug: item.slugEn || '',
         title: item.translations?.en?.title || '',
-        excerpt: item.translations?.en?.excerpt || '',
         body: item.translations?.en?.body || '',
-        authorName: item.translations?.en?.authorName || '',
         seoTitle: item.translations?.en?.seoTitle || '',
         seoDescription: item.translations?.en?.seoDescription || '',
       },
@@ -254,6 +245,12 @@ export function isBlockValid(block) {
 // P1-001: Always emit fields that can be cleared so backend can distinguish
 // "omitted = keep" vs "sent = apply (possibly clear)".
 export function toPayload(form, _isCreate) {
+  const stripEditorKey = ({ _key: _k, ...rest }) => rest
+  const bodyBlocksUnchanged =
+    Array.isArray(form._initialBodyBlocks) &&
+    Array.isArray(form.bodyBlocks) &&
+    JSON.stringify(form.bodyBlocks.map(stripEditorKey)) ===
+      JSON.stringify(form._initialBodyBlocks.map(stripEditorKey))
   const payload = {
     slug: form.slug.trim(),
     title: form.title.trim(),
@@ -261,13 +258,9 @@ export function toPayload(form, _isCreate) {
     // bodyBlocks presence-flag: send when non-null so backend overwrites both body_blocks + body columns.
     // When null (new form, no blocks added yet) omit so backend leaves columns unchanged.
     bodyBlocks:
-      form.bodyBlocks !== null
+      form.bodyBlocks !== null && !bodyBlocksUnchanged
         ? form.bodyBlocks
             .map(({ _key: _k, ...rest }) => {
-              if (rest.type === 'image' || rest.type === 'feature') {
-                const { alt: _alt, ...keep } = rest
-                return keep
-              }
               if (rest.type === 'video' && !['youtube', 'upload'].includes(rest.provider)) {
                 return { ...rest, provider: undefined }
               }
@@ -288,8 +281,6 @@ export function toPayload(form, _isCreate) {
     payload.body = form.body
   }
 
-  // Empty strings are deliberate presence flags: excerpt and images can be cleared.
-  payload.excerpt = form.excerpt.trim()
   payload.coverImage = form.coverImageUrl.trim()
     ? {
         url: form.coverImageUrl.trim(),
@@ -305,9 +296,6 @@ export function toPayload(form, _isCreate) {
 
   payload.featured = Boolean(form.featured)
   payload.homeExperience = Boolean(form.homeExperience)
-  // Empty string is intentional: the backend treats a present empty field as
-  // a request to clear an existing author, while an omitted field keeps it.
-  payload.authorName = form.authorName?.trim() || ''
 
   // Always send seo as non-null object so backend can clear fields when all are empty
   payload.seo = {
@@ -333,9 +321,7 @@ export function toPayload(form, _isCreate) {
     en: {
       slug: form.translations?.en?.slug?.trim() || null,
       title: form.translations?.en?.title?.trim() || null,
-      excerpt: form.translations?.en?.excerpt?.trim() || null,
-      body: form.translations?.en?.body?.trim() || null,
-      authorName: form.translations?.en?.authorName?.trim() || null,
+      body: form.translations?.en?.body || null,
       seoTitle: form.translations?.en?.seoTitle?.trim() || null,
       seoDescription: form.translations?.en?.seoDescription?.trim() || null,
     },

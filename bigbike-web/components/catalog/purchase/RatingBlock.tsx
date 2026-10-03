@@ -4,8 +4,8 @@ import { useTranslations } from "next-intl";
 import { RatingStars } from "@/components/ui/RatingStars";
 import { resolveRatingDisplay } from "@/lib/rating";
 
-// Khối sao + microdata aggregateRating trên tiêu đề. Rating rỗng luôn có sao trung
-// tính; aggregateRating chỉ xuất khi score và approved count hợp lệ (REVIEW_RULE_003).
+// Khối sao chỉ hiển thị cho khách; JSON-LD của trang sản phẩm do server dựng.
+// Khi chưa có review được duyệt, giữ sao trung tính theo REVIEW_RULE_003.
 export function RatingBlock({
   rating,
   ratingCount,
@@ -45,7 +45,9 @@ export function RatingBlock({
         </div>
         <p className="m-0 mt-2">
           {previewMode ? (
-            <span className={reviewDisabledClass} aria-disabled="true">{tb("writeFirst")}</span>
+            <span className={reviewDisabledClass} aria-disabled="true">
+              {tb("writeFirst")}
+            </span>
           ) : (
             <a href="#reviews" onClick={onOpenWriteReview} className={reviewLinkClass}>
               {tb("writeFirst")}
@@ -57,22 +59,20 @@ export function RatingBlock({
   }
 
   return (
-    <div className="mt-5 font-body text-a4-content text-muted-foreground" itemProp="aggregateRating" itemScope itemType="https://schema.org/AggregateRating">
+    <div className="mt-5 font-body text-a4-content text-muted-foreground">
       {/* Sao vẽ bằng React (RatingStars) — KHÔNG để rỗng chờ plugin home.min.js
           vì script đó chỉ chạy lúc tải nguyên trang, điều hướng nội bộ vào PDP sẽ
           mất sao. text-a4-content = 18px khớp starSize cũ và thẻ sản phẩm. */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1" aria-label={ratingAriaLabel}>
         <RatingStars value={state.rating} ariaLabel={ratingAriaLabel} />
-        <meta itemProp="ratingValue" content={state.rating.toFixed(1)} />
-        {/* reviewCount đi bằng <meta> để microdata vẫn đủ mà không in số lượt 2 lần
-            cạnh số lượt hiển thị ngay bên phải. */}
-        <meta itemProp="reviewCount" content={String(state.count)} />
         <span>{countLabel}</span>
       </div>
       <p className="mb-0 mt-2">
         {" — "}
         {previewMode ? (
-          <span className={reviewDisabledClass} aria-disabled="true">{tb("viewAllReviews")}</span>
+          <span className={reviewDisabledClass} aria-disabled="true">
+            {tb("viewAllReviews")}
+          </span>
         ) : (
           <a href="#reviews" onClick={onScrollToReviews} className={reviewLinkClass}>
             {tb("viewAllReviews")}
@@ -80,7 +80,9 @@ export function RatingBlock({
         )}
         {" · "}
         {previewMode ? (
-          <span className={reviewDisabledClass} aria-disabled="true">{tb("writeReview")}</span>
+          <span className={reviewDisabledClass} aria-disabled="true">
+            {tb("writeReview")}
+          </span>
         ) : (
           <a href="#reviews" onClick={onOpenWriteReview} className={reviewLinkClass}>
             {tb("writeReview")}

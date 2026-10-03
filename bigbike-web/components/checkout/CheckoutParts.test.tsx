@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { CheckoutSummary } from "@/components/checkout/parts/CheckoutSummary";
-import { CheckoutConfirmRow, PaymentMethodSelector, ZaloSupportBlock } from "@/components/checkout/parts/atoms";
+import { CheckoutConfirmRow, ZaloSupportBlock } from "@/components/checkout/parts/atoms";
 import type { Cart } from "@/lib/contracts/commerce";
 
 vi.mock("next-intl", () => ({
@@ -55,28 +55,21 @@ describe("CheckoutSummary", () => {
 
   it("dùng URL và tên hiển thị Zalo từ cài đặt", () => {
     render(<ZaloSupportBlock zaloUrl="0901234567" zaloDisplay="Zalo BigBike" />);
-    expect(screen.getByRole("link", { name: /zaloSupportCta/i }))
-      .toHaveAttribute("href", "https://zalo.me/0901234567");
+    expect(screen.getByRole("link", { name: /zaloSupportCta/i })).toHaveAttribute(
+      "href",
+      "https://zalo.me/0901234567",
+    );
     expect(screen.getByText("Zalo BigBike")).toBeInTheDocument();
   });
 });
 
 describe("Checkout payment", () => {
-  it("hiển thị hai phương thức và giữ COD được chọn mặc định", () => {
-    const onPaymentMethodChange = vi.fn();
-    render(
-      <>
-        <PaymentMethodSelector value="COD" onValueChange={onPaymentMethodChange} />
-        <CheckoutConfirmRow checked={false} onCheckedChange={vi.fn()} />
-      </>,
-    );
-    expect(screen.getByText("paymentMethod.COD")).toBeInTheDocument();
-    expect(screen.getByText("paymentMethod.BANK_TRANSFER")).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /^paymentMethod\.COD/ })).toBeChecked();
-    const bankTransferRadio = screen.getByRole("radio", { name: /^paymentMethod\.BANK_TRANSFER/ });
-    expect(bankTransferRadio).not.toBeChecked();
-    fireEvent.click(bankTransferRadio);
-    expect(onPaymentMethodChange).toHaveBeenCalledWith("BANK_TRANSFER");
-    expect(screen.getByRole("checkbox")).not.toBeChecked();
+  it("keeps the order confirmation checkbox usable for the COD-only checkout", () => {
+    const onCheckedChange = vi.fn();
+    render(<CheckoutConfirmRow checked={false} onCheckedChange={onCheckedChange} />);
+    const checkbox = screen.getByRole("checkbox");
+    expect(checkbox).not.toBeChecked();
+    fireEvent.click(checkbox);
+    expect(onCheckedChange).toHaveBeenCalledWith(true);
   });
 });

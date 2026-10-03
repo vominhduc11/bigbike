@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { trackSizeGuideUse } from "@/lib/analytics";
 
 type HelmetSizeToolProps = {
   locale: string;
@@ -14,8 +15,10 @@ const SIZES = [
     min: 53,
     max: 54.9,
     brands: ["AGV", "Caberg", "ILM", "NIC", "LS2"],
-    tipVi: "Size nhỏ nhất — vỏ ngoài (shell) XS–M. Phù hợp nữ và nam vóc nhỏ. Nếu đầu tròn đều thì XS vừa tốt.",
-    tipEn: "Smallest size — shell XS-M. Suitable for women and small-framed men. If head shape is round, XS is a good fit.",
+    tipVi:
+      "Size nhỏ nhất — vỏ ngoài (shell) XS–M. Phù hợp nữ và nam vóc nhỏ. Nếu đầu tròn đều thì XS vừa tốt.",
+    tipEn:
+      "Smallest size — shell XS-M. Suitable for women and small-framed men. If head shape is round, XS is a good fit.",
   },
   {
     size: "S",
@@ -23,31 +26,38 @@ const SIZES = [
     max: 56.9,
     brands: ["AGV", "Caberg", "ILM", "NIC", "LS2"],
     tipVi: "Phổ biến với nữ và nam đầu nhỏ. Vỏ ngoài nhỏ (shell XS–M) — nhẹ hơn vỏ lớn.",
-    tipEn: "Popular with women and men with small heads. Small shell (XS-M) — lighter than larger shell.",
+    tipEn:
+      "Popular with women and men with small heads. Small shell (XS-M) — lighter than larger shell.",
   },
   {
     size: "M",
     min: 57,
     max: 58.9,
     brands: ["AGV", "Caberg", "ILM", "NIC", "LS2"],
-    tipVi: "Size phổ biến nhất tại Việt Nam. Vỏ ngoài nhỏ (shell XS–M). Nếu đầu hơi dài theo chiều trước–sau nên thử tại shop.",
-    tipEn: "Most popular size in Vietnam. Small shell (XS-M). If head is slightly oval, we recommend fitting in-store.",
+    tipVi:
+      "Size phổ biến nhất tại Việt Nam. Vỏ ngoài nhỏ (shell XS–M). Nếu đầu hơi dài theo chiều trước–sau nên thử tại shop.",
+    tipEn:
+      "Most popular size in Vietnam. Small shell (XS-M). If head is slightly oval, we recommend fitting in-store.",
   },
   {
     size: "L",
     min: 59,
     max: 60.9,
     brands: ["AGV", "Caberg", "ILM", "NIC", "LS2"],
-    tipVi: "Chuyển sang vỏ ngoài lớn (shell L–XXL) — nặng hơn một chút so với XS–M. Nên thử cả M và L nếu số đo nằm ở 58–59cm.",
-    tipEn: "Upgraded to large shell (L-XXL) — slightly heavier than XS-M. Try both M and L if your size is between 58-59cm.",
+    tipVi:
+      "Chuyển sang vỏ ngoài lớn (shell L–XXL) — nặng hơn một chút so với XS–M. Nên thử cả M và L nếu số đo nằm ở 58–59cm.",
+    tipEn:
+      "Upgraded to large shell (L-XXL) — slightly heavier than XS-M. Try both M and L if your size is between 58-59cm.",
   },
   {
     size: "XL",
     min: 61,
     max: 62.9,
     brands: ["AGV", "Caberg", "ILM", "NIC", "LS2"],
-    tipVi: "Vỏ ngoài lớn (shell L–XXL). Nếu thường xuyên đi tour xa, vỏ ngoài lớn thoải mái hơn khi đội lâu.",
-    tipEn: "Large shell (L-XXL). If you tour frequently, a larger shell provides more comfort for long rides.",
+    tipVi:
+      "Vỏ ngoài lớn (shell L–XXL). Nếu thường xuyên đi tour xa, vỏ ngoài lớn thoải mái hơn khi đội lâu.",
+    tipEn:
+      "Large shell (L-XXL). If you tour frequently, a larger shell provides more comfort for long rides.",
   },
   {
     size: "XXL",
@@ -77,7 +87,9 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
 
     const val = parseFloat(headVal);
     if (!val || isNaN(val)) {
-      setErrorMsg(isEn ? "Please enter your head circumference (cm)." : "Vui lòng nhập số đo vòng đầu (cm).");
+      setErrorMsg(
+        isEn ? "Please enter your head circumference (cm)." : "Vui lòng nhập số đo vòng đầu (cm).",
+      );
       return;
     }
 
@@ -86,7 +98,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
       setErrorMsg(
         isEn
           ? `Measurement ${val}cm is out of range. Contact BigBike via Zalo ${zaloContact} for direct consultation.`
-          : `Số đo ${val}cm ngoài phạm vi bảng size. Liên hệ BigBike qua Zalo ${zaloContact} để được tư vấn trực tiếp.`
+          : `Số đo ${val}cm ngoài phạm vi bảng size. Liên hệ BigBike qua Zalo ${zaloContact} để được tư vấn trực tiếp.`,
       );
       return;
     }
@@ -129,6 +141,7 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
       tip: isEn ? matched.tipEn : matched.tipVi,
       isBorder,
     });
+    trackSizeGuideUse(matched.size);
   };
 
   const handleReset = () => {
@@ -150,7 +163,10 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
 
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end mb-6">
         <div className="flex-1 min-w-0">
-          <label htmlFor="head-input" className="mb-2 block font-body text-a5-meta text-muted-foreground">
+          <label
+            htmlFor="head-input"
+            className="mb-2 block font-body text-a5-meta text-muted-foreground"
+          >
             {isEn ? "Your head size (cm)" : "Vòng đầu của bạn (cm)"}
           </label>
           <div className="relative flex items-center">
@@ -166,15 +182,12 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
               inputMode="numeric"
               className="pr-12 text-a4-content font-body font-normal"
             />
-            <span className="absolute right-4 text-a5-meta text-muted-foreground select-none">cm</span>
+            <span className="absolute right-4 text-a5-meta text-muted-foreground select-none">
+              cm
+            </span>
           </div>
         </div>
-        <Button
-          onClick={handleCalc}
-          variant="primary"
-          size="md"
-          className="h-12"
-        >
+        <Button onClick={handleCalc} variant="primary" size="md" className="h-12">
           {isEn ? "Calculate" : "Xem size"}
         </Button>
       </div>
@@ -199,7 +212,10 @@ export default function HelmetSizeTool({ locale }: HelmetSizeToolProps) {
           </div>
           <div className="flex flex-wrap gap-2 mb-4">
             {result.brands.map((brand) => (
-              <span key={brand} className="border border-border bg-white px-3 py-1 text-a5-meta text-foreground font-body">
+              <span
+                key={brand}
+                className="border border-border bg-white px-3 py-1 text-a5-meta text-foreground font-body"
+              >
                 {brand}
               </span>
             ))}

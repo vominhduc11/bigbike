@@ -101,10 +101,12 @@ function trimToNull(value: string | null | undefined): string | null {
 }
 
 function hasUnsafePrefix(value: string): boolean {
-  return /^(javascript|data|vbscript|file):/i.test(value)
-    || value.startsWith("//")
-    || value.startsWith("\\\\")
-    || value.includes("\\");
+  return (
+    /^(javascript|data|vbscript|file):/i.test(value) ||
+    value.startsWith("//") ||
+    value.startsWith("\\\\") ||
+    value.includes("\\")
+  );
 }
 
 function parseUrl(value: string): URL | null {
@@ -115,7 +117,7 @@ function parseUrl(value: string): URL | null {
   }
 }
 
- export function isSafePublicHref(value: string | null | undefined): boolean {
+export function isSafePublicHref(value: string | null | undefined): boolean {
   const normalized = trimToNull(value);
   if (!normalized || hasUnsafePrefix(normalized)) {
     return false;
@@ -124,7 +126,13 @@ function parseUrl(value: string): URL | null {
     return true;
   }
   const parsed = parseUrl(normalized);
-  return Boolean(parsed && parsed.protocol === "https:" && parsed.hostname && !parsed.username && !parsed.password);
+  return Boolean(
+    parsed &&
+    parsed.protocol === "https:" &&
+    parsed.hostname &&
+    !parsed.username &&
+    !parsed.password,
+  );
 }
 
 export function isValidVnPhone(value: string): boolean {
@@ -144,7 +152,12 @@ export function isSafeHomeVideoUrl(value: string | null | undefined): boolean {
     return true;
   }
   const parsed = parseUrl(normalized);
-  if (!parsed || !["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
+  if (
+    !parsed ||
+    !["http:", "https:"].includes(parsed.protocol) ||
+    parsed.username ||
+    parsed.password
+  ) {
     return false;
   }
   if (SAFE_YOUTUBE_HOSTS.has(parsed.hostname.toLowerCase())) {
@@ -204,10 +217,19 @@ export function orderStatusLabelWithT(status: string | null | undefined, t: TFn)
 export function paymentMethodLabelWithT(method: string | null | undefined, t: TFn): string {
   const code = (method ?? "").trim().toUpperCase();
   switch (code) {
-    case "COD": return t("paymentMethod.COD");
-    case "BANK_TRANSFER": return t("paymentMethod.BANK_TRANSFER");
-    case "BACS": return t("paymentMethod.BACS");
-    case "": return t("paymentMethod.EMPTY");
-    default: return code;
+    case "COD":
+      return t("paymentMethod.COD");
+    case "BANK_TRANSFER":
+      return t("paymentMethod.BANK_TRANSFER");
+    case "BACS":
+      return t("paymentMethod.BACS");
+    case "CHECK":
+      return t("paymentMethod.CHECK");
+    case "CARD":
+      return t("paymentMethod.CARD");
+    case "":
+      return t("paymentMethod.EMPTY");
+    default:
+      return code;
   }
 }

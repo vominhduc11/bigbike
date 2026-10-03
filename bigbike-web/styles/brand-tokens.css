@@ -69,7 +69,9 @@
   /* Text on dark surfaces (header, footer, drawers) */
   --bb-text-inverse: var(--bb-color-white);
   --bb-text-inverse-secondary: var(--bb-color-gray-300);
-  --bb-text-inverse-muted: var(--bb-color-gray-400); /* gray-400 (#abb8c3) = ~4.7:1 on #141414, passes WCAG AA */
+  --bb-text-inverse-muted: var(
+    --bb-color-gray-400
+  ); /* gray-400 (#abb8c3) = ~4.7:1 on #141414, passes WCAG AA */
   --bb-home-kicker-label: var(--bb-color-gray-300);
   /* Use AA-safe brand text on light surfaces; keep --bb-brand-primary as the canonical red primitive. */
   --bb-text-brand: var(--bb-brand-primary-aa);
@@ -92,8 +94,8 @@
   --bb-state-success-bg: rgba(119, 136, 102, 0.14);
   --bb-state-success-border: rgba(119, 136, 102, 0.34);
   --bb-state-success-text: #3d5230;
-  --bb-pros-accent: #0A6E2A;
-  --bb-cons-accent: #D4000F;
+  --bb-pros-accent: #0a6e2a;
+  --bb-cons-accent: #d4000f;
   --bb-state-warning: var(--bb-color-warning);
   --bb-state-warning-bg: rgba(252, 185, 0, 0.2);
   --bb-state-warning-border: rgba(252, 185, 0, 0.4);
@@ -106,18 +108,23 @@
   --bb-state-info-border: rgba(0, 95, 204, 0.36);
 
   --bb-product-price: var(--bb-brand-primary-aa);
-  --bb-rating-star: #FF8001;
+  --bb-rating-star: #ff8001;
   /* Floating-chat (WP sudovn widget) — exact source colours, kept as dedicated
      widget tokens so they live in one place. Values mirror the WP theme verbatim. */
-  --bb-chat-title-bg: #00aeef;       /* FAB + "Bạn cần hỗ trợ?" pill background */
-  --bb-chat-title-text: var(--bb-color-white);  /* FAB icon — white for contrast on both FAB states */
-  --bb-chat-close-text: var(--bb-color-black);  /* Close/X icon — black on the open gray FAB */
-  --bb-chat-close-bg: #d6d6d6;       /* FAB background while the popup is open (.b24-widget-button-bottom) */
-  /* CHAT_RULE_061: khung máy tính thường/mở rộng; điện thoại luôn toàn màn hình. */
-  --bb-floating-chat-panel-width: 34rem;
-  --bb-floating-chat-panel-expanded-width: 58rem;
-  --bb-floating-chat-panel-expanded-height: 90dvh;
-  --bb-chat-text: #333333;           /* contact-row label + value text (.sudovn-btn-social-item) */
+  --bb-chat-title-bg: #00aeef; /* FAB + "Bạn cần hỗ trợ?" pill background */
+  /* CHAT_RULE_070: contact widget restored from Git d7b8a1ec, before the assistant. */
+  --bb-contact-close-bg: #d6d6d6;
+  --bb-contact-close-text: var(--bb-color-black);
+  --bb-contact-text: #333333;
+  --bb-contact-hover-bg: #f2f2f2;
+  --bb-contact-card-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  --bb-contact-card-radius: 0.5rem;
+  --bb-contact-overlay: rgba(0, 0, 0, 0.55);
+  --bb-contact-overlay-blur: 2px;
+  --bb-contact-fab-mobile-size: 3rem;
+  --bb-contact-fab-desktop-size: 4.125rem;
+  --bb-contact-detail-gap: 0.3125rem;
+  --bb-contact-hint-radius: 0.1875rem;
   /* Cart discount line color — WP parity (.summary--items .discount) */
   --bb-discount: var(--bb-color-purple);
   /* Zalo brand blue — keep this separate from the BigBike primary red. */
@@ -136,20 +143,20 @@
   /* Canonical 11-group typography — mobile values. Every readable/functional
      text size maps to exactly one A/B token. The ten tokens switch once at 768px;
      only the decorative 404 (group D) may use clamp(). See docs/TYPOGRAPHY.md. */
-  --bb-text-b1-display: 2rem;       /* 32px mobile → 40px tablet */
-  --bb-text-b2-contact: 1.5rem;     /* 24px mobile → 32px tablet */
-  --bb-text-b3-promo: 1.125rem;     /* 18px mobile → 20px tablet */
-  --bb-text-b4-action: 1rem;        /* 16px mobile → 18px tablet */
-  --bb-text-b5-label: 0.75rem;      /* 12px mobile → 14px tablet */
-  --bb-text-pdp-eyebrow: 0.875rem;  /* 14px mobile + desktop — product eyebrow */
-  --bb-text-header-nav: 1.125rem;  /* 18px mobile → 18px desktop — main header navigation */
-  --bb-text-a1-title: 1.75rem;      /* 28px mobile → 32px tablet */
-  --bb-text-a2-page: 1.375rem;      /* 22px mobile → 26px tablet */
-  --bb-text-a3-section: 1.25rem;    /* 20px mobile → 22px tablet */
-  --bb-text-a4-content: 1rem;        /* 16px mobile → 18px tablet */
-  --bb-text-a5-meta: 0.875rem;      /* 14px mobile → 16px tablet */
-  --bb-text-home-kicker: 1rem;      /* 16px mobile + desktop — homepage kicker */
-  --bb-text-product-card: 1rem;     /* 16px mobile + desktop — product card title */
+  --bb-text-b1-display: 2rem; /* 32px mobile → 40px tablet */
+  --bb-text-b2-contact: 1.5rem; /* 24px mobile → 32px tablet */
+  --bb-text-b3-promo: 1.125rem; /* 18px mobile → 20px tablet */
+  --bb-text-b4-action: 1rem; /* 16px mobile → 18px tablet */
+  --bb-text-b5-label: 0.75rem; /* 12px mobile → 14px tablet */
+  --bb-text-pdp-eyebrow: 0.875rem; /* 14px mobile + desktop — product eyebrow */
+  --bb-text-header-nav: 1.125rem; /* 18px mobile → 18px desktop — main header navigation */
+  --bb-text-a1-title: 1.75rem; /* 28px mobile → 32px tablet */
+  --bb-text-a2-page: 1.375rem; /* 22px mobile → 26px tablet */
+  --bb-text-a3-section: 1.25rem; /* 20px mobile → 22px tablet */
+  --bb-text-a4-content: 1rem; /* 16px mobile → 18px tablet */
+  --bb-text-a5-meta: 0.875rem; /* 14px mobile → 16px tablet */
+  --bb-text-home-kicker: 1rem; /* 16px mobile + desktop — homepage kicker */
+  --bb-text-product-card: 1rem; /* 16px mobile + desktop — product card title */
 
   --bb-font-weight-regular: 400;
   --bb-font-weight-medium: 500;
@@ -158,9 +165,9 @@
 
   /* Heading line-heights — chặt theo TYPOGRAPHY §7.4 (display/h1 ~1.1, h2–h4 ~1.2).
      Body giữ 1.5. KHÔNG để heading 1.5–1.75 (anti-pattern). */
-  --bb-line-tight: 1.1;     /* display / h1 */
-  --bb-line-snug: 1.2;      /* h2–h4, kicker, news/product title */
-  --bb-line-heading: 1.15;  /* chốt từ 1.5 → ~1.15 (heading chặt) */
+  --bb-line-tight: 1.1; /* display / h1 */
+  --bb-line-snug: 1.2; /* h2–h4, kicker, news/product title */
+  --bb-line-heading: 1.15; /* chốt từ 1.5 → ~1.15 (heading chặt) */
   --bb-line-body: 1.5;
 
   /* Letter-spacing tối thiểu (TYPOGRAPHY §7.6). Expose qua @theme thành
@@ -185,7 +192,7 @@
 
   /* Layout */
   --bb-desktop-canvas: 90rem; /* 1440px — centered desktop content canvas inside full-bleed surfaces */
-  --bb-container-xl: 75rem;   /* 1200px — fixed inner content rail at every desktop tier */
+  --bb-container-xl: 75rem; /* 1200px — fixed inner content rail at every desktop tier */
   --bb-container-wide: 90rem; /* 1440px — PDP / breadcrumb / page-head / news / checkout */
   --bb-home-hero-height-max: 36rem; /* 576px — 40% of the 1440px desktop canvas */
   --bb-page-padding-mobile: var(--bb-space-4);
@@ -256,8 +263,12 @@
   font-family: var(--bb-font-body);
 }
 
-.bb-text-muted { color: var(--bb-text-muted); }
-.bb-text-brand { color: var(--bb-text-brand); }
+.bb-text-muted {
+  color: var(--bb-text-muted);
+}
+.bb-text-brand {
+  color: var(--bb-text-brand);
+}
 
 .bb-card {
   background: var(--bb-bg-surface);
@@ -309,27 +320,48 @@
   margin-bottom: var(--bb-space-3);
 }
 
-.bb-richtext h1 { font-size: var(--bb-text-a1-title); line-height: var(--bb-line-tight); }
-.bb-richtext h2 { font-size: var(--bb-text-a2-page); }
-.bb-richtext h3 { font-size: var(--bb-text-a3-section); }
-.bb-richtext h4 { font-size: var(--bb-text-a4-content); }
-.bb-richtext p { margin-bottom: var(--bb-space-4); }
+.bb-richtext h1 {
+  font-size: var(--bb-text-a1-title);
+  line-height: var(--bb-line-tight);
+}
+.bb-richtext h2 {
+  font-size: var(--bb-text-a2-page);
+}
+.bb-richtext h3 {
+  font-size: var(--bb-text-a3-section);
+}
+.bb-richtext h4 {
+  font-size: var(--bb-text-a4-content);
+}
+.bb-richtext p {
+  margin-bottom: var(--bb-space-4);
+}
 .bb-richtext a {
   color: var(--bb-link-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.bb-richtext a:hover { color: var(--bb-text-brand); }
+.bb-richtext a:hover {
+  color: var(--bb-text-brand);
+}
 .bb-richtext strong,
-.bb-richtext b { font-weight: var(--bb-font-weight-bold); }
+.bb-richtext b {
+  font-weight: var(--bb-font-weight-bold);
+}
 .bb-richtext ul,
 .bb-richtext ol {
   padding-left: var(--bb-space-6);
   margin-bottom: var(--bb-space-4);
 }
-.bb-richtext ul { list-style: disc; }
-.bb-richtext ol { list-style: decimal; }
-.bb-richtext li { margin-bottom: var(--bb-space-2); }
+.bb-richtext ul {
+  list-style: disc;
+}
+.bb-richtext ol {
+  list-style: decimal;
+}
+.bb-richtext li {
+  margin-bottom: var(--bb-space-2);
+}
 .bb-richtext table {
   width: 100%;
   border-collapse: collapse;
@@ -346,6 +378,9 @@
   background: var(--bb-bg-surface-raised);
   color: var(--bb-text-primary);
   font-weight: var(--bb-font-weight-semibold);
+  /* Chỉ hàng tiêu đề được in đậm + căn giữa (yêu cầu team SEO 2026-09-17);
+     các ô dữ liệu dùng <td> nên giữ chữ thường, căn trái. */
+  text-align: center;
 }
 .bb-richtext img {
   max-width: 100%;
@@ -376,16 +411,16 @@
 /* Typography breakpoint duy nhất: all ten A/B tokens switch at 768px. */
 @media (min-width: 768px) {
   :root {
-    --bb-text-b1-display: 2.5rem;    /* 40px */
-    --bb-text-b2-contact: 2rem;      /* 32px */
-    --bb-text-b3-promo: 1.25rem;     /* 20px */
-    --bb-text-b4-action: 1.125rem;   /* 18px */
-    --bb-text-b5-label: 0.875rem;    /* 14px */
-    --bb-text-a1-title: 2rem;         /* 32px */
-    --bb-text-a2-page: 1.625rem;      /* 26px */
-    --bb-text-a3-section: 1.375rem;   /* 22px */
-    --bb-text-a4-content: 1.125rem;   /* 18px */
-    --bb-text-a5-meta: 1rem;          /* 16px */
+    --bb-text-b1-display: 2.5rem; /* 40px */
+    --bb-text-b2-contact: 2rem; /* 32px */
+    --bb-text-b3-promo: 1.25rem; /* 20px */
+    --bb-text-b4-action: 1.125rem; /* 18px */
+    --bb-text-b5-label: 0.875rem; /* 14px */
+    --bb-text-a1-title: 2rem; /* 32px */
+    --bb-text-a2-page: 1.625rem; /* 26px */
+    --bb-text-a3-section: 1.375rem; /* 22px */
+    --bb-text-a4-content: 1.125rem; /* 18px */
+    --bb-text-a5-meta: 1rem; /* 16px */
   }
 }
 

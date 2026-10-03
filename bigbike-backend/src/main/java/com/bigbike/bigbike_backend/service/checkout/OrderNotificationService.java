@@ -60,7 +60,6 @@ public class OrderNotificationService {
         ctx.setVariable("hasPayment", paymentMethod != null && !paymentMethod.isBlank());
         ctx.setVariable("paymentLabel", paymentLabel(paymentMethod));
         ctx.setVariable("isCod", "COD".equalsIgnoreCase(paymentMethod));
-        ctx.setVariable("isBacs", "BACS".equalsIgnoreCase(paymentMethod));
         ctx.setVariable("orderUrl", siteBaseUrl + "/don-hang/xac-nhan"
                 + "?so=" + order.getOrderNumber() + "&key=" + order.getOrderKey());
 
@@ -171,6 +170,8 @@ public class OrderNotificationService {
             case "COD"  -> "Thanh toán khi nhận hàng (COD)";
             case "BANK_TRANSFER" -> "Chuyển khoản ngân hàng";
             case "BACS" -> "Chuyển khoản ngân hàng";
+            case "CHECK" -> "Séc";
+            case "CARD" -> "Thẻ ngân hàng";
             default     -> method;
         };
     }

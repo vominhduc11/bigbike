@@ -1,22 +1,18 @@
 import type { ReactNode } from "react";
-import { telHref } from "@/lib/utils/format";
+import Link from "@/i18n/StorefrontLink";
+import { translatePath } from "@/lib/utils/routes";
 
 /**
- * Nội dung trang Chính sách bảo vệ thông tin cá nhân
+ * Công bố bổ sung trong trang Chính sách bảo mật
  * (/chinh-sach/chinh-sach-bao-mat-thong-tin) — TRANG TĨNH.
  *
- * Toàn bộ nội dung chính sách (thông tin thu thập, mục đích, công cụ đo lường, chia sẻ bên thứ ba,
- * quyền của khách, bảo vệ dữ liệu) cố định trong code, song ngữ VI/EN — đây là cam kết hiển thị cho
- * khách, KHÔNG phải system feature.
+ * Công bố đo lường, chia sẻ bên thứ ba, AI/ảnh/video và quyền của khách cố định
+ * trong code, song ngữ VI/EN; phần SEO nguyên văn do route hiển thị trước phần này.
  *
- * Số điện thoại / Zalo: theo yêu cầu owner, trang này ĐÓNG CỨNG số liên hệ (không lấy từ
- * site_settings). Đây là ngoại lệ có chủ ý của guard `check-no-runtime-business-data` — file này
- * được allowlist riêng trong scripts/check-no-runtime-business-data.mjs.
+ * Đơn vị công bố và kênh liên hệ được route hiển thị qua PolicyContact, dùng nhóm contact chung.
+ * Route chép nguyên văn phần SEO trước component này. Component chỉ giữ các công bố
+ * bổ sung về đo lường/AI/ảnh/video và quyền của khách (POLICY_PAGE_RULE_003/008).
  */
-
-const HOTLINE = "0906902404";
-const ZALO = "0764640679";
-const ZALO_URL = "https://zalo.me/0764640679";
 
 type Lang = "vi" | "en";
 
@@ -25,26 +21,28 @@ type Bi = { vi: string; en: string };
 const t = (lang: Lang, s: Bi) => (lang === "en" ? s.en : s.vi);
 
 const COPY = {
-  intro: {
-    vi: "BigBike.vn cam kết bảo vệ thông tin cá nhân của khách hàng. Trang này giải thích rõ chúng tôi thu thập, sử dụng và bảo vệ dữ liệu của bạn như thế nào.",
-    en: "BigBike.vn is committed to protecting our customers' personal information. This page explains how we collect, use and protect your data.",
+  supplementaryTitle: {
+    vi: "Thông tin bổ sung về dữ liệu khi sử dụng website",
+    en: "Additional information about data when using the website",
   },
   effectiveDate: {
-    vi: "Cập nhật ngày 08/09/2026.",
-    en: "Updated on 8 September 2026.",
+    vi: "Cập nhật ngày 02/10/2026.",
+    en: "Updated on 2 October 2026.",
   },
-  s1Title: { vi: "1. Thông tin chúng tôi thu thập", en: "1. Information we collect" },
-  s2Title: { vi: "2. Mục đích sử dụng", en: "2. How we use it" },
-  s3Title: { vi: "3. Công cụ đo lường và theo dõi", en: "3. Measurement and tracking tools" },
+  marketingConsent: {
+    vi: "BigBike chỉ gửi thông tin khuyến mãi khi khách đồng ý; khách có thể hủy nhận bất cứ lúc nào.",
+    en: "BigBike sends promotional information only with your consent; you may unsubscribe at any time.",
+  },
+  s3Title: { vi: "Công cụ đo lường và theo dõi", en: "Measurement and tracking tools" },
   s3Intro: {
-    vi: "Website sử dụng các công cụ phân tích để cải thiện trải nghiệm người dùng:",
-    en: "The website uses analytics tools to improve the user experience:",
+    vi: "Website dùng ba công cụ để hiểu phần nào đang hữu ích, cải thiện trải nghiệm mua hàng và đo lường hiệu quả quảng cáo:",
+    en: "The website uses three tools to understand what is useful, improve the shopping experience and measure advertising effectiveness:",
   },
   s3Note: {
-    vi: "Các công cụ này thu thập dữ liệu ẩn danh về hành vi duyệt web (trang xem, thời gian, thiết bị). Không thu thập thông tin cá nhân nhận dạng trực tiếp.",
-    en: "These tools collect anonymous data about browsing behaviour (pages viewed, time, device). They do not collect directly identifiable personal information.",
+    vi: "Khi anh/chị đã đăng nhập, BigBike chỉ gửi mã khách hàng nội bộ để nối các lần truy cập trên nhiều thiết bị. Chúng tôi không gửi tên, email, số điện thoại, địa chỉ, nội dung trò chuyện hay nội dung đánh giá cho Google Analytics hoặc Microsoft Clarity.",
+    en: "When you are signed in, BigBike sends only your internal customer ID to connect visits across devices. We do not send your name, email, phone number, address, chat content or review content to Google Analytics or Microsoft Clarity.",
   },
-  s4Title: { vi: "4. Chia sẻ thông tin với bên thứ ba", en: "4. Sharing with third parties" },
+  s4Title: { vi: "Chia sẻ thông tin với bên thứ ba", en: "Sharing with third parties" },
   s4Intro: {
     vi: "BigBike chỉ chia sẻ thông tin trong các trường hợp sau:",
     en: "BigBike only shares information in the following cases:",
@@ -53,23 +51,29 @@ const COPY = {
     vi: "BigBike tuyệt đối không bán thông tin khách hàng cho bên thứ ba vì mục đích thương mại.",
     en: "BigBike never sells customer information to third parties for commercial purposes.",
   },
-  s5Title: { vi: "5. Quyền của bạn", en: "5. Your rights" },
+  s4Access: {
+    vi: "Khách được tiếp cận thông tin của mình. Ban quản trị website và nhân viên được phân quyền chỉ tiếp cận dữ liệu để thực hiện các mục đích đã công bố.",
+    en: "You may access your own information. Website administrators and authorized staff access data only for the stated purposes.",
+  },
+  s5Title: { vi: "Quyền của bạn", en: "Your rights" },
   s5Contact: {
-    vi: "Để thực hiện các quyền trên, liên hệ:",
-    en: "To exercise these rights, contact:",
+    vi: "Để kiểm tra, cập nhật, điều chỉnh hoặc yêu cầu hủy thông tin cá nhân, khách liên hệ BigBike qua các kênh hỗ trợ được công bố bên dưới hoặc tại trang Liên hệ.",
+    en: "To check, update, correct or request deletion of personal information, contact BigBike through the support channels below or on the Contact page.",
   },
-  zaloLabel: { vi: "Zalo", en: "Zalo" },
-  s6Title: { vi: "6. Bảo vệ dữ liệu", en: "6. Data protection" },
+  contactLink: { vi: "Mở trang Liên hệ", en: "Open the Contact page" },
+  s6Title: { vi: "Bảo vệ dữ liệu", en: "Data protection" },
   s7Title: {
-    vi: "7. Ảnh và video gửi trong Trợ lý BigBike",
-    en: "7. Images and videos sent to BigBike Assistant",
+    vi: "Dữ liệu từ chức năng trợ lý trước đây",
+    en: "Data from the former assistant feature",
   },
-  // Câu cuối trước đây nói khung chat sẽ nhắc cách xử lý ảnh trước khi khách chọn ảnh. Dòng công
-  // bố đó đã gỡ khỏi khung chat ngày 06/09/2026 (CHAT_RULE_059) và nội dung công bố chuyển hẳn về
-  // đúng mục này, nên câu cũ đang mô tả một thứ không còn tồn tại.
   s7Intro: {
-    vi: "Anh/chị có thể gửi ảnh hoặc video ngắn để tìm sản phẩm tương tự hoặc diễn đạt thao tác cần hỏi. Video có thể kèm lời nhắn hoặc được gửi riêng. Mục này công bố cách BigBike xử lý các tệp đó.",
-    en: "You can send an image or short video to find a similar product or show an operation you want to ask about. A video may be sent with a message or on its own. This section explains how BigBike handles these files.",
+    vi: "Chức năng trợ lý đã được gỡ. Mục này giải thích việc bảo vệ và xóa dữ liệu đã lưu trước đây.",
+    en: "The assistant feature has been removed. This section explains how previously stored data is protected and deleted.",
+  },
+  s8Title: { vi: "Thời gian lưu trữ thông tin", en: "Data retention" },
+  s8Body: {
+    vi: "Thông tin cá nhân phục vụ tài khoản và giao dịch được lưu trên máy chủ của BigBike cho đến khi khách yêu cầu ban quản trị hủy bỏ. Trong thời gian lưu trữ, thông tin được bảo mật. Chức năng trợ lý đã được gỡ. Dữ liệu hội thoại và ảnh đã lưu trước đây được tự động xóa theo hạn 90 ngày; video theo hạn 7 ngày. Khách có thể liên hệ shop để yêu cầu xóa sớm.",
+    en: "Personal information used for accounts and transactions is stored on BigBike's servers until you ask the website administrators to delete it. It remains protected during storage. The assistant feature has been removed. Previously saved conversations and images are automatically deleted at their 90-day expiry; videos at their 7-day expiry. You may contact the shop to request earlier deletion.",
   },
   footerNote: {
     vi: "Chính sách này có thể được cập nhật theo thời gian. Phiên bản mới nhất luôn được đăng tại bigbike.vn.",
@@ -77,54 +81,43 @@ const COPY = {
   },
 } satisfies Record<string, Bi>;
 
-const COLLECT: Bi[] = [
-  {
-    vi: "Họ tên, số điện thoại, địa chỉ giao hàng khi đặt hàng",
-    en: "Full name, phone number, delivery address when placing an order",
-  },
-  {
-    vi: "Email (nếu đăng ký tài khoản hoặc nhận thông tin khuyến mãi)",
-    en: "Email (if you register an account or subscribe to promotions)",
-  },
-  {
-    vi: "Ảnh, video gồm cả âm thanh và câu hỏi kèm theo khi khách chủ động gửi trong Trợ lý BigBike",
-    en: "Images, videos including sound, and accompanying questions when you choose to send them to BigBike Assistant",
-  },
+const ANALYTICS: string[] = [
+  "Google Analytics 4 (GA4)",
+  "Microsoft Clarity",
+  "Meta Pixel (Facebook)",
 ];
 
-const PURPOSE: Bi[] = [
-  { vi: "Xử lý đơn hàng và giao hàng", en: "Process and deliver orders" },
+const MEASUREMENT: Bi[] = [
   {
-    vi: "Liên hệ xác nhận đơn, tư vấn sau bán",
-    en: "Confirm orders and provide after-sales support",
+    vi: "Google Analytics 4 ghi nhận trang và sản phẩm đã xem, tìm kiếm, cuộn trang, giỏ hàng, xác nhận COD, đặt/huỷ đơn, bấm gọi/Zalo/Messenger, bộ lọc, banner, bảng size, video, đăng nhập/đăng ký và gửi đánh giá. Dữ liệu đơn hàng chỉ gồm mã đơn, thông tin sản phẩm, số lượng và giá trị.",
+    en: "Google Analytics 4 records pages and products viewed, searches, scrolling, cart activity, COD confirmation, placed/cancelled orders, phone/Zalo/Messenger clicks, filters, banners, the size tool, videos, login/sign-up and review submission. Order data is limited to order number, product details, quantity and value.",
   },
-  { vi: "Gửi thông tin khuyến mãi (nếu khách đồng ý)", en: "Send promotions (with your consent)" },
   {
-    vi: "Nhận diện hình ảnh, lắng nghe âm thanh trong video, hiểu thao tác và đối chiếu với hàng BigBike đang bán để hỗ trợ tư vấn",
-    en: "Recognize images, listen to video sound, understand product operations and compare with products BigBike currently sells for customer support",
+    vi: "Microsoft Clarity tạo bản xem lại thao tác như bấm, cuộn và cách di chuyển trên trang để BigBike tìm điểm khó sử dụng. Các vùng đăng nhập, tài khoản, thanh toán, đơn hàng, đánh giá  được che trước khi ghi.",
+    en: "Microsoft Clarity provides session replays of actions such as clicks, scrolling and page movement so BigBike can find usability problems. Login, account, checkout, order, review areas are masked before recording.",
+  },
+  {
+    vi: "Meta Pixel (Facebook) ghi nhận lượt xem trang và sản phẩm, thêm giỏ thành công, vào bước thanh toán, xác nhận COD, đặt hàng thành công, tìm kiếm và bấm gọi/Zalo/Messenger để BigBike đo lường hiệu quả quảng cáo và xây dựng tệp tiếp thị phù hợp.",
+    en: "Meta Pixel (Facebook) records page and product views, successful add-to-cart actions, checkout entry, COD confirmation, completed orders, searches and phone/Zalo/Messenger clicks so BigBike can measure advertising effectiveness and build relevant marketing audiences.",
+  },
+  {
+    vi: "Ba công cụ có thể dùng cookie hoặc mã nhận diện trình duyệt để phân biệt phiên truy cập, thiết bị và người dùng quay lại.",
+    en: "These tools may use cookies or browser identifiers to distinguish sessions, devices and returning visitors.",
   },
 ];
-
-// Đúng thực tế đang chạy: chỉ có Google Analytics 4. Facebook Pixel bị gỡ khỏi danh sách
-// ngày 06/09/2026 — website chưa bao giờ cài công cụ này, khai với khách là sai sự thật.
-const ANALYTICS: string[] = ["Google Analytics 4 (GA4)"];
-const ANALYTICS_GENERIC: Bi = {
-  vi: "Công cụ tracking theo dõi hành vi người dùng",
-  en: "User-behaviour tracking tools",
-};
 
 const SHARE: Bi[] = [
+  {
+    vi: "Cơ quan có thẩm quyền tại Việt Nam như Viện kiểm sát, tòa án, cơ quan công an điều tra — khi có yêu cầu liên quan đến hành vi vi phạm pháp luật",
+    en: "Competent Vietnamese authorities, including the procuracy, courts and investigating police, when requested in connection with a suspected violation of the law",
+  },
   {
     vi: "Đơn vị vận chuyển (GHN, GHTK…) — chỉ thông tin giao hàng",
     en: "Delivery partners (GHN, GHTK…) — shipping information only",
   },
   {
-    vi: "Google, Meta — dữ liệu ẩn danh phục vụ quảng cáo",
-    en: "Google, Meta — anonymous data for advertising",
-  },
-  {
-    vi: "Dịch vụ AI Google (Gemini) — ảnh hoặc toàn bộ video gồm cả âm thanh và câu hỏi kèm theo, chỉ khi khách chủ động gửi để được tư vấn",
-    en: "Google's AI service (Gemini) — the image or entire video including sound, and accompanying question, only when you choose to send them for assistance",
+    vi: "Google Analytics, Microsoft Clarity và Meta (Facebook) — dữ liệu đo lường và quảng cáo giới hạn như mô tả ở phần công cụ đo lường, bao gồm cookie hoặc mã nhận diện trình duyệt",
+    en: "Google Analytics, Microsoft Clarity and Meta (Facebook) — limited measurement and advertising data described in the measurement tools section, including cookies or browser identifiers",
   },
 ];
 
@@ -142,48 +135,26 @@ const PROTECT: Bi[] = [
   },
 ];
 
-const CHAT_IMAGES: Bi[] = [
+const FORMER_ASSISTANT_DATA: Bi[] = [
   {
-    vi: "Thương hiệu và loại hàng nhận ra từ ảnh được dùng để tư vấn và giữ ngữ cảnh trong hội thoại. Với ảnh biên lai chuyển khoản, trợ lý tiếp nhận và báo nội bộ cho shop kiểm tra; chỉ shop xác nhận thanh toán sau khi đối chiếu ngân hàng.",
-    en: "Brands and product categories recognized in photos help the assistant advise you and follow the conversation. Transfer receipt images are received and flagged internally for the shop to review; only the shop confirms payment after checking bank records.",
+    vi: "Chức năng trợ lý đã được gỡ; website không còn nhận câu hỏi, ảnh hoặc video để gửi tới dịch vụ AI tư vấn.",
+    en: "The assistant feature has been removed; the website no longer accepts questions, images or videos for AI assistance.",
   },
   {
-    vi: "Mỗi lượt nhận tối đa 3 ảnh (JPG, PNG hoặc WebP, 8 MB/ảnh; tối đa 9 ảnh/hội thoại) hoặc một video. Video tối đa 15 giây, 40 MB; mỗi hội thoại nhận tối đa 2 video, toàn shop tối đa 10 video mỗi ngày.",
-    en: "Each message accepts up to 3 images (JPG, PNG or WebP, 8 MB each; up to 9 images per conversation) or one video. Videos may be up to 15 seconds and 40 MB; the limit is 2 videos per conversation and 10 videos for the shop per day.",
+    vi: "Dữ liệu hội thoại và ảnh đã lưu trước đây được tự động xóa theo hạn 90 ngày; video theo hạn 7 ngày. Tệp còn trong thời hạn lưu được giữ riêng tư, không có đường dẫn công khai.",
+    en: "Previously saved conversations and images are automatically deleted at their 90-day expiry; videos at their 7-day expiry. Files within their retention period remain private and have no public URL.",
   },
   {
-    vi: "Trợ lý xem cả video và nghe tiếng để trả lời trong cùng lượt, tối đa 60 giây tính từ lúc máy chủ nhận xong tệp. Thời gian tải tệp lên không nằm trong 60 giây này. Nếu quá giờ, trợ lý sẽ xin lỗi và mời anh/chị gửi ảnh chụp thay thế.",
-    en: "The assistant reviews the video and listens to its sound in the same turn, within 60 seconds after the server receives the complete file. Upload time is excluded. If that time is exceeded, it will apologize and ask you to send photos instead.",
-  },
-  {
-    vi: "Ảnh và video BigBike lưu nằm trong kho riêng tư nội bộ, không có đường dẫn công khai; chỉ nhân viên có quyền xem hội thoại mới xem được.",
-    en: "BigBike's stored images and videos stay in private internal storage with no public URL; only staff permitted to view conversations can access it.",
-  },
-  {
-    vi: "Ảnh hoặc toàn bộ video gồm cả âm thanh được gửi tới dịch vụ AI Google (Gemini) để nhận diện và hiểu thao tác. BigBike dùng kết quả như mức độ tương đồng, không coi đó là xác nhận chắc chắn về sản phẩm, giá, thông số, bảo hành, đơn hàng hoặc size.",
-    en: "The image or entire video including sound is sent to Google's AI service (Gemini) for recognition and understanding product operations. BigBike treats the result as similarity only, not certain confirmation of a product, price, specification, warranty, order detail, or size.",
-  },
-  {
-    vi: "Ảnh tự động bị xoá sau 90 ngày; tệp video tự động bị xoá sau 7 ngày. Lịch sử chữ vẫn được lưu theo thời hạn hội thoại. Nếu khách xoá lịch sử trò chuyện, ảnh và video trong lịch sử đó cũng bị xoá.",
-    en: "Images are automatically deleted after 90 days; video files are automatically deleted after 7 days. Text history follows the conversation retention period. Deleting chat history also deletes its attached images and videos.",
-  },
-  {
-    vi: "Khách có quyền xem ảnh và video đã lưu trong lịch sử của mình. Khách tự xoá được bất cứ lúc nào bằng nút xoá cuộc trò chuyện ngay trong khung chat; ảnh và video kèm theo bị xoá cùng lúc. Khách cũng có thể yêu cầu BigBike xoá giúp.",
-    en: "You can view images and videos saved in your own history. You can delete them yourself at any time with the clear-conversation button in the chat panel, which removes the attached images and videos with it. You may also ask BigBike to delete them for you.",
-  },
-  {
-    vi: "Ảnh hoặc video không phù hợp có thể bị chặn và không được xử lý tiếp. Khách luôn có thể không gửi tệp và mô tả nhu cầu bằng chữ.",
-    en: "Inappropriate images or videos may be blocked and not processed further. You can always avoid sending files and describe your request in text.",
-  },
-  {
-    vi: "Nếu ảnh hoặc video có giấy tờ, hoá đơn hoặc màn hình đơn hàng, khách nên che tên, số điện thoại, địa chỉ, mã đơn và thông tin không cần thiết trước khi gửi.",
-    en: "If an image or video contains a document, invoice, or order screen, please cover names, phone numbers, addresses, order codes, and any unnecessary details before sending it.",
+    vi: "Khách có thể liên hệ BigBike để yêu cầu xem hoặc xóa dữ liệu đã lưu trước đây.",
+    en: "You may contact BigBike to request access to or deletion of previously stored data.",
   },
 ];
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-4 font-body text-a2-page font-bold leading-title text-brand">{children}</h2>
+    <h3 className="mb-4 font-body text-a3-section font-bold uppercase leading-title text-brand">
+      {children}
+    </h3>
   );
 }
 
@@ -201,26 +172,20 @@ export function PrivacyPolicyContent({ locale }: { locale: string }) {
   const lang: Lang = locale === "en" ? "en" : "vi";
 
   return (
-    <div className="max-w-none text-a4-content leading-body text-foreground">
-      {/* Intro */}
-      <p className="mb-6 text-a4-content leading-body">{t(lang, COPY.intro)}</p>
+    <section className="mt-8 max-w-none border-t border-border pt-6 text-a4-content leading-body text-foreground">
+      <h2 className="mb-4 font-body text-a2-page font-bold uppercase leading-title text-brand">
+        {t(lang, COPY.supplementaryTitle)}
+      </h2>
       <p className="mb-6 text-a5-meta font-semibold leading-body text-muted-foreground">
         {t(lang, COPY.effectiveDate)}
       </p>
-
-      {/* 1. Thông tin thu thập */}
-      <SectionTitle>{t(lang, COPY.s1Title)}</SectionTitle>
-      <Bullets lang={lang} items={COLLECT} />
-
-      {/* 2. Mục đích sử dụng */}
-      <SectionTitle>{t(lang, COPY.s2Title)}</SectionTitle>
-      <Bullets lang={lang} items={PURPOSE} />
+      <p className="mb-6 leading-body">{t(lang, COPY.marketingConsent)}</p>
 
       {/* 3. Công cụ đo lường */}
       <SectionTitle>{t(lang, COPY.s3Title)}</SectionTitle>
       <p className="mb-3 leading-body">{t(lang, COPY.s3Intro)}</p>
       <div className="mb-3 flex flex-wrap gap-2">
-        {[...ANALYTICS, t(lang, ANALYTICS_GENERIC)].map((label, i) => (
+        {ANALYTICS.map((label, i) => (
           <span
             key={i}
             className="inline-block border border-border bg-secondary px-3 py-1 text-a5-meta font-bold text-foreground"
@@ -229,12 +194,14 @@ export function PrivacyPolicyContent({ locale }: { locale: string }) {
           </span>
         ))}
       </div>
+      <Bullets lang={lang} items={MEASUREMENT} />
       <p className="mb-6 text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.s3Note)}</p>
 
       {/* 4. Chia sẻ bên thứ ba */}
       <SectionTitle>{t(lang, COPY.s4Title)}</SectionTitle>
       <p className="mb-3 leading-body">{t(lang, COPY.s4Intro)}</p>
       <Bullets lang={lang} items={SHARE} />
+      <p className="mb-6 leading-body">{t(lang, COPY.s4Access)}</p>
       <div className="mb-6 border border-border border-l-4 border-l-brand bg-white p-4">
         <p className="font-bold leading-body text-brand">{t(lang, COPY.s4NoSell)}</p>
       </div>
@@ -244,33 +211,26 @@ export function PrivacyPolicyContent({ locale }: { locale: string }) {
       <Bullets lang={lang} items={RIGHTS} />
       <p className="mb-6 leading-body">
         {t(lang, COPY.s5Contact)}{" "}
-        <a href={telHref(HOTLINE)} className="font-bold text-brand no-underline">
-          {HOTLINE}
-        </a>
-        <span>{lang === "en" ? " or " : " hoặc "}</span>
-        <span>
-          {t(lang, COPY.zaloLabel)}{" "}
-          <a
-            href={ZALO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold text-brand no-underline"
-          >
-            {ZALO}
-          </a>
-        </span>
+        <Link
+          href={translatePath("/lien-he/", lang)}
+          className="text-brand underline underline-offset-4"
+        >
+          {t(lang, COPY.contactLink)}
+        </Link>
       </p>
 
       {/* 6. Bảo vệ dữ liệu */}
       <SectionTitle>{t(lang, COPY.s6Title)}</SectionTitle>
       <Bullets lang={lang} items={PROTECT} />
 
-      {/* 7. Ảnh khách chủ động gửi trong chat */}
+      {/* 7. Dữ liệu từ chức năng trợ lý trước đây */}
       <SectionTitle>{t(lang, COPY.s7Title)}</SectionTitle>
       <p className="mb-3 leading-body">{t(lang, COPY.s7Intro)}</p>
-      <Bullets lang={lang} items={CHAT_IMAGES} />
+      <Bullets lang={lang} items={FORMER_ASSISTANT_DATA} />
 
+      <SectionTitle>{t(lang, COPY.s8Title)}</SectionTitle>
+      <p className="mb-6 leading-body">{t(lang, COPY.s8Body)}</p>
       <p className="text-a5-meta leading-snug text-muted-foreground">{t(lang, COPY.footerNote)}</p>
-    </div>
+    </section>
   );
 }

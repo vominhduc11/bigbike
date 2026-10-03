@@ -11,13 +11,9 @@ import { FieldError } from "./atoms";
 // form-checkout.php, chỉ khác idPrefix / autoComplete / form instance và việc
 // billing có thêm trường email (shipping không có).
 //
-// province/ward KHÔNG sống trong react-hook-form (khác 4 ô còn lại) — đã tái hiện
-// được lỗi: react-hook-form tự âm thầm reset field này về rỗng đúng 1 nhịp sau khi
-// setValue() (kể cả đã đăng ký qua Controller, memo hoá resolver/defaultValues, hay
-// bỏ hẳn resolver — vẫn xảy ra). Nguồn sự thật cho 2 ô này là state phẳng ở
-// useCheckout (vnValue/onVnChange), chỉ đồng bộ vào react-hook-form ngay trước khi
-// validate/submit (xem placeOrder trong useCheckout.ts) — nhờ đó UI không phụ thuộc
-// hành vi nội bộ khó đoán của react-hook-form cho field này.
+// province/ward giữ state phẳng làm nguồn sự thật cho Select phụ thuộc nhau. Hook
+// checkout phản chiếu giá trị sang react-hook-form để dùng chung zod, báo lỗi khi
+// rời ô và xoá lỗi ngay khi khách chọn lại giá trị hợp lệ.
 export function CheckoutAddressFields({
   idPrefix,
   autoCompletePrefix,
@@ -26,6 +22,7 @@ export function CheckoutAddressFields({
   includeEmail,
   vnValue,
   onVnChange,
+  onVnBlur,
 }: {
   idPrefix: "billing" | "shipping";
   autoCompletePrefix: "" | "shipping ";
@@ -34,6 +31,7 @@ export function CheckoutAddressFields({
   includeEmail: boolean;
   vnValue: { province: string; ward: string };
   onVnChange: (field: "province" | "ward", value: string) => void;
+  onVnBlur: (field: "province" | "ward") => void;
 }) {
   const t = useTranslations("Checkout");
   const reqMark = <span className="text-brand">*</span>;
@@ -113,6 +111,7 @@ export function CheckoutAddressFields({
         <VnAddressFields
           value={vnValue}
           onChange={onVnChange}
+          onBlur={onVnBlur}
           required
           labelClassName={labelClass}
         />

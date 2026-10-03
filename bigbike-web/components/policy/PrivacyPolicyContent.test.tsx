@@ -2,63 +2,57 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { PrivacyPolicyContent } from "./PrivacyPolicyContent";
 
-describe("PrivacyPolicyContent customer-media disclosure", () => {
-  it("states whole-video/audio sharing, private access and distinct retention periods in Vietnamese", () => {
-    render(<PrivacyPolicyContent locale="vi" />);
-
-    expect(screen.getByText("7. Ảnh và video gửi trong Trợ lý BigBike")).toBeInTheDocument();
-    expect(screen.getByText("Cập nhật ngày 08/09/2026.")).toBeInTheDocument();
-    expect(screen.getByText(/Video tối đa 15 giây, 40 MB/i)).toHaveTextContent(/2 video.*10 video/);
-    expect(screen.getByText(/máy chủ nhận xong tệp/i)).toHaveTextContent(
-      /60 giây.*Thời gian tải tệp lên không nằm trong 60 giây/,
-    );
-    expect(screen.getAllByText(/dịch vụ AI Google \(Gemini\)/i).length).toBeGreaterThan(0);
-    expect(
-      screen.getByText(/chỉ nhân viên có quyền xem hội thoại mới xem được/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Ảnh tự động bị xoá sau 90 ngày/i)).toHaveTextContent(
-      /video tự động bị xoá sau 7 ngày/,
-    );
-    expect(screen.getByText(/quyền xem ảnh và video đã lưu/i)).toBeInTheDocument();
-    expect(screen.getByText(/xoá lịch sử trò chuyện/i)).toBeInTheDocument();
-    expect(screen.getByText(/nút xoá cuộc trò chuyện ngay trong khung chat/i)).toBeInTheDocument();
-    expect(screen.getByText(/nên che tên, số điện thoại, địa chỉ, mã đơn/i)).toBeInTheDocument();
-  });
-
-  it("no longer claims the chat panel shows an image disclosure before you attach one", () => {
-    // The in-chat disclosure line was removed on 06/09/2026 and this page became the only place
-    // the disclosure lives, so promising a chat-side notice here would be untrue.
+describe("PrivacyPolicyContent after assistant retirement", () => {
+  it("discloses retained history and direct deletion requests in Vietnamese", () => {
     const { container } = render(<PrivacyPolicyContent locale="vi" />);
 
-    expect(container.textContent).not.toMatch(/khung chat sẽ nhắc/i);
-    expect(screen.getByText(/Mục này công bố cách BigBike xử lý các tệp đó/i)).toBeInTheDocument();
+    expect(screen.getByText("Dữ liệu từ chức năng trợ lý trước đây")).toBeInTheDocument();
+    expect(screen.getByText(/website không còn nhận câu hỏi, ảnh hoặc video/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tệp còn trong thời hạn lưu/i)).toHaveTextContent(
+      /90 ngày.*7 ngày.*riêng tư/,
+    );
+    expect(screen.getByText(/yêu cầu xem hoặc xóa dữ liệu đã lưu trước đây/i)).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(
+      /nút xoá cuộc trò chuyện|gửi tới dịch vụ AI Google|Video tối đa 15 giây/,
+    );
   });
 
-  it("provides the same mandatory disclosure in English", () => {
-    render(<PrivacyPolicyContent locale="en" />);
+  it("keeps the current measurement disclosure without promising assistant tracking", () => {
+    render(<PrivacyPolicyContent locale="vi" />);
 
-    expect(screen.getByText("7. Images and videos sent to BigBike Assistant")).toBeInTheDocument();
-    expect(screen.getByText("Updated on 8 September 2026.")).toBeInTheDocument();
-    expect(screen.getByText(/15 seconds and 40 MB/i)).toHaveTextContent(
-      /2 videos per conversation and 10 videos/,
+    expect(screen.getByText("Cập nhật ngày 02/10/2026.")).toBeInTheDocument();
+    expect(screen.getByText(/Google Analytics 4 ghi nhận/i)).toHaveTextContent(
+      /xác nhận COD.*đặt\/huỷ đơn.*bảng size.*gửi đánh giá/i,
     );
-    expect(screen.getByText(/after the server receives the complete file/i)).toHaveTextContent(
-      /Upload time is excluded/,
+    expect(screen.getByText(/Google Analytics 4 ghi nhận/i)).not.toHaveTextContent(
+      /Trợ lý BigBike/i,
     );
-    expect(screen.getAllByText(/Google's AI service \(Gemini\)/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/only staff permitted to view conversations/i)).toBeInTheDocument();
-    expect(screen.getByText(/Images are automatically deleted after 90 days/i)).toHaveTextContent(
-      /video files are automatically deleted after 7 days/,
+    expect(screen.getByText(/Microsoft Clarity tạo bản xem lại/i)).toHaveTextContent(
+      /đăng nhập.*tài khoản.*thanh toán.*được che/i,
+    );
+    expect(screen.getByText(/Meta Pixel \(Facebook\) ghi nhận/i)).toHaveTextContent(
+      /thêm giỏ thành công.*xác nhận COD.*bấm gọi\/Zalo\/Messenger/i,
+    );
+    expect(screen.getByText(/chỉ gửi mã khách hàng nội bộ/i)).toHaveTextContent(
+      /không gửi tên, email, số điện thoại, địa chỉ/i,
+    );
+  });
+
+  it("provides the same retirement and retention disclosure in English", () => {
+    const { container } = render(<PrivacyPolicyContent locale="en" />);
+
+    expect(screen.getByText("Data from the former assistant feature")).toBeInTheDocument();
+    expect(
+      screen.getByText(/website no longer accepts questions, images or videos/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Files within their retention period/i)).toHaveTextContent(
+      /90-day expiry.*7-day expiry.*remain private/i,
     );
     expect(
-      screen.getByText(/view images and videos saved in your own history/i),
+      screen.getByText(/request access to or deletion of previously stored data/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/clear-conversation button in the chat panel/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Deleting chat history also deletes its attached images and videos/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/cover names, phone numbers, addresses, order codes/i),
-    ).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(
+      /clear-conversation button|Google's AI service|15 seconds and 40 MB/i,
+    );
   });
 });

@@ -94,10 +94,19 @@ export function RoleBadge({ role }) {
 // deploy against a not-yet-migrated backend degrades instead of crashing on `.map()`.
 export function AssignmentBanner({ t }) {
   const cfg = useContext(AssignmentConfigContext)
+  const choiceLabel = t('products.detail.variantUnit')
+  const displayRoles = (cfg?.roles ?? []).map((role) => ({
+    ...role,
+    items: (role.items || '').replace(/biến thể|\bvariants?\b/gi, (word) =>
+      word[0] === word[0].toUpperCase()
+        ? choiceLabel[0].toUpperCase() + choiceLabel.slice(1)
+        : choiceLabel,
+    ),
+  }))
   return (
     <AssignmentBannerView
       title={cfg?.title || t('products.detail.assign.title')}
-      roles={cfg?.roles ?? []}
+      roles={displayRoles}
     />
   )
 }

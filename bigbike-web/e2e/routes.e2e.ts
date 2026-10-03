@@ -94,6 +94,22 @@ test.describe("Error handling @1440", () => {
     await expect(page.locator("footer").first()).toBeVisible();
     await expectNoHorizontalOverflow(page, "not-found @1440");
 
+    // Chromium reports the expected 404 main document as a console resource error.
+    // Keep the runtime gate strict for every other resource/error on this page.
+    const documentUrl = page.url();
+    guards.consoleErrors = guards.consoleErrors.filter(
+      ({ text, location }) =>
+        !(
+          /Failed to load resource/i.test(text) &&
+          /\b404\b/.test(text) &&
+          location.startsWith(`${documentUrl}:`)
+        ),
+    );
+    guards.badResponses = guards.badResponses.filter(
+      ({ url, status, resourceType }) =>
+        !(url === documentUrl && status === 404 && resourceType === "document"),
+    );
+
     // not-found should still avoid serious console/runtime errors
     const summary = expectNoSeriousIssues(guards, "not-found");
     if (summary.warnings.length) {

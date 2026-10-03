@@ -21,14 +21,10 @@ public interface ContentReadRepository {
     List<Article> findAllArticles();
 
     /**
-     * DB-level token-AND search against title + excerpt.
-     * Each token must match at least one field — "ba lo" → ["ba","lo"] finds "balo".
+     * DB-level token-AND search against the localized article title.
+     * Each token must match at least one word in the title.
      */
     List<Article> searchPublishedArticles(java.util.List<String> tokens, String locale, int limit);
-
-    /** Assistant-only article projection: no locale fallback and includes body search. */
-    List<ArticleKnowledge> searchPublishedArticleKnowledge(
-            java.util.List<String> tokens, String locale, int limit);
 
     // --- DB-paginated listing (replaces in-memory full-scan in ContentReadService) ---
 
@@ -44,7 +40,5 @@ public interface ContentReadRepository {
     // --- Non-paginated admin filter (for combined article+page admin listing) ---
 
     List<Article> findArticlesByFilter(PublishStatus publishStatus, String q, String locale);
-
-    record ArticleKnowledge(String title, String excerpt, String body) {}
 
 }

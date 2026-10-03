@@ -99,6 +99,8 @@ export function ProductContactCta({
               href={zaloHref(zaloUrl)}
               target="_blank"
               rel="noopener noreferrer"
+              data-analytics-contact-channel="zalo"
+              data-analytics-location="product_contact_cta"
               className="inline-flex items-center justify-center gap-2.5 border-2 !border-zalo !bg-white px-7 py-3.5 font-cta text-b4-action font-bold uppercase !text-zalo transition-colors hover:!bg-zalo-soft max-md:w-full"
             >
               <MessageCircle className="size-5" aria-hidden="true" />

@@ -20,10 +20,9 @@ import {
   createCheckoutAddressSchema,
   type CheckoutAddressFormValues,
 } from "@/lib/schemas/checkout";
-import { trackAddShippingInfo, trackBeginCheckout } from "@/lib/analytics";
+import { getAnalyticsClientId, trackAddShippingInfo, trackBeginCheckout } from "@/lib/analytics";
 import { toCheckoutResultPath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
-import type { CheckoutPaymentMethod } from "./atoms";
 import { pickDefaultAddress } from "./helpers";
 import { reportStorefrontFailure } from "@/lib/observability/storefront-error";
 
@@ -47,7 +46,6 @@ type CheckoutDraft = {
   shippingAddress: CheckoutAddressFormValues;
   customerNote: string;
   shipToDifferent: boolean;
-  paymentMethod: CheckoutPaymentMethod;
 };
 
 function readCheckoutDraft(): CheckoutDraft | null {
@@ -110,31 +108,16 @@ export function useCheckout() {
   const shippingInfoCartId = useRef<string | null>(null);
   const [customerNote, setCustomerNote] = useState("");
   const [shipToDifferent, setShipToDifferent] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("COD");
   const submittingRef = useRef(false);
   const restoredAttempt = useRef(false);
   const [recoverable, setRecoverable] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
 
-  // Tỉnh/Phường KHÔNG sống trong react-hook-form như 4 ô còn lại (Họ tên/SĐT/Email/
-  // Địa chỉ) — dùng state phẳng làm nguồn sự thật cho UI + payload gửi đi, chỉ đồng
-  // bộ vào react-hook-form ngay trước khi validate (trigger()) trong placeOrder() để
-  // vẫn tận dụng được thông báo lỗi zod có sẵn. Lý do xem comment ở effect prefill
-  // bên dưới.
+  // Tỉnh/Phường dùng state phẳng làm nguồn sự thật cho UI + payload. Giá trị vẫn được
+  // phản chiếu vào react-hook-form để cùng dùng zod và hành vi validate khi rời ô;
+  // Select phụ thuộc lẫn nhau nên không giao toàn bộ state cho register().
   const [vnAddress, setVnAddress] = useState<VnAddress>(EMPTY_VN_ADDRESS);
   const [vnShip, setVnShip] = useState<VnAddress>(EMPTY_VN_ADDRESS);
-
-  function onVnChange(field: "province" | "ward", value: string) {
-    setVnAddress((prev) =>
-      field === "province" ? { province: value, ward: "" } : { ...prev, ward: value },
-    );
-  }
-
-  function onVnChangeShip(field: "province" | "ward", value: string) {
-    setVnShip((prev) =>
-      field === "province" ? { province: value, ward: "" } : { ...prev, ward: value },
-    );
-  }
 
   const { data: cart, isLoading: cartLoading, error: cartError } = useCartQuery();
   const acceptCreatedOrder = useCallback(
@@ -206,10 +189,15 @@ export function useCheckout() {
     control,
     setValue,
     getValues,
+    getFieldState,
     formState: { errors: addressErrors },
   } = useForm<CheckoutAddressFormValues>({
     resolver: billingResolver,
     defaultValues: EMPTY_CHECKOUT_ADDRESS,
+    // First validation happens when the customer leaves a field; once touched,
+    // corrections are checked on change so a resolved error disappears immediately.
+    mode: "onTouched",
+    reValidateMode: "onChange",
   });
 
   // useWatch chỉ còn dùng cho 4 ô register()-based (fullName/phone/email/
@@ -228,13 +216,61 @@ export function useCheckout() {
     control: controlShip,
     setValue: setValueShip,
     getValues: getValuesShip,
+    getFieldState: getFieldStateShip,
     formState: { errors: shipErrors },
   } = useForm<CheckoutAddressFormValues>({
     resolver: shipResolver,
     defaultValues: EMPTY_CHECKOUT_ADDRESS,
+    mode: "onTouched",
+    reValidateMode: "onChange",
   });
 
   const formShippingAddress = useWatch({ control: controlShip });
+
+  // Province/ward stay in flat state for display (see the transition-reset note above), while
+  // react-hook-form mirrors only their validation state. Untouched fields stay quiet; once a
+  // field has been blurred or already has an error, a valid selection clears it immediately.
+  function onVnChange(field: "province" | "ward", value: string) {
+    setVnAddress((prev) =>
+      field === "province" ? { province: value, ward: "" } : { ...prev, ward: value },
+    );
+    setValue(field, value, {
+      shouldValidate: getFieldState(field).isTouched || Boolean(addressErrors[field]),
+    });
+    if (field === "province") {
+      setValue("ward", "", {
+        shouldValidate: getFieldState("ward").isTouched || Boolean(addressErrors.ward),
+      });
+    }
+  }
+
+  function onVnBlur(field: "province" | "ward") {
+    setValue(field, vnAddress[field], {
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+  }
+
+  function onVnChangeShip(field: "province" | "ward", value: string) {
+    setVnShip((prev) =>
+      field === "province" ? { province: value, ward: "" } : { ...prev, ward: value },
+    );
+    setValueShip(field, value, {
+      shouldValidate: getFieldStateShip(field).isTouched || Boolean(shipErrors[field]),
+    });
+    if (field === "province") {
+      setValueShip("ward", "", {
+        shouldValidate: getFieldStateShip("ward").isTouched || Boolean(shipErrors.ward),
+      });
+    }
+  }
+
+  function onVnBlurShip(field: "province" | "ward") {
+    setValueShip(field, vnShip[field], {
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+  }
 
   useEffect(() => {
     if (!cart || beginCheckoutCartId.current === cart.id) return;
@@ -325,7 +361,6 @@ export function useCheckout() {
         setVnShip({ province: shipping.province ?? "", ward: shipping.ward ?? "" });
         setCustomerNote(draft.customerNote ?? "");
         setShipToDifferent(draft.shipToDifferent === true);
-        setPaymentMethod(draft.paymentMethod === "BANK_TRANSFER" ? "BANK_TRANSFER" : "COD");
         setDraftReady(true);
       }, 0);
       return () => clearTimeout(timer);
@@ -367,16 +402,8 @@ export function useCheckout() {
       shippingAddress: resolvedShippingAddress,
       customerNote,
       shipToDifferent,
-      paymentMethod,
     }),
-    [
-      cart?.id,
-      customerNote,
-      paymentMethod,
-      resolvedAddress,
-      resolvedShippingAddress,
-      shipToDifferent,
-    ],
+    [cart?.id, customerNote, resolvedAddress, resolvedShippingAddress, shipToDifferent],
   );
 
   useEffect(() => {
@@ -395,9 +422,7 @@ export function useCheckout() {
       return;
     }
 
-    // Đồng bộ Tỉnh/Phường (state phẳng, nguồn sự thật) vào react-hook-form ngay
-    // trước khi validate, để tận dụng thông báo lỗi zod có sẵn mà không phụ thuộc
-    // hành vi reset khó đoán của react-hook-form cho 2 field này giữa các lần render.
+    // Đồng bộ lần cuối Tỉnh/Phường (state phẳng, nguồn sự thật) trước khi kiểm toàn form.
     setValue("province", vnAddress.province, { shouldValidate: false });
     setValue("ward", vnAddress.ward, { shouldValidate: false });
     const validAddress = await trigger();
@@ -437,6 +462,9 @@ export function useCheckout() {
     setSubmitError("");
     setSubmitting(true);
     try {
+      // Official gtag `get` keeps a later server-side cancellation on the original anonymous
+      // browser. Ad blockers/blank local configuration resolve undefined and never block checkout.
+      const analyticsClientId = await getAnalyticsClientId();
       const payload: CheckoutPayload = {
         billingAddress: {
           fullName: resolvedAddress.fullName,
@@ -448,9 +476,9 @@ export function useCheckout() {
           addressLine1: resolvedAddress.addressLine1,
         },
         shippingAddress: shipToDifferent ? shipResolvedAddress : undefined,
-        paymentMethod,
         customerNote: customerNote.trim() || undefined,
         locale,
+        analyticsClientId,
       };
       const attempt = prepareCheckoutAttempt(String(cart.id), payload);
       const order = attempt.order ?? (await submitCheckout(attempt.payload, attempt.key));
@@ -499,16 +527,16 @@ export function useCheckout() {
     addressErrors,
     vnAddress,
     onVnChange,
+    onVnBlur,
     customerNote,
     setCustomerNote,
     shipToDifferent,
     setShipToDifferent,
-    paymentMethod,
-    setPaymentMethod,
     registerShip,
     shipErrors,
     vnShip,
     onVnChangeShip,
+    onVnBlurShip,
     cartSubtotal,
     grandTotal,
     submitting,

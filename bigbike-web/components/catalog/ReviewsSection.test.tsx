@@ -18,18 +18,23 @@ vi.mock("next-intl", () => ({
     };
     if (key === "ratingSummaryAria") return `${values?.rating} sao, ${values?.count} đánh giá`;
     if (key === "ratingCount") return `(${values?.count})`;
-    if (key === "ratingUnavailableAria") return `Chưa có điểm trung bình, ${values?.count} đánh giá`;
+    if (key === "ratingUnavailableAria")
+      return `Chưa có điểm trung bình, ${values?.count} đánh giá`;
     return messages[key] ?? key;
   },
 }));
 
-function createReviewsPage(page: number, hasNext: boolean, reviews: Array<{
-  id: number;
-  authorName: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
-}>) {
+function createReviewsPage(
+  page: number,
+  hasNext: boolean,
+  reviews: Array<{
+    id: number;
+    authorName: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+  }>,
+) {
   return {
     avgRating: 4.7,
     totalReviews: 3,
@@ -97,7 +102,9 @@ describe("ReviewsSection", () => {
 
     renderReviewsSection();
 
-    expect(await screen.findByText("Reviewer One")).toBeInTheDocument();
+    const firstReview = await screen.findByText("Reviewer One");
+    expect(firstReview).toBeInTheDocument();
+    expect(firstReview.closest("section")).toHaveAttribute("data-clarity-mask", "true");
     expect(screen.getByText("Reviewer Two")).toBeInTheDocument();
     // Khối đánh giá CHỈ để XEM: không còn form viết inline (đã chuyển sang modal),
     // chỉ còn nút "Viết đánh giá" mở modal đó.

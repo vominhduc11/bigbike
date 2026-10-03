@@ -59,8 +59,8 @@ public class CheckoutController {
 
     // POST /api/v1/orders/quick-buy removed 2026-07-15 (owner decision, reverses AUD-010):
     // the storefront has no quick-buy entry point — customers order through the cart.
-    // GET /api/v1/checkout/options remains removed: checkout has two fixed methods, COD and
-    // BANK_TRANSFER, and the POST contract is the backend authority that validates them.
+    // GET /api/v1/checkout/options remains removed: checkout has no payment-method selector,
+    // and the POST contract accepts COD only.
 
     // ── helpers ───────────────────────────────────────────────────────────────
 

@@ -84,7 +84,11 @@ export function AuthRouteShell({
     >
       <div className="mx-auto grid w-full max-w-[1200px] bg-background lg:min-h-svh lg:grid-cols-2">
         {brandPanel}
-        <div data-auth-form-panel className="flex min-w-0 justify-center lg:items-start lg:py-16">
+        <div
+          data-auth-form-panel
+          data-clarity-mask="true"
+          className="flex min-w-0 justify-center lg:items-start lg:py-16"
+        >
           <div
             data-auth-form-content
             data-auth-form-transition={formTransition ?? undefined}

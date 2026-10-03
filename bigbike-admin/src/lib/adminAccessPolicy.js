@@ -57,7 +57,6 @@ export const ADMIN_ACCESS_POLICIES = Object.freeze({
     writePermission: 'reviews.write',
   }),
   reviewsWrite: policy(['reviews.read', 'reviews.write']),
-  chatRead: policy(['chat.read'], { readPermission: 'chat.read' }),
 
   mediaRead: policy(['media.read'], {
     readPermission: 'media.read',
@@ -145,8 +144,6 @@ export const ROUTE_POLICY_KEYS = Object.freeze({
   'customer-detail': 'customersRead',
   reviews: 'reviewsRead',
   'review-detail': 'reviewsRead',
-  'chat-conversations': 'chatRead',
-  'chat-conversation-detail': 'chatRead',
   'media-library': 'mediaRead',
   menus: 'menusRead',
   sliders: 'slidersRead',

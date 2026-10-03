@@ -76,7 +76,7 @@ async function expectWhiteAuthShell(page: Page, kind: AuthKind, path: string): P
   await expect(page.locator("header[data-auth-header], footer[data-auth-footer]")).toHaveCount(0);
   await expect(
     page.locator(
-      "[data-auth-logo], [data-auth-continue-shopping], [data-auth-language-switch], header[data-bb-header], [data-header-desktop-menu], [data-header-mobile-trigger], [data-header-actions], nav.bb-bottom-nav, .bb-floating-chat-anchor, .bb-scroll-top-anchor, footer[data-bb-full-bleed]",
+      "[data-auth-logo], [data-auth-continue-shopping], [data-auth-language-switch], header[data-bb-header], [data-header-desktop-menu], [data-header-mobile-trigger], [data-header-actions], nav.bb-bottom-nav, .bb-floating-contact-anchor, .bb-scroll-top-anchor, footer[data-bb-full-bleed]",
     ),
     `storefront and former authentication chrome must not render on ${path}`,
   ).toHaveCount(0);

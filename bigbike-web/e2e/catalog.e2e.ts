@@ -1,6 +1,17 @@
 import { test, expect } from "@playwright/test";
 import { installPageGuards, expectNoSeriousIssues, gotoAndSettle } from "./helpers/ui-quality";
 import { SAMPLE } from "./helpers/routes";
+import { installPreviewBackendCors } from "./helpers/preview-backend";
+
+async function openHeaderSearch(page: import("@playwright/test").Page) {
+  // SearchToggle is streamed in its own Suspense boundary. Wait for that boundary instead of
+  // clicking the already-hydrated header button while its panel is not attached yet.
+  const input = page.locator('input[role="combobox"][aria-label]').first();
+  await input.waitFor({ state: "attached" });
+  await page.locator("button.bb-header-search-trigger").first().click();
+  await expect(input).toBeFocused();
+  return input;
+}
 
 /**
  * Read-only catalog interactions (no data mutation): search results display +
@@ -8,45 +19,52 @@ import { SAMPLE } from "./helpers/routes";
  */
 test.describe("Search results @1440", () => {
   test("common keyword returns product results", async ({ page }) => {
+    await installPreviewBackendCors(page);
     const guards = installPageGuards(page);
-    await gotoAndSettle(page, "/");
-    await page.locator("button.bb-header-search-trigger").first().click();
-    const input = page.locator('input[type="search"]').first();
-    await expect(input).toBeFocused();
+    await gotoAndSettle(page, "/", { scroll: false });
+    const input = await openHeaderSearch(page);
     await input.fill("balo");
     await input.press("Enter");
 
     await page.waitForURL(/tim-kiem/i, { timeout: 15000 });
-    await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
-    await page.waitForTimeout(400);
+    const productCards = page.locator("[data-catalog-product-grid] [data-product-card]");
+    await expect(productCards.first()).toBeVisible({ timeout: 30_000 });
 
-    const productLinks = page.locator('a[href*="/product/"]');
-    expect(await productLinks.count(), "search should return product results for 'balo'").toBeGreaterThan(0);
+    expect(
+      await productCards.count(),
+      "search should return product results for 'balo'",
+    ).toBeGreaterThan(0);
     expectNoSeriousIssues(guards, "search results");
   });
 
-  test("nonsense keyword shows an empty state (no products, friendly message)", async ({ page }) => {
-    // Reuse the URL shape produced by a real search, then swap in a no-match keyword.
-    await gotoAndSettle(page, "/");
-    await page.locator("button.bb-header-search-trigger").first().click();
-    const input = page.locator('input[type="search"]').first();
-    await input.fill("balo");
-    await input.press("Enter");
-    await page.waitForURL(/tim-kiem/i, { timeout: 15000 });
-
-    const url = new URL(page.url());
-    const key = [...url.searchParams.keys()][0] ?? "q";
-    url.searchParams.set(key, "zzqqxx-khong-co-san-pham-9999");
-
-    await gotoAndSettle(page, url.pathname + url.search);
-    const productLinks = page.locator('a[href*="/product/"]');
-    expect(await productLinks.count(), "nonsense keyword should yield 0 product results").toBe(0);
+  test("nonsense keyword shows an empty state, suggestions and a removable filter", async ({
+    page,
+  }) => {
+    await installPreviewBackendCors(page);
+    await gotoAndSettle(page, "/tim-kiem/?s=zzqqxx-khong-co-san-pham-9999&in_stock=true", {
+      scroll: false,
+    });
+    await expect(page.locator("[data-catalog-product-grid]")).toHaveCount(0);
 
     const bodyText = ((await page.locator("main").first().textContent()) ?? "").toLowerCase();
     expect(
       /không tìm thấy|không có|no result|trống|0 kết quả|không tồn tại/.test(bodyText),
       "empty search should show a friendly 'no results' message",
     ).toBeTruthy();
+
+    const recommendations = page.locator("[data-search-recommendations]");
+    await expect(recommendations).toBeVisible();
+    expect(
+      await recommendations.locator("[data-product-card]").count(),
+      "empty search should retain customers with suggested products",
+    ).toBeGreaterThan(0);
+
+    const removeStockFilter = page
+      .locator('[aria-label^="Bỏ bộ lọc:"], [aria-label^="Remove filter:"]')
+      .first();
+    await expect(removeStockFilter).toBeVisible();
+    await removeStockFilter.click();
+    await expect(page).not.toHaveURL(/(?:\?|&)in_stock=true(?:&|$)/);
   });
 });
 
@@ -67,6 +85,9 @@ test.describe("PDP gallery @1440", () => {
 
     const src2 = await mainImg.getAttribute("src");
     const pressed = await thumbs.nth(1).getAttribute("aria-pressed");
-    expect(src2 !== src1 || pressed === "true", `thumbnail switch had no effect (src ${src1} -> ${src2}, pressed=${pressed})`).toBeTruthy();
+    expect(
+      src2 !== src1 || pressed === "true",
+      `thumbnail switch had no effect (src ${src1} -> ${src2}, pressed=${pressed})`,
+    ).toBeTruthy();
   });
 });

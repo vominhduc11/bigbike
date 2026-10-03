@@ -3,11 +3,12 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ImportProductsDialog } from './ImportProductsDialog'
-import { importProductsValidate } from '@/lib/adminApi'
+import { ApiClientError, importProductsValidate } from '@/lib/adminApi'
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key, options = {}) => options.defaultValue || key }),
-}))
+vi.mock('react-i18next', () => {
+  const t = (key, options = {}) => options.defaultValue || key
+  return { useTranslation: () => ({ t }) }
+})
 
 vi.mock('@/lib/adminApi', () => ({
   ApiClientError: class ApiClientError extends Error {},
@@ -74,5 +75,17 @@ describe('ImportProductsDialog accessibility', () => {
 
     await user.keyboard('{Escape}')
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+  })
+
+  it('hiện thời gian chờ khi giới hạn lượt kiểm tra tệp', async () => {
+    const rateError = Object.assign(new ApiClientError('Too many requests'), {
+      status: 429,
+      retryAfterSeconds: 125,
+    })
+    importProductsValidate.mockRejectedValueOnce(rateError)
+    renderDialog()
+
+    expect(await screen.findByText('import.rateLimited')).toBeInTheDocument()
+    expect(screen.getByText('import.retryAfterMinutes')).toBeInTheDocument()
   })
 })

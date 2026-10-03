@@ -50,7 +50,7 @@ export function CollapsibleSection({
         aria-expanded={open}
         aria-controls={panelId}
         className={cn(
-          'w-full justify-start rounded-[var(--admin-radius-card)] border border-border bg-background px-4 py-3 text-left shadow-xs hover:border-[var(--admin-color-border-strong)] hover:bg-muted',
+          'flex w-full items-center justify-start gap-2 rounded-[var(--admin-radius-card)] border border-border bg-background px-4 py-3 text-left shadow-xs hover:border-[var(--admin-color-border-strong)] hover:bg-muted',
           helpContent && 'pr-14',
         )}
       >

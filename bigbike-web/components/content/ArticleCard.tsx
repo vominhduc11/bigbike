@@ -30,8 +30,6 @@ export function ArticleCard({ article, variant = "default", imageSizes }: Articl
   const t = useTranslations("Blog");
 
   function resolveArticleExcerpt(a: Article): string {
-    const excerpt = a.excerpt?.trim();
-    if (excerpt) return excerpt;
     const bodyText = a.body ? stripHtmlToText(a.body) : "";
     if (bodyText) return truncateText(bodyText);
     return t("articleExcerptFallback");
@@ -88,9 +86,7 @@ export function ArticleCard({ article, variant = "default", imageSizes }: Articl
       enSlug={article.slugEn}
       className="group flex flex-col md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.75fr)] mb-5.5 md:min-h-90 no-underline text-inherit bg-card shadow-md transition-shadow duration-300 hover:shadow-[0_6px_14px_rgba(0,0,0,0.22)]"
     >
-      <div
-        className="relative aspect-video md:aspect-auto overflow-hidden bg-muted shrink-0 md:h-full md:min-h-80"
-      >
+      <div className="relative aspect-video md:aspect-auto overflow-hidden bg-muted shrink-0 md:h-full md:min-h-80">
         <MediaImage
           image={article.coverImage}
           altFallback={title}
@@ -100,23 +96,15 @@ export function ArticleCard({ article, variant = "default", imageSizes }: Articl
           sizes={imageSizes ?? FEATURED_ARTICLE_IMAGE_SIZES}
         />
       </div>
-      <div
-        className="relative pt-[41px] px-8.5 pb-7.5 flex flex-col gap-2 flex-1 bg-card justify-center"
-      >
+      <div className="relative pt-[41px] px-8.5 pb-7.5 flex flex-col gap-2 flex-1 bg-card justify-center">
         <span className="absolute -top-[21px] left-0 z-[2] inline-flex items-center h-10.5 min-w-42 pl-5.5 pr-7 bg-brand text-white font-cta text-b5-label font-bold tracking-wide uppercase whitespace-nowrap [clip-path:polygon(0_0,100%_0,calc(100%-18px)_100%,0_100%)]">
           {publishedDate}
         </span>
         <div className="flex flex-col gap-2 flex-1">
-          <h3
-            className="font-body text-a4-content font-semibold text-foreground normal-case leading-title m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3"
-          >
+          <h3 className="font-body text-a4-content font-semibold text-foreground normal-case leading-title m-0 transition-colors duration-300 group-hover:text-brand line-clamp-3">
             {title}
           </h3>
-          <p
-            className="text-a4-content text-muted-foreground leading-body m-0"
-          >
-            {excerpt}
-          </p>
+          <p className="text-a4-content text-muted-foreground leading-body m-0">{excerpt}</p>
           <span className="mt-auto pt-1.5 font-cta text-b4-action font-bold uppercase tracking-display text-muted-foreground transition-colors duration-300 group-hover:text-brand">
             {t("articleReadMore")}
           </span>

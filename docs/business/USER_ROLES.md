@@ -51,13 +51,16 @@ File này dùng làm nền cho:
 | Media Storage / MinIO | Third-party/system actor | Lưu file/media object. | Media upload/storage backend. | `CONFIRMED_FROM_CODE` | `AdminMediaController`, `MinioConfig`, `MinioProperties`, `docker-compose.yaml` |
 | Payment Provider | Third-party actor | Tự động ghi nhận payment event qua webhook/provider nếu có. | Payment integration. | `NOT_FOUND_IN_REPO` | No payment webhook/provider evidence found in audited files. |
 | Shipping Provider | Third-party actor | Tạo vận đơn/tracking với carrier nếu có. | Shipping integration. | `NOT_FOUND_IN_REPO` | Shipping admin module đã gỡ; không có carrier-specific controller/service. |
-| Analytics / Observability Service | Third-party/system actor | Tracking/frontend analytics/errors. | Google Analytics 4 (`gtag.js`, storefront e-commerce events) and Sentry error reporting. Google Tag Manager was removed 2026-09-06. | `CONFIRMED_FROM_CODE` | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `docker-compose.yaml` |
+| Analytics / Observability Service | Third-party/system actor | Tracking/frontend analytics/errors. | Google Analytics 4 (`gtag.js`, storefront e-commerce events), the existing Meta Pixel `460465848002810` and Sentry error reporting. Google Tag Manager was removed 2026-09-06; Meta is direct, not GTM/Zaraz/CAPI. | `OWNER_CONFIRMED_2026-09-12` | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `docker-compose.yaml` |
 | Support Agent | Internal user | Hỗ trợ khách hàng/order issues. | Potentially admin customers/orders. | `NEEDS_VERIFICATION` | No explicit `SUPPORT` role found. |
 | Warehouse / Inventory Staff | Internal user | Quản lý kho/tồn/stock movement. | Inventory module. | `NEEDS_VERIFICATION` | Inventory module exists, no explicit warehouse role found. |
 
 ## 4. Public Website Roles
 
 ### Ranh giới vai trò cho Trợ lý BigBike sau rút gọn (owner decision 2026-08-30)
+
+**Quyết định chủ shop 2026-10-02 — `CHAT_RULE_070`: đã gỡ toàn bộ Trợ lý BigBike.** Các mô tả trợ lý bên dưới chỉ là lịch sử, không còn là yêu cầu đang áp dụng. Web chỉ có nút liên hệ trực tiếp Hotline/Zalo/Messenger, không gọi API chat hoặc Gemini; quản trị không có hội thoại/cài đặt/quyền chat. Dữ liệu cũ không bị xóa hàng loạt; chỉ tiếp tục dọn dữ liệu đã hết hạn theo thời hạn có sẵn. Xem `BUSINESS_RULES.md` § Gỡ Trợ lý BigBike và khôi phục liên hệ trực tiếp.
+
 
 | Actor | Được làm | Không được làm | Căn cứ |
 |---|---|---|---|
@@ -270,14 +273,14 @@ Custom roles không thể lưu permission set thiếu dependency. Quyền sensit
 | Field | Value |
 |---|---|
 | Purpose | Would record payment events automatically through a provider callback/webhook. |
-| System Interaction | Not confirmed. New storefront payment is internal/manual `COD` or `BANK_TRANSFER`; legacy BACS orders remain readable and manually reconcilable. |
+| System Interaction | Not confirmed. New storefront payment is COD only; historical non-COD payment records remain readable for accounting. |
 | Related Processes | Payment Handling, Order Management. |
 | Status | `NOT_FOUND_IN_REPO` |
 | Evidence | No payment webhook/provider controller/service found in audited evidence. |
 
 #### Needs Verification
 
-- Whether any future payment provider is planned outside this repo. Current storefront contract is manual `COD`/`BANK_TRANSFER` only.
+- Whether any future payment provider is planned outside this repo. Current storefront contract is COD only.
 
 ### Actor: Shipping Provider
 
@@ -313,8 +316,8 @@ Custom roles không thể lưu permission set thiếu dependency. Quyền sensit
 
 | Field | Value |
 |---|---|
-| Purpose | Theo dõi hành vi khách trên storefront (Google Analytics 4) và lỗi frontend (Sentry). |
-| System Interaction | GA4 nạp một lần từ root layout của storefront khi `NEXT_PUBLIC_GA4_MEASUREMENT_ID` có giá trị; phát 10 sự kiện thương mại điện tử cộng `page_view` do GA4 tự ghi nhận. Sentry bật khi DSN có giá trị. Cả hai đều được nhúng vào bundle lúc build. |
+| Purpose | Theo dõi hành vi khách trên storefront (Google Analytics 4 và Meta Pixel) và lỗi frontend (Sentry). |
+| System Interaction | GA4 nạp một lần từ root layout khi `NEXT_PUBLIC_GA4_MEASUREMENT_ID` có giá trị; Meta Pixel cũ `460465848002810` nạp đúng một lần khi `NEXT_PUBLIC_META_PIXEL_ID` có giá trị và tự ghi nhận PageView. Cả hai dùng chung helper cho hành vi mua hàng; Meta không có đoạn mã riêng trong từng màn hình. Sentry bật khi DSN có giá trị. Các giá trị public được nhúng vào bundle lúc build. |
 | Related Processes | SEO/Marketing, Operations, Debugging. |
 | Status | `CONFIRMED_FROM_CODE` |
 | Evidence | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `docker-compose.yaml` |
@@ -467,7 +470,7 @@ Production auth status:
 | Media Storage / MinIO | `AdminMediaController`, `MinioConfig`, `MinioProperties`, `docker-compose.yaml` | Media upload/storage integration. | High |
 | Payment Provider | Audited payment/order/checkout evidence | No external payment webhook/provider found. | High for not found in audited scope |
 | Shipping Provider | `BUSINESS_RULES.md` `SHIP_RULE_001`, `CheckoutService`, repository search | Shipping-method config was removed; no carrier provider found. | High for not found in audited scope |
-| Analytics / Observability | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `docker-compose.yaml` | Google Analytics 4 + Sentry, xác nhận trực tiếp trong mã nguồn. | Low |
+| Analytics / Observability | `bigbike-web/app/[locale]/layout.tsx`, `bigbike-web/lib/analytics.ts`, `docker-compose.yaml` | Google Analytics 4 + Meta Pixel `460465848002810` + Sentry, xác nhận trực tiếp trong mã nguồn. | Low |
 | Module context | `docs/business/MODULE_CATALOG.md` | Existing module map used to relate roles to modules. | High |
 | Process context | `docs/business/BUSINESS_PROCESS.md` | Existing process map used to relate roles to business processes. | High |
 | Project context | `docs/business/PROJECT_OVERVIEW.md` | Existing project actor/component context. | High |
@@ -481,11 +484,11 @@ Production auth status:
 5. `SUPER_ADMIN` guardrails exist in admin user service, but UI confirmation/destructive-action safeguards need verification.
 6. Custom role creation/edit/delete exists; role governance (system roles non-deletable, `SUPER_ADMIN` immutable, custom-only deletion) is now documented in `PERMISSION_MATRIX.md` → Role Governance and section 12 above.
 7. Customer role is confirmed, including returns creation/list/detail, but return eligibility rules need deeper audit in `CustomerReturnService`.
-8. Payment provider actor is not confirmed. Current storefront payment flow is internal/manual `COD`/`BANK_TRANSFER`; BACS survives only on legacy orders.
+8. Payment provider actor is not confirmed. Current storefront payment flow is COD only; historical payment methods survive only for read-only accounting.
 9. Shipping provider actor is not confirmed. Current fulfillment is arranged manually, with no shipping-method choice or fee.
 10. Email service code paths exist, but production SMTP deliverability was not runtime-tested.
 11. Media storage/MinIO exists, but CDN/public media delivery runtime behavior needs deployment verification.
-12. Analytics/observability service is confirmed in code: Google Analytics 4 (`G-REZM4NT0CS`) for storefront behaviour and Sentry for frontend errors. Google Tag Manager was removed 2026-09-06.
+12. Analytics/observability service is confirmed in code: Google Analytics 4 (`G-REZM4NT0CS`) and the existing Meta Pixel (`460465848002810`) for storefront behaviour, plus Sentry for frontend errors. Google Tag Manager was removed 2026-09-06.
 13. Build/test/runtime were not run during this documentation task. Do not treat this file as green-build evidence.
 
 ## 16. Relationship With Other Docs
@@ -506,6 +509,6 @@ Production auth status:
 
 Documentation này được tạo bằng thao tác đọc/inspect repository qua GitHub connector. Không chạy migration, seed, deploy, refactor hoặc command có side effect. Không sửa business logic hoặc source code ứng dụng.
 
-### Tiếp nhận biên lai trong Trợ lý — 2026-09-08
+### Luồng biên lai thanh toán — đã gỡ 09/09/2026
 
-Owner gán `chat.read` cho người cần xem thông báo biên lai và Hội thoại. Việc xác nhận đã nhận tiền vẫn cần `orders.write`, thao tác tại đơn hàng sau đối chiếu; không có vai trò hay quyền chat ghi mới (CHAT_RULE_066).
+Không còn thông báo biên lai, màn hình tiếp nhận hoặc thao tác xác nhận tiền trong Trợ lý. `chat.read` tiếp tục chỉ bảo vệ lịch sử hội thoại và ảnh sản phẩm; chuông quản trị dùng `orders.read` hoặc `inventory.read` cho các thông báo còn hiệu lực.

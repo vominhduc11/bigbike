@@ -30,7 +30,6 @@ const COLUMN_VISIBILITY_SCREENS = [
   'RedirectListScreen',
   'AdminUsersScreen',
   'AuditLogListScreen',
-  'ChatConversationListScreen',
   'LegacyDiscontinuedProductsScreen',
   'MenuScreen',
 ]
@@ -64,7 +63,6 @@ const RESPONSIVE_FILTER_SCREENS = [
   'AdminUsersScreen',
   'BrandListScreen',
   'CategoryListScreen',
-  'ChatConversationListScreen',
   'ContentListScreen',
   'CustomerListScreen',
   'LegacyDiscontinuedProductsScreen',
@@ -80,7 +78,6 @@ const DENSITY_SCREENS = [
   'AuditLogListScreen',
   'BrandListScreen',
   'CategoryListScreen',
-  'ChatConversationListScreen',
   'ContentListScreen',
   'CustomerListScreen',
   'LegacyDiscontinuedProductsScreen',
@@ -220,7 +217,7 @@ describe('admin interface composition contract', () => {
       }))
     })
 
-    expect(headers).toHaveLength(32)
+    expect(headers).toHaveLength(30)
     for (const header of headers) {
       const group = /\bgroup="([^"]+)"/.exec(header.props)?.[1]
       expect(allowedGroups.has(group), header.path).toBe(true)
@@ -303,7 +300,6 @@ describe('admin interface composition contract', () => {
       'AuditLogListScreen',
       'BrandListScreen',
       'CategoryListScreen',
-      'ChatConversationListScreen',
       'ContentListScreen',
       'CustomerListScreen',
       'LegacyDiscontinuedProductsScreen',
@@ -324,7 +320,6 @@ describe('admin interface composition contract', () => {
       ['src/screens/AuditLogListScreen.jsx', 1, true],
       ['src/screens/BrandListScreen.jsx', 1],
       ['src/screens/CategoryListScreen.jsx', 2],
-      ['src/screens/ChatConversationListScreen.jsx', 1],
       ['src/screens/ContentListScreen.jsx', 1],
       ['src/screens/CustomerListScreen.jsx', 1],
       ['src/screens/DashboardScreen.jsx', 2],
@@ -367,7 +362,6 @@ describe('admin interface composition contract', () => {
       'CategoryDetailScreen',
       'CustomerDetailScreen',
       'ReviewDetailScreen',
-      'ChatConversationDetailScreen',
       'OrderDetailScreen',
     ]) {
       expect(screen(name), name).toContain('lg:sticky lg:top-4')
@@ -376,7 +370,8 @@ describe('admin interface composition contract', () => {
 
   test('settings and media use the documented space-filling layouts', () => {
     expect(screen('SettingsScreen')).toContain('grid grid-cols-1 gap-4 lg:grid-cols-4')
-    expect(screen('MediaLibraryScreen')).toContain('2xl:grid-cols-6')
+    expect(screen('MediaLibraryScreen')).toContain('@container/media')
+    expect(screen('MediaLibraryScreen')).toContain('lg:@min-[65rem]/media:grid-cols-6')
     expect(screen('MediaLibraryScreen')).toContain('<DetailSection')
     expect(screen('MediaLibraryScreen')).toContain('<ResponsiveFilterBar')
 

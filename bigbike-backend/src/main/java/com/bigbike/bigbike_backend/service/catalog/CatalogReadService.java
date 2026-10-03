@@ -289,80 +289,6 @@ public class CatalogReadService {
                 : visualFacetCatalogService.activeCatalog();
     }
 
-    /**
-     * Resolves one colour spelling to the storefront's base-colour keys. BigBike Assistant needs
-     * the same synonym table the catalogue filters use, otherwise a variant stored as
-     * "gloss black" is invisible to a customer asking for "đen".
-     */
-    public Set<String> assistantColorFacets(String rawColor) {
-        if (rawColor == null || rawColor.isBlank()) return Set.of();
-        var catalog = activeVisualCatalog();
-        String normalized = com.bigbike.bigbike_backend.service.catalog.CatalogReadSupport.colorBaseSlug(rawColor);
-        String key = catalog.colors().stream()
-                .filter(definition -> normalized.equals(CatalogReadSupport.colorBaseSlug(definition.labelVi()))
-                        || normalized.equals(CatalogReadSupport.colorBaseSlug(definition.labelEn())))
-                .map(CatalogVisualFacetCatalog.Definition::key).findFirst().orElse(rawColor);
-        return catalog.resolve(List.of(key), List.of()).colors();
-    }
-
-    /** Every colour spelling the catalogue recognises; empty when the facet data is unavailable. */
-    public Set<String> assistantColorVocabulary() {
-        var catalog = activeVisualCatalog();
-        Set<String> terms = new java.util.LinkedHashSet<>(catalog.colorVocabulary());
-        for (var definition : catalog.colors()) {
-            if (definition.labelVi() != null) terms.add(CatalogReadSupport.colorBaseSlug(definition.labelVi()));
-            if (definition.labelEn() != null) terms.add(CatalogReadSupport.colorBaseSlug(definition.labelEn()));
-        }
-        return Set.copyOf(terms);
-    }
-
-    /** Translate only the catalog's own literal color/finish labels, preserving named patterns. */
-    public String assistantLocalizedColorLabel(String value, String lang) {
-        if (value == null || !"en".equals(lang)) return value;
-        var visual = activeVisualCatalog();
-        String result = value;
-        var labels = java.util.stream.Stream.concat(visual.colors().stream(), visual.finishes().stream())
-                .filter(definition -> definition.labelVi() != null && definition.labelEn() != null)
-                .sorted(java.util.Comparator.comparingInt((CatalogVisualFacetCatalog.Definition definition) -> definition.labelVi().length()).reversed())
-                .toList();
-        for (var definition : labels) {
-            result = result.replaceAll("(?iu)(?<![\\p{L}\\p{N}])" + java.util.regex.Pattern.quote(definition.labelVi())
-                    + "(?![\\p{L}\\p{N}])", java.util.regex.Matcher.quoteReplacement(definition.labelEn()));
-        }
-        return result;
-    }
-
-    /**
-     * Internal BigBike Assistant discovery path. It deliberately has its own repository predicate so the
-     * public {@code q} endpoint keeps its established response and matching contract.
-     * Returned products retain listing variants because the chat service must verify sellability
-     * before it creates a product card.
-     */
-    public List<Product> searchProductsForAssistant(
-            List<String> identifierTokens,
-            String category,
-            String brand,
-            Long minPrice,
-            Long maxPrice,
-            String sort,
-            int limit,
-            String lang
-    ) {
-        if (identifierTokens == null || identifierTokens.isEmpty() || limit <= 0) {
-            return List.of();
-        }
-        SortSpec sortSpec = sortParser.parse(sort, "createdAt", SortDirection.DESC, PRODUCT_SORT_FIELDS);
-        return catalogReadRepository.searchPublishedProductsForAssistant(
-                List.copyOf(identifierTokens),
-                trimToNull(category),
-                trimToNull(brand),
-                minPrice,
-                maxPrice,
-                sortSpec,
-                "en".equalsIgnoreCase(lang) ? "en" : "vi",
-                Math.min(limit, 100));
-    }
-
     private static String trimToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
@@ -473,100 +399,6 @@ public class CatalogReadService {
         return paginationService.paginate(result, page, size);
     }
 
-    /**
-     * Internal read-only vocabulary for BigBike Assistant. It intentionally exposes only public category
-     * metadata to backend query recognition; nothing from this list is sent to the AI model.
-     */
-    public List<Category> listAssistantCategories(String lang) {
-        return catalogReadRepository.findAllCategories("en".equalsIgnoreCase(lang) ? "en" : "vi").stream()
-                .filter(Category::isVisible)
-                .filter(category -> !category.deleted())
-                .toList();
-    }
-
-    /**
-     * Read-only source for BigBike Assistant's category-listing tool. A category remains visible even with zero
-     * current products, while the count itself includes only the same sellable product shape BigBike Assistant
-     * is allowed to show in a product card.
-     */
-    public List<AssistantCategorySummary> listAssistantCategorySummaries(String lang) {
-        String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
-        List<Category> categories = new ArrayList<>(listAssistantCategories(locale));
-        categories.sort(Comparator
-                .comparing(Category::sortOrder, Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(category -> category.name() == null ? "" : category.name(),
-                        String.CASE_INSENSITIVE_ORDER));
-
-        Map<String, List<String>> childrenByParentId = new HashMap<>();
-        Map<String, String> slugById = new HashMap<>();
-        for (Category category : categories) {
-            if (category.id() == null || category.slug() == null) continue;
-            slugById.put(category.id(), category.slug());
-            if (category.parentId() != null) {
-                childrenByParentId.computeIfAbsent(category.parentId(), ignored -> new ArrayList<>())
-                        .add(category.id());
-            }
-        }
-        Map<String, Set<String>> slugsByRoot = new HashMap<>();
-        for (Category category : categories) {
-            if (category.id() == null || category.slug() == null) continue;
-            slugsByRoot.put(category.slug(), categoryAndDescendantSlugs(
-                    category.id(), childrenByParentId, slugById));
-        }
-
-        List<Product> sellableProducts = catalogReadRepository
-                .findAllPublishedProductsForListing(locale).stream()
-                .filter(CatalogReadService::assistantSellable)
-                .toList();
-        return categories.stream()
-                .filter(category -> category.slug() != null && category.name() != null)
-                .map(category -> new AssistantCategorySummary(
-                        category.slug(),
-                        category.name(),
-                        sellableProducts.stream()
-                                .filter(product -> belongsToAnyCategory(
-                                        product, slugsByRoot.getOrDefault(category.slug(), Set.of())))
-                                .count()))
-                .toList();
-    }
-
-    /**
-     * Bounded internal catalog snapshot used by the assistant's deterministic clarification
-     * planner. It includes active out-of-stock rows for honest breadth counts; card eligibility
-     * is checked separately before anything is shown to a customer.
-     */
-    public List<Product> listAssistantDecisionProducts(String lang) {
-        String locale = "en".equalsIgnoreCase(lang) ? "en" : "vi";
-        return catalogReadRepository.findAllPublishedProductsForListing(locale).stream()
-                .filter(CatalogReadService::assistantActive)
-                .toList();
-    }
-
-    /** Completed-order evidence for the assistant-only best-seller decision. */
-    public AssistantSalesSnapshot assistantCompletedSales(List<String> productKeys) {
-        List<String> keys = productKeys == null ? List.of() : productKeys.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(key -> !key.isBlank())
-                .distinct()
-                .limit(500)
-                .toList();
-        if (orderLineItemRepo == null || keys.isEmpty()) {
-            return new AssistantSalesSnapshot(0, List.of());
-        }
-        Set<String> scope = Set.copyOf(keys);
-        List<AssistantProductSale> sales = orderLineItemRepo.assistantCompletedSalesByProduct().stream()
-                .filter(row -> row != null && row.length >= 3 && row[0] != null)
-                .map(row -> new AssistantProductSale(
-                        row[0].toString(),
-                        ((Number) row[1]).longValue(),
-                        ((Number) row[2]).longValue()))
-                .filter(sale -> scope.contains(sale.productKey()))
-                .toList();
-        long distinctOrders = orderLineItemRepo.countAssistantCompletedOrdersForProducts(keys);
-        return new AssistantSalesSnapshot(distinctOrders, sales);
-    }
-
     private static Set<String> categoryAndDescendantSlugs(
             String rootId,
             Map<String, List<String>> childrenByParentId,
@@ -583,59 +415,6 @@ public class CatalogReadService {
                 .map(slugById::get)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableSet());
-    }
-
-    private static boolean belongsToAnyCategory(Product product, Set<String> categorySlugs) {
-        return product != null
-                && product.categories() != null
-                && product.categories().stream()
-                .filter(Objects::nonNull)
-                .anyMatch(category -> categorySlugs.contains(category.slug()));
-    }
-
-    private static boolean assistantActive(Product product) {
-        if (product == null
-                || product.publishStatus() != PublishStatus.PUBLISHED
-                || product.discontinued()
-                || product.price() == null
-                || !"VND".equalsIgnoreCase(product.price().currency())) {
-            return false;
-        }
-        BigDecimal retail = product.price().retailPrice();
-        BigDecimal sale = product.price().salePrice();
-        BigDecimal effective = sale != null && sale.signum() > 0
-                && retail != null && retail.signum() > 0 && sale.compareTo(retail) < 0
-                ? sale : retail;
-        return effective != null && effective.signum() > 0;
-    }
-
-    /** Mirrors BigBike Assistant card eligibility: published, in-stock, VND and a positive effective price. */
-    private static boolean assistantSellable(Product product) {
-        if (!assistantActive(product)
-                || !Boolean.TRUE.equals(product.available())
-                || product.stockState()
-                != com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK
-        ) {
-            return false;
-        }
-        if (product.variants() == null || product.variants().isEmpty()) return true;
-        return product.variants().stream().anyMatch(variant -> variant != null
-                && variant.isAvailable()
-                && variant.stockState()
-                == com.bigbike.bigbike_backend.domain.catalog.ProductStockState.IN_STOCK);
-    }
-
-    public record AssistantCategorySummary(String slug, String name, long sellableProductCount) {}
-
-    public record AssistantProductSale(String productKey, long unitsSold, long completedOrderCount) {}
-
-    public record AssistantSalesSnapshot(
-            long distinctCompletedOrders,
-            List<AssistantProductSale> products
-    ) {
-        public AssistantSalesSnapshot {
-            products = products == null ? List.of() : List.copyOf(products);
-        }
     }
 
     public Category getCategoryBySlug(String slug, String lang) {
@@ -664,13 +443,6 @@ public class CatalogReadService {
                 .toList();
 
         return paginationService.paginate(result, page, size);
-    }
-
-    /** Internal read-only brand vocabulary for BigBike Assistant; this is not a public API surface. */
-    public List<Brand> listAssistantBrands() {
-        return catalogReadRepository.findAllBrands("vi").stream()
-                .filter(Brand::isVisible)
-                .toList();
     }
 
     public Brand getBrandBySlug(String slug, String lang) {

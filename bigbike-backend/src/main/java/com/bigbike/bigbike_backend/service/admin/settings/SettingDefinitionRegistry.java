@@ -131,21 +131,6 @@ public class SettingDefinitionRegistry {
                         .publicAllowed()
                         .description("Lịch nghỉ lễ / Tết.").build(),
 
-                // ── PAYMENT ── (tài khoản nhận chuyển khoản — admin tự nhập & đối soát thủ công,
-                // không có cổng thanh toán tự động; hiển thị cho khách ở trang xác nhận đơn BACS)
-                SettingDefinition.builder("bank_account_holder", "payment", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tên chủ tài khoản ngân hàng nhận chuyển khoản.").build(),
-                SettingDefinition.builder("bank_account_number", "payment", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Số tài khoản ngân hàng nhận chuyển khoản.").build(),
-                SettingDefinition.builder("bank_name", "payment", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Tên ngân hàng (vd: Vietcombank).").build(),
-                SettingDefinition.builder("bank_branch", "payment", SettingValueType.STRING)
-                        .publicAllowed()
-                        .description("Chi nhánh ngân hàng (không bắt buộc).").build(),
-
                 // ── PUBLIC_HOME: gỡ hẳn V311 — 4 khối (banner promo, trải nghiệm, giới thiệu,
                 // kicker/tiêu đề Sản phẩm nổi bật/Tin tức/Video) đã hardcode thẳng trong
                 // bigbike-web (quyết định chủ shop 2026-07-03); các 15 key trước đây ở đây
@@ -262,26 +247,7 @@ public class SettingDefinitionRegistry {
                         .min(0).max(10_000)
                         .description("Số lượt gọi AI tối đa mỗi ngày (giờ Việt Nam). Vượt ngưỡng thì ngừng gọi AI, đánh giá nằm ở Chờ duyệt; danh sách từ cấm vẫn chạy vì không tốn phí. Đặt 0 để tắt hẳn phần gọi AI.").build(),
                 SettingDefinition.builder("review_moderation_banned_words", "review_moderation", SettingValueType.LONG_TEXT)
-                        .description("Danh sách từ cấm tự quản, ngăn bằng dấu phẩy hoặc xuống dòng. Khớp bỏ dấu, không phân biệt hoa thường, chỉ khớp trọn từ.").build(),
-
-                // ── AI_ASSISTANT ── (Trợ lý BigBike — CHAT_RULE_001..022).
-                // Admin-only operational settings. The shared Gemini credential stays in
-                // GEMINI_API_KEY and is never stored in or returned from site_settings.
-                SettingDefinition.builder("ai_assistant_enabled", "ai_assistant", SettingValueType.BOOLEAN)
-                        .description("Bật Trợ lý BigBike. Khi tắt, khung chat vẫn giữ Hotline–Zalo–Messenger.").build(),
-                SettingDefinition.builder("ai_assistant_daily_limit", "ai_assistant", SettingValueType.INTEGER)
-                        .min(0).max(10_000)
-                        .description("Số lượt trả lời có gọi AI tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tắt phần AI.").build(),
-                SettingDefinition.builder("ai_assistant_recent_turn_pairs", "ai_assistant", SettingValueType.INTEGER)
-                        .min(0).max(12)
-                        .description("Số cặp hỏi–đáp gần nhất gửi cho Trợ lý BigBike để hiểu câu nối. Đặt 0 để không gửi lịch sử; tối đa 12.").build(),
-                SettingDefinition.builder("ai_assistant_image_daily_limit", "ai_assistant", SettingValueType.INTEGER)
-                        .min(0).max(10_000)
-                        .description("Số ảnh đọc tối đa mỗi ngày theo giờ Việt Nam. Đặt 0 để tạm dừng đọc ảnh; vẫn tư vấn bằng chữ.").build(),
-                SettingDefinition.builder("ai_assistant_search_ai_interpretation_enabled", "ai_assistant", SettingValueType.BOOLEAN)
-                        .description("Cho AI diễn giải cách nói tự nhiên khi tìm hàng, sau đó backend đối chiếu từng bộ lọc. Tắt để quay về cách kiểm chứng cũ ngay.").build()
-                // Per-turn attachment limits and the 40-turn conversation ceiling are fixed software policy.
-                // They deliberately do not appear in the settings registry.
+                        .description("Danh sách từ cấm tự quản, ngăn bằng dấu phẩy hoặc xuống dòng. Khớp bỏ dấu, không phân biệt hoa thường, chỉ khớp trọn từ.").build()
         );
     }
 }

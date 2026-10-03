@@ -333,7 +333,7 @@ function normalizeVariant(input) {
   return {
     id,
     sku: toTrimmedString(input.sku) || undefined,
-    name: toTrimmedString(input.name) || 'Biến thể',
+    name: toTrimmedString(input.name) || '—',
     options: Array.isArray(input.options)
       ? input.options.map(normalizeVariantOption).filter(Boolean)
       : [],
@@ -631,7 +631,7 @@ export function normalizeBrand(input) {
 }
 
 // EN translations for the content editor's VI/EN toggle. Mirrors the backend
-// AdminContentItem.translations (V138) superset shape; missing fields default to ''.
+// AdminContentItem.translations shape; missing fields default to ''.
 function normalizeContentTranslations(source) {
   const en =
     source && typeof source === 'object' && source.en && typeof source.en === 'object'
@@ -640,10 +640,8 @@ function normalizeContentTranslations(source) {
   return {
     en: {
       title: toTrimmedString(en.title) || '',
-      excerpt: toTrimmedString(en.excerpt) || '',
       // body is rich HTML — keep verbatim, don't trim away markup whitespace
       body: typeof en.body === 'string' ? en.body : '',
-      authorName: toTrimmedString(en.authorName) || '',
       seoTitle: toTrimmedString(en.seoTitle) || '',
       seoDescription: toTrimmedString(en.seoDescription) || '',
     },
@@ -665,14 +663,12 @@ export function normalizeContentItem(input) {
     // here so buildFormFromItem can read item.slugEn without getting undefined.
     slugEn: toTrimmedString(source.slugEn) || undefined,
     title: toTrimmedString(source.title) || 'Untitled content',
-    excerpt: toTrimmedString(source.excerpt) || undefined,
     body: toTrimmedString(source.body) || undefined,
-    authorName: toTrimmedString(source.authorName) || undefined,
     coverImage: normalizeImageAsset(source.coverImage),
     productImage: normalizeImageAsset(source.productImage),
     parentId: toTrimmedString(source.parentId) || undefined,
     publishStatus,
-    // Bài viết nổi bật — backend gửi top-level boolean; mặc định false khi thiếu.
+    // Chọn thủ công vào khối "Tin nổi bật" ở trang bài viết.
     featured: Boolean(source.featured),
     // Chọn hiển thị ở "Góc trải nghiệm" trang chủ (V272).
     homeExperience: Boolean(source.homeExperience),
@@ -815,7 +811,6 @@ export function normalizeOrder(input) {
     orderStatus: normalizeOrderStatus(s.status ?? s.orderStatus),
     fulfillmentType: toTrimmedStringLocal(s.fulfillmentType) || 'DELIVERY',
     paymentMethod,
-    canConfirmBankTransfer: s.canConfirmBankTransfer === true,
     source: toTrimmedStringLocal(s.source) || undefined,
     orderScope: s.orderScope === 'HISTORICAL' ? 'HISTORICAL' : 'OPERATIONAL',
     historyClassification: historySource

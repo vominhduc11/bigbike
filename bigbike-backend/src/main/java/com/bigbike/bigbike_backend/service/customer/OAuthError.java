@@ -15,6 +15,10 @@ public enum OAuthError {
     UNCONFIGURED,
     /** The account behind the social identity is not ACTIVE (blocked / pending deletion). */
     BLOCKED,
+    /** The provider returned no verified email — every social sign-in needs one (CUSTOMER_RULE_013). */
+    EMAIL_REQUIRED,
+    /** The provider email already belongs to a BigBike password account (CUSTOMER_RULE_013). */
+    EMAIL_REGISTERED,
     /** The provider identity would create an account, but no registration consent was supplied. */
     REGISTRATION_CONSENT_REQUIRED,
     /** Anything else: state mismatch, token exchange failure, provider outage. */

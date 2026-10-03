@@ -45,20 +45,6 @@ class RateLimitingFilterTest {
     }
 
     @Test
-    void customerChatMessagesUseTheChatTier() throws Exception {
-        RateLimitingFilter filter = createFilter("127.0.0.1");
-
-        for (int index = 0; index < 10; index++) {
-            assertThat(execute(filter, "POST", "/api/v1/chat/messages", "203.0.113.55", null)
-                    .chainInvoked()).isTrue();
-        }
-
-        FilterResult rejected = execute(filter, "POST", "/api/v1/chat/messages", "203.0.113.55", null);
-        assertThat(rejected.chainInvoked()).isFalse();
-        assertThat(rejected.response().getStatus()).isEqualTo(429);
-    }
-
-    @Test
     void trustedProxyUsesOneCanonicalForwardedIp() throws Exception {
         RateLimitingFilter filter = createFilter("10.0.0.1");
         for (int index = 0; index < 5; index++) {

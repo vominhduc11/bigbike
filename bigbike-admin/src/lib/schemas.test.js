@@ -87,7 +87,6 @@ describe('MEDIA_RULE_004 — writable video sources', () => {
     const base = {
       slug: 'article-video',
       title: 'Bài viết video',
-      excerpt: '',
       body: '',
       publishStatus: 'DRAFT',
       translations: { en: { title: 'Video article' } },
@@ -183,7 +182,6 @@ describe('SEO_RULE_009 — SEO fields are plain text', () => {
     const content = createContentSchema(t, true, 'article').safeParse({
       slug: 'article',
       title: 'Bài viết',
-      excerpt: '',
       body: '<p>Nội dung</p>',
       publishStatus: 'DRAFT',
       seoTitle: '<b>Title</b>',

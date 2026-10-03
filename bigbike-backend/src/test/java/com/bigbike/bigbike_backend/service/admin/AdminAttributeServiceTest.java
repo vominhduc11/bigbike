@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.bigbike.bigbike_backend.api.admin.dto.UpdateAttributeValueRequest;
 import com.bigbike.bigbike_backend.api.error.ConflictException;
+import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeEntity;
 import com.bigbike.bigbike_backend.persistence.entity.catalog.AttributeValueEntity;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.AttributeValueJpaRepository;
@@ -16,6 +17,8 @@ import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AdminAttributeServiceTest {
 
@@ -52,6 +55,40 @@ class AdminAttributeServiceTest {
         assertThat(response.usageCount()).isZero();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"bo", "co-oc"})
+    void allowsAnEnglishOnlyUpdateForUsedBoAndBoltValues(String attributeCode) {
+        AttributeValueJpaRepository values = mock(AttributeValueJpaRepository.class);
+        ProductVariantOptionJpaRepository options = mock(ProductVariantOptionJpaRepository.class);
+        AdminAttributeService service = service(values, options);
+        AttributeValueEntity value = value("value-part", "Áo", attributeCode);
+        when(values.findById("value-part")).thenReturn(Optional.of(value));
+        when(values.save(value)).thenReturn(value);
+        when(options.countByAttributeValue_Id("value-part")).thenReturn(2L);
+
+        var response = service.updateValueLabel(
+                "value-part", new UpdateAttributeValueRequest("Áo", "Top"), UUID.randomUUID());
+
+        assertThat(response.label()).isEqualTo("Áo");
+        assertThat(response.labelEn()).isEqualTo("Top");
+        assertThat(response.usageCount()).isEqualTo(2L);
+    }
+
+    @Test
+    void blocksChangingVietnameseTextForAUsedBoValue() {
+        AttributeValueJpaRepository values = mock(AttributeValueJpaRepository.class);
+        ProductVariantOptionJpaRepository options = mock(ProductVariantOptionJpaRepository.class);
+        AdminAttributeService service = service(values, options);
+        AttributeValueEntity value = value("value-part", "Áo", "bo");
+        when(values.findById("value-part")).thenReturn(Optional.of(value));
+        when(options.countByAttributeValue_Id("value-part")).thenReturn(2L);
+
+        assertThatThrownBy(() -> service.updateValueLabel(
+                "value-part", new UpdateAttributeValueRequest("Áo mới", "Top"), UUID.randomUUID()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("không thể đổi tên");
+    }
+
     private AdminAttributeService service(
             AttributeValueJpaRepository values,
             ProductVariantOptionJpaRepository options) {
@@ -65,8 +102,17 @@ class AdminAttributeServiceTest {
     }
 
     private AttributeValueEntity value(String id, String label) {
+        return value(id, label, "color");
+    }
+
+    private AttributeValueEntity value(String id, String label, String attributeCode) {
+        AttributeEntity attribute = new AttributeEntity();
+        attribute.setId("attribute-" + attributeCode);
+        attribute.setCode(attributeCode);
+        attribute.setName(attributeCode);
         AttributeValueEntity value = new AttributeValueEntity();
         value.setId(id);
+        value.setAttribute(attribute);
         value.setLabel(label);
         value.setLabelEn(null);
         value.setSlug(id);

@@ -219,6 +219,31 @@ Script cố tình **không** tự ghi đè kho ảnh đang chạy.
 
 > Gói cấu hình chứa **mật khẩu thật**. Nó nằm trên NAS riêng của anh, quyền đọc bị giới hạn, và **không bao giờ được đưa lên GitHub**.
 
+## 3.6 Khôi phục riêng thay đổi COD-only ngày 09/09/2026
+
+Trước khi đổi dữ liệu hai đơn đang xử lý, phải kiểm tra container chính bằng `docker ps` và tạo
+một bản sao dữ liệu bán hàng:
+
+```bash
+bash scripts/ops/backup-to-nas.sh db
+bash scripts/ops/backup-to-nas.sh verify
+```
+
+Migration chỉ chạy khi đúng hai mã đơn, tổng tiền, trạng thái payment đang chờ và các trường đã
+trả tiền khớp điều kiện đã ghi trong audit. Toàn bộ cập nhật nằm trong một transaction; điều kiện
+không khớp thì rollback và không đổi dữ liệu nào khác.
+
+Nếu cần lấy lại trạng thái trước cutover, trước hết khôi phục bản sao vào cơ sở dữ liệu riêng:
+
+```bash
+bash scripts/ops/restore-from-nas.sh db --into bigbike_cod_cutover_restore --file <đường-dẫn-bản-sao>
+```
+
+Đối chiếu từ cơ sở dữ liệu riêng rồi lấy lại đúng hai dòng đơn/payment và bốn khóa cài đặt cũ.
+Không dùng file log chứa giá trị tài khoản ngân hàng hoặc dữ liệu khách làm nguồn khôi phục. Việc
+ghi đè cơ sở dữ liệu đang chạy vẫn phải theo Phần 3.3; không tự khôi phục toàn bộ hệ thống chỉ vì
+một migration đã cập nhật hai đơn.
+
 ---
 
 # PHẦN 4 — BẰNG CHỨNG DIỄN TẬP

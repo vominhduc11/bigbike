@@ -15,9 +15,8 @@ import org.springframework.stereotype.Service;
  * transaction) and swallows any exception here — outside the inner transaction
  * boundary so the caller's transaction is never marked rollback-only.
  *
- * <p>Business-required evidence, such as PAY_RULE_002 bank receipt confirmation,
- * uses {@link #saveRequired(AuditLogEntity)} in the caller's transaction instead.
- * Its failure must roll back the receipt. Services use these methods rather
+ * <p>Business-required evidence uses {@link #saveRequired(AuditLogEntity)} in the caller's
+ * transaction instead. Its failure must roll back the originating change. Services use these methods rather
  * than calling the repository directly.
  */
 @Service
@@ -27,7 +26,7 @@ public class AuditLogWriter {
 
     private final AuditLogPersister persister;
 
-    /** PAY_RULE_002: receipt and its audit must either both commit or both roll back. */
+    /** Business-required audit and its state change must either both commit or both roll back. */
     public void saveRequired(AuditLogEntity entity) {
         persister.persistRequired(entity);
     }

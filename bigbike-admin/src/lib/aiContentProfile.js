@@ -319,7 +319,7 @@ export async function buildProductProfile({
     `- ${L === 'en' ? 'Categories' : 'Danh mục'}: ${listOrMissing(productCategories(fresh, { ...form, categoryOptions }, L), L).join('; ')}`,
     `- ${L === 'en' ? 'Retail price' : 'Giá bán hiện tại'}: ${formatMoney(price, L)}`,
     `- ${L === 'en' ? 'Sale price' : 'Giá khuyến mãi'}: ${formatMoney(salePrice, L)}`,
-    `- ${L === 'en' ? 'Available variants, sizes and colours' : 'Biến thể, cỡ và màu đang bán'}: ${listOrMissing(availableVariants(freshVariants, {}, L), L).join('; ')}`,
+    `- ${L === 'en' ? 'Available options, sizes and colours' : 'Lựa chọn, cỡ và màu đang bán'}: ${listOrMissing(availableVariants(freshVariants, {}, L), L).join('; ')}`,
     `- ${L === 'en' ? 'Content in the block being edited' : 'Nội dung hiện có của khối đang bấm'}: ${serializeContent(block, L)}`,
   ]
   if (['highlights', 'faqs', 'specStats', 'trustBadges'].includes(blockType)) {

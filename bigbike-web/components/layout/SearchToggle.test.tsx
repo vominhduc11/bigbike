@@ -12,9 +12,11 @@ const mocks = vi.hoisted(() => ({
     },
     error: null as Error | null,
     isFetching: false,
+    isPlaceholderData: false,
     refetch: vi.fn(),
   },
   recentSearches: [] as string[],
+  trackSearch: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -53,13 +55,17 @@ vi.mock("@/lib/query/search-suggestions", () => ({
   useSearchSuggestions: () => mocks.suggestionState,
 }));
 
+vi.mock("@/lib/analytics", () => ({ trackSearch: mocks.trackSearch }));
+
 describe("SearchToggle", () => {
   beforeEach(() => {
     mocks.closePanel.mockReset();
     mocks.push.mockReset();
     mocks.suggestionState.error = null;
     mocks.suggestionState.isFetching = false;
+    mocks.suggestionState.isPlaceholderData = false;
     mocks.recentSearches = [];
+    mocks.trackSearch.mockReset();
   });
 
   it("keeps a previous suggestion visible while fetching and shows the busy state in the one action slot", () => {
@@ -78,6 +84,21 @@ describe("SearchToggle", () => {
     expect(action).toBeVisible();
     expect(action).toBeDisabled();
     expect(action).toHaveAttribute("data-search-busy", "true");
+    expect(mocks.trackSearch).not.toHaveBeenCalled();
+  });
+
+  it("đo đúng một lượt khi gợi ý của từ khoá hiện tại trả thành công", () => {
+    const { rerender } = render(<SearchToggle />);
+
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "  mũ bảo  " } });
+    expect(mocks.trackSearch).toHaveBeenCalledExactlyOnceWith("mũ bảo", 1, "header_quick");
+
+    rerender(<SearchToggle />);
+    expect(mocks.trackSearch).toHaveBeenCalledTimes(1);
+
+    mocks.suggestionState.isPlaceholderData = true;
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "găng tay" } });
+    expect(mocks.trackSearch).toHaveBeenCalledTimes(1);
   });
 
   it("renders one X action and changes it from close to clear as the query changes", () => {

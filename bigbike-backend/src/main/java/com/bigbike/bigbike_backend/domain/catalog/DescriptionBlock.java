@@ -32,6 +32,7 @@ import java.util.List;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = DescriptionBlock.HeadingBlock.class,   name = "heading"),
         @JsonSubTypes.Type(value = DescriptionBlock.ParagraphBlock.class, name = "paragraph"),
+        @JsonSubTypes.Type(value = DescriptionBlock.TableBlock.class,     name = "table"),
         @JsonSubTypes.Type(value = DescriptionBlock.ListBlock.class,      name = "list"),
         @JsonSubTypes.Type(value = DescriptionBlock.ImageBlock.class,     name = "image"),
         @JsonSubTypes.Type(value = DescriptionBlock.VideoBlock.class,     name = "video"),
@@ -45,9 +46,20 @@ public sealed interface DescriptionBlock
                 DescriptionBlock.ListBlock,    DescriptionBlock.ImageBlock,
                 DescriptionBlock.VideoBlock,   DescriptionBlock.CalloutBlock,
                 DescriptionBlock.DividerBlock, DescriptionBlock.FeatureBlock,
-                DescriptionBlock.ProsConsBlock {
+                DescriptionBlock.ProsConsBlock, DescriptionBlock.TableBlock {
 
     String getType();
+
+    /** Article-only editable table. HTML preserves merged cells and inline formatting. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+    final class TableBlock implements DescriptionBlock {
+        private String type;
+
+        @NotBlank(message = "Nội dung bảng không được để trống.")
+        @Size(max = 50000, message = "Nội dung bảng không quá 50.000 ký tự.")
+        private String html;
+    }
 
     /**
      * Locale-resolve a bilingual-inline block list (V326): for each block, every translatable field
@@ -97,6 +109,7 @@ public sealed interface DescriptionBlock
                     .url(b.getUrl())
                     .alt(pick(b.getAlt(), b.getAltEn(), locale))
                     .caption(pick(b.getCaption(), b.getCaptionEn(), locale))
+                    .captionHtmlTemplate(b.getCaptionHtmlTemplate())
                     .build();
         }
         if (block instanceof VideoBlock b) {
@@ -222,6 +235,11 @@ public sealed interface DescriptionBlock
         @JsonInclude(JsonInclude.Include.ALWAYS)
         @Size(max = 500, message = "image.captionEn must not exceed 500 characters.")
         private String captionEn;
+
+        // Article-only: original caption paragraph with a single {{caption}} text slot.
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Size(max = 5000, message = "image.captionHtmlTemplate must not exceed 5 000 characters.")
+        private String captionHtmlTemplate;
     }
 
     /** { type: "video", provider: "youtube"|"tiktok"|"facebook"|"upload", url: string, caption?: string, captionEn?: string } */

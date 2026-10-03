@@ -212,14 +212,22 @@ export function AboutPageContent({
             >
               {contact.hotline ? (
                 <p className="m-0 text-a4-content leading-relaxed">
-                  <a href={telHref(contact.hotline)} className="text-foreground hover:text-brand">
+                  <a
+                    href={telHref(contact.hotline)}
+                    className="text-foreground hover:text-brand"
+                    data-analytics-location="about_page"
+                  >
                     {contact.hotline}
                   </a>
                 </p>
               ) : null}
               {contact.hotline2 ? (
                 <p className="m-0 mt-1 text-a4-content leading-relaxed">
-                  <a href={telHref(contact.hotline2)} className="text-foreground hover:text-brand">
+                  <a
+                    href={telHref(contact.hotline2)}
+                    className="text-foreground hover:text-brand"
+                    data-analytics-location="about_page"
+                  >
                     {contact.hotline2}
                   </a>
                 </p>

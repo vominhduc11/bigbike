@@ -104,7 +104,7 @@ async function expectFixedElementsFit(page: Page, label: string): Promise<void> 
   const boxes = await page.evaluate(() =>
     Array.from(
       document.querySelectorAll<HTMLElement>(
-        "[data-bb-header], nav.bb-bottom-nav, .bb-pdp-sticky-cta.is-visible, .bb-floating-chat-anchor, .bb-scroll-top-anchor",
+        "[data-bb-header], nav.bb-bottom-nav, .bb-pdp-sticky-cta.is-visible, .bb-floating-contact-anchor, .bb-scroll-top-anchor",
       ),
     )
       .filter(

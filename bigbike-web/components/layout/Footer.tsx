@@ -6,8 +6,9 @@ import type { ReactNode } from "react";
 import { LocalizedSetting } from "@/components/i18n/LocalizedSetting";
 import { Tr } from "@/components/i18n/Tr";
 import { Container } from "@/components/layout/Container";
-import { FooterMenuLinks } from "@/components/layout/FooterMenuLinks";
+import { FooterMenuLinks, FooterSupportLinks } from "@/components/layout/FooterMenuLinks";
 import { SOCIAL_LINK_LABELS } from "@/lib/content/social-links";
+import { BUSINESS_IDENTITY, getBusinessLicense } from "@/lib/content/business-identity";
 import {
   Accordion,
   AccordionContent,
@@ -41,9 +42,8 @@ import { MediaImage } from "@/components/ui/MediaImage";
  * (đọc `useLocale()` phía client, đổi ngay khi bấm nút chuyển vi/en, không cần tải
  * lại trang).
  */
-const FOOTER_HOTLINES = ["0906 902 404", "0764 640 679 - Mrs. Thư / Zalo"];
+const FOOTER_HOTLINES = ["0906 902 404", "0764 640 679"];
 const FOOTER_EMAIL = "bigbikevnshop@gmail.com";
-const FOOTER_BCT_URL = "http://online.gov.vn/Home/WebDetails/27044";
 const FOOTER_SOCIAL_LINKS = {
   facebook: "https://www.facebook.com/bigbikegear",
   youtube: "https://www.youtube.com/@bigbike-shop",
@@ -83,9 +83,10 @@ function SocialSvgIcon({ name }: { name: SocialChannel }) {
 }
 
 /**
- * Accordion "Thông tin"/"Mạng xã hội" — dưới 992px: collapsible thật, mở mặc định
- * (đóng được khi bấm). Từ 992px: theme gốc buộc luôn mở + ẩn icon (2 panel xếp
- * cạnh nhau chỉ từ 992px trở lên — 768–991px vẫn xếp dọc, xem `AccordionPrimitive.Root`
+ * Accordion "Thông tin"/"Bảo hành và hướng dẫn"/"Mạng xã hội" — dưới 992px:
+ * mỗi nhóm mở mặc định và thu gọn độc lập khi bấm. Từ 992px: luôn mở + ẩn icon,
+ * nhóm thông tin/hướng dẫn cùng cột, mạng xã hội cạnh bên; 768–991px vẫn xếp dọc.
+ * Xem `AccordionPrimitive.Root`
  * className `min-[992px]:grid-cols-12`). forceMount để nội dung luôn có trong DOM
  * (SEO + desktop luôn mở), sổ/thu bằng animation trượt height (`animate-accordion-up/down`)
  * thay vì `display:none` — trạng thái đóng giữ height 0 nhờ `animation-fill-mode: forwards`
@@ -108,15 +109,15 @@ function AccordionPanel({
       className="mb-4 border-b border-white/10 pb-4 min-[992px]:mb-0 min-[992px]:border-none min-[992px]:pb-0"
     >
       <AccordionTrigger
-        className="group mb-4! min-h-11 w-full gap-2 py-0 pr-7.5 text-left font-cta text-b4-action font-semibold uppercase! text-brand-on-dark hover:text-brand-inverse max-[992px]:data-[state=closed]:mb-0! min-[992px]:mb-[15px]! min-[992px]:pointer-events-none"
+        className="group mb-4! min-h-11 w-full gap-2 py-0 pr-7.5 text-left font-cta text-b4-action font-semibold uppercase! text-white hover:text-brand-inverse max-[992px]:data-[state=closed]:mb-0! min-[992px]:mb-[15px]! min-[992px]:pointer-events-none"
         indicator={
-          <span className="shrink-0 min-[992px]:hidden" aria-hidden>
+          <span key="indicator" className="shrink-0 min-[992px]:hidden" aria-hidden>
             <Plus className="icon-plus h-4 w-4 group-data-[state=open]:hidden" />
             <Minus className="icon-minus hidden h-4 w-4 group-data-[state=open]:block" />
           </span>
         }
       >
-        <span>{title}</span>
+        <span key="title">{title}</span>
       </AccordionTrigger>
       <AccordionContent
         forceMount
@@ -133,8 +134,42 @@ function AccordionPanel({
 /** Footer bigbike.vn dùng Tailwind + Radix. */
 export async function Footer({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "Footer" });
+  const [policyVi, policyEn] = await Promise.all([
+    getTranslations({ locale: "vi", namespace: "PolicyContact" }),
+    getTranslations({ locale: "en", namespace: "PolicyContact" }),
+  ]);
   const settingsResult = await listPublicSettings(locale);
   const settingDescription = pickSetting(settingsResult.data ?? [], ["footer_description"]);
+  const representativeValues = { name: BUSINESS_IDENTITY.representative };
+  const businessDetails = (
+    <div className="space-y-3 text-a4-content leading-body text-white [overflow-wrap:anywhere]">
+      <p className="m-0 font-bold text-brand-inverse">{BUSINESS_IDENTITY.name}</p>
+      <p className="m-0">
+        <Tr ns="PolicyContact" k="address" />: <Tr ns="Footer" k="address" />
+      </p>
+      <p className="m-0">
+        <LocalizedSetting
+          vi={getBusinessLicense("vi")}
+          en={getBusinessLicense("en")}
+          fallback={getBusinessLicense(locale)}
+        />
+      </p>
+      <p className="m-0">
+        <Tr ns="PolicyContact" k="hotline" />: {FOOTER_HOTLINES.join(" - ")}{" "}
+        <Tr ns="PolicyContact" k="email" />:{" "}
+        <a href={`mailto:${FOOTER_EMAIL}`} className="text-white! underline underline-offset-4">
+          {FOOTER_EMAIL}
+        </a>
+      </p>
+      <p className="m-0">
+        <LocalizedSetting
+          vi={policyVi("representative", representativeValues)}
+          en={policyEn("representative", representativeValues)}
+          fallback={(locale === "en" ? policyEn : policyVi)("representative", representativeValues)}
+        />
+      </p>
+    </div>
+  );
 
   return (
     <footer
@@ -160,13 +195,14 @@ export async function Footer({ locale }: { locale: Locale }) {
                 {FOOTER_HOTLINES.map((phone) => (
                   <p
                     key={phone}
-                    className="m-0! flex min-w-0 items-center gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]"
+                    className="m-0! min-w-0 font-cta text-b3-promo font-semibold uppercase"
                   >
-                    <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                     <a
                       href={telHref(phone)}
-                      className="min-w-0 normal-case text-white! no-underline! [overflow-wrap:anywhere]"
+                      className="flex min-h-11 min-w-0 items-center gap-3 normal-case text-white! no-underline! [overflow-wrap:anywhere] sm:gap-[29px]"
+                      data-analytics-location="footer"
                     >
+                      <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
                       {phone}
                     </a>
                   </p>
@@ -174,10 +210,13 @@ export async function Footer({ locale }: { locale: Locale }) {
                 <p className="m-0! flex min-w-0 items-start gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]">
                   <a
                     href={`mailto:${FOOTER_EMAIL}`}
-                    className="flex min-w-0 items-start gap-3 text-white! no-underline! sm:gap-[29px]"
+                    className="flex min-h-11 min-w-0 items-center gap-3 text-white! no-underline! sm:gap-[29px]"
                   >
                     <Mail className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                    <span data-footer-email className="min-w-0 normal-case [overflow-wrap:anywhere]">
+                    <span
+                      data-footer-email
+                      className="min-w-0 normal-case [overflow-wrap:anywhere]"
+                    >
                       {FOOTER_EMAIL}
                     </span>
                   </a>
@@ -200,17 +239,30 @@ export async function Footer({ locale }: { locale: Locale }) {
               </p>
               <Accordion
                 type="multiple"
-                defaultValue={["menu", "social"]}
+                defaultValue={["menu", "support", "social"]}
                 className="grid grid-cols-1 gap-x-7.5 min-[992px]:grid-cols-12"
               >
-                <div data-footer-menu className="min-[992px]:col-span-7">
-                  <AccordionPanel value="menu" title={<Tr ns="Footer" k="infoHeading" />}>
-                    <FooterMenuLinks />
-                  </AccordionPanel>
+                <div className="min-[992px]:col-span-7">
+                  <div data-footer-menu>
+                    <AccordionPanel value="menu" title={<Tr ns="Footer" k="infoHeading" />}>
+                      <FooterMenuLinks />
+                    </AccordionPanel>
+                  </div>
+                  <div
+                    data-footer-support
+                    className="min-[992px]:mt-4 min-[992px]:border-t min-[992px]:border-white/10 min-[992px]:pt-4"
+                  >
+                    <AccordionPanel
+                      value="support"
+                      title={<Tr ns="Footer" k="warrantyGuidesHeading" />}
+                    >
+                      <FooterSupportLinks />
+                    </AccordionPanel>
+                  </div>
                 </div>
                 <div data-footer-social className="min-[992px]:col-span-5">
                   <AccordionPanel value="social" title={<Tr ns="Footer" k="socialHeading" />}>
-                    <ul className="m-0 flex list-none flex-col gap-[25px] p-0">
+                    <ul className="m-0 flex list-none flex-col gap-0 p-0">
                       {SOCIAL_CHANNELS.map((key) => {
                         const profile = SOCIAL_LINK_LABELS[key];
                         return (
@@ -220,7 +272,7 @@ export async function Footer({ locale }: { locale: Locale }) {
                               target="_blank"
                               href={FOOTER_SOCIAL_LINKS[key]}
                               aria-label={`${profile.platform} - ${profile.displayName}`}
-                              className="flex items-center gap-5! text-white! no-underline!"
+                              className="flex min-h-11 items-center gap-5! text-white! no-underline!"
                             >
                               <SocialSvgIcon name={key} />
                               <span>{profile.displayName}</span>
@@ -237,21 +289,8 @@ export async function Footer({ locale }: { locale: Locale }) {
         </Container>
       </div>
       <div className="bg-footer-top md:hidden">
-        <Container data-footer-certification variant="blog" className="px-[15px]! pb-2.5">
-          <a
-            href={FOOTER_BCT_URL}
-            className="flex flex-col items-start pr-[33.3333%] text-white! no-underline!"
-          >
-            <MediaImage
-              image={{ url: "/brand/commerce-certification.png", width: 600, height: 227 }}
-              altFallback={t("commerceCertificationAlt")}
-              sizes="200px"
-              className="h-auto w-50"
-            />
-            <p className="mb-0 mt-[3px]! text-a4-content leading-body! text-[color:var(--bb-text-footer-legal)]">
-              <Tr ns="Footer" k="businessRegistration" />
-            </p>
-          </a>
+        <Container data-footer-registration variant="blog" className="px-[15px]! pb-4">
+          {businessDetails}
         </Container>
         <div className="bg-black">
           <Container
@@ -288,21 +327,8 @@ export async function Footer({ locale }: { locale: Locale }) {
             <div className="col-span-4">
               <p className="m-0">{t("copyright", { year: new Date().getFullYear() })}</p>
             </div>
-            <div data-footer-certification className="col-span-6 pl-34.5 pr-32.5">
-              <a
-                href={FOOTER_BCT_URL}
-                className="flex flex-col items-start text-white! no-underline!"
-              >
-                <MediaImage
-                  image={{ url: "/brand/commerce-certification.png", width: 600, height: 227 }}
-                  altFallback={t("commerceCertificationAlt")}
-                  sizes="200px"
-                  className="h-auto w-50"
-                />
-                <p className="mb-0 mt-2.5! leading-body!">
-                  <Tr ns="Footer" k="businessRegistration" />
-                </p>
-              </a>
+            <div data-footer-registration className="col-span-6 min-w-0">
+              {businessDetails}
             </div>
           </div>
         </Container>

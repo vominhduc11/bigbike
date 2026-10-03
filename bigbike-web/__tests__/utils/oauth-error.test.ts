@@ -8,6 +8,8 @@ describe("oauthErrorKey — social login failure messages", () => {
     expect(oauthErrorKey("oauth_cancelled")).toBe("errorCancelled");
     expect(oauthErrorKey("oauth_unconfigured")).toBe("errorUnconfigured");
     expect(oauthErrorKey("oauth_blocked")).toBe("errorBlocked");
+    expect(oauthErrorKey("oauth_email_required")).toBe("errorEmailRequired");
+    expect(oauthErrorKey("oauth_email_registered")).toBe("errorEmailRegistered");
     expect(oauthErrorKey("oauth_registration_consent_required")).toBe(
       "errorRegistrationConsentRequired",
     );
@@ -31,6 +33,8 @@ describe("oauthErrorKey — social login failure messages", () => {
       "oauth_cancelled",
       "oauth_unconfigured",
       "oauth_blocked",
+      "oauth_email_required",
+      "oauth_email_registered",
       "oauth_registration_consent_required",
       "oauth_failed",
       "oauth",

@@ -5,10 +5,12 @@ import { generateId } from '@/lib/utils'
 
 // Vốn từ khối cho Content (bài viết Tin tức). Video block dùng bốn nguồn hợp lệ
 // theo MEDIA_RULE_004; renderer vẫn đọc được dữ liệu legacy.
-export const CONTENT_MENU = ['heading', 'paragraph', 'list', 'image', 'video'].map((type) => ({
-  type,
-  labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,
-}))
+export const CONTENT_MENU = ['heading', 'paragraph', 'list', 'image', 'video', 'table'].map(
+  (type) => ({
+    type,
+    labelKey: `products.detail.blocks.blockType${type.charAt(0).toUpperCase()}${type.slice(1)}`,
+  }),
+)
 
 // Vốn từ cho SẢN PHẨM (V238, thu hẹp 2026-07-20): chỉ còn khối so le ảnh+chữ. "Phù hợp với ai" và
 // "Bảng size" KHÔNG còn là khối thêm trong mô tả — tách RA thành 2 card nhập RIÊNG (giống "Ưu điểm &
@@ -48,6 +50,12 @@ export function createBlock(type, preset) {
       break
     case 'paragraph':
       block = { ...base, html: '' }
+      break
+    case 'table':
+      block = {
+        ...base,
+        html: '<table><tbody><tr><th><p></p></th><th><p></p></th></tr><tr><td><p></p></td><td><p></p></td></tr></tbody></table>',
+      }
       break
     case 'list':
       block = { ...base, style: 'bulleted', items: [''] }

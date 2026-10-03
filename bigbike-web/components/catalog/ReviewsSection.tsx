@@ -82,6 +82,8 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
     <section
       ref={sectionRef}
       id="reviews"
+      data-analytics-section="reviews"
+      data-clarity-mask="true"
       className={cn("scroll-mt-[var(--bb-header-height)]", PDP_SECTION_SEP)}
     >
       <PdpSectionHeading title={total > 0 ? t("titleWithCount", { count: total }) : t("title")} />
@@ -90,117 +92,123 @@ export function ReviewsSection({ productId }: ReviewsSectionProps) {
           (WriteReviewDialog). Các nút "Viết đánh giá" dưới đây chỉ mở modal đó. */}
       <div className="min-w-0">
         {isLoading ? (
-            <ReviewsLoading />
-          ) : isError ? (
-            <ReviewsPlaceholder
-              title={t("errorLoad")}
-              action={
-                <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
-                  {t("retry")}
-                </Button>
-              }
+          <ReviewsLoading />
+        ) : isError ? (
+          <ReviewsPlaceholder
+            title={t("errorLoad")}
+            action={
+              <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
+                {t("retry")}
+              </Button>
+            }
+          />
+        ) : total > 0 ? (
+          <>
+            <RatingSummary
+              avg={avgRating}
+              total={total}
+              breakdown={ratingBreakdown}
+              activeStar={ratingFilter}
+              onSelectStar={handleSelectStar}
             />
-          ) : total > 0 ? (
-            <>
-              <RatingSummary
-                avg={avgRating}
-                total={total}
-                breakdown={ratingBreakdown}
-                activeStar={ratingFilter}
-                onSelectStar={handleSelectStar}
-              />
 
-              <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex min-h-9 items-center gap-2">
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-h-9 items-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={openWriteReviewDialog}>
+                  {t("writeButton")}
+                </Button>
+                {ratingFilter !== null && (
+                  <>
+                    <span className="text-a5-meta text-muted-foreground">
+                      {t("filterActive", { count: ratingFilter })}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRatingFilter(null)}
+                    >
+                      {t("clearFilter")}
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 text-a5-meta text-muted-foreground">
+                  {t("sortLabel")}
+                </span>
+                <Select value={sort} onValueChange={(value) => handleSortChange(value as SortKey)}>
+                  <SelectTrigger className="w-45 min-h-10" aria-label={t("sortLabel")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="newest">{t("sortNewest")}</SelectItem>
+                    <SelectItem value="highest">{t("sortHighest")}</SelectItem>
+                    <SelectItem value="lowest">{t("sortLowest")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div
+                className={cn("transition-opacity duration-200", isRefetching && "opacity-50")}
+                aria-busy={isRefetching || undefined}
+              >
+                {reviews.length > 0 ? (
+                  <ol className="m-0 mt-4 list-none p-0">
+                    {reviews.map((review) => (
+                      <ReviewCard key={review.id} review={review} />
+                    ))}
+                  </ol>
+                ) : (
+                  <div className="mt-4">
+                    <ReviewsPlaceholder
+                      title={
+                        ratingFilter !== null
+                          ? t("noReviewsForFilter", { count: ratingFilter })
+                          : t("noReviews")
+                      }
+                    />
+                  </div>
+                )}
+
+                <PaginationNav page={page} totalPages={totalPages} onPageChange={goToPage} />
+              </div>
+              {isRefetching ? (
+                <div
+                  className="pointer-events-none absolute inset-0 flex items-start justify-center pt-10"
+                  role="status"
+                >
+                  <Loader2 className="h-7 w-7 animate-spin text-brand" aria-hidden="true" />
+                  <span className="sr-only">{t("updating")}</span>
+                </div>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <>
+            <RatingSummary
+              avg={avgRating}
+              total={total}
+              breakdown={ratingBreakdown}
+              activeStar={null}
+              onSelectStar={() => undefined}
+            />
+            <div className="mt-6">
+              <ReviewsPlaceholder
+                title={t("noReviews")}
+                description={t("beFirst")}
+                action={
                   <Button type="button" variant="outline" size="sm" onClick={openWriteReviewDialog}>
                     {t("writeButton")}
                   </Button>
-                  {ratingFilter !== null && (
-                    <>
-                      <span className="text-a5-meta text-muted-foreground">
-                        {t("filterActive", { count: ratingFilter })}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setRatingFilter(null)}
-                      >
-                        {t("clearFilter")}
-                      </Button>
-                    </>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="shrink-0 text-a5-meta text-muted-foreground">{t("sortLabel")}</span>
-                  <Select value={sort} onValueChange={(value) => handleSortChange(value as SortKey)}>
-                    <SelectTrigger className="w-45 min-h-10" aria-label={t("sortLabel")}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest">{t("sortNewest")}</SelectItem>
-                      <SelectItem value="highest">{t("sortHighest")}</SelectItem>
-                      <SelectItem value="lowest">{t("sortLowest")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="relative">
-                <div
-                  className={cn("transition-opacity duration-200", isRefetching && "opacity-50")}
-                  aria-busy={isRefetching || undefined}
-                >
-                  {reviews.length > 0 ? (
-                    <ol className="m-0 mt-4 list-none p-0">
-                      {reviews.map((review) => (
-                        <ReviewCard key={review.id} review={review} />
-                      ))}
-                    </ol>
-                  ) : (
-                    <div className="mt-4">
-                      <ReviewsPlaceholder
-                        title={ratingFilter !== null ? t("noReviewsForFilter", { count: ratingFilter }) : t("noReviews")}
-                      />
-                    </div>
-                  )}
-
-                  <PaginationNav page={page} totalPages={totalPages} onPageChange={goToPage} />
-                </div>
-                {isRefetching ? (
-                  <div
-                    className="pointer-events-none absolute inset-0 flex items-start justify-center pt-10"
-                    role="status"
-                  >
-                    <Loader2 className="h-7 w-7 animate-spin text-brand" aria-hidden="true" />
-                    <span className="sr-only">{t("updating")}</span>
-                  </div>
-                ) : null}
-              </div>
-            </>
-          ) : (
-            <>
-              <RatingSummary
-                avg={avgRating}
-                total={total}
-                breakdown={ratingBreakdown}
-                activeStar={null}
-                onSelectStar={() => undefined}
+                }
               />
-              <div className="mt-6">
-                <ReviewsPlaceholder
-                  title={t("noReviews")}
-                  description={t("beFirst")}
-                  action={
-                    <Button type="button" variant="outline" size="sm" onClick={openWriteReviewDialog}>
-                      {t("writeButton")}
-                    </Button>
-                  }
-                />
-              </div>
-            </>
-          )}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

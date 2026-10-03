@@ -8,8 +8,6 @@ import {
   Settings,
   Image as ImageIcon,
   Users,
-  Bot,
-  Landmark,
   PackageX,
   ShieldCheck,
 } from 'lucide-react'
@@ -142,15 +140,8 @@ export function validateValue(key, value) {
   if (k.includes('hotline') || k.includes('phone')) {
     if (!/^[\d\s+-]+$/.test(value)) return 'settings.valPhone'
   }
-  // Money / stock thresholds and retained assistant limits must be non-negative numbers.
-  if (
-    k.includes('threshold') ||
-    k.includes('amount') ||
-    k.includes('min_amount') ||
-    k === 'ai_assistant_daily_limit' ||
-    k === 'ai_assistant_image_daily_limit' ||
-    k === 'ai_assistant_recent_turn_pairs'
-  ) {
+  // Money / stock thresholds must be non-negative numbers.
+  if (k.includes('threshold') || k.includes('amount') || k.includes('min_amount')) {
     const n = Number(value)
     if (Number.isNaN(n) || n < 0) {
       return 'settings.valNumber'
@@ -161,7 +152,7 @@ export function validateValue(key, value) {
 
 // Groups whose display text is shown on the storefront and can carry an English
 // translation. Config / contact / store / tax keys stay Vietnamese-only.
-const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HERO', 'SEO', 'AI_ASSISTANT'])
+const TRANSLATABLE_GROUPS = new Set(['GENERAL', 'PUBLIC_HERO', 'SEO'])
 
 // A setting is English-translatable when it lives in a translatable group AND renders
 // as text (rich-text, long-text, or a plain text input) — never images/URLs/numbers/phones.
@@ -208,18 +199,16 @@ export const TAB_ORDER = [
   'GENERAL',
   'INVENTORY',
   'CONTACT',
-  'PAYMENT',
   'PUBLIC_HERO',
   'SEO',
   'PRODUCT_ASSIGN',
   'REVIEW_MODERATION',
-  'AI_ASSISTANT',
 ]
 
 // Tabs whose values directly affect pricing / checkout / operations — saving
 // these requires an explicit confirmation. (Trống từ V310 — nhóm STORE duy nhất
 // từng nằm ở đây đã gỡ hẳn vì không điều khiển gì; giữ cơ chế cho tab tương lai.)
-export const SENSITIVE_SETTING_TABS = new Set(['PAYMENT'])
+export const SENSITIVE_SETTING_TABS = new Set()
 
 // Group/key bị ẩn vì không thuộc trách nhiệm của admin shop:
 // - PUBLIC_HERO: ảnh banner đầu trang render bằng trình riêng (BannerScreen) có preview ráp sẵn,
@@ -231,8 +220,7 @@ export const SENSITIVE_SETTING_TABS = new Set(['PAYMENT'])
 //   Trang Liên hệ nay là TRANG TĨNH, không còn trình dựng — không màn admin nào sửa nhóm này (cố định
 //   theo yêu cầu owner). Bản ghi vẫn ở site_settings để web/header đọc; muốn cho sửa lại thì bỏ
 //   'CONTACT' khỏi HIDDEN_GROUPS để hiện lại tab Cài đặt › Liên hệ.
-// - PAYMENT: hiển thị lại theo PAY_RULE_001 (2026-07-21): khách có thể chọn chuyển khoản
-//   thủ công, nên chủ shop phải cập nhật được tài khoản nhận tiền mà không sửa trực tiếp DB.
+// - PAYMENT: đã gỡ 2026-09-09 cùng với thanh toán chuyển khoản; phương thức mới chỉ còn COD.
 // - ORDER_OPERATIONS: `order_overdue_days` vẫn được giữ trong site_settings để scheduler,
 //   bộ lọc đơn quá hạn và CSV đọc; theo quyết định owner 2026-09-01, ngưỡng hiệu lực là 2 ngày
 //   và không còn ô chỉnh trong Settings.
@@ -242,8 +230,10 @@ export const SENSITIVE_SETTING_TABS = new Set(['PAYMENT'])
 //   vì cần UI thêm/xoá vai trò động mà form field tĩnh không đáp ứng được.
 // (PUBLIC_ABOUT đã gỡ hẳn V274 — trang Giới thiệu là trang tĩnh, không còn nhóm settings.)
 export const HIDDEN_GROUPS = new Set([
+  'AI_ASSISTANT', // CHAT_RULE_070: hide stale rows during the backend rollout.
   'PUBLIC_HERO',
   'CONTACT',
+  'PAYMENT',
   'ORDER_OPERATIONS',
   'PRODUCT_ASSIGN',
   'STORE_POLICY',
@@ -268,11 +258,6 @@ export const TAB_META = {
     labelKey: 'settings.group_contact',
     descriptionKey: 'settings.groupDescription.contact',
   },
-  PAYMENT: {
-    icon: Landmark,
-    labelKey: 'settings.group_payment',
-    descriptionKey: 'settings.groupDescription.payment',
-  },
   PUBLIC_HERO: {
     icon: ImageIcon,
     labelKey: 'settings.group_public_hero',
@@ -292,11 +277,6 @@ export const TAB_META = {
     icon: ShieldCheck,
     labelKey: 'settings.group_review_moderation',
     descriptionKey: 'settings.groupDescription.reviewModeration',
-  },
-  AI_ASSISTANT: {
-    icon: Bot,
-    labelKey: 'settings.group_ai_assistant',
-    descriptionKey: 'settings.groupDescription.aiAssistant',
   },
 }
 
@@ -327,18 +307,6 @@ export const KEY_LABELS_VI = {
   review_moderation_block_sensitive: 'Chặn nội dung 18+, chính trị, lạc đề',
   review_moderation_daily_limit: 'Số lượt AI tối đa mỗi ngày',
   review_moderation_banned_words: 'Danh sách từ cấm của shop',
-  // ai_assistant (Trợ lý BigBike — CHAT_RULE_001..024)
-  ai_assistant_enabled: 'Bật Trợ lý BigBike',
-  ai_assistant_daily_limit: 'Số lượt gọi AI tối đa mỗi ngày',
-  ai_assistant_image_daily_limit: 'Số ảnh đọc tối đa mỗi ngày',
-  ai_assistant_recent_turn_pairs: 'Số cặp hỏi–đáp gần nhất Trợ lý BigBike được đọc',
-  ai_assistant_search_ai_interpretation_enabled:
-    'Cho Trợ lý BigBike hiểu cách nói tự nhiên khi tìm hàng',
-  // payment (tài khoản nhận chuyển khoản — admin tự nhập, hiển thị cho khách khi đặt đơn chuyển khoản)
-  bank_account_holder: 'Chủ tài khoản nhận chuyển khoản',
-  bank_account_number: 'Số tài khoản nhận chuyển khoản',
-  bank_name: 'Tên ngân hàng (vd: Vietcombank)',
-  bank_branch: 'Chi nhánh ngân hàng (không bắt buộc)',
   messenger_url: 'Link Messenger (popup chat)',
   messenger_display: 'Chữ hiển thị Messenger (popup chat)',
   // contact (hotline/zalo hiển thị nổi bật — 4 khối trang chủ dùng nhóm public_home đã gỡ
@@ -374,8 +342,6 @@ export const KEY_LABELS_VI = {
 }
 
 export const KEY_HINTS_VI = {
-  ai_assistant_image_daily_limit:
-    'Dùng chung cho mọi khách, tính theo ngày giờ Việt Nam. Nhập 0 để tạm dừng đọc ảnh.',
   inventory_out_of_stock_digest_enabled:
     'Tắt để hệ thống im lặng hoàn toàn. Khi bật, mỗi ngày chỉ có một bản tin gộp nếu thực sự có hàng hết.',
   inventory_out_of_stock_digest_time:
@@ -386,14 +352,6 @@ export const KEY_HINTS_VI = {
     'Chặn chi phí khi bị spam. Vượt ngưỡng thì ngừng gọi AI tới hết ngày, đánh giá nằm ở Chờ duyệt. Đặt 0 để tắt hẳn phần gọi AI mà vẫn giữ danh sách từ cấm.',
   review_moderation_banned_words:
     'Mỗi từ một dòng, hoặc ngăn bằng dấu phẩy. Không phân biệt hoa thường và dấu tiếng Việt — gõ "lừa đảo" là bắt được cả "lua dao". Từ trong danh sách này luôn bị chặn, kể cả khi tắt hết 4 loại ở trên.',
-  ai_assistant_enabled:
-    'Khi tắt, khách vẫn thấy nút chat nhưng mở ra bảng Hotline, Zalo và Messenger như trước.',
-  ai_assistant_daily_limit:
-    'Giới hạn lượt AI theo ngày giờ Việt Nam; mặc định 400 lượt/ngày. Hết lượt, Trợ lý BigBike tự chuyển về bảng liên hệ và không làm mất kênh hỗ trợ.',
-  ai_assistant_recent_turn_pairs:
-    'Từ 0 đến 12, mặc định 12. Đặt 0 để Trợ lý BigBike không đọc lịch sử; nội dung gửi AI được che thông tin riêng tư và cắt gọn.',
-  ai_assistant_search_ai_interpretation_enabled:
-    'Bật để Trợ lý BigBike hiểu viết tắt và cách nói tự nhiên, còn hệ thống vẫn đối chiếu kết quả trước khi trả khách. Tắt để quay về cách tìm hàng cũ ngay, không cần triển khai lại.',
   hero_products_image_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_brands_image_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
   hero_news_image_url: 'Ảnh nằm ngang rộng, ví dụ 1920×600px.',
@@ -450,10 +408,6 @@ export const SECTION_GUIDE = {
     title: 'Mạng xã hội — chat nổi + trang Liên hệ',
     description: 'Các kênh hỗ trợ và mạng xã hội công khai của cửa hàng.',
   },
-  payment_bank: {
-    title: 'Tài khoản nhận chuyển khoản',
-    description: 'Thông tin hiển thị cho khách khi chọn thanh toán chuyển khoản.',
-  },
   hero_products: {
     title: 'Banner đầu trang Tất cả sản phẩm',
     description: 'Hình ảnh và nội dung mở đầu trang danh sách sản phẩm.',
@@ -488,10 +442,6 @@ export const SECTION_GUIDE = {
     title: 'Danh sách từ cấm của shop',
     description: 'Chặn ngay lập tức, không tốn phí và không phụ thuộc dịch vụ AI.',
   },
-  ai_assistant_switch: {
-    title: 'Vận hành và ngân sách của Trợ lý BigBike',
-    description: 'Bật/tắt trợ lý, giới hạn lượt AI mỗi ngày và cách hiểu yêu cầu tìm hàng.',
-  },
 }
 export const SECTION_ORDER = Object.keys(SECTION_GUIDE)
 
@@ -521,10 +471,6 @@ export const KEY_GUIDE = {
   instagram_url: ['contact_social', 'link Instagram (trang Liên hệ — footer đã hardcode riêng)'],
   shopee_url: ['contact_social', 'link Shopee (trang Liên hệ — footer đã hardcode riêng)'],
 
-  bank_account_holder: ['payment_bank', 'tên chủ tài khoản'],
-  bank_account_number: ['payment_bank', 'số tài khoản'],
-  bank_name: ['payment_bank', 'tên ngân hàng'],
-  bank_branch: ['payment_bank', 'chi nhánh'],
   hero_products_image_url: ['hero_products', 'ảnh nền banner (desktop)'],
   hero_products_image_alt: ['hero_products', 'mô tả ảnh (SEO)'],
   hero_products_title: ['hero_products', 'tiêu đề trên banner'],
@@ -561,17 +507,6 @@ export const KEY_GUIDE = {
   ],
   review_moderation_daily_limit: ['review_moderation_switch', 'trần chi phí mỗi ngày'],
   review_moderation_banned_words: ['review_moderation_words', 'danh sách từ cấm tự quản'],
-  ai_assistant_enabled: ['ai_assistant_switch', 'bật/tắt Trợ lý BigBike trên toàn website'],
-  ai_assistant_daily_limit: ['ai_assistant_switch', 'trần lượt gọi AI mỗi ngày, giờ Việt Nam'],
-  ai_assistant_image_daily_limit: [
-    'ai_assistant_switch',
-    'hạn mức ảnh dùng chung theo ngày giờ Việt Nam',
-  ],
-  ai_assistant_recent_turn_pairs: ['ai_assistant_switch', '0–12 cặp gần nhất để hiểu câu nối'],
-  ai_assistant_search_ai_interpretation_enabled: [
-    'ai_assistant_switch',
-    'chuyển giữa cách hiểu tìm hàng mới và cũ',
-  ],
 }
 
 export function groupBySection(items) {

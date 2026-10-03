@@ -26,6 +26,34 @@ export const AssignmentConfigContext = createContext(null)
 export const SYSTEM_CATEGORY_ID = 'uncategorized'
 export const SYSTEM_BRAND_ID = 'uncategorized-brand'
 
+/**
+ * Keep the variant attribute picker deterministic while allowing the backend to
+ * add new attribute types without a frontend change. Colour and size are the
+ * two primary dimensions; every other type follows in Vietnamese name order.
+ */
+export function orderVariantAttributes(attributes = []) {
+  const list = Array.isArray(attributes) ? attributes : []
+  const groupRank = (attribute) => {
+    const group =
+      getVariantAttributeGroup(attribute?.name) || getVariantAttributeGroup(attribute?.code)
+    if (group === 'color') return 0
+    if (group === 'size') return 1
+    return 2
+  }
+  const compareName = (left, right) =>
+    String(left?.name || '').localeCompare(String(right?.name || ''), 'vi', {
+      sensitivity: 'base',
+    }) ||
+    String(left?.code || '').localeCompare(String(right?.code || ''), 'en', {
+      sensitivity: 'base',
+    }) ||
+    String(left?.id || '').localeCompare(String(right?.id || ''), 'en')
+
+  return [...list].sort(
+    (left, right) => groupRank(left) - groupRank(right) || compareName(left, right),
+  )
+}
+
 function isWritableVideoInput(provider, url) {
   const normalizedUrl = (url || '').trim()
   if (provider === 'youtube') return Boolean(extractWritableYouTubeId(normalizedUrl))
@@ -264,7 +292,7 @@ export function getPublishReadiness(form, t) {
     {
       id: 'variantImages',
       label: t('products.detail.checklist.variantImages', {
-        defaultValue: 'Ảnh đại diện màu (từng biến thể)',
+        defaultValue: 'Ảnh đại diện màu (từng lựa chọn)',
       }),
       ok: realVariants
         .filter((v) => getVariantColorValue(v))

@@ -49,12 +49,11 @@ type CheckoutAddress = {
 export type CheckoutPayload = {
   billingAddress: CheckoutAddress;
   shippingAddress?: CheckoutAddress | null;
-  // Storefront chọn COD hoặc BANK_TRANSFER; backend giữ COD mặc định khi field bị bỏ qua
-  // và từ chối mọi mã khác (PAY_RULE_001).
-  paymentMethod?: string;
   customerNote?: string;
   // Passive language snapshot for a later review invitation; no checkout behavior changes.
   locale?: "vi" | "en";
+  /** GA4-generated pseudonymous browser id; never customer-entered data. */
+  analyticsClientId?: string;
 };
 
 // CheckoutOptions/PaymentMethodOption đã xóa 2026-07-15 (AUD-056): endpoint
