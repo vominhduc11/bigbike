@@ -61,7 +61,7 @@ public record ReviewModerationOutcome(
         return new ReviewModerationOutcome(SOURCE_SKIPPED, false, null, List.of(), List.of(), reasonCode);
     }
 
-    /** Nothing found, or everything found is switched off. Review stays {@code PENDING}. */
+    /** No actionable violation found. Review stays {@code PENDING}. */
     public static ReviewModerationOutcome clean(
             String source,
             List<ReviewModerationCategory> notedCategories,
@@ -72,7 +72,7 @@ public record ReviewModerationOutcome(
 
     /**
      * Banned-word hit. Goes to the restorable trash and is not category-scoped: the shop
-     * typed the word into its own blocklist, so the four AI category switches do not gate it.
+     * typed the word into its own blocklist. AI availability and budget do not gate it.
      */
     public static ReviewModerationOutcome blockedByBannedWord(String matchedTerm) {
         return new ReviewModerationOutcome(

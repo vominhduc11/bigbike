@@ -31,7 +31,7 @@ public enum ReviewModerationCategory {
         return targetStatus;
     }
 
-    /** Settings key that switches blocking for this category on or off. */
+    /** Legacy settings key retained for compatibility; its value no longer gates blocking. */
     public String settingKey() {
         return settingKey;
     }

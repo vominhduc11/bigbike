@@ -32,7 +32,6 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
-import { clearNavGuard } from '@/lib/navigationGuard'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime, formatRelativeTime } from '../lib/formatters'
 import { useContentLang, overlayEnNames } from '../lib/contentLang'
@@ -315,7 +314,7 @@ export function CategoryDetailScreen({
 
   // F6: cảnh báo rời trang khi chưa lưu — chặn cả điều hướng nội bộ (sidebar/breadcrumb)
   // qua navigationGuard lẫn reload/đóng tab qua beforeunload (hook tự gắn cả hai).
-  useUnsavedChanges(isDirty)
+  const clearOwnGuard = useUnsavedChanges(isDirty)
 
   // F9: autosave — lưu bản nháp vào localStorage sau 10s không thao tác khi form dirty.
   useEffect(() => {
@@ -342,7 +341,7 @@ export function CategoryDetailScreen({
       )
       setIsSubmitting(false)
       if (isCreate && savedItem?.id) {
-        clearNavGuard() // form vừa lưu khớp baseline, tránh hỏi nhầm khi điều hướng sang trang chi tiết
+        clearOwnGuard() // form vừa lưu khớp baseline, tránh hỏi nhầm khi điều hướng sang trang chi tiết
         navigate(`/admin/categories/${savedItem.id}`, { replace: true })
       }
     },
@@ -360,7 +359,7 @@ export function CategoryDetailScreen({
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       toast.success(t('categories.detail.hardDeleteSuccess'))
       clearFormFromStorage(autosaveKey)
-      clearNavGuard() // đã xoá xong, không hỏi xác nhận khi rời trang
+      clearOwnGuard() // đã xoá xong, không hỏi xác nhận khi rời trang
       navigate('/admin/categories')
     },
     onError: (error) => {
@@ -605,13 +604,13 @@ export function CategoryDetailScreen({
         if (!ok) return
         // F6: đã xác nhận bỏ thay đổi qua hộp thoại riêng ở trên — bỏ qua lời nhắc
         // trùng lặp của navigationGuard (useUnsavedChanges) khi navigate() chạy dưới đây.
-        clearNavGuard()
+        clearOwnGuard()
       }
       navigate('/admin/categories')
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [isDirty, isSubmitting, navigate, t])
+  }, [isDirty, isSubmitting, navigate, t, clearOwnGuard])
 
   if (state.status === 'loading') {
     return <ScreenSkeleton variant="form" count={4} />

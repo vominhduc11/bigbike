@@ -1,5 +1,21 @@
 # Testing Guide
 
+## Read-only settings/banner regressions
+
+Run `npx playwright test banners-settings.spec.ts` against the source production
+preview on `localhost:4280`. The spec overrides the automatic `e2eDataGuard`
+cleanup fixture with a no-op; it must never invoke data cleanup against the shop.
+Real settings, authentication and media are read from the running stack. Test
+PATCH requests are intercepted and fulfilled within Playwright (pending, success,
+validation and network failures); no setting write reaches the backend. Other
+business writes are blocked. Use the shared `VIEWPORTS` entries for 1440×900,
+768×1024 and 375×812. Build the preview with
+`VITE_STOREFRONT_BASE_URL=http://localhost:3000` to compare against local storefront
+assets, and set `E2E_BACKEND_ORIGIN` only in the test process if the running backend
+requires the configured production admin origin. Do not edit `.env` or rebuild or
+restart shared containers. Backend setting tests use mocked persistence, not a
+real DB or Flyway migrations.
+
 ## Local Commands
 
 | App | Commands from repo config | Status | Evidence |

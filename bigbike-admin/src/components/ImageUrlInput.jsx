@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ImageIcon, X } from 'lucide-react'
 import { MediaPickerModal } from './MediaPickerModal'
@@ -20,44 +20,30 @@ import {
 
 function ImagePreview({ url, alt, checkerboard = false }) {
   const { t } = useTranslation()
-  const [ok, setOk] = useState(false)
-  const [loading, setLoading] = useState(false)
-  // Guard undefined: caller có thể truyền value undefined (form nháp/partial).
+  const [status, setStatus] = useState('loading')
   const trimmed = resolveDisplayUrl((url ?? '').trim())
-
-  useEffect(() => {
-    if (!trimmed) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setOk(false)
-      return
-    }
-    setLoading(true)
-    const img = new Image()
-    img.loading = 'eager'
-    img.onload = () => {
-      setOk(true)
-      setLoading(false)
-    }
-    img.onerror = () => {
-      setOk(false)
-      setLoading(false)
-    }
-    img.src = trimmed
-  }, [trimmed])
-
   if (!trimmed) return null
-  if (loading)
-    return <div className="img-preview img-preview-loading">{t('imageInput.previewLoading')}</div>
-  if (!ok)
-    return <div className="img-preview img-preview-error">{t('imageInput.previewError')}</div>
   return (
-    <img
-      src={trimmed}
-      alt={alt || t('imageInput.previewAlt')}
-      className="img-preview"
-      loading="eager"
-      style={checkerboard ? brandLogoCheckerboardStyle() : undefined}
-    />
+    <>
+      <img
+        key={trimmed}
+        src={trimmed}
+        alt={alt || t('imageInput.previewAlt')}
+        className={`img-preview ${status === 'ready' ? '' : 'hidden'}`}
+        loading="eager"
+        onLoad={() => setStatus('ready')}
+        onError={() => setStatus('error')}
+        style={checkerboard ? brandLogoCheckerboardStyle() : undefined}
+      />
+      {status !== 'ready' ? (
+        <div
+          className={`img-preview ${status === 'error' ? 'img-preview-error' : 'img-preview-loading'}`}
+          role={status === 'error' ? 'alert' : 'status'}
+        >
+          {t(status === 'error' ? 'imageInput.previewError' : 'imageInput.previewLoading')}
+        </div>
+      ) : null}
+    </>
   )
 }
 
@@ -67,6 +53,7 @@ export function ImageUrlInput({
   alt,
   onAltChange,
   previewAlt,
+  previewUrl,
   disabled,
   error,
   recommend,
@@ -85,6 +72,17 @@ export function ImageUrlInput({
   const hasImage = Boolean(value?.trim())
   const { pickAlt } = useMediaAltSync()
   const errorId = useId()
+  const pickerEnabledRef = useRef(false)
+  useLayoutEffect(() => {
+    pickerEnabledRef.current = !disabled && canReadMedia && pickerOpen
+  }, [disabled, canReadMedia, pickerOpen])
+  useEffect(() => {
+    if (disabled) {
+      // Close an already-open picker when its parent starts saving.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPickerOpen(false)
+    }
+  }, [disabled])
 
   function issueMessage(issue, details) {
     return t(brandLogoIssueTranslationKey(issue), {
@@ -287,13 +285,19 @@ export function ImageUrlInput({
         </small>
       )}
       <MediaRequirementHint recommend={recommend} className="mt-1 text-xs text-muted-foreground" />
-      <ImagePreview url={value} alt={previewAlt || alt} checkerboard={isBrandLogo} />
+      <ImagePreview
+        key={previewUrl ?? value}
+        url={previewUrl ?? value}
+        alt={previewAlt || alt}
+        checkerboard={isBrandLogo}
+      />
 
-      {pickerOpen && canReadMedia && (
+      {pickerOpen && canReadMedia && !disabled && (
         <MediaPickerModal
           recommend={recommend}
           kind="image"
           onSelect={(url, media) => {
+            if (!pickerEnabledRef.current) return
             // 2nd arg forwarded so callers with their own decoupled alt field
             // (no onAltChange/no built-in alt UI here) can still prefill/sync it.
             onChange(url, media)

@@ -16,7 +16,6 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '../lib/useUnsavedChanges'
-import { clearNavGuard } from '../lib/navigationGuard'
 import { formatDateTime, normalizeSeoText, stripHtml } from '../lib/formatters'
 import { setContentLang, useContentLang } from '../lib/contentLang'
 import { recordRecentItem } from '../lib/useRecentItems'
@@ -197,7 +196,7 @@ export function ContentDetailScreen({
   // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu — phủ CẢ điều hướng nội bộ
   // (sidebar/breadcrumb qua navigationGuard) lẫn reload/đóng tab (beforeunload); trước đây
   // chỉ tự gắn beforeunload nên đi sidebar không hỏi. Message giống hộp thoại của handleClose.
-  useUnsavedChanges(isDirty, t('content.detail.unsavedChangesConfirm'))
+  const clearOwnGuard = useUnsavedChanges(isDirty, t('content.detail.unsavedChangesConfirm'))
 
   useEffect(() => {
     if (!isCreate) return
@@ -237,7 +236,7 @@ export function ContentDetailScreen({
       // Lưu xong rồi điều hướng (tạo mới -> trang chi tiết): gỡ nav guard trước khi
       // navigate để không bị hỏi "rời trang?" nhầm (F6) — form vừa lưu khớp baseline.
       if (isCreate && savedItem?.id) {
-        clearNavGuard()
+        clearOwnGuard()
         navigate(`/admin/content/${mutationPath(normalizedType)}/${savedItem.id}`, {
           replace: true,
         })
@@ -270,7 +269,7 @@ export function ContentDetailScreen({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content'] })
       clearFormFromStorage(autosaveKey)
-      clearNavGuard()
+      clearOwnGuard()
       toast.success(t('content.permanentDeleteSuccess'))
       navigate('/admin/content')
     },
@@ -618,7 +617,7 @@ export function ContentDetailScreen({
       if (!confirmed) return
       // F6: đã xác nhận qua hộp thoại riêng ở trên — bỏ qua lời nhắc trùng lặp của
       // navigationGuard (useUnsavedChanges) khi navigate() chạy dưới đây.
-      clearNavGuard()
+      clearOwnGuard()
     }
     navigate('/admin/content')
   }

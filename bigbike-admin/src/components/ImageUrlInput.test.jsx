@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ImageUrlInput } from './ImageUrlInput'
@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   importBrandLogoUrl: vi.fn(),
   uploadMedia: vi.fn(),
   hasPermission: vi.fn(),
+  lastSelect: null,
   media: {
     id: 'media-picked',
     publicUrl: '/media/picked.jpg',
@@ -53,11 +54,14 @@ vi.mock('@/lib/brandLogoPolicy', () => ({
 }))
 
 vi.mock('./MediaPickerModal', () => ({
-  MediaPickerModal: ({ onSelect }) => (
-    <button type="button" onClick={() => onSelect(mocks.media.publicUrl, mocks.media)}>
-      Chọn media kiểm thử
-    </button>
-  ),
+  MediaPickerModal: ({ onSelect }) => {
+    mocks.lastSelect = onSelect
+    return (
+      <button type="button" onClick={() => onSelect(mocks.media.publicUrl, mocks.media)}>
+        Chọn media kiểm thử
+      </button>
+    )
+  },
 }))
 
 vi.mock('./BrandLogoCropDialog', () => ({
@@ -72,6 +76,7 @@ const logoRecommendation = { brandLogo: true }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.lastSelect = null
   mocks.hasPermission.mockReturnValue(true)
   mocks.importBrandLogoUrl.mockResolvedValue({
     item: {
@@ -128,6 +133,35 @@ describe('ImageUrlInput brand logo URL import', () => {
 })
 
 describe('ImageUrlInput media picker integration', () => {
+  it('bỏ qua callback chọn ảnh đến muộn khi đang lưu và sau khi khóa được gỡ', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    const onAltChange = vi.fn()
+    const { rerender } = render(
+      <ImageUrlInput value="" onChange={onChange} onAltChange={onAltChange} />,
+    )
+    await user.click(screen.getByRole('button', { name: 'imageInput.pickFromLibrary' }))
+    const lateSelect = mocks.lastSelect
+    rerender(<ImageUrlInput value="" onChange={onChange} onAltChange={onAltChange} disabled />)
+    act(() => lateSelect(mocks.media.publicUrl, mocks.media))
+    rerender(<ImageUrlInput value="" onChange={onChange} onAltChange={onAltChange} />)
+    act(() => lateSelect(mocks.media.publicUrl, mocks.media))
+    expect(onChange).not.toHaveBeenCalled()
+    expect(onAltChange).not.toHaveBeenCalled()
+  })
+
+  it('cho phép chọn ảnh có sẵn khi được đọc kho ảnh nhưng không được upload', async () => {
+    mocks.hasPermission.mockImplementation((permission) => permission === 'media.read')
+    const onChange = vi.fn()
+    const user = userEvent.setup()
+    render(<ImageUrlInput value="" onChange={onChange} />)
+    await user.click(screen.getByRole('button', { name: 'imageInput.pickFromLibrary' }))
+    await user.click(screen.getByRole('button', { name: 'Chọn media kiểm thử' }))
+    expect(onChange).toHaveBeenCalledWith(mocks.media.publicUrl, mocks.media)
+    expect(mocks.uploadMedia).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'brands.logo.importUrl' })).not.toBeInTheDocument()
+  })
+
   it('khóa picker và không mở modal khi thiếu media.read', async () => {
     mocks.hasPermission.mockReturnValue(false)
     render(<ImageUrlInput value="" onChange={vi.fn()} />)
@@ -160,5 +194,28 @@ describe('ImageUrlInput media picker integration', () => {
     await user.click(screen.getByRole('button', { name: 'Chọn media kiểm thử' }))
 
     expect(onChange).toHaveBeenCalledWith(mocks.media.publicUrl, mocks.media)
+  })
+})
+
+describe('ImageUrlInput display-only preview', () => {
+  it('dùng ảnh chuẩn hóa để hiển thị, giữ giá trị lưu và bỏ qua sự kiện tải ảnh cũ', () => {
+    const onChange = vi.fn()
+    const value = 'https://bigbike.vn/wp-content/themes/bigbike/images/page-title-bg.png'
+    const { container, rerender } = render(
+      <ImageUrlInput value={value} previewUrl="/brand/page-title-bg.png" onChange={onChange} />,
+    )
+    const oldImage = container.querySelector('img')
+    expect(oldImage).toHaveAttribute('src', '/brand/page-title-bg.png')
+    fireEvent.load(oldImage)
+    expect(screen.queryByText('imageInput.previewError')).not.toBeInTheDocument()
+    rerender(
+      <ImageUrlInput value="/media/new.png" previewUrl="/media/new.png" onChange={onChange} />,
+    )
+    const newImage = container.querySelector('img')
+    fireEvent.error(newImage)
+    expect(screen.getByText('imageInput.previewError')).toBeInTheDocument()
+    fireEvent.load(oldImage)
+    expect(screen.getByText('imageInput.previewError')).toBeInTheDocument()
+    expect(onChange).not.toHaveBeenCalled()
   })
 })

@@ -8,6 +8,7 @@ import com.bigbike.bigbike_backend.api.admin.dto.settings.UpdateSiteSettingReque
 import com.bigbike.bigbike_backend.api.error.ForbiddenException;
 import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.ValidationException;
+import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
 import com.bigbike.bigbike_backend.persistence.entity.settings.SiteSettingEntity;
 import com.bigbike.bigbike_backend.service.admin.support.AuditLogFactory;
 import com.bigbike.bigbike_backend.service.audit.AuditLogWriter;
@@ -184,14 +185,15 @@ public class AdminSettingsService {
 
         // Phase 1: validate every item before touching the DB
         List<PendingUpdate> pending = new ArrayList<>(updates.size());
-        for (BatchUpdateSettingsRequest.BatchSettingUpdate upd : updates) {
+        for (int updateIndex = 0; updateIndex < updates.size(); updateIndex++) {
+            BatchUpdateSettingsRequest.BatchSettingUpdate upd = updates.get(updateIndex);
             SiteSettingEntity entity = settingRepo.findBySettingKey(upd.key())
                     .orElseThrow(() -> new NotFoundException("Setting not found: " + upd.key()));
 
             Optional<SettingDefinition> defOpt = definitionRegistry.find(upd.key());
 
             if (defOpt.map(d -> !d.editable()).orElse(false)) {
-                throw ValidationException.fromField("key", "READ_ONLY",
+                throw ValidationException.fromField("updates[" + updateIndex + "].key", "READ_ONLY",
                         "Setting is read-only and cannot be modified: " + upd.key());
             }
 
@@ -204,16 +206,23 @@ public class AdminSettingsService {
             // already the only entry-point for that mutation. No additional guard needed here;
             // the risk is structurally excluded by the DTO design.
 
-            if (upd.value() != null && defOpt.isPresent()) {
-                valueValidator.validate(upd.key(), upd.value(), defOpt.get());
-            }
+            try {
+                if (upd.value() != null && defOpt.isPresent()) {
+                    valueValidator.validate(upd.key(), upd.value(), defOpt.get());
+                }
 
-            // English required when the setting is translatable + required in VI (TRANSLATION_RULE_002).
-            if (defOpt.isPresent()) {
-                String effectiveValueEn = upd.valueEn() != null
-                        ? (upd.valueEn().isBlank() ? null : upd.valueEn())
-                        : entity.getSettingValueEn();
-                valueValidator.validateRequiredEn(upd.key(), effectiveValueEn, defOpt.get());
+                // English required when the setting is translatable + required in VI.
+                if (defOpt.isPresent()) {
+                    String effectiveValueEn = upd.valueEn() != null
+                            ? (upd.valueEn().isBlank() ? null : upd.valueEn())
+                            : entity.getSettingValueEn();
+                    valueValidator.validateRequiredEn(upd.key(), effectiveValueEn, defOpt.get());
+                }
+            } catch (ValidationException ex) {
+                final String prefix = "updates[" + updateIndex + "].";
+                throw new ValidationException(ex.getMessage(), ex.details().stream()
+                        .map(detail -> new ApiErrorDetail(prefix + detail.field(), detail.code(), detail.message()))
+                        .toList());
             }
 
             pending.add(new PendingUpdate(entity, upd.value(), upd.valueEn()));

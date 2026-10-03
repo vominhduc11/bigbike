@@ -30,7 +30,6 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
-import { clearNavGuard } from '@/lib/navigationGuard'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime, normalizeSeoText, stripHtml } from '../lib/formatters'
 import { setContentLang, useContentLang, overlayEnNames } from '../lib/contentLang'
@@ -510,7 +509,7 @@ export function ProductDetailScreen({
   // F6: cảnh báo khi rời trang lúc còn thay đổi chưa lưu — phủ CẢ điều hướng nội
   // bộ (sidebar/breadcrumb qua navigationGuard) lẫn reload/đóng tab (beforeunload).
   // Trước đây chỉ tự gắn beforeunload nên đi sidebar không hỏi.
-  useUnsavedChanges(isDirty, t('products.detail.unsavedChangesConfirm'))
+  const clearOwnGuard = useUnsavedChanges(isDirty, t('products.detail.unsavedChangesConfirm'))
 
   function updateField(field, value) {
     setForm((previous) => {
@@ -803,7 +802,7 @@ export function ProductDetailScreen({
       // Lưu xong rồi điều hướng (tạo mới -> trang chi tiết): gỡ nav guard trước khi
       // navigate để không bị hỏi "rời trang?" nhầm (F6).
       if (isCreate && savedItem?.id) {
-        clearNavGuard()
+        clearOwnGuard()
         navigate(`/admin/products/${savedItem.id}`, { replace: true })
       }
     },
@@ -1218,7 +1217,7 @@ export function ProductDetailScreen({
       )
       if (!confirmed) return
     }
-    clearNavGuard()
+    clearOwnGuard()
     navigate('/admin/products')
   }
 

@@ -16,7 +16,6 @@ import { formatDateTime, formatText } from '../lib/formatters'
 import { toSlug } from '../lib/slug'
 import { useContentLang } from '../lib/contentLang'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
-import { clearNavGuard } from '@/lib/navigationGuard'
 import { ArrowLeft, Loader2, Save, Trash2 } from 'lucide-react'
 
 import { createBrandSchema, zodErrors } from '../lib/schemas'
@@ -237,7 +236,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
 
   // F6: cảnh báo rời trang khi chưa lưu — chặn cả điều hướng nội bộ (nút quay lại,
   // sidebar) qua navigationGuard lẫn reload/đóng tab qua beforeunload.
-  useUnsavedChanges(isDirty)
+  const clearOwnGuard = useUnsavedChanges(isDirty)
 
   // F9: autosave — lưu bản nháp vào localStorage sau 10s không thao tác khi form dirty.
   useEffect(() => {
@@ -260,7 +259,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       toast.success(isCreate ? t('brands.detail.successCreate') : t('brands.detail.successUpdate'))
       setIsSubmitting(false)
       if (isCreate && savedItem?.id) {
-        clearNavGuard() // form vừa lưu khớp baseline, tránh hỏi nhầm khi điều hướng sang trang chi tiết
+        clearOwnGuard() // form vừa lưu khớp baseline, tránh hỏi nhầm khi điều hướng sang trang chi tiết
         navigate(`/admin/brands/${savedItem.id}`, { replace: true })
       }
     },
@@ -277,7 +276,7 @@ export function BrandDetailScreen({ brandId, isCreate = false, navigate, canUpda
       toast.success(t('brands.detail.successDelete'))
       queryClient.invalidateQueries({ queryKey: ['brands'] })
       clearFormFromStorage(autosaveKey)
-      clearNavGuard() // đã ẩn xong, không hỏi xác nhận khi rời trang
+      clearOwnGuard() // đã ẩn xong, không hỏi xác nhận khi rời trang
       navigate('/admin/brands')
     },
     onError: (error) => {

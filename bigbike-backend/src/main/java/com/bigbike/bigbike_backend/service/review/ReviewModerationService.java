@@ -7,8 +7,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +28,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ReviewModerationService {
 
-    static final String REASON_DISABLED = "DISABLED";
     static final String REASON_NOT_CONFIGURED = "NOT_CONFIGURED";
     static final String REASON_EMPTY_BODY = "EMPTY_BODY";
     static final String REASON_AI_UNAVAILABLE = "AI_UNAVAILABLE";
@@ -75,9 +72,6 @@ public class ReviewModerationService {
 
     private ReviewModerationOutcome evaluate(ReviewSnapshot review) {
         ReviewModerationSettings.Snapshot settings = moderationSettings.load();
-        if (!settings.enabled()) {
-            return ReviewModerationOutcome.skipped(REASON_DISABLED);
-        }
         if (review.body() == null || review.body().isBlank()) {
             // A star-only review has no text to judge; calling the AI would spend money to
             // be told so.
@@ -104,17 +98,12 @@ public class ReviewModerationService {
         if (verdict.isEmpty()) {
             return ReviewModerationOutcome.skipped(REASON_AI_UNAVAILABLE);
         }
-        return applySwitches(verdict.get(), settings);
+        return resolveVerdict(verdict.get());
     }
 
-    /**
-     * Filters the model's categories through the shop's switches. A category that is
-     * switched off stays visible to the moderator as a note but cannot cause a block, so
-     * turning a switch off is genuinely "stop acting on this", not "stop looking for it".
-     */
-    private static ReviewModerationOutcome applySwitches(
-            AiReviewModerationClient.AiVerdict verdict,
-            ReviewModerationSettings.Snapshot settings
+    /** Every recognized violation category participates in blocking (REVIEW_RULE_013). */
+    private static ReviewModerationOutcome resolveVerdict(
+            AiReviewModerationClient.AiVerdict verdict
     ) {
         String reason = verdict.reason() == null || verdict.reason().isBlank()
                 ? null
@@ -124,17 +113,8 @@ public class ReviewModerationService {
                     ReviewModerationOutcome.SOURCE_AI, verdict.categories(), reason);
         }
 
-        List<ReviewModerationCategory> blocking = new ArrayList<>();
-        for (ReviewModerationCategory category : verdict.categories()) {
-            if (settings.blockingCategories().contains(category)) {
-                blocking.add(category);
-            }
-        }
-        if (blocking.isEmpty()) {
-            return ReviewModerationOutcome.clean(
-                    ReviewModerationOutcome.SOURCE_AI, verdict.categories(), reason);
-        }
-        return ReviewModerationOutcome.blockedByAi(verdict.categories(), blocking, reason);
+        return ReviewModerationOutcome.blockedByAi(
+                verdict.categories(), verdict.categories(), reason);
     }
 
     /**

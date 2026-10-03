@@ -28,6 +28,7 @@ import {
   tabDescription,
   displayValue,
   isSettingDirty,
+  omitReviewModerationDrafts,
   BANNERS_TAB_ID,
   ASSIGN_TAB_ID,
   getAutosaveKey,
@@ -36,6 +37,7 @@ import {
   clearFormFromStorage,
 } from './settings/constants'
 import { SettingTabPanel } from './settings/SettingTabPanel'
+import { EDITABLE_BANNER_KEYS } from './settings/bannerSettings'
 import { DetailSection } from '../components/DetailSection'
 
 // Lazy — Cài đặt mở mặc định ở tab chung, không phải tab Banner (496 dòng); tải sẵn tĩnh
@@ -98,7 +100,15 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
     if (!settingsData || hasCheckedDraftRef.current) return
     hasCheckedDraftRef.current = true
     // Bản nháp autosave còn dở từ phiên trước → gợi ý khôi phục.
-    const draft = loadFormFromStorage(autosaveKey)
+    const storedDraft = loadFormFromStorage(autosaveKey)
+    const draft = storedDraft && {
+      ...storedDraft,
+      form: {
+        ...storedDraft.form,
+        drafts: omitReviewModerationDrafts(storedDraft.form?.drafts),
+        draftsEn: omitReviewModerationDrafts(storedDraft.form?.draftsEn),
+      },
+    }
     const hasDraftValues =
       draft?.form &&
       (Object.keys(draft.form.drafts || {}).length > 0 ||
@@ -150,7 +160,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
   }, [groups, isSuperAdmin])
 
   // Derive active tab: user pick takes priority, else first available tab
-  const firstTab = groups.size > 0 ? [...groups.keys()][0] : null
+  const firstTab = state.status === 'success' ? (navTabs[0]?.id ?? null) : null
   const isValidOverride =
     activeTabOverride &&
     (groups.has(activeTabOverride) ||
@@ -378,11 +388,7 @@ export function SettingsScreen({ canUpdate, isSuperAdmin = false, navigate }) {
 
   const getTabInfo = (tab) => {
     if (tab.kind === 'banners') {
-      const rawItems = state.items.filter(
-        (setting) =>
-          (setting.settingGroup || '').toUpperCase() === 'PUBLIC_HERO' &&
-          !HIDDEN_KEYS.has(setting.key),
-      )
+      const rawItems = state.items.filter((setting) => EDITABLE_BANNER_KEYS.has(setting.key))
       return {
         ...tab,
         label: tabLabel('PUBLIC_HERO', t),

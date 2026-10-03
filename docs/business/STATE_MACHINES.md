@@ -810,7 +810,8 @@ submit transaction commits, and is constrained more tightly than a human:
 | Entry guard | Re-reads the row and acts only if the status is still `PENDING`. A human decision that landed first wins; the verdict is then recorded as an annotation without changing state. |
 | Re-entry | Never re-runs. Restoring `SPAM`/`TRASH → PENDING` does **not** re-trigger it, so a human override is final. |
 | Optimistic concurrency | Uses the row's own current `version`; it is a server-side actor with no stale client view to guard against. A concurrent human write makes the entry guard fail, which is the intended outcome. |
-| Failure mode | Disabled, unconfigured, timed out, or malformed AI response → **no transition**; the review stays `PENDING` and is marked `moderation_source = SKIPPED`. Never fails the customer's submit request. |
+| Failure mode | Unconfigured, daily budget exhausted, timed out, or malformed AI response → **no transition**; the review stays `PENDING` and is marked `moderation_source = SKIPPED`. Never fails the customer's submit request. |
+| Activation | Always active for all four categories, regardless of the five legacy boolean settings, including after restart/fresh installation (`REVIEW_RULE_013`, owner decision 2026-10-03). Stored banned words and daily budget remain effective. |
 | Audit | `REVIEW_AUTO_MODERATED` with `actorType = SYSTEM`, `actorId = null` — distinct from the human `REVIEW_STATUS_CHANGED`. Payload carries safe metadata only (`REVIEW_RULE_011`). |
 | Side effects | Identical to the human path: recompute + revalidate. Neither target status is `APPROVED`, so the published rating does not move. No email is ever sent. |
 

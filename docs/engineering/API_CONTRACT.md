@@ -1892,6 +1892,17 @@ Status: `REMOVED`
 
 ## Admin Settings Contract
 
+**Batch field errors:** `PATCH /api/v1/admin/settings` identifies each invalid request
+item by its zero-based position: `error.details[].field` is
+`updates[index].value`, `updates[index].valueEn`, or `updates[index].key`.
+This applies to DTO constraints and setting-service validation, including the
+shared image URL validator. Codes and the standard error envelope are unchanged.
+Single-setting PATCH keeps the unprefixed `value`/`valueEn`/`settingKey` fields.
+Clients map the indexed field against the exact submitted updates, never against
+message text. Every batch item is validated before any setting, audit entry,
+media placement, or storefront revalidation is changed; one invalid item rejects
+the entire batch.
+
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
 | `GET /api/v1/admin/settings` | `settings.read` | Paginated list with optional filters: `q` (key/description substring), `group`, `isPublic`. Sensitive keys return `settingValue="********"` with `sensitive=true, masked=true`. | `CONFIRMED_FROM_CODE` | `AdminSettingsController.java`, `AdminSettingsService.java` |
@@ -1922,21 +1933,21 @@ trống làm scheduler no-op; giá trị không trống chỉ nhận trang kênh
 
 **Sensitive key masking:** Any key whose name contains `secret`, `password`, `token`, `api_key`, `privatekey`, etc. always returns `settingValue="********"` in admin responses and in audit log `before_data`/`after_data`.
 
-**`review_moderation` group (V380, `REVIEW_RULE_013`) — admin-only, never public.** Six keys drive the automatic review moderator; all are `isPublic=false` and absent from `GET /api/v1/settings/public`.
+**`review_moderation` group (V380, `REVIEW_RULE_013`) — admin-only, never public.** All seven keys remain stored and available through the existing admin API and permissions; all are `isPublic=false` and absent from `GET /api/v1/settings/public`. Owner decision 2026-10-03 removes the entire Settings editor/tab on desktop/mobile and VI/EN. API responses cannot recreate the tab; `?group=review_moderation` selects General when available, otherwise the first valid tab. AI moderation always runs for all four categories, including after restart or a fresh installation, ignoring the five legacy boolean values without changing them. Only the stored banned words and daily limit affect current moderation. No migration, reset, or move to environment variables is required.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
-| `review_moderation_enabled` | `BOOLEAN` | `false` | Master switch. Ships **off**: the shop must configure `GEMINI_API_KEY` first, otherwise every review is `SKIPPED`. |
-| `review_moderation_block_profanity` | `BOOLEAN` | `true` | Block swearing / crude language → `TRASH`. |
-| `review_moderation_block_harassment` | `BOOLEAN` | `true` | Block insults, personal attacks, discrimination → `TRASH`. |
-| `review_moderation_block_advertising` | `BOOLEAN` | `true` | Block competitor ads, links, phone/Zalo numbers, referral codes → `SPAM`. |
-| `review_moderation_block_sensitive` | `BOOLEAN` | `true` | Block adult/political/religious content and off-topic junk → `TRASH`. |
+| `review_moderation_enabled` | `BOOLEAN` | `false` | Legacy master switch retained for API/data compatibility; its stored value is ignored by moderation. Missing `GEMINI_API_KEY` still yields `SKIPPED`, leaving the review pending. |
+| `review_moderation_block_profanity` | `BOOLEAN` | `true` | Legacy category flag, value preserved but ignored. Swearing / crude language is always checked → `TRASH`. |
+| `review_moderation_block_harassment` | `BOOLEAN` | `true` | Legacy category flag, value preserved but ignored. Insults, personal attacks, discrimination are always checked → `TRASH`. |
+| `review_moderation_block_advertising` | `BOOLEAN` | `true` | Legacy category flag, value preserved but ignored. Competitor ads, links, phone/Zalo numbers, referral codes are always checked → `SPAM`. |
+| `review_moderation_block_sensitive` | `BOOLEAN` | `true` | Legacy category flag, value preserved but ignored. Adult/political/religious content and off-topic junk are always checked → `TRASH`. |
 | `review_moderation_daily_limit` | `INTEGER` | `200` | Hard ceiling on paid AI calls per Vietnamese calendar day (0–10,000). Past it the AI layer stops for the rest of the day and reviews are `SKIPPED` with reason `DAILY_LIMIT_REACHED`, staying in `PENDING`; the free banned-word layer keeps running. `0` switches the paid layer off entirely. Counted from `reviews.moderation_source = 'AI'` rows, so no counter table and no reset on restart. |
 | `review_moderation_banned_words` | `LONG_TEXT` | `""` | Shop-managed banned words, comma- or newline-separated. Matched locally with diacritics and inserted separators stripped, case-insensitively, on whole words only — a hit short-circuits before any AI call. |
 
-Switching a category off does not hide it from the moderator's output: the category may still appear in `moderationCategories` as an informational note while no longer causing a block.
+All four recognized categories participate in blocking regardless of the legacy flags. `TRASH` wins over `SPAM` when several categories are detected. A clean review remains `PENDING` for a human; historical moderation annotations are preserved.
 
-**The four category switches gate the AI layer only.** A `review_moderation_banned_words` hit blocks to `TRASH` even with all four switched off — the shop typed that word into its own list, which is an explicit instruction rather than a categorised judgement. Removing the word from the list is the way to stop it; flipping a category switch is not.
+**The banned-word layer remains first and independent of AI availability/budget.** A `review_moderation_banned_words` hit blocks to `TRASH` without calling AI, including when the daily budget is exhausted. Neither the master nor category flags gate either layer.
 
 **The AI credential is deliberately not a setting.** `GEMINI_API_KEY` (plus `BIGBIKE_REVIEW_MODERATION_MODEL` and `BIGBIKE_REVIEW_MODERATION_TIMEOUT_SECONDS`) lives only in the deployment environment. It is never stored in `site_settings`, never returned by any admin endpoint, and never written to audit — masking is not relied upon here because the value never reaches the database.
 
@@ -1971,6 +1982,16 @@ Status: `CONFIRMED_FROM_CODE` — `SettingDefinitionRegistry.java`, `PublicSetti
 `V32__add_article_product_image_and_home_exp_settings.sql`.
 
 **Page hero settings (group `public_hero`, all `publicAllowed`):**
+
+The admin preview uses the same read-only legacy theme URL normalization and
+system assets as `PageHero`; display normalization never rewrites stored URLs.
+English preview titles use EN → VI (including local drafts) → the storefront's
+localized default. Empty EN inputs remain empty and are not auto-translated.
+The preview scales the storefront composition into the admin panel: 250px source
+height below 768px, 450px at/above 768px, centered cover background, and an
+illustration visible only at/above 768px. During a save the banner editor locks
+changes and duplicate submits; failures preserve drafts. Each settings editor
+owns its unsaved-changes guard, including while its tab is hidden.
 
 For each listing page (`/san-pham`, `/brands`, `/tin-tuc`), the hero block is composed from 4 editable keys:
 
@@ -2226,12 +2247,12 @@ carries five read-only annotation fields describing what the automatic moderator
 |---|---|---|
 | `moderationSource` | `"RULE" \| "AI" \| "SKIPPED" \| null` | Which layer produced the verdict. `null` = review predates `V380` or has not been checked. |
 | `moderationVerdict` | `"CLEAN" \| "BLOCKED" \| null` | `CLEAN` does **not** mean approved — the review is still `PENDING` awaiting a human. |
-| `moderationCategories` | `string[]` | Subset of `PROFANITY`, `HARASSMENT`, `ADVERTISING`, `SENSITIVE`. May list a category that is switched **off** in settings, in which case it is informational only and did not cause a block. Empty array when nothing was detected. |
+| `moderationCategories` | `string[]` | Subset of `PROFANITY`, `HARASSMENT`, `ADVERTISING`, `SENSITIVE`. All four categories now participate in blocking; legacy category flags are ignored. Historical annotations and human overrides remain readable and do not determine the current review status. Empty array when nothing was detected. |
 | `moderationReason` | `string \| null` | Short Vietnamese explanation for the moderator (≤500 chars). For `RULE` it names the matched banned word; for `SKIPPED` it is a machine-readable reason code. |
 | `moderationCheckedAt` | ISO-8601 `string \| null` | When the check finished, including when it was skipped. `null` distinguishes "never ran" from "ran and skipped". |
 
 The moderator never returns `APPROVED`, never re-runs after a human decision, and
-never fails the customer's `POST` — a disabled switch, missing `GEMINI_API_KEY`,
+never fails the customer's `POST` — exhausted daily budget, missing `GEMINI_API_KEY`,
 timeout, or malformed AI response all yield `moderationSource: "SKIPPED"` with the
 review left at `PENDING`. Because it is asynchronous, a review fetched immediately
 after submission may still show `null` fields; the `/topic/admin/reviews` WebSocket

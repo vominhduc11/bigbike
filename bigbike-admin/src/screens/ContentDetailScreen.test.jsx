@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   mapValidationErrors: vi.fn(() => ({})),
   showConfirm: vi.fn(),
   setContentLang: vi.fn(),
-  useUnsavedChanges: vi.fn(),
+  useUnsavedChanges: vi.fn(() => vi.fn()),
   contentLang: 'vi',
   toast: { success: vi.fn(), error: vi.fn() },
   // Quyền riêng cho ô "cho Google hiển thị" (V372 `seo.index`). Mặc định là có, để các
@@ -45,7 +45,6 @@ vi.mock('../lib/contentLang', () => ({
 }))
 vi.mock('../lib/auth', () => ({ useHasPermission: () => mocks.hasPermission }))
 vi.mock('../lib/useUnsavedChanges', () => ({ useUnsavedChanges: mocks.useUnsavedChanges }))
-vi.mock('../lib/navigationGuard', () => ({ clearNavGuard: vi.fn() }))
 vi.mock('../lib/useRecentItems', () => ({ recordRecentItem: vi.fn() }))
 vi.mock('../components/AdminShell', () => ({ useAutoHideSidebar: vi.fn() }))
 vi.mock('./content-detail/ContentAssignmentBanner', () => ({

@@ -15,10 +15,11 @@ import com.bigbike.bigbike_backend.service.admin.AdminReviewService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -50,7 +51,7 @@ class ReviewModerationServiceTest {
         service = new ReviewModerationService(
                 reviewRepo, moderationSettings, aiClient, adminReviewService);
         givenReview("PENDING", "Nội dung đánh giá bình thường.");
-        givenSettings(true, "", Set.of(ReviewModerationCategory.values()));
+        givenSettings("");
         when(aiClient.isConfigured()).thenReturn(true);
     }
 
@@ -64,18 +65,13 @@ class ReviewModerationServiceTest {
         when(reviewRepo.findById(REVIEW_ID)).thenReturn(Optional.of(review));
     }
 
-    private void givenSettings(
-            boolean enabled, String bannedWords, Set<ReviewModerationCategory> blocking) {
-        givenSettings(enabled, bannedWords, blocking, 200);
+    private void givenSettings(String bannedWords) {
+        givenSettings(bannedWords, 200);
     }
 
-    private void givenSettings(
-            boolean enabled,
-            String bannedWords,
-            Set<ReviewModerationCategory> blocking,
-            int dailyLimit) {
+    private void givenSettings(String bannedWords, int dailyLimit) {
         when(moderationSettings.load()).thenReturn(
-                new ReviewModerationSettings.Snapshot(enabled, blocking, bannedWords, dailyLimit));
+                new ReviewModerationSettings.Snapshot(bannedWords, dailyLimit));
     }
 
     private void givenCallsSpentToday(long spent) {
@@ -88,20 +84,6 @@ class ReviewModerationServiceTest {
                 ArgumentCaptor.forClass(ReviewModerationOutcome.class);
         verify(adminReviewService).applyAutoModeration(any(), captor.capture());
         return captor.getValue();
-    }
-
-    @Test
-    @DisplayName("master switch off records a skip and calls no AI")
-    void disabledSkips() {
-        givenSettings(false, "", Set.of(ReviewModerationCategory.values()));
-
-        service.moderate(REVIEW_ID);
-
-        ReviewModerationOutcome outcome = captureOutcome();
-        assertThat(outcome.source()).isEqualTo(ReviewModerationOutcome.SOURCE_SKIPPED);
-        assertThat(outcome.blocked()).isFalse();
-        assertThat(outcome.reason()).isEqualTo(ReviewModerationService.REASON_DISABLED);
-        verify(aiClient, never()).classify(anyString(), any());
     }
 
     @Test
@@ -118,7 +100,7 @@ class ReviewModerationServiceTest {
     @Test
     @DisplayName("a banned word blocks to TRASH and short-circuits before the AI")
     void bannedWordBlocksWithoutAi() {
-        givenSettings(true, "lừa đảo", Set.of(ReviewModerationCategory.values()));
+        givenSettings("lừa đảo");
         givenReview("PENDING", "shop nay lua dao khach");
 
         service.moderate(REVIEW_ID);
@@ -132,9 +114,9 @@ class ReviewModerationServiceTest {
     }
 
     @Test
-    @DisplayName("a banned word still blocks when every AI category is switched off")
-    void bannedWordIgnoresCategorySwitches() {
-        givenSettings(true, "lừa đảo", Set.of());
+    @DisplayName("the banned-word layer remains independent of the AI layer")
+    void bannedWordBlocksBeforeAi() {
+        givenSettings("lừa đảo");
         givenReview("PENDING", "shop lua dao");
 
         service.moderate(REVIEW_ID);
@@ -167,18 +149,21 @@ class ReviewModerationServiceTest {
         assertThat(outcome.reason()).isEqualTo(ReviewModerationService.REASON_AI_UNAVAILABLE);
     }
 
-    @Test
-    @DisplayName("advertising goes to SPAM, abuse goes to TRASH")
-    void categoryDecidesTargetStatus() {
+    @ParameterizedTest
+    @EnumSource(ReviewModerationCategory.class)
+    @DisplayName("all four violation categories block without an admin switch")
+    void categoryDecidesTargetStatus(ReviewModerationCategory category) {
         when(aiClient.classify(anyString(), any())).thenReturn(Optional.of(
                 new AiReviewModerationClient.AiVerdict(
-                        true, List.of(ReviewModerationCategory.ADVERTISING), "Chèn số điện thoại.")));
+                        true, List.of(category), "Chèn số điện thoại.")));
 
         service.moderate(REVIEW_ID);
 
         ReviewModerationOutcome outcome = captureOutcome();
         assertThat(outcome.source()).isEqualTo(ReviewModerationOutcome.SOURCE_AI);
-        assertThat(outcome.resolvedTargetStatus()).contains("SPAM");
+        assertThat(outcome.blocked()).isTrue();
+        assertThat(outcome.resolvedTargetStatus()).contains(
+                category == ReviewModerationCategory.ADVERTISING ? "SPAM" : "TRASH");
     }
 
     @Test
@@ -196,19 +181,16 @@ class ReviewModerationServiceTest {
     }
 
     @Test
-    @DisplayName("a switched-off category is recorded as a note but does not block")
-    void switchedOffCategoryOnlyAnnotates() {
-        givenSettings(true, "", Set.of(ReviewModerationCategory.PROFANITY));
+    @DisplayName("a verdict without any recognized category cannot block")
+    void unrecognizedViolationDoesNotBlock() {
         when(aiClient.classify(anyString(), any())).thenReturn(Optional.of(
-                new AiReviewModerationClient.AiVerdict(
-                        true, List.of(ReviewModerationCategory.ADVERTISING), "Có link.")));
+                new AiReviewModerationClient.AiVerdict(true, List.of(), "Loại không hợp lệ.")));
 
         service.moderate(REVIEW_ID);
 
         ReviewModerationOutcome outcome = captureOutcome();
         assertThat(outcome.blocked()).isFalse();
         assertThat(outcome.verdict()).isEqualTo("CLEAN");
-        assertThat(outcome.categoryNames()).containsExactly("ADVERTISING");
         assertThat(outcome.resolvedTargetStatus()).isEmpty();
     }
 
@@ -260,7 +242,7 @@ class ReviewModerationServiceTest {
     @Test
     @DisplayName("the daily budget stops paid calls once it is spent")
     void dailyLimitStopsAiCalls() {
-        givenSettings(true, "", Set.of(ReviewModerationCategory.values()), 200);
+        givenSettings("", 200);
         givenCallsSpentToday(200);
 
         service.moderate(REVIEW_ID);
@@ -276,7 +258,7 @@ class ReviewModerationServiceTest {
     @Test
     @DisplayName("under the budget the call still goes through")
     void underDailyLimitStillCalls() {
-        givenSettings(true, "", Set.of(ReviewModerationCategory.values()), 200);
+        givenSettings("", 200);
         givenCallsSpentToday(199);
         when(aiClient.classify(anyString(), any())).thenReturn(Optional.of(
                 new AiReviewModerationClient.AiVerdict(false, List.of(), "")));
@@ -289,7 +271,7 @@ class ReviewModerationServiceTest {
     @Test
     @DisplayName("a limit of zero switches the paid layer off entirely")
     void zeroLimitDisablesAi() {
-        givenSettings(true, "", Set.of(ReviewModerationCategory.values()), 0);
+        givenSettings("", 0);
 
         service.moderate(REVIEW_ID);
 
@@ -301,7 +283,7 @@ class ReviewModerationServiceTest {
     @Test
     @DisplayName("the free banned-word layer keeps working after the budget is gone")
     void bannedWordsStillBlockAfterLimit() {
-        givenSettings(true, "lừa đảo", Set.of(ReviewModerationCategory.values()), 0);
+        givenSettings("lừa đảo", 0);
         givenReview("PENDING", "shop nay lua dao");
 
         service.moderate(REVIEW_ID);

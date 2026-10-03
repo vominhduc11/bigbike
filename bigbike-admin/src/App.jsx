@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Activity,
@@ -33,7 +33,7 @@ import {
   subscribeAdminWs,
 } from './lib/adminWebSocket'
 import { queryClient } from './lib/queryClient'
-import { confirmNavigation } from './lib/navigationGuard'
+import { createGuardedHistory } from './lib/navigationHistory'
 import { lazyScreen } from './lib/lazyScreen'
 import { canAccessPolicy, missingPolicyPermissions, policyForRoute } from './lib/adminAccessPolicy'
 import { LoginScreen } from './screens/LoginScreen'
@@ -366,35 +366,30 @@ function AdminApp() {
 
   const SCREEN_SUSPENSE_FALLBACK = <ScreenSkeleton />
 
+  const historyRef = useRef(null)
+  useEffect(() => {
+    const history = createGuardedHistory(() => {
+      setPathname(normalizePath(window.location.pathname))
+      setSearch(window.location.search)
+    })
+    historyRef.current = history
+    return () => {
+      history.dispose()
+      historyRef.current = null
+    }
+  }, [])
+
   const navigate = useCallback(
     (nextPath, options = {}) => {
-      // F6: chặn rời trang khi đang có thay đổi chưa lưu (hỏi xác nhận).
-      if (!options.force && !confirmNavigation()) return
       const qIdx = nextPath.indexOf('?')
       const pathPart = qIdx === -1 ? nextPath : nextPath.slice(0, qIdx)
       const queryPart = qIdx === -1 ? '' : nextPath.slice(qIdx)
       const normalizedPath = normalizePath(pathPart)
-      const fullUrl = normalizedPath + queryPart
       if (normalizedPath === pathname && !queryPart) return
-      if (options.replace) {
-        window.history.replaceState({}, '', fullUrl)
-      } else {
-        window.history.pushState({}, '', fullUrl)
-      }
-      setPathname(normalizedPath)
-      setSearch(queryPart)
+      historyRef.current?.navigate(normalizedPath + queryPart, options)
     },
     [pathname],
   )
-
-  useEffect(() => {
-    const handlePopState = () => {
-      setPathname(normalizePath(window.location.pathname))
-      setSearch(window.location.search)
-    }
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
 
   useEffect(() => {
     if (authStatus !== 'authenticated') return
@@ -501,7 +496,6 @@ function AdminApp() {
     if (authState.status !== 'authenticated' || route.kind !== 'root' || !fallbackPath) return
     // Root is a real redirect target: replace the URL once the authenticated
     // permission set has selected its first accessible module.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     navigate(fallbackPath, { replace: true })
   }, [authState.status, route.kind, fallbackPath, navigate])
 

@@ -2885,8 +2885,8 @@
     "fieldBgDesktop": "Background (desktop)",
     "fieldIllustration": "Gear image (right side)",
     "fieldAlt": "Image alt text (SEO)",
-    "hintBgDesktop": "Wide landscape image, e.g. 1920×600px.",
-    "hintIllustration": "Transparent PNG, near-square ~700×600px. Leave blank to use the default gear image.",
+    "hintBgDesktop": "Shared background for desktop and mobile.",
+    "hintIllustration": "Prefer a transparent image. Leave blank to use the default.",
     "defaultsTitle": "Shared default images",
     "defaultsDesc": "Applied to any page above that has no image of its own.",
     "defaultBg": "Default background",
@@ -2897,7 +2897,9 @@
     "openCategories": "Open Categories",
     "readOnlyHint": "You have view-only access to page banners.",
     "discardConfirm": "Discard all unsaved changes? Your edits will be lost.",
-    "discardConfirmTitle": "Discard banner changes"
+    "discardConfirmTitle": "Discard banner changes",
+    "checkFields": "Not saved. Check the highlighted fields.",
+    "reviewOtherLanguage": "Check the highlighted fields in {{language}}"
   },
   "settings": {
     "title": "Website Settings",
@@ -2932,8 +2934,7 @@
       "contact": "Public contact information for the shop.",
       "publicHero": "Images and headings at the top of listing pages.",
       "seo": "Homepage content supporting organic search.",
-      "productAssign": "Internal assignment guidance for products and articles.",
-      "reviewModeration": "Screen customer reviews before you moderate them. The screening layer can only block, never publish."
+      "productAssign": "Internal assignment guidance for products and articles."
     },
     "sectionDescription": {
       "inventory_digest": "Sends one aggregate to the admin bell and internal mailbox; sends nothing when there is no out-of-stock item.",
@@ -3021,8 +3022,7 @@
     "internal": "Internal",
     "panelSummary": "{{count}} settings",
     "errValueEnRequired": "Please enter the English version for this field.",
-    "readOnlyHint": "You have view-only access to settings.",
-    "group_review_moderation": "Review moderation"
+    "readOnlyHint": "You have view-only access to settings."
   },
   "adminUsers": {
     "title": "Admin Users",

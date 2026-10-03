@@ -46,8 +46,7 @@ vi.mock('../lib/adminApi', () => ({
 
 vi.mock('@/lib/toast', () => ({ toast: mocks.toast }))
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
-vi.mock('@/lib/useUnsavedChanges', () => ({ useUnsavedChanges: () => {} }))
-vi.mock('@/lib/navigationGuard', () => ({ clearNavGuard: vi.fn() }))
+vi.mock('@/lib/useUnsavedChanges', () => ({ useUnsavedChanges: () => vi.fn() }))
 vi.mock('../lib/useRecentItems', () => ({ recordRecentItem: vi.fn() }))
 vi.mock('../lib/contentLang', () => ({
   useContentLang: () => mocks.contentLang,

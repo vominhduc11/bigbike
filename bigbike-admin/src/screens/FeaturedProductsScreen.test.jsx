@@ -114,8 +114,7 @@ vi.mock('../lib/adminApi', () => ({
 vi.mock('../lib/contentLang', () => ({ useContentLang: () => 'vi' }))
 vi.mock('../lib/confirm', () => ({ showConfirm: mocks.showConfirm }))
 vi.mock('@/lib/toast', () => ({ toast: mocks.toast }))
-vi.mock('@/lib/useUnsavedChanges', () => ({ useUnsavedChanges: () => {} }))
-vi.mock('@/lib/navigationGuard', () => ({ clearNavGuard: vi.fn() }))
+vi.mock('@/lib/useUnsavedChanges', () => ({ useUnsavedChanges: () => vi.fn() }))
 vi.mock('../lib/useProductPicker', () => ({
   useProductPicker: () => ({
     search: '',

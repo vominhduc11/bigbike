@@ -913,16 +913,6 @@
   margin-top: var(--admin-space-1);
 }
 
-.bb-banner-preview {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  aspect-ratio: 1920 / 460;
-  border: 1px solid var(--bb-border);
-  border-radius: var(--bb-r-card);
-  background: var(--bb-sidebar);
-}
-
 .bb-slider-card {
   opacity: 1;
 }

@@ -1,37 +1,23 @@
-import { useEffect } from 'react'
-import { setNavGuard, clearNavGuard } from './navigationGuard'
+import { useCallback, useEffect, useRef } from 'react'
+import { registerNavGuard } from './navigationGuard'
 
-/**
- * Cảnh báo khi rời trang lúc đang có thay đổi chưa lưu (F6).
- *
- * @param {boolean} when      true khi form đang "dirty" (có thay đổi chưa lưu).
- * @param {string}  [message] Nội dung hỏi xác nhận (tuỳ chọn).
- *
- * Khi `when` bật:
- *  - điều hướng nội bộ qua App.jsx `navigate` sẽ hỏi xác nhận,
- *  - `beforeunload` cảnh báo khi reload / đóng tab / điều hướng ra ngoài.
- *
- * `when` chỉ đổi false↔true vài lần (lần sửa đầu, lúc lưu) nên effect không churn.
- *
- * Lưu ý luồng "lưu xong rồi navigate" (vd tạo mới -> trang chi tiết): gọi
- * `clearNavGuard()` (export từ ./navigationGuard) ngay trước khi navigate trong
- * onSuccess để chắc chắn không bị hỏi nhầm.
- */
+/** Returns a stable function that clears only this editor before save-and-navigate. */
 export function useUnsavedChanges(when, message) {
+  const disposeRef = useRef(null)
+  const clearOwnGuard = useCallback(() => {
+    disposeRef.current?.()
+    disposeRef.current = null
+  }, [])
+
   useEffect(() => {
-    if (!when) {
-      clearNavGuard()
-      return undefined
-    }
-    setNavGuard(() => true, message)
-    const onBeforeUnload = (e) => {
-      e.preventDefault()
-      e.returnValue = ''
-    }
-    window.addEventListener('beforeunload', onBeforeUnload)
+    if (!when) return undefined
+    const dispose = registerNavGuard(() => true, message)
+    disposeRef.current = dispose
     return () => {
-      window.removeEventListener('beforeunload', onBeforeUnload)
-      clearNavGuard()
+      dispose()
+      if (disposeRef.current === dispose) disposeRef.current = null
     }
   }, [when, message])
+
+  return clearOwnGuard
 }

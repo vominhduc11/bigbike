@@ -7,7 +7,6 @@ import { fetchHomepageBlocks, saveHomepageBlocks } from '../lib/adminApi'
 import { useContentLang } from '../lib/contentLang'
 import { useProductPicker } from '../lib/useProductPicker'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
-import { clearNavGuard } from '@/lib/navigationGuard'
 import { showConfirm } from '../lib/confirm'
 import { StatePanel } from '../components/StatePanel'
 import { SortableList } from '../components/Sortable'
@@ -153,7 +152,7 @@ export function FeaturedProductsScreen({ canUpdate }) {
     currentIds.length !== baselineIds.length || currentIds.some((id, i) => id !== baselineIds[i])
 
   // Cảnh báo khi rời trang / reload / đóng tab lúc đang có thay đổi chưa lưu.
-  useUnsavedChanges(
+  const clearOwnGuard = useUnsavedChanges(
     isDirty,
     t('featuredProducts.unsavedConfirm', {
       defaultValue:
@@ -202,7 +201,7 @@ export function FeaturedProductsScreen({ canUpdate }) {
     onSuccess(_data, featuredGrid) {
       // Đã lưu → baseline = danh sách vừa lưu, gỡ cảnh báo trước khi refetch.
       setBaselineIds(featuredGrid)
-      clearNavGuard()
+      clearOwnGuard()
       queryClient.invalidateQueries({ queryKey: ['homepage-blocks'] })
       toast.success(t('featuredProducts.savedSuccess'))
     },

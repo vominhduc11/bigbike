@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FolderTree, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -6,86 +6,137 @@ import { StatePanel } from '../components/StatePanel'
 import { ReadOnlyBanner } from '../components/ReadOnlyBanner'
 import { ImageUrlInput } from '../components/ImageUrlInput'
 import { IMAGE_RECO } from '../lib/imageRecommendations'
+import { displayValue as unquote } from './settings/constants'
+import {
+  BANNER_PAGES,
+  EDITABLE_BANNER_KEYS,
+  HERO_SYSTEM_BG,
+  HERO_SYSTEM_ILLUSTRATION,
+  bannerImageSource,
+  bannerPreviewTitle,
+  heroPreviewGeometry,
+  resolveBannerPreviewUrl,
+} from './settings/bannerSettings'
 import { fetchSettings, batchUpdateSettings, mapValidationErrors } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
-import { resolveDisplayUrl } from '@/lib/contracts'
-import { useContentLang } from '@/lib/contentLang'
+import { setContentLang, useContentLang } from '@/lib/contentLang'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DetailSection } from '@/components/DetailSection'
 import { FormField, ScreenHeader, StickyActionBar } from '@/components/layout'
 
-// Storefront base — dùng để mở "Xem trên web" và để preview ảnh fallback cứng của theme
-// (các ảnh /wp-content/... chỉ tồn tại ở app web, không có trong admin).
-const STOREFRONT_BASE = (import.meta.env.VITE_STOREFRONT_BASE_URL ?? 'https://bigbike.vn').replace(
-  /\/$/,
-  '',
-)
-
-// Ảnh fallback cứng baked trong WpCategoryHero (bigbike-web). Chỉ hiển thị khi cả ảnh riêng
-// lẫn ảnh mặc định chung đều trống — khớp đúng những gì khách thấy.
-const THEME_FALLBACK_BG = '/wp-content/themes/bigbike/images/page-title-bg.png'
-const THEME_FALLBACK_ILLUSTRATION = '/wp-content/themes/bigbike/images/mu-bao-hiem.png'
-
-// 3 trang listing không có PageEntity — mỗi trang một bộ key trong group public_hero.
-const PAGES = [
-  { prefix: 'hero_products', titleKey: 'banners.pageProducts', path: '/sp/' },
-  { prefix: 'hero_brands', titleKey: 'banners.pageBrands', path: '/brands' },
-  { prefix: 'hero_news', titleKey: 'banners.pageNews', path: '/tin-tuc' },
-]
-
-// Một số giá trị về từ backend có thể bị bọc dấu nháy — gỡ cho sạch trước khi hiển thị.
-function unquote(val) {
-  if (typeof val === 'string' && val.length >= 2 && val.startsWith('"') && val.endsWith('"')) {
-    return val.slice(1, -1)
-  }
-  return val ?? ''
-}
-
-// URL để preview: ảnh đã cấu hình → resolveDisplayUrl (rewrite MinIO → /media-proxy);
-// ảnh fallback theme → ghép STOREFRONT_BASE vì asset đó nằm ở app web.
-function previewSrc(url, { themeAsset = false } = {}) {
-  const v = (url || '').trim()
-  if (!v) return ''
-  if (themeAsset && v.startsWith('/')) return STOREFRONT_BASE + v
-  return resolveDisplayUrl(v)
-}
-
-// ── Banner preview (composite) ──────────────────────────────────────────────
-// Ráp nền + gear + tiêu đề như WpCategoryHero để admin thấy đúng kết quả thật.
-function BannerPreview({ bg, illustration, title }) {
+// The same storefront canvas is scaled uniformly into the admin panel.
+function PreviewImage({ src, kind, className, t }) {
+  const [status, setStatus] = useState('loading')
   return (
-    <div className="bb-banner-preview">
-      {bg.src ? (
-        <img
-          src={bg.src}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover"
-          loading="lazy"
-        />
-      ) : null}
-      <div
-        className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent"
+    <>
+      <img
+        src={src}
+        alt=""
         aria-hidden="true"
+        data-banner-image={kind}
+        data-image-status={status}
+        className={`${className} ${status === 'ready' ? '' : 'invisible'}`}
+        onLoad={() => setStatus('ready')}
+        onError={() => setStatus('error')}
       />
-      <div className="absolute inset-y-0 left-0 flex flex-col justify-center gap-1 px-4 sm:px-6">
-        <span className="text-base font-bold leading-tight text-white drop-shadow sm:text-xl">
-          {title}
-        </span>
-        <span className="text-xs text-white/80">Bigbike.vn / {title}</span>
-      </div>
-      {illustration.src ? (
-        <img
-          src={illustration.src}
-          alt=""
-          aria-hidden="true"
-          className="absolute bottom-0 right-2 h-[88%] w-auto object-contain sm:right-4"
-          loading="lazy"
-        />
+      {status !== 'ready' ? (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-muted p-4 text-sm text-muted-foreground"
+          role={status === 'error' ? 'alert' : 'status'}
+        >
+          {t(status === 'error' ? 'imageInput.previewError' : 'imageInput.previewLoading')}
+        </div>
       ) : null}
+    </>
+  )
+}
+
+function BannerPreview({ bg, illustration, title, t }) {
+  const panelRef = useRef(null)
+  const [dimensions, setDimensions] = useState(() => ({
+    viewport: window.innerWidth,
+    panel: window.innerWidth,
+  }))
+  useEffect(() => {
+    const panel = panelRef.current
+    const measure = () => {
+      const viewport = window.innerWidth
+      const width = panel.clientWidth
+      setDimensions((previous) =>
+        previous.viewport === viewport && previous.panel === width
+          ? previous
+          : { viewport, panel: width },
+      )
+    }
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
+    observer?.observe(panel)
+    const frame = requestAnimationFrame(measure)
+    window.addEventListener('resize', measure)
+    return () => {
+      cancelAnimationFrame(frame)
+      observer?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [])
+  const geometry = heroPreviewGeometry(dimensions.viewport, dimensions.panel)
+  return (
+    <div
+      ref={panelRef}
+      data-banner-preview
+      data-source-height={geometry.sourceHeight}
+      className="relative w-full overflow-hidden rounded-[var(--admin-radius-card)] border border-border bg-muted"
+      style={{ height: geometry.height }}
+    >
+      <div
+        className="absolute left-0 top-0 origin-top-left overflow-hidden"
+        style={{
+          width: dimensions.viewport,
+          height: geometry.sourceHeight,
+          transform: `scale(${geometry.scale})`,
+        }}
+      >
+        <PreviewImage
+          key={bg.src}
+          src={bg.src}
+          kind="background"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          t={t}
+        />
+        <div
+          className="relative mx-auto flex h-full items-center"
+          style={{ width: geometry.railWidth }}
+        >
+          <div className={geometry.desktop ? 'w-1/2' : 'w-full px-4'}>
+            <div
+              data-banner-title
+              className="m-0 text-xl font-semibold leading-tight text-[var(--bb-text-onsidebar-strong)] md:text-2xl"
+            >
+              {title}
+            </div>
+            <div className="mt-2 text-sm text-[var(--bb-text-onsidebar-strong)]">
+              Bigbike.vn / {title}
+            </div>
+          </div>
+          {geometry.desktop ? (
+            <div
+              data-banner-illustration
+              className="absolute bottom-0 right-4 h-100"
+              style={{ width: Math.min(geometry.railWidth / 2, 451) }}
+            >
+              <PreviewImage
+                key={illustration.src}
+                src={illustration.src}
+                kind="illustration"
+                className="absolute inset-0 h-full w-full object-contain"
+                t={t}
+              />
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }
@@ -126,6 +177,7 @@ function ImageField({
     >
       <ImageUrlInput
         value={value}
+        previewUrl={resolveBannerPreviewUrl(value)}
         onChange={onChange}
         alt={alt}
         onAltChange={onAltChange}
@@ -176,25 +228,18 @@ function PageBannerCard({
   const activeErrors = contentLang === 'en' ? errorsEn : errors
   const pageTitle = t(page.titleKey)
 
-  // Cascade preview: ảnh riêng → mặc định chung → fallback theme.
-  const bg = ownBg
-    ? { src: previewSrc(ownBg), source: 'own' }
-    : defaults.bg
-      ? { src: previewSrc(defaults.bg), source: 'default' }
-      : { src: previewSrc(THEME_FALLBACK_BG, { themeAsset: true }), source: 'fallback' }
-  const illustration = ownIllu
-    ? { src: previewSrc(ownIllu), source: 'own' }
-    : defaults.illustration
-      ? { src: previewSrc(defaults.illustration), source: 'default' }
-      : { src: previewSrc(THEME_FALLBACK_ILLUSTRATION, { themeAsset: true }), source: 'fallback' }
+  const bg = bannerImageSource(ownBg, defaults.bg, HERO_SYSTEM_BG)
+  const illustration = bannerImageSource(ownIllu, defaults.illustration, HERO_SYSTEM_ILLUSTRATION)
+  const previewTitle = bannerPreviewTitle(
+    get(k('title')),
+    getEn(k('title')),
+    contentLang,
+    t(page.titleKey, { lng: contentLang }),
+  )
 
   return (
     <DetailSection title={pageTitle} headingLevel={3} contentClassName="bb-form-grid">
-      <BannerPreview
-        bg={bg}
-        illustration={illustration}
-        title={activeValue(k('title')) || pageTitle}
-      />
+      <BannerPreview bg={bg} illustration={illustration} title={previewTitle} t={t} />
 
       <TextField
         fieldKey={k('title')}
@@ -322,6 +367,7 @@ export function BannerScreen({
   const [drafts, setDrafts] = useState({})
   const [draftsEn, setDraftsEn] = useState({})
   const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saveError, setSaveError] = useState('')
   // Lỗi gắn theo từng field (key cài đặt) khi lưu thất bại do validate ở backend.
@@ -355,15 +401,41 @@ export function BannerScreen({
     (key) => (draftsEn[key] !== undefined ? draftsEn[key] : unquote(byKey.get(key)?.valueEn)),
     [draftsEn, byKey],
   )
-  const set = useCallback((key, value) => setDrafts((p) => ({ ...p, [key]: value })), [])
-  const setEn = useCallback((key, value) => setDraftsEn((p) => ({ ...p, [key]: value })), [])
+  const set = useCallback(
+    (key, value) => {
+      if (!canUpdate || savingRef.current) return
+      setDrafts((previous) => ({ ...previous, [key]: value }))
+      setFieldErrors((previous) => {
+        const next = { ...previous }
+        delete next[key]
+        return next
+      })
+      setSaveError('')
+      setSaveSuccess(false)
+    },
+    [canUpdate],
+  )
+  const setEn = useCallback(
+    (key, value) => {
+      if (!canUpdate || savingRef.current) return
+      setDraftsEn((previous) => ({ ...previous, [key]: value }))
+      setFieldErrorsEn((previous) => {
+        const next = { ...previous }
+        delete next[key]
+        return next
+      })
+      setSaveError('')
+      setSaveSuccess(false)
+    },
+    [canUpdate],
+  )
 
   const dirtyKeys = useMemo(() => {
     const keys = new Set()
     for (const [k, v] of Object.entries(drafts)) if (v !== unquote(byKey.get(k)?.value)) keys.add(k)
     for (const [k, v] of Object.entries(draftsEn))
       if (v !== unquote(byKey.get(k)?.valueEn)) keys.add(k)
-    return [...keys]
+    return [...keys].filter((key) => EDITABLE_BANNER_KEYS.has(key))
   }, [drafts, draftsEn, byKey])
 
   useEffect(() => {
@@ -384,6 +456,11 @@ export function BannerScreen({
     bg: get('hero_default_bg_url'),
     illustration: get('hero_default_illustration_url'),
   }
+  const hasErrorsInOtherLanguage = Object.keys(
+    contentLang === 'en' ? fieldErrors : fieldErrorsEn,
+  ).some((key) =>
+    BANNER_PAGES.some(({ prefix }) => key === `${prefix}_title` || key === `${prefix}_image_alt`),
+  )
 
   const clearDrafts = useCallback(() => {
     setDrafts({})
@@ -396,6 +473,7 @@ export function BannerScreen({
   // F5: huỷ là hành động phá huỷ (xoá mọi thay đổi chưa lưu, có thể nhiều field × 3
   // trang) nên xác nhận trước khi xoá.
   const handleDiscard = useCallback(async () => {
+    if (savingRef.current) return
     if (dirtyKeys.length > 0) {
       const ok = await showConfirm(
         t('banners.discardConfirm', {
@@ -405,54 +483,75 @@ export function BannerScreen({
       )
       if (!ok) return
     }
-    clearDrafts()
+    if (!savingRef.current) clearDrafts()
   }, [dirtyKeys, clearDrafts, t])
 
   const handleSave = useCallback(async () => {
-    if (dirtyKeys.length === 0) return
+    if (!canUpdate || savingRef.current || dirtyKeys.length === 0) return
+    savingRef.current = true
     setSaving(true)
     setSaveSuccess(false)
     setSaveError('')
     setFieldErrors({})
     setFieldErrorsEn({})
+    const updates = dirtyKeys.map((key) => {
+      const u = { key }
+      if (drafts[key] !== undefined && drafts[key] !== unquote(byKey.get(key)?.value))
+        u.value = drafts[key]
+      if (draftsEn[key] !== undefined && draftsEn[key] !== unquote(byKey.get(key)?.valueEn))
+        u.valueEn = draftsEn[key]
+      return u
+    })
     try {
-      const updates = dirtyKeys.map((key) => {
-        const u = { key }
-        if (drafts[key] !== undefined) u.value = drafts[key]
-        if (draftsEn[key] !== undefined) u.valueEn = draftsEn[key]
-        return u
-      })
       const result = await batchUpdateSettings(updates)
       queryClient.setQueryData(['settings'], (previous) => {
         const updated = new Map(result.items.map((item) => [item.key, item]))
         return { ...previous, items: (previous?.items || []).map((s) => updated.get(s.key) || s) }
       })
       queryClient.invalidateQueries({ queryKey: ['settings'], refetchType: 'none' })
-      setDrafts({})
-      setDraftsEn({})
+      const dropSubmitted = (previous, field) => {
+        const next = { ...previous }
+        for (const update of updates) {
+          if (update[field] !== undefined && next[update.key] === update[field])
+            delete next[update.key]
+        }
+        return next
+      }
+      setDrafts((previous) => dropSubmitted(previous, 'value'))
+      setDraftsEn((previous) => dropSubmitted(previous, 'valueEn'))
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2500)
     } catch (e) {
       // F1: backend validate theo từng update (updates.N.value / updates.N.valueEn).
       // Gắn lỗi về đúng key cài đặt qua thứ tự dirtyKeys để hiện ngay dưới field.
-      const detailMap = mapValidationErrors(e)
+      const detailMap = mapValidationErrors(e, t)
       const byKey = {}
       const byKeyEn = {}
+      const formErrors = []
       for (const [path, msg] of Object.entries(detailMap)) {
-        const m = /^updates\.(\d+)\.(value|valueEn)$/.exec(path)
-        if (!m) continue
-        const key = dirtyKeys[Number(m[1])]
-        if (!key) continue
-        if (m[2] === 'valueEn') byKeyEn[key] = msg
+        const m = /^updates\.(\d+)\.(value|valueEn|key)$/.exec(path)
+        const key = m && updates[Number(m[1])]?.key
+        if (!key) {
+          formErrors.push(msg)
+          continue
+        }
+        if (m[2] === 'valueEn' || (m[2] === 'key' && updates[Number(m[1])].value === undefined))
+          byKeyEn[key] = msg
         else byKey[key] = msg
       }
       setFieldErrors(byKey)
       setFieldErrorsEn(byKeyEn)
-      setSaveError(e.message || t('banners.saveError'))
+      setSaveError(
+        formErrors.join(' ') ||
+          (Object.keys(byKey).length + Object.keys(byKeyEn).length > 0
+            ? t('banners.checkFields')
+            : e.message || t('banners.saveError')),
+      )
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
-  }, [dirtyKeys, drafts, draftsEn, queryClient, t])
+  }, [canUpdate, dirtyKeys, drafts, draftsEn, byKey, queryClient, t])
 
   if (state.status === 'loading') {
     return (
@@ -481,7 +580,7 @@ export function BannerScreen({
       )}
 
       <div className="bb-stack">
-        {PAGES.map((page) => (
+        {BANNER_PAGES.map((page) => (
           <PageBannerCard
             key={page.prefix}
             page={page}
@@ -490,15 +589,32 @@ export function BannerScreen({
             set={set}
             setEn={setEn}
             defaults={defaults}
-            canUpdate={canUpdate}
+            canUpdate={canUpdate && !saving}
             contentLang={contentLang}
             t={t}
             errors={fieldErrors}
             errorsEn={fieldErrorsEn}
           />
         ))}
-        <DefaultsCard get={get} set={set} canUpdate={canUpdate} t={t} errors={fieldErrors} />
+        <DefaultsCard
+          get={get}
+          set={set}
+          canUpdate={canUpdate && !saving}
+          t={t}
+          errors={fieldErrors}
+        />
         <CrossLinksCard navigate={navigate} t={t} />
+        {hasErrorsInOtherLanguage ? (
+          <div role="alert" className="flex items-center gap-2 text-sm text-danger">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setContentLang(contentLang === 'en' ? 'vi' : 'en')}
+            >
+              {t('banners.reviewOtherLanguage', { language: contentLang === 'en' ? 'VI' : 'EN' })}
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {canUpdate && (dirtyKeys.length > 0 || saving || saveSuccess || saveError) && (
@@ -545,7 +661,7 @@ export function BannerScreen({
             className="min-h-11"
             onClick={handleSave}
             loading={saving}
-            disabled={dirtyKeys.length === 0}
+            disabled={saving || dirtyKeys.length === 0}
           >
             {t('common.save')}
           </Button>

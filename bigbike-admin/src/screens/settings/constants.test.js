@@ -75,7 +75,6 @@ describe('retired overdue operational order settings UI', () => {
       'PUBLIC_HERO',
       'SEO',
       'PRODUCT_ASSIGN',
-      'REVIEW_MODERATION',
     ])
   })
 })

@@ -2885,8 +2885,8 @@
     "fieldBgDesktop": "Ảnh nền (máy tính)",
     "fieldIllustration": "Ảnh minh hoạ (góc phải)",
     "fieldAlt": "Mô tả ảnh",
-    "hintBgDesktop": "Ảnh nằm ngang rộng, ví dụ 1920×600px.",
-    "hintIllustration": "Ảnh nền trong, tỷ lệ gần vuông khoảng 700×600 điểm ảnh. Bỏ trống sẽ dùng ảnh minh hoạ mặc định.",
+    "hintBgDesktop": "Ảnh nền dùng chung trên máy tính và điện thoại.",
+    "hintIllustration": "Ưu tiên ảnh nền trong. Bỏ trống để dùng ảnh mặc định.",
     "defaultsTitle": "Ảnh mặc định chung",
     "defaultsDesc": "Áp dụng cho mọi trang ở trên chưa đặt ảnh riêng.",
     "defaultBg": "Ảnh nền mặc định",
@@ -2897,7 +2897,9 @@
     "openCategories": "Mở Danh mục",
     "readOnlyHint": "Bạn chỉ có quyền xem banner trang, không thể chỉnh sửa.",
     "discardConfirm": "Huỷ mọi thay đổi chưa lưu? Các chỉnh sửa sẽ bị mất.",
-    "discardConfirmTitle": "Huỷ thay đổi banner"
+    "discardConfirmTitle": "Huỷ thay đổi banner",
+    "checkFields": "Chưa lưu được. Kiểm tra các ô báo lỗi.",
+    "reviewOtherLanguage": "Kiểm tra ô báo lỗi ở bản {{language}}"
   },
   "settings": {
     "title": "Cài đặt cửa hàng",
@@ -2932,8 +2934,7 @@
       "contact": "Thông tin liên hệ công khai của cửa hàng.",
       "publicHero": "Ảnh và tiêu đề đầu các trang danh sách.",
       "seo": "Nội dung hỗ trợ tìm kiếm của trang chủ.",
-      "productAssign": "Hướng dẫn phân công nội bộ cho sản phẩm và bài viết.",
-      "reviewModeration": "Lọc tự động đánh giá của khách trước khi bạn duyệt. Máy chỉ được chặn, không bao giờ tự đăng."
+      "productAssign": "Hướng dẫn phân công nội bộ cho sản phẩm và bài viết."
     },
     "sectionDescription": {
       "inventory_digest": "Gửi một bản gộp vào chuông quản trị và hộp thư nội bộ; không có hàng hết thì không gửi.",
@@ -3021,8 +3022,7 @@
     "internal": "Nội bộ",
     "panelSummary": "{{count}} mục cài đặt",
     "errValueEnRequired": "Vui lòng nhập bản tiếng Anh cho trường này.",
-    "readOnlyHint": "Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa.",
-    "group_review_moderation": "Kiểm duyệt đánh giá"
+    "readOnlyHint": "Bạn chỉ có quyền xem cài đặt, không thể chỉnh sửa."
   },
   "adminUsers": {
     "title": "Tài khoản quản trị",
