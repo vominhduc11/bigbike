@@ -23,11 +23,11 @@ class StorePolicyServiceTest {
     void frozenResourcesContainTheLiveBilingualPolicyDocuments() {
         FrozenStorePolicyContent content = new FrozenStorePolicyContent();
 
-        assertDocument(content, "warranty", "vi", "Chính sách bảo hành", 9068,
-                "d726ebd8c60a819384be86f244c76568ffa4129b9871808778e09d0ea2bf6640",
+        assertDocument(content, "warranty", "vi", "Chính sách bảo hành", 9088,
+                "135087f13ecc2e5dab276d9fe7fecf8f64711f6bc61867f14448ee3081cb0e7f",
                 "24 tháng", "{{CONTACT_CHANNELS}}");
-        assertDocument(content, "warranty", "en", "Warranty Policy", 8421,
-                "2fa54ce0b8b7aa904b6826862fdcf578175d828905c6b5278408654f16e60ce3",
+        assertDocument(content, "warranty", "en", "Warranty Policy", 8427,
+                "3ad0fb4978d02476cba060262a404f8e273fa7c0e6c301270b148e9158039f42",
                 "24 months", "{{CONTACT_CHANNELS}}");
         assertDocument(content, "return-exchange", "vi", "Chính sách đổi trả hàng", 13681,
                 "dddac4578318d689753ad65f81ca74cd54a5fdf0c5776c80fdea8cb9778b528e",

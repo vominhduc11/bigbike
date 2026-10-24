@@ -101,6 +101,8 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   const modalRef = useRef(null)
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
+  // Xóa từ khóa (kể cả sau upload) có hiệu lực ngay, không chờ debounce cũ.
+  const querySearch = search.trim() ? debouncedSearch : ''
   // Lọc theo Thư mục/Tag — API fetchMedia đã hỗ trợ folderFilter/tag (không cần backend mới).
   const [folderFilter, setFolderFilter] = useState('')
   const [tag, setTag] = useState('')
@@ -136,7 +138,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   // Reset page on new search / filter.
   useEffect(() => {
     setPage(1)
-  }, [debouncedSearch, folderFilter, tag])
+  }, [querySearch, folderFilter, tag])
 
   // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker). Dùng allSettled
   // để giữ phần tải được và HIỆN lỗi thay vì nuốt im lặng.
@@ -164,7 +166,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
       refreshError: '',
     }))
     fetchMedia({
-      search: debouncedSearch,
+      search: querySearch,
       mimeTypes: pickerMimeTypes,
       page,
       pageSize: PAGE_SIZE,
@@ -210,7 +212,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     return () => {
       active = false
     }
-  }, [canRead, debouncedSearch, page, refreshKey, kind, folderFilter, tag, pickerMimeTypes])
+  }, [canRead, querySearch, page, refreshKey, kind, folderFilter, tag, pickerMimeTypes])
 
   // Escape đi qua attemptClose để hỏi xác nhận khi đang tải lên / đã chọn.
   useModalFocusTrap({ modalRef, onClose: attemptClose })
@@ -434,38 +436,8 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
     // "Tất cả thư mục" như trước.
     setPage(1)
     setSearch('')
-    // Refetch ngay với search rỗng tường minh (không chờ debounce 300ms bắt kịp) để
-    // ảnh/video vừa tải chắc chắn hiện ra ngay, không bị lần fetch đầu vẫn lọc theo
-    // từ khoá tìm kiếm cũ.
-    if (canRead) {
-      setState((p) => ({
-        ...p,
-        status: p.items.length > 0 ? 'refreshing' : 'loading',
-        error: '',
-        refreshError: '',
-      }))
-      try {
-        const r = await fetchMedia({
-          search: '',
-          mimeTypes: pickerMimeTypes,
-          page: 1,
-          pageSize: PAGE_SIZE,
-          folderFilter: folderFilter || undefined,
-          tag: tag || undefined,
-        })
-        const items = r.items ?? []
-        items.forEach((it) => mergeMediaCacheItem(mediaCacheRef, it))
-        setState({
-          status: 'success',
-          items,
-          totalPages: Math.max(1, Number(r.pagination?.totalPages) || 1),
-          error: '',
-          refreshError: '',
-        })
-      } catch {
-        /* effect bên dưới (refreshKey bump) sẽ tự thử lại */
-      }
-    }
+    // Effect dùng querySearch rỗng ngay và chỉ tải lại một lượt. Metadata vừa upload
+    // đã có trong cache nên vẫn chọn được ảnh ngay trong lúc danh sách làm mới.
     setRefreshKey((k) => k + 1)
     // Auto-select uploaded image
     if (uploadedUrls.length > 0) setSelectedUrl(uploadedUrls[uploadedUrls.length - 1])

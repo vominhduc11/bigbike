@@ -1,20 +1,14 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { PageHero, type PageHeroCrumb } from "@/components/layout/PageHero";
 import { Container } from "@/components/layout/Container";
 import { CatalogClient } from "@/components/catalog/CatalogClient";
-import { CatalogDefault } from "@/components/catalog/CatalogDefault";
 import { CollapsibleContent } from "@/components/ui/collapsible-content";
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { LHtml, LText, LocalizedContentProvider } from "@/components/i18n/LocalizedContent";
 import { Tr } from "@/components/i18n/Tr";
-import {
-  getCatalogFacets,
-  listCategories,
-  listProducts,
-} from "@/lib/api/public-api";
+import { getCatalogFacets, listCategories, listProducts } from "@/lib/api/public-api";
 import { getCategoryByRouteSlug } from "./resolve-category";
 import {
   buildCategoryBreadcrumbJsonLd,
@@ -22,11 +16,10 @@ import {
   buildFaqPageJsonLd,
   serializeJsonLd,
 } from "@/lib/seo/json-ld";
-import { extractCategoryFaqs } from "@/lib/seo/category-intro";
+import { buildCategoryDescription, extractCategoryFaqs } from "@/lib/seo/category-intro";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { resolveMediaUrl, safeText, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
-import { stripHtmlToText } from "@/lib/utils/text";
 import { toCategoryPath, toHomePath } from "@/lib/utils/routes";
 import { isValidSlug } from "@/lib/utils/slug";
 import { richContentClassName } from "@/components/layout/RichContent";
@@ -206,9 +199,11 @@ export default async function CategoryDetailPage({
         locale,
       })
     : null;
-  const categoryDescription = stripHtmlToText(
-    categoryIntroHtml ?? category.description ?? "",
-  ).slice(0, 500);
+  const categoryDescription = buildCategoryDescription(
+    category.seo?.description,
+    categoryIntroHtml,
+    locale,
+  );
   const breadcrumbJsonLd = serializeJsonLd(
     buildCategoryBreadcrumbJsonLd(category, parentCategory, canonicalPath),
   );
@@ -285,29 +280,18 @@ export default async function CategoryDetailPage({
 
           <div id="main-content">
             <Container>
-              <Suspense
-                fallback={
-                  <CatalogDefault
-                    canonicalPath={canonicalPath}
-                    beforeGridNode={beforeGridNode}
-                    products={productsResult.data}
-                    pagination={productsResult.pagination}
-                    error={Boolean(productsResult.error || facetsResult.error)}
-                  />
-                }
-              >
-                <CatalogClient
-                  analyticsList={{ id: `category_${category.slug}`, name: category.name }}
-                  canonicalPath={canonicalPath}
-                  facets={facetsResult.data}
-                  beforeGridNode={beforeGridNode}
-                  routeCategorySlug={category.slug}
-                  initialProducts={productsResult.data}
-                  initialPagination={productsResult.pagination}
-                  initialProductsError={Boolean(productsResult.error)}
-                  initialFacetsError={Boolean(facetsResult.error)}
-                />
-              </Suspense>
+              {/* Route động đã đọc searchParams ở server; không nhân đôi intro trong fallback. */}
+              <CatalogClient
+                analyticsList={{ id: `category_${category.slug}`, name: category.name }}
+                canonicalPath={canonicalPath}
+                facets={facetsResult.data}
+                beforeGridNode={beforeGridNode}
+                routeCategorySlug={category.slug}
+                initialProducts={productsResult.data}
+                initialPagination={productsResult.pagination}
+                initialProductsError={Boolean(productsResult.error)}
+                initialFacetsError={Boolean(facetsResult.error)}
+              />
             </Container>
           </div>
         </div>

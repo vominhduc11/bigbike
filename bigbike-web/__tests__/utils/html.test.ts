@@ -2,9 +2,30 @@ import { describe, expect, it } from "vitest";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import staticPages from "@/lib/content/static-pages.json";
 
+describe("ngôn ngữ khối giới thiệu danh mục — SEO_RULE_013", () => {
+  it.each(["vi", "en"] as const)("đặt lang theo route %s khi thiếu hoặc sai lang", (locale) => {
+    for (const lang of ["", ' lang="fr"', ' lang="vi"']) {
+      const html = sanitizeRichHtml(
+        `<div class="bb-cat-intro"${lang}><p>Nội dung.</p><script>alert(1)</script></div>`,
+        { locale },
+      );
+      const wrapper = new DOMParser()
+        .parseFromString(html, "text/html")
+        .querySelector(".bb-cat-intro");
+      expect(wrapper?.getAttribute("lang")).toBe(locale);
+      expect(wrapper?.querySelector("script")).toBeNull();
+    }
+  });
+
+  it("giữ ngôn ngữ được khai báo trên nội dung khác", () => {
+    expect(sanitizeRichHtml('<p lang="en">Helmet.</p>')).toContain('lang="en"');
+  });
+});
+
 describe("sanitizeRichHtml — WP shortcodes", () => {
   it("unwraps [caption] preserving inner content", () => {
-    const input = '<p>[caption id="x" align="aligncenter" width="640"]<img src="/a.jpg" />A photo[/caption]</p>';
+    const input =
+      '<p>[caption id="x" align="aligncenter" width="640"]<img src="/a.jpg" />A photo[/caption]</p>';
     const output = sanitizeRichHtml(input);
     expect(output).not.toContain("[caption");
     expect(output).not.toContain("[/caption]");
@@ -42,7 +63,7 @@ describe("sanitizeRichHtml — WP shortcodes", () => {
   });
 
   it("strips inline event handlers from rich html", () => {
-    const input = '<p><img src=x onerror=alert(1)>Safe</p>';
+    const input = "<p><img src=x onerror=alert(1)>Safe</p>";
     const output = sanitizeRichHtml(input);
     expect(output).not.toContain("onerror");
     expect(output).not.toContain("alert(1)");
@@ -65,12 +86,12 @@ describe("sanitizeRichHtml — WP shortcodes", () => {
     expect(sanitizeRichHtml(input)).toContain("http://localhost:9000");
 
     const output = sanitizeRichHtml(input, { rewriteMediaUrls: true });
-    expect(output).toContain('/media/wp-uploads/2026/04/a.webp');
+    expect(output).toContain("/media/wp-uploads/2026/04/a.webp");
     expect(output).not.toContain("localhost:9000");
   });
 
   it("preserves style tags only when explicitly requested", () => {
-    const input = '<style>.test { color: red; }</style><p>Text</p>';
+    const input = "<style>.test { color: red; }</style><p>Text</p>";
     expect(sanitizeRichHtml(input)).not.toContain("<style>");
 
     const output = sanitizeRichHtml(input, { allowStyleTags: true });
@@ -80,7 +101,7 @@ describe("sanitizeRichHtml — WP shortcodes", () => {
 
   it("keeps permitted layout styles while removing inline typography overrides", () => {
     const input = [
-      '<style>.card { display:grid; gap:16px; font:700 18px/1.6 Arial; letter-spacing:1px; }</style>',
+      "<style>.card { display:grid; gap:16px; font:700 18px/1.6 Arial; letter-spacing:1px; }</style>",
       '<p style="color:red; margin:12px; font-family:serif; font-size:24px; line-height:2; text-transform:uppercase">Text</p>',
     ].join("");
 
@@ -90,16 +111,19 @@ describe("sanitizeRichHtml — WP shortcodes", () => {
     expect(output).toContain("gap:16px");
     expect(output).toContain("color:red");
     expect(output).toContain("margin:12px");
-    expect(output).not.toMatch(/(?:font|font-family|font-size|line-height|letter-spacing|text-transform)\s*:/i);
+    expect(output).not.toMatch(
+      /(?:font|font-family|font-size|line-height|letter-spacing|text-transform)\s*:/i,
+    );
   });
 
   it("keeps advanced tables in a scroll wrapper with safe inline layout styles", () => {
-    const input = '<table style="border-collapse:collapse; width:640px"><thead><tr><th>Cỡ</th></tr></thead><tbody><tr><td>M</td></tr></tbody></table>';
+    const input =
+      '<table style="border-collapse:collapse; width:640px"><thead><tr><th>Cỡ</th></tr></thead><tbody><tr><td>M</td></tr></tbody></table>';
     const output = sanitizeRichHtml(input, { allowInlineStyles: true });
 
     expect(output).toContain('<div class="rich-table-scroll"><table');
     expect(output).toContain('style="border-collapse:collapse; width:640px"');
-    expect(output).toContain('<th>Cỡ</th>');
+    expect(output).toContain("<th>Cỡ</th>");
   });
 
   it("normalizes typography from every frozen static page", () => {
@@ -108,7 +132,9 @@ describe("sanitizeRichHtml — WP shortcodes", () => {
         if (!body) continue;
 
         const output = sanitizeRichHtml(body, { allowInlineStyles: true, allowStyleTags: true });
-        expect(output).not.toMatch(/(?:font|font-family|font-size|line-height|letter-spacing|text-transform)\s*:/i);
+        expect(output).not.toMatch(
+          /(?:font|font-family|font-size|line-height|letter-spacing|text-transform)\s*:/i,
+        );
       }
     }
   });

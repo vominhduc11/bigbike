@@ -1276,6 +1276,9 @@
       "preview": {
         "open": "Xem trước",
         "title": "Xem trước trang sản phẩm",
+        "loading": "Đang tải trang xem trước…",
+        "loadFailed": "Không tải được trang xem trước. Vui lòng thử lại.",
+        "retry": "Thử lại",
         "invalid": "Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: danh mục, đường dẫn).",
         "desktop": "Máy tính",
         "mobile": "Điện thoại",
@@ -2169,6 +2172,9 @@
       "preview": {
         "open": "Xem trước",
         "title": "Xem trước bài viết",
+        "loading": "Đang tải trang xem trước…",
+        "loadFailed": "Không tải được trang xem trước. Vui lòng thử lại.",
+        "retry": "Thử lại",
         "invalid": "Chưa xem trước được — kiểm tra lại các thông tin bắt buộc (ví dụ: tiêu đề, đường dẫn).",
         "desktop": "Máy tính",
         "mobile": "Điện thoại",

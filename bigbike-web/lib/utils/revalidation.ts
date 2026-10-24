@@ -8,13 +8,21 @@
  *
  * QUAN TRỌNG: đường dẫn nội bộ dùng ĐOẠN TIẾNG VIỆT cho cả bản EN — proxy đổi
  * `/en/about/` → `/en/gioi-thieu/`, `/en/products/` → `/en/sp/`. Vì vậy KHÔNG dịch
- * đoạn đường dẫn ở đây; chỉ gắn tiền tố ngôn ngữ. (Xác minh bằng header
+ * đoạn đường dẫn ở đây; giữ đoạn nội bộ theo proxy. (Xác minh bằng header
  * `x-middleware-rewrite` trên hệ thống thật ngày 2026-08-06.)
  *
+ * Trang chủ, catalog và sản phẩm VI dùng thêm alias `/vi/internal/...` để tránh
+ * vòng chuyển hướng. Làm mới cả alias thực sự được phục vụ và route locale cũ.
  * Trả về cả hai ngôn ngữ vì một thay đổi dữ liệu ảnh hưởng cả trang VI lẫn trang EN.
  * Đường dẫn không tồn tại thì revalidatePath bỏ qua, không gây lỗi.
  */
 export function toInternalPaths(viPublicPath: string): string[] {
   const suffix = viPublicPath.replace(/\/+$/, "");
-  return [`/vi${suffix}`, `/en${suffix}`];
+  const paths = [`/vi${suffix}`, `/en${suffix}`];
+  if (suffix === "") {
+    paths.push("/vi/internal/home");
+  } else if (suffix === "/sp" || suffix.startsWith("/sp/") || suffix.startsWith("/product/")) {
+    paths.push(`/vi/internal${suffix}`);
+  }
+  return paths;
 }

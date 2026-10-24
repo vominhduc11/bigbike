@@ -12,14 +12,14 @@ import { toInternalPaths } from "@/lib/utils/revalidation";
 describe("toInternalPaths", () => {
   it("gắn tiền tố ngôn ngữ cho trang chủ — KHÔNG bao giờ trả về '/' trần", () => {
     const paths = toInternalPaths("/");
-    expect(paths).toEqual(["/vi", "/en"]);
+    expect(paths).toEqual(["/vi", "/en", "/vi/internal/home"]);
     expect(paths).not.toContain("/");
   });
 
   // Bản EN cũng dùng đoạn tiếng Việt ở tầng nội bộ: proxy đổi /en/products/ →
   // /en/sp/, /en/about/ → /en/gioi-thieu/. Dịch đoạn ở đây là bắn trượt lần nữa.
   it("KHÔNG dịch đoạn đường dẫn cho bản tiếng Anh, chỉ gắn tiền tố", () => {
-    expect(toInternalPaths("/sp/")).toEqual(["/vi/sp", "/en/sp"]);
+    expect(toInternalPaths("/sp/")).toEqual(["/vi/sp", "/en/sp", "/vi/internal/sp"]);
     expect(toInternalPaths("/gioi-thieu/")).toEqual(["/vi/gioi-thieu", "/en/gioi-thieu"]);
     expect(toInternalPaths("/tin-tuc/")).toEqual(["/vi/tin-tuc", "/en/tin-tuc"]);
     expect(toInternalPaths("/brands/")).toEqual(["/vi/brands", "/en/brands"]);
@@ -29,11 +29,25 @@ describe("toInternalPaths", () => {
     expect(toInternalPaths("/product/agv-k1s/")).toEqual([
       "/vi/product/agv-k1s",
       "/en/product/agv-k1s",
+      "/vi/internal/product/agv-k1s",
     ]);
     expect(toInternalPaths("/danh-muc/fullface/")).toEqual([
       "/vi/danh-muc/fullface",
       "/en/danh-muc/fullface",
     ]);
+  });
+
+  it("phủ alias catalog khi có đường con, khớp rewrite của proxy", () => {
+    expect(toInternalPaths("/sp/page/2/")).toEqual([
+      "/vi/sp/page/2",
+      "/en/sp/page/2",
+      "/vi/internal/sp/page/2",
+    ]);
+  });
+
+  it("không thêm alias cho đường dẫn chỉ trùng một phần tên", () => {
+    expect(toInternalPaths("/spare/")).toEqual(["/vi/spare", "/en/spare"]);
+    expect(toInternalPaths("/productivity/")).toEqual(["/vi/productivity", "/en/productivity"]);
   });
 
   it("bỏ dấu gạch chéo cuối — revalidatePath so khớp phân biệt dạng này", () => {

@@ -1,0 +1,142 @@
+{
+  "verifiedAt": "2026-10-18T15:31:36.867630+00:00",
+  "checks": {
+    "focusedBackend": {
+      "tests": 15,
+      "passed": 15
+    },
+    "web": {
+      "files": 109,
+      "tests": 735,
+      "passed": 735,
+      "lint": "PASS"
+    },
+    "nginxBoundary": "PASS",
+    "backendFull": {
+      "tests": 1539,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 1,
+      "status": "FAIL",
+      "existingFailure": "ArticleExcerptAuthorRemovalMigrationPostgresTest.removesArticleColumnsAndOnlyArticleAuditKeys"
+    },
+    "dockerBuild": {
+      "envFile": ".env.vps",
+      "backend": "PASS",
+      "web": "PASS"
+    }
+  },
+  "images": {
+    "bigbike-backend": "sha256:c4ae3991d56fbec587e2ac5fbefc11366d9455b38ed553caa92a0522b802dbce",
+    "bigbike-web": "sha256:f1022aab4dfb984cf1068dc9ca4d8b7bad98b01d5d2d588e0ef1ee96c4d931ac"
+  },
+  "startedAt": {
+    "bigbike-backend": "2026-10-18T15:28:14.634244001Z",
+    "bigbike-web": "2026-10-18T15:30:17.588379052Z"
+  },
+  "backendArtifactDelta": [
+    "BOOT-INF/classes/com/bigbike/bigbike_backend/service/admin/HomepageBlockMutationService.class"
+  ],
+  "live": {
+    "expected": [
+      "wp-prod-42051",
+      "wp-prod-41038",
+      "prod_c6f85d6a8e1a4fb682a698a7c5663dbb",
+      "prod_dfecf68a378e4e5383642300a140d1ab",
+      "prod_3e6434ae766c4442a2d3b5bf73efd1e9"
+    ],
+    "checks": [
+      {
+        "surface": "api-vi",
+        "status": 200,
+        "ids": [
+          "wp-prod-42051",
+          "wp-prod-41038",
+          "prod_c6f85d6a8e1a4fb682a698a7c5663dbb",
+          "prod_dfecf68a378e4e5383642300a140d1ab",
+          "prod_3e6434ae766c4442a2d3b5bf73efd1e9"
+        ],
+        "matches": true
+      },
+      {
+        "surface": "api-en",
+        "status": 200,
+        "ids": [
+          "wp-prod-42051",
+          "wp-prod-41038",
+          "prod_c6f85d6a8e1a4fb682a698a7c5663dbb",
+          "prod_dfecf68a378e4e5383642300a140d1ab",
+          "prod_3e6434ae766c4442a2d3b5bf73efd1e9"
+        ],
+        "matches": true
+      },
+      {
+        "surface": "http://localhost:3000/",
+        "status": 200,
+        "cache": "MISS",
+        "ids": [
+          "wp-prod-42051",
+          "wp-prod-41038",
+          "prod_c6f85d6a8e1a4fb682a698a7c5663dbb",
+          "prod_dfecf68a378e4e5383642300a140d1ab",
+          "prod_3e6434ae766c4442a2d3b5bf73efd1e9"
+        ],
+        "matches": true
+      },
+      {
+        "surface": "http://localhost:3000/en/",
+        "status": 200,
+        "cache": "MISS",
+        "ids": [
+          "wp-prod-42051",
+          "wp-prod-41038",
+          "prod_c6f85d6a8e1a4fb682a698a7c5663dbb",
+          "prod_dfecf68a378e4e5383642300a140d1ab",
+          "prod_3e6434ae766c4442a2d3b5bf73efd1e9"
+        ],
+        "matches": true
+      },
+      {
+        "surface": "https://bigbike.vn/",
+        "status": 200,
+        "cache": "HIT",
+        "ids": [
+          "wp-prod-42051",
+          "wp-prod-41038",
+          "prod_c6f85d6a8e1a4fb682a698a7c5663dbb",
+          "prod_dfecf68a378e4e5383642300a140d1ab",
+          "prod_3e6434ae766c4442a2d3b5bf73efd1e9"
+        ],
+        "matches": true
+      },
+      {
+        "surface": "https://bigbike.vn/en/",
+        "status": 200,
+        "cache": "HIT",
+        "ids": [
+          "wp-prod-42051",
+          "wp-prod-41038",
+          "prod_c6f85d6a8e1a4fb682a698a7c5663dbb",
+          "prod_dfecf68a378e4e5383642300a140d1ab",
+          "prod_3e6434ae766c4442a2d3b5bf73efd1e9"
+        ],
+        "matches": true
+      }
+    ]
+  },
+  "revalidatedPaths": [
+    "/vi/sp",
+    "/en/sp",
+    "/vi/internal/sp",
+    "/vi",
+    "/en",
+    "/vi/internal/home"
+  ],
+  "environmentFilesUnchanged": true,
+  "otherServicesUnchanged": [
+    "bigbike-admin",
+    "bigbike-postgres",
+    "bigbike-redis",
+    "bigbike-minio"
+  ]
+}

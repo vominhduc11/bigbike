@@ -1276,6 +1276,9 @@
       "preview": {
         "open": "Preview",
         "title": "Product page preview",
+        "loading": "Loading the preview page…",
+        "loadFailed": "Unable to load the preview page. Please try again.",
+        "retry": "Retry",
         "invalid": "Can't preview yet — check the required fields (e.g. category, slug).",
         "desktop": "Desktop",
         "mobile": "Mobile",
@@ -2169,6 +2172,9 @@
       "preview": {
         "open": "Preview",
         "title": "Article preview",
+        "loading": "Loading the preview page…",
+        "loadFailed": "Unable to load the preview page. Please try again.",
+        "retry": "Retry",
         "invalid": "Can't preview yet — check the required fields (e.g. title, slug).",
         "desktop": "Desktop",
         "mobile": "Mobile",

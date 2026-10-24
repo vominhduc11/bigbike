@@ -192,8 +192,18 @@ cache entries immediately, instead of waiting for the page's time-based `revalid
   multi-replica fail-safe: if set above 0, backend startup fails unless the configured
   revalidate/redirect-clear URL fan-out covers every web replica.
 - Fires **after transaction commit** (`afterCommit`), async, retry at 1s/3s.
+- Lưu danh sách **Sản phẩm nổi bật** phải xóa snapshot danh sách sản phẩm công khai
+  của cả hai ngôn ngữ **sau commit và trước khi phát yêu cầu làm mới web**. Snapshot
+  máy chủ có thời hạn 60 giây; nếu không xóa, lần đọc lại của web có thể nhận danh
+  sách cũ rồi giữ tiếp trong cache 3.600 giây. Dùng cùng
+  `CatalogReferenceCacheEvictor.evictAllAfterCommit()` như luồng sửa sản phẩm;
+  giao dịch bị hoàn tác không xóa snapshot và không phát yêu cầu làm mới.
 - The web side reads these same tags on its server `fetch` calls in
   `bigbike-web/lib/api/public-api.ts`.
+- Làm mới đường dẫn phải bao phủ cả route theo locale và alias mà proxy thực sự
+  dùng: `/` gồm `/vi`, `/en`, `/vi/internal/home`; `/sp/` và các đường con thêm
+  `/vi/internal/sp…`; `/product/{slug}/` thêm `/vi/internal/product/{slug}`.
+  Bản EN giữ route nội bộ hiện hữu. Các địa chỉ công khai/canonical không đổi.
 - **Contract rule:** every cache tag the web reads MUST have a backend emitter below —
   otherwise that content only refreshes on its time-based TTL, never on edit.
 - Redirect admin mutations call `revalidateRedirects()`: this emits the `redirects` tag and
@@ -242,6 +252,7 @@ Tag map — catalog / commerce / home cluster (entity mutation → tags emitted)
 | Admin mutation | Tags emitted | Evidence |
 |---|---|---|
 | Product create/update/delete | `products`, `product:<slug>`, `home-highlights` | `AdminCatalogMutationService.revalidateProduct` |
+| Featured-product placement save | `products`, after clearing the committed public listing snapshots | `HomepageBlockMutationService.setHomepageBlocks`, `CatalogReferenceCacheEvictor` |
 | Category create/update/delete | `categories`, `category:<slug>`, `products`, `menus`, `home-highlights` | `AdminCatalogMutationService.revalidateCategory` |
 | Brand create/update/delete | `brands`, `brand:<slug>`, `products` | `AdminCatalogMutationService.revalidateBrand` |
 | Order stock change | `products`, `product:<slug>` | `WebRevalidationService.revalidateProductsForOrder` |

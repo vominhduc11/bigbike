@@ -254,7 +254,9 @@ public class AdminMediaService {
                 toJson(Map.of("filePath", objectKey, "mimeType", mimeType,
                         "variants", variants.keySet()))));
 
-        return toDetail(saved);
+        // This new UUID/object key has not been exposed to any other entity yet. Its
+        // references and tags are empty; deduplicated uploads above still read existing data.
+        return toDetail(saved, List.of(), List.of());
     }
 
     // ── List ──────────────────────────────────────────────────────────────────
@@ -696,6 +698,11 @@ public class AdminMediaService {
     private AdminMediaDetailResponse toDetail(MediaEntity m) {
         var refs = mediaReferenceService.getReferences(m);
         List<String> tags = tagRepo.tagsFor(m.getId());
+        return toDetail(m, refs, tags);
+    }
+
+    private AdminMediaDetailResponse toDetail(
+            MediaEntity m, List<MediaReferenceItem> refs, List<String> tags) {
         return new AdminMediaDetailResponse(
                 m.getId(), m.getLegacyId(), m.getFilePath(), m.getOriginalFilename(), m.getPublicUrl(),
                 m.getStorageProvider(),

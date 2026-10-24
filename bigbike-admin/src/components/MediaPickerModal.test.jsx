@@ -224,6 +224,8 @@ describe('MediaPickerModal', () => {
       uploadedMedia.publicUrl,
       expect.objectContaining({ id: uploadedMedia.id }),
     )
+    // Một lượt mở picker + một lượt làm mới sau upload, không tải trùng danh sách.
+    expect(mocks.fetchMedia).toHaveBeenCalledTimes(2)
   })
 
   it('không che mất cảnh báo file sai khi một lượt tải có cả file hợp lệ', async () => {

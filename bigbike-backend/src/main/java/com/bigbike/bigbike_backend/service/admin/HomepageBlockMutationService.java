@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bigbike.bigbike_backend.api.admin.dto.SetHomepageBlocksRequest;
 import com.bigbike.bigbike_backend.api.common.ApiErrorDetail;
-import com.bigbike.bigbike_backend.api.error.NotFoundException;
 import com.bigbike.bigbike_backend.api.error.MutationNotImplementedException;
 import com.bigbike.bigbike_backend.domain.catalog.HomepageBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
@@ -37,19 +36,22 @@ public class HomepageBlockMutationService {
     private final WebRevalidationService webRevalidationService;
     private final AuditLogWriter auditLogWriter;
     private final AuditLogFactory auditLogFactory;
+    private final CatalogReferenceCacheEvictor catalogReferenceCacheEvictor;
 
     public HomepageBlockMutationService(
             ObjectProvider<ProductJpaRepository> productJpaRepositoryProvider,
             CatalogReadRepository catalogReadRepository,
             WebRevalidationService webRevalidationService,
             AuditLogWriter auditLogWriter,
-            AuditLogFactory auditLogFactory
+            AuditLogFactory auditLogFactory,
+            CatalogReferenceCacheEvictor catalogReferenceCacheEvictor
     ) {
         this.productJpaRepository = productJpaRepositoryProvider.getIfAvailable();
         this.catalogReadRepository = catalogReadRepository;
         this.webRevalidationService = webRevalidationService;
         this.auditLogWriter = auditLogWriter;
         this.auditLogFactory = auditLogFactory;
+        this.catalogReferenceCacheEvictor = catalogReferenceCacheEvictor;
     }
 
     @Transactional
@@ -101,6 +103,8 @@ public class HomepageBlockMutationService {
         productJpaRepository.saveAll(allEntities);
         auditLog("PRODUCT_HOMEPAGE_BLOCKS_SET", "PRODUCT", adminId, null,
                 writeAuditJson(Map.of("featuredProductIds", featuredIds)));
+        // Đăng ký xóa snapshot trước khi web đọc lại danh sách sau commit.
+        catalogReferenceCacheEvictor.evictAllAfterCommit();
         webRevalidationService.revalidate("products");
 
         List<Product> result = new ArrayList<>();

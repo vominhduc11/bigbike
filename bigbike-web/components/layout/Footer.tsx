@@ -168,6 +168,23 @@ export async function Footer({ locale }: { locale: Locale }) {
           fallback={(locale === "en" ? policyEn : policyVi)("representative", representativeValues)}
         />
       </p>
+      <a
+        href="https://online.gov.vn/nen-tang/fdd92044-4eaa-4886-ac23-b8a8f324ff2d"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative block aspect-[115/43] w-44 max-w-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse"
+      >
+        <MediaImage
+          image={{ url: "/brand/commerce-certification.png", width: 230, height: 86 }}
+          altFallback=""
+          fill
+          sizes="176px"
+          className="object-contain"
+        />
+        <span className="sr-only">
+          <Tr ns="Footer" k="commerceNotification" />
+        </span>
+      </a>
     </div>
   );
 

@@ -275,6 +275,31 @@ describe('MediaLibraryScreen — thao tác trên thẻ ảnh', () => {
 })
 
 describe('MediaLibraryScreen — upload', () => {
+  it('sau upload chỉ làm mới danh sách, thống kê và thư mục một lượt', async () => {
+    const user = userEvent.setup()
+    let finishFolders
+    mocks.fetchMediaFolders.mockResolvedValueOnce([]).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishFolders = resolve
+        }),
+    )
+    mocks.uploadMedia.mockResolvedValue({ item: activeMedia })
+    const { client } = renderScreen()
+    await screen.findByTitle('catalog/mu-bao-hiem.jpg')
+    await user.upload(
+      document.querySelector('input[type="file"]'),
+      new File(['jpeg-content'], 'anh-moi.jpg', { type: 'image/jpeg' }),
+    )
+
+    await waitFor(() => expect(mocks.toast.success).toHaveBeenCalled())
+    expect(mocks.fetchMedia).toHaveBeenCalledTimes(2)
+    expect(mocks.fetchMediaStats).toHaveBeenCalledTimes(2)
+    expect(mocks.fetchMediaFolders).toHaveBeenCalledTimes(2)
+    finishFolders([])
+    client.clear()
+  })
+
   it('upload vào đúng thư mục đang mở thay vì luôn "Chưa phân loại"', async () => {
     const user = userEvent.setup()
     mocks.query = { folderFilter: 'folder-1' }
@@ -344,6 +369,7 @@ describe('MediaLibraryScreen — upload', () => {
     await waitFor(() =>
       expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({ page: 1 })),
     )
+    expect(mocks.fetchMedia).toHaveBeenCalledTimes(2)
   })
 })
 

@@ -32,17 +32,22 @@ export function sanitizeRichHtml(
     ? [...ALLOWED_ATTR, "style", "dir", "srcset", "sizes", "fetchpriority"]
     : ALLOWED_ATTR;
 
-  const allowedTags = options.allowStyleTags
-    ? [...ALLOWED_TAGS, "style"]
-    : ALLOWED_TAGS;
+  const allowedTags = options.allowStyleTags ? [...ALLOWED_TAGS, "style"] : ALLOWED_TAGS;
 
-  let sanitized = DOMPurify.sanitize(withoutShortcodes, {
+  const sanitizedBody = DOMPurify.sanitize(withoutShortcodes, {
     ALLOWED_TAGS: allowedTags,
     ALLOWED_ATTR: allowedAttr,
     // Drop generic data-* attributes; `data-src` is allowlisted explicitly above.
     ALLOW_DATA_ATTR: false,
     FORCE_BODY: true,
-  })
+    RETURN_DOM: true,
+  }) as HTMLBodyElement;
+  if (options.locale) {
+    for (const intro of sanitizedBody.querySelectorAll(".bb-cat-intro")) {
+      intro.setAttribute("lang", options.locale);
+    }
+  }
+  let sanitized = sanitizedBody.innerHTML
     .replace(/<h1(\s[^>]*)?>/gi, "<h2$1>")
     .replace(/<\/h1>/gi, "</h2>");
 
@@ -67,7 +72,10 @@ export function sanitizeRichHtml(
  * bảng lồng bảng trong các khối PDP đang dùng (size/thông số/phù hợp với ai).
  */
 function wrapTablesForScroll(html: string): string {
-  return html.replace(/<table\b[\s\S]*?<\/table>/gi, (match) => `<div class="rich-table-scroll">${match}</div>`);
+  return html.replace(
+    /<table\b[\s\S]*?<\/table>/gi,
+    (match) => `<div class="rich-table-scroll">${match}</div>`,
+  );
 }
 
 function rewriteLegacyMediaUrls(html: string): string {
@@ -87,14 +95,7 @@ function rewriteLegacyMediaUrls(html: string): string {
 // WordPress shortcode names known to wrap content (`[name]…[/name]`). The
 // wrapper is removed but the inner HTML is preserved. Anything not in this
 // set is treated as standalone and stripped entirely.
-const PAIRED_SHORTCODES = new Set([
-  "caption",
-  "embed",
-  "audio",
-  "video",
-  "playlist",
-  "gallery",
-]);
+const PAIRED_SHORTCODES = new Set(["caption", "embed", "audio", "video", "playlist", "gallery"]);
 
 /**
  * Strip WordPress shortcodes (`[caption …]…[/caption]`, `[gallery ids="…"]`,
@@ -115,9 +116,7 @@ function stripWpShortcodes(html: string): string {
   const OPEN_SENTINEL = "";
   const CLOSE_SENTINEL = "";
 
-  let out = html
-    .replace(/\[\[/g, OPEN_SENTINEL)
-    .replace(/\]\]/g, CLOSE_SENTINEL);
+  let out = html.replace(/\[\[/g, OPEN_SENTINEL).replace(/\]\]/g, CLOSE_SENTINEL);
 
   // 1. Unwrap paired shortcodes — remove opening and closing tags,
   //    keep inner HTML.
@@ -129,36 +128,90 @@ function stripWpShortcodes(html: string): string {
 
   // 2. Remove any remaining standalone shortcodes `[name]` or `[name attrs]`.
   //    Requires alpha first char so we don't eat `[1, 2, 3]` style brackets.
-  out = out.replace(
-    /\[\/?[a-zA-Z][\w-]*(?:\s[^\[\]]*)?\]/g,
-    "",
-  );
+  out = out.replace(/\[\/?[a-zA-Z][\w-]*(?:\s[^\[\]]*)?\]/g, "");
 
   // Restore escaped brackets to their literal form (single `[…]`).
-  out = out.replace(new RegExp(OPEN_SENTINEL, "g"), "[")
-           .replace(new RegExp(CLOSE_SENTINEL, "g"), "]");
+  out = out
+    .replace(new RegExp(OPEN_SENTINEL, "g"), "[")
+    .replace(new RegExp(CLOSE_SENTINEL, "g"), "]");
 
   return out;
 }
 
 const ALLOWED_TAGS = [
-  "a", "b", "blockquote", "br", "caption", "cite", "code", "div", "em",
-  "figcaption", "figure", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i",
-  "iframe", "img", "li", "ol", "p", "pre", "small", "source", "span", "strong",
-  "table", "tbody", "td", "tfoot", "th", "thead", "tr", "u", "ul", "video",
+  "a",
+  "b",
+  "blockquote",
+  "br",
+  "caption",
+  "cite",
+  "code",
+  "div",
+  "em",
+  "figcaption",
+  "figure",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "hr",
+  "i",
+  "iframe",
+  "img",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "small",
+  "source",
+  "span",
+  "strong",
+  "table",
+  "tbody",
+  "td",
+  "tfoot",
+  "th",
+  "thead",
+  "tr",
+  "u",
+  "ul",
+  "video",
 ];
 
 // DOMPurify applies ALLOWED_ATTR globally (not per-tag); each attribute below
 // is harmless on tags that ignore it. Event handlers and javascript: URLs are
 // blocked by DOMPurify regardless.
 const ALLOWED_ATTR = [
-  "aria-label", "class", "id", "title",
-  "href", "rel", "target",
-  "allow", "allowfullscreen", "loading", "decoding", "src", "data-src",
-  "alt", "width", "height",
-  "colspan", "rowspan", "scope",
-  "controls", "controlslist", "disablepictureinpicture", "muted", "playsinline",
-  "poster", "preload", "type",
+  "aria-label",
+  "class",
+  "id",
+  "title",
+  "lang",
+  "href",
+  "rel",
+  "target",
+  "allow",
+  "allowfullscreen",
+  "loading",
+  "decoding",
+  "src",
+  "data-src",
+  "alt",
+  "width",
+  "height",
+  "colspan",
+  "rowspan",
+  "scope",
+  "controls",
+  "controlslist",
+  "disablepictureinpicture",
+  "muted",
+  "playsinline",
+  "poster",
+  "preload",
+  "type",
 ];
 
 // Rich HTML may keep visual layout (grids, colors, borders), but it must not
@@ -173,9 +226,13 @@ const TYPOGRAPHY_CSS_PROPERTIES = new Set([
   "text-transform",
 ]);
 
-const TYPOGRAPHY_DECLARATION_PATTERN = /(?:^|[;{])\s*(?:font|font-family|font-size|line-height|letter-spacing|text-transform)\s*:/i;
+const TYPOGRAPHY_DECLARATION_PATTERN =
+  /(?:^|[;{])\s*(?:font|font-family|font-size|line-height|letter-spacing|text-transform)\s*:/i;
 
-function stripTypographyDeclarations(css: string, context: "declarationList" | "stylesheet"): string {
+function stripTypographyDeclarations(
+  css: string,
+  context: "declarationList" | "stylesheet",
+): string {
   if (!TYPOGRAPHY_DECLARATION_PATTERN.test(css)) {
     return css.trim();
   }

@@ -5,9 +5,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, "..");
 
-const runtimeRoots = ["app", "components", "lib"].map((segment) =>
-  path.join(projectRoot, segment),
-);
+const runtimeRoots = ["app", "components", "lib"].map((segment) => path.join(projectRoot, segment));
 const scanExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 const bannedFiles = [path.join(projectRoot, "scripts", "mock-api-server.mjs")];
 const bannedPatterns = [
@@ -37,6 +35,16 @@ const bannedPatterns = [
 // từ site_settings. Chỉ miễn nhãn số điện thoại cho đúng các file này; mọi file khác vẫn bị kiểm tra
 // như thường.
 const allowlist = [
+  // Phiếu owner 2026-10-22 / SEO_RULE_012: hồ sơ Google Business cố định,
+  // chỉ ngoại lệ đúng file schema; dữ liệu liên hệ ở các nơi khác vẫn được kiểm.
+  {
+    file: path.join(projectRoot, "lib", "seo", "homepage-business.ts"),
+    labels: new Set([
+      "legacy storefront email",
+      "legacy storefront address fragment",
+      "legacy storefront social handle",
+    ]),
+  },
   {
     file: path.join(projectRoot, "components", "policy", "PrivacyPolicyContent.tsx"),
     labels: new Set(["legacy storefront phone number"]),

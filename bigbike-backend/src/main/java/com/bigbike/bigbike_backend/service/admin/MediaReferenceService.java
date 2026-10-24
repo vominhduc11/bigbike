@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -180,68 +179,29 @@ public class MediaReferenceService {
      * one other row in the database. Matches on {@code file_path} suffix to handle
      * both relative and absolute legacy URLs.
      *
-     * <p>Cost is O(tables × N): each table is scanned once and a substring match runs
-     * against every candidate file_path. For the typical media library size this beats
-     * issuing 13 queries per item.
+     * <p>Each table and reference blob is scanned once. Matching all candidate paths
+     * together avoids scanning the entire content corpus once per media item.
      */
     public Set<java.util.UUID> getUsedMediaIds(Collection<MediaEntity> candidates) {
         if (candidates == null || candidates.isEmpty()) return Set.of();
 
-        // Build (id, file_path) tuples once, skipping anything without a usable file_path
-        record IdPath(java.util.UUID id, String filePath) {}
-        List<IdPath> tuples = candidates.stream()
-                .filter(m -> m.getFilePath() != null && !m.getFilePath().isBlank())
-                .map(m -> new IdPath(m.getId(), m.getFilePath()))
-                .toList();
-        if (tuples.isEmpty()) return Set.of();
-
-        Set<java.util.UUID> used = new HashSet<>();
-
-        // Pull every known media-bearing field once and substring-match against each candidate
-        // file_path in Java. This includes structured JSON/HTML content and snapshot fields.
-        List<String> referencedBlobs = collectReferenceBlobs();
-
-        // For each candidate, mark as used if any referenced blob ends with /
-        // contains its file_path
-        for (IdPath tuple : tuples) {
-            for (String blob : referencedBlobs) {
-                if (blob != null && (blob.contains(tuple.filePath()) || blob.equals(tuple.id().toString()))) {
-                    used.add(tuple.id());
-                    break;
-                }
-            }
-        }
-
-        return used;
+        MediaReferenceMatcher matcher = new MediaReferenceMatcher(candidates);
+        if (matcher.isEmpty()) return Set.of();
+        collectReferenceBlobs().forEach(matcher::accept);
+        return matcher.usedIds();
     }
 
     /**
-     * Computes a usageCount per media in the input list, in O(tables × N) instead of
-     * O(N × 13 queries). Reuses the same blob-collection strategy as
-     * {@link #getUsedMediaIds(Collection)} but counts all matches instead of stopping at first.
+     * Counts matching blobs, not occurrences inside a blob. Uses the same literal paths
+     * and exact media-id rules as {@link #getUsedMediaIds(Collection)}.
      */
     public java.util.Map<java.util.UUID, Integer> getUsageCounts(Collection<MediaEntity> candidates) {
         if (candidates == null || candidates.isEmpty()) return java.util.Map.of();
 
-        record IdPath(java.util.UUID id, String filePath) {}
-        List<IdPath> tuples = candidates.stream()
-                .filter(m -> m.getFilePath() != null && !m.getFilePath().isBlank())
-                .map(m -> new IdPath(m.getId(), m.getFilePath()))
-                .toList();
-        if (tuples.isEmpty()) return java.util.Map.of();
-
-        List<String> referencedBlobs = collectReferenceBlobs();
-
-        java.util.Map<java.util.UUID, Integer> counts = new java.util.HashMap<>();
-        for (IdPath tuple : tuples) counts.put(tuple.id(), 0);
-        for (IdPath tuple : tuples) {
-            int c = 0;
-            for (String blob : referencedBlobs) {
-                if (blob != null && (blob.contains(tuple.filePath()) || blob.equals(tuple.id().toString()))) c++;
-            }
-            counts.put(tuple.id(), c);
-        }
-        return counts;
+        MediaReferenceMatcher matcher = new MediaReferenceMatcher(candidates);
+        if (matcher.isEmpty()) return java.util.Map.of();
+        collectReferenceBlobs().forEach(matcher::accept);
+        return matcher.usageCounts();
     }
 
     /**
@@ -314,87 +274,85 @@ public class MediaReferenceService {
      * hard-delete and usage counts must use the same complete inventory.
      */
     private List<String> collectReferenceBlobs() {
+        // One read per table; keep each field a separate blob so usage counts stay identical.
         String[] queries = {
-                // Product image, SEO, gallery/video JSON and rich content
-                "SELECT image_url FROM products WHERE image_url IS NOT NULL AND image_url <> ''",
-                "SELECT seo_og_image_url FROM products WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
-                "SELECT description FROM products WHERE description IS NOT NULL AND description <> ''",
-                "SELECT description_en FROM products WHERE description_en IS NOT NULL AND description_en <> ''",
-                "SELECT gallery::text FROM products WHERE gallery IS NOT NULL",
-                "SELECT videos::text FROM products WHERE videos IS NOT NULL",
-                "SELECT description_blocks::text FROM products WHERE description_blocks IS NOT NULL",
-                "SELECT suitability_section::text FROM products WHERE suitability_section IS NOT NULL",
-                "SELECT size_guide_section::text FROM products WHERE size_guide_section IS NOT NULL",
-                "SELECT size_guide FROM products WHERE size_guide IS NOT NULL AND size_guide <> ''",
-                "SELECT size_guide_en FROM products WHERE size_guide_en IS NOT NULL AND size_guide_en <> ''",
-                "SELECT suitability_advisory FROM products WHERE suitability_advisory IS NOT NULL AND suitability_advisory <> ''",
-                "SELECT suitability_advisory_en FROM products WHERE suitability_advisory_en IS NOT NULL AND suitability_advisory_en <> ''",
-                "SELECT specifications_html FROM products WHERE specifications_html IS NOT NULL AND specifications_html <> ''",
-                "SELECT specifications_html_en FROM products WHERE specifications_html_en IS NOT NULL AND specifications_html_en <> ''",
-                "SELECT spec_stats_html FROM products WHERE spec_stats_html IS NOT NULL AND spec_stats_html <> ''",
-                "SELECT spec_stats_html_en FROM products WHERE spec_stats_html_en IS NOT NULL AND spec_stats_html_en <> ''",
-                "SELECT trust_badges_html FROM products WHERE trust_badges_html IS NOT NULL AND trust_badges_html <> ''",
-                "SELECT trust_badges_html_en FROM products WHERE trust_badges_html_en IS NOT NULL AND trust_badges_html_en <> ''",
-                "SELECT quick_answer_summary FROM products WHERE quick_answer_summary IS NOT NULL AND quick_answer_summary <> ''",
-                "SELECT quick_answer_summary_en FROM products WHERE quick_answer_summary_en IS NOT NULL AND quick_answer_summary_en <> ''",
-                "SELECT faqs::text FROM products WHERE faqs IS NOT NULL",
-                "SELECT commitments::text FROM products WHERE commitments IS NOT NULL",
-                "SELECT highlights::text FROM products WHERE highlights IS NOT NULL",
-                // Variants and their galleries
-                "SELECT image_url FROM product_variants WHERE image_url IS NOT NULL AND image_url <> ''",
-                "SELECT image_url FROM product_variant_gallery_images WHERE image_url IS NOT NULL AND image_url <> ''",
-                "SELECT video_url FROM product_variant_gallery_images WHERE video_url IS NOT NULL AND video_url <> ''",
-                // Category and brand fields, including menu/SEO/content images
-                "SELECT image_url FROM categories WHERE image_url IS NOT NULL AND image_url <> ''",
-                "SELECT icon_url FROM categories WHERE icon_url IS NOT NULL AND icon_url <> ''",
-                "SELECT menu_icon_url FROM categories WHERE menu_icon_url IS NOT NULL AND menu_icon_url <> ''",
-                "SELECT banner_url FROM categories WHERE banner_url IS NOT NULL AND banner_url <> ''",
-                "SELECT intro_content FROM categories WHERE intro_content IS NOT NULL AND intro_content <> ''",
-                "SELECT intro_content_en FROM categories WHERE intro_content_en IS NOT NULL AND intro_content_en <> ''",
-                "SELECT description FROM categories WHERE description IS NOT NULL AND description <> ''",
-                "SELECT description_en FROM categories WHERE description_en IS NOT NULL AND description_en <> ''",
-                "SELECT seo_og_image_url FROM categories WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
-                "SELECT logo_url FROM brands WHERE logo_url IS NOT NULL AND logo_url <> ''",
-                "SELECT banner_url FROM brands WHERE banner_url IS NOT NULL AND banner_url <> ''",
-                "SELECT description FROM brands WHERE description IS NOT NULL AND description <> ''",
-                "SELECT description_en FROM brands WHERE description_en IS NOT NULL AND description_en <> ''",
-                "SELECT seo_og_image_url FROM brands WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
-                // Articles and home video thumbnail
-                "SELECT cover_image_url FROM articles WHERE cover_image_url IS NOT NULL AND cover_image_url <> ''",
-                "SELECT product_image_url FROM articles WHERE product_image_url IS NOT NULL AND product_image_url <> ''",
-                "SELECT seo_og_image_url FROM articles WHERE seo_og_image_url IS NOT NULL AND seo_og_image_url <> ''",
-                "SELECT body FROM articles WHERE body IS NOT NULL AND body <> ''",
-                "SELECT body_en FROM articles WHERE body_en IS NOT NULL AND body_en <> ''",
-                "SELECT body_blocks::text FROM articles WHERE body_blocks IS NOT NULL",
-                "SELECT video_url FROM home_videos WHERE video_url IS NOT NULL AND video_url <> ''",
-                "SELECT thumbnail::text FROM home_videos WHERE thumbnail IS NOT NULL",
-                // Banners/sliders, navigation, settings and customer/order snapshots
-                "SELECT COALESCE(desktop_image::text,'') || ' ' || COALESCE(mobile_image::text,'') FROM sliders",
-                "SELECT url FROM menu_items WHERE url IS NOT NULL AND url <> ''",
-                "SELECT setting_value FROM site_settings WHERE setting_value IS NOT NULL AND setting_value <> ''",
-                "SELECT setting_value_en FROM site_settings WHERE setting_value_en IS NOT NULL AND setting_value_en <> ''",
-                "SELECT description FROM site_settings WHERE description IS NOT NULL AND description <> ''",
-                "SELECT photos::text FROM reviews WHERE photos IS NOT NULL",
-                "SELECT product_image_url FROM cart_items WHERE product_image_url IS NOT NULL AND product_image_url <> ''",
-                "SELECT image_url FROM order_line_items WHERE image_url IS NOT NULL AND image_url <> ''",
-                // Media ids are varchar on the legacy-derived catalog tables; equality is handled
-                // by the id comparison in getUsedMediaIds/getUsageCounts.
-                "SELECT image_id FROM products WHERE image_id IS NOT NULL AND image_id <> ''",
-                "SELECT seo_og_image_id FROM products WHERE seo_og_image_id IS NOT NULL AND seo_og_image_id <> ''",
-                "SELECT image_id FROM product_variants WHERE image_id IS NOT NULL AND image_id <> ''",
-                "SELECT image_id FROM product_variant_gallery_images WHERE image_id IS NOT NULL AND image_id <> ''",
-                "SELECT image_id FROM categories WHERE image_id IS NOT NULL AND image_id <> ''",
-                "SELECT icon_id FROM categories WHERE icon_id IS NOT NULL AND icon_id <> ''",
-                "SELECT seo_og_image_id FROM categories WHERE seo_og_image_id IS NOT NULL AND seo_og_image_id <> ''",
-                "SELECT logo_id FROM brands WHERE logo_id IS NOT NULL AND logo_id <> ''",
-                "SELECT seo_og_image_id FROM brands WHERE seo_og_image_id IS NOT NULL AND seo_og_image_id <> ''",
-                "SELECT cover_image_id FROM articles WHERE cover_image_id IS NOT NULL AND cover_image_id <> ''",
-                "SELECT seo_og_image_id FROM articles WHERE seo_og_image_id IS NOT NULL AND seo_og_image_id <> ''",
-                "SELECT product_image_id FROM cart_items WHERE product_image_id IS NOT NULL AND product_image_id <> ''"
+                """
+                SELECT image_url, seo_og_image_url, description,
+                       description_en, gallery::text, videos::text,
+                       description_blocks::text, suitability_section::text, size_guide_section::text,
+                       size_guide, size_guide_en, suitability_advisory,
+                       suitability_advisory_en, specifications_html, specifications_html_en,
+                       spec_stats_html, spec_stats_html_en, trust_badges_html,
+                       trust_badges_html_en, quick_answer_summary, quick_answer_summary_en,
+                       faqs::text, commitments::text, highlights::text,
+                       image_id, seo_og_image_id
+                FROM products
+                """,
+                """
+                SELECT image_url, image_id
+                FROM product_variants
+                """,
+                """
+                SELECT image_url, video_url, image_id
+                FROM product_variant_gallery_images
+                """,
+                """
+                SELECT image_url, icon_url, menu_icon_url,
+                       banner_url, intro_content, intro_content_en,
+                       description, description_en, seo_og_image_url,
+                       image_id, icon_id, seo_og_image_id
+                FROM categories
+                """,
+                """
+                SELECT logo_url, banner_url, description,
+                       description_en, seo_og_image_url, logo_id,
+                       seo_og_image_id
+                FROM brands
+                """,
+                """
+                SELECT cover_image_url, product_image_url, seo_og_image_url,
+                       body, body_en, body_blocks::text,
+                       cover_image_id, seo_og_image_id
+                FROM articles
+                """,
+                """
+                SELECT video_url, thumbnail::text
+                FROM home_videos
+                """,
+                """
+                SELECT COALESCE(desktop_image::text,'') || ' ' || COALESCE(mobile_image::text,'')
+                FROM sliders
+                """,
+                """
+                SELECT url
+                FROM menu_items
+                """,
+                """
+                SELECT setting_value, setting_value_en, description
+                FROM site_settings
+                """,
+                """
+                SELECT photos::text
+                FROM reviews
+                """,
+                """
+                SELECT product_image_url, product_image_id
+                FROM cart_items
+                """,
+                """
+                SELECT image_url
+                FROM order_line_items
+                """,
         };
         List<String> blobs = new ArrayList<>();
         for (String sql : queries) {
-            blobs.addAll(jdbc.query(sql, (rs, rowNum) -> rs.getString(1)));
+            jdbc.query(sql, (RowCallbackHandler) rs -> {
+                int columns = rs.getMetaData().getColumnCount();
+                for (int column = 1; column <= columns; column++) {
+                    String value = rs.getString(column);
+                    if (value != null && !value.isEmpty()) blobs.add(value);
+                }
+            });
         }
         return blobs;
     }

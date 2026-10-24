@@ -1,4 +1,29 @@
-import { stripHtmlToText } from "@/lib/utils/text";
+import { normalizeMetaDescription, stripHtmlToText } from "@/lib/utils/text";
+import type { Locale } from "@/i18n/locale";
+
+/** SEO_RULE_014: chỉ lấy mô tả SEO hoặc đoạn giới thiệu, không gom nhãn/bảng/FAQ. */
+export function buildCategoryDescription(
+  seoDescription: string | null | undefined,
+  introHtml: string | null | undefined,
+  locale: Locale,
+): string {
+  const plain =
+    stripHtmlToText(seoDescription ?? "") ||
+    extractClassText(introHtml ?? "", "bb-ci-body", ["p", "div"]).join(" ");
+  if (!plain) return "";
+
+  const sentences = new Intl.Segmenter(locale, { granularity: "sentence" }).segment(plain);
+  let description = "";
+  let count = 0;
+  for (const { segment } of sentences) {
+    const candidate = [description, segment.trim()].filter(Boolean).join(" ");
+    if (candidate.length > 160 || count === 2) break;
+    description = candidate;
+    count += 1;
+  }
+  // Câu đầu quá dài: giữ giới hạn và tránh cắt dở từ nếu có ranh giới từ.
+  return description || `${normalizeMetaDescription(plain, 159).replace(/[\uD800-\uDBFF]$/, "")}…`;
+}
 
 export type CategoryFaq = {
   question: string;
@@ -26,10 +51,10 @@ export function extractCategoryFaqs(html: string | null | undefined): CategoryFa
 function extractClassText(html: string, className: string, tags: string[]): string[] {
   const tagPattern = tags.join("|");
   const classPattern = new RegExp(
-    `<(?:${tagPattern})\\b[^>]*\\bclass=["'][^"']*\\b${className}\\b[^"']*["'][^>]*>([\\s\\S]*?)</(?:${tagPattern})>`,
+    `<(${tagPattern})\\b[^>]*\\bclass=["'](?:[^"']*\\s)?${className}(?:\\s[^"']*)?["'][^>]*>([\\s\\S]*?)</\\1\\s*>`,
     "gi",
   );
   return Array.from(html.matchAll(classPattern))
-    .map((match) => stripHtmlToText(match[1] ?? ""))
+    .map((match) => stripHtmlToText(match[2] ?? ""))
     .filter(Boolean);
 }

@@ -154,9 +154,21 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     if (foldersQuery.isError) toast.error(foldersQuery.error?.message || t('common.error'))
   }, [foldersQuery.error, foldersQuery.isError, t])
 
-  function refreshData({ foldersChanged = false } = {}) {
-    queryClient.invalidateQueries({ queryKey: ['media'] })
-    if (foldersChanged) queryClient.invalidateQueries({ queryKey: ['media', 'folders'] })
+  function refreshData({ returningToFirstPage = false } = {}) {
+    if (!returningToFirstPage) {
+      queryClient.invalidateQueries({ queryKey: ['media'] })
+      return
+    }
+    // Đánh dấu các trang cũ cần cập nhật, nhưng không tải lại trang sắp rời đi.
+    queryClient.invalidateQueries({ queryKey: ['media'], refetchType: 'none' })
+    queryClient.refetchQueries({
+      queryKey: ['media'],
+      type: 'active',
+      predicate: (cachedQuery) => {
+        const listQuery = cachedQuery.queryKey[1]
+        return typeof listQuery !== 'object' || listQuery?.page === 1
+      },
+    })
   }
 
   function updateQuery(partial, options = { resetPage: true }) {
@@ -238,7 +250,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     // Refresh list once everyone done — về trang 1 để ảnh/video mới (luôn ở đầu theo sort
     // mặc định createdAt desc) không bị kẹt ngoài tầm nhìn nếu admin đang ở trang khác.
     setQuery((p) => ({ ...p, page: 1 }))
-    refreshData({ foldersChanged: true })
+    refreshData({ returningToFirstPage: apiQuery.page > 1 })
     // Báo đúng số thành công / lỗi thay vì luôn "hoàn tất N" kể cả khi có lỗi (P1-12).
     if (failed === 0) {
       toast.success(t('media.uploadComplete', { count: succeeded }))
@@ -280,11 +292,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     try {
       await deleteMedia(media.id)
       toast.success(t('media.deleteSuccess'))
-      refreshData({ foldersChanged: true })
+      refreshData()
       return true
     } catch (e) {
       toast.error(mediaActionError(t, e, t('media.deleteError')))
-      refreshData({ foldersChanged: true })
+      refreshData()
       return false
     } finally {
       setDeleting(null)
@@ -296,11 +308,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     try {
       await restoreMedia(mediaId)
       toast.success(t('media.restoreSuccess'))
-      refreshData({ foldersChanged: true })
+      refreshData()
       return true
     } catch (e) {
       toast.error(mediaActionError(t, e, t('media.deleteError')))
-      refreshData({ foldersChanged: true })
+      refreshData()
       return false
     } finally {
       setDeleting(null)
@@ -340,11 +352,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     try {
       await hardDeleteMedia(media.id)
       toast.success(t('media.hardDeleteSuccess'))
-      refreshData({ foldersChanged: true })
+      refreshData()
       return true
     } catch (e) {
       toast.error(mediaActionError(t, e, t('media.hardDeleteError')))
-      refreshData({ foldersChanged: true })
+      refreshData()
       return false
     } finally {
       setDeleting(null)
@@ -364,7 +376,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     try {
       const affected = await bulkDeleteMedia([...selectedIds])
       setSelectedIds(new Set())
-      refreshData({ foldersChanged: true })
+      refreshData()
       toast.success(t('media.bulkDeleteSuccess', { count: affected }))
     } catch (e) {
       toast.error(e.message || t('media.deleteError'))
@@ -379,7 +391,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     try {
       const affected = await bulkRestoreMedia([...selectedIds])
       setSelectedIds(new Set())
-      refreshData({ foldersChanged: true })
+      refreshData()
       toast.success(t('media.bulkRestoreSuccess', { count: affected }))
     } catch (e) {
       toast.error(e.message || t('media.deleteError'))
@@ -395,7 +407,7 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
       const affected = await bulkMoveMedia([...selectedIds], folderId || null)
       setSelectedIds(new Set())
       setBulkMoveOpen(false)
-      refreshData({ foldersChanged: true })
+      refreshData()
       toast.success(t('media.bulkMoveSuccess', { count: affected }))
     } catch (e) {
       toast.error(e.message || t('media.deleteError'))
@@ -423,12 +435,11 @@ export function MediaLibraryScreen({ canUpdate, canHardDelete = false }) {
     setSelectedIds(new Set())
   }
 
-  function handleMediaSaved(updated) {
-    const folderChanged = editingMedia && editingMedia.folderId !== updated.folderId
+  function handleMediaSaved() {
     setEditingMedia(null)
     // Đổi folder qua panel chi tiết: nếu đang lọc theo 1 thư mục, item có thể không còn
     // khớp filter nữa — cần refetch để nó biến mất khỏi view, giống hành vi bulk-move.
-    refreshData({ foldersChanged: folderChanged })
+    refreshData()
   }
 
   // ── Render helpers ───────────────────────────────────────────

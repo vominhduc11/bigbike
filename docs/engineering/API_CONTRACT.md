@@ -391,6 +391,8 @@ The content-category feature is removed across database, backend, storefront and
 
 `topic` allowlist: `warranty|return-exchange`; query `lang=vi|en` mặc định `vi`. Response `data`: `{topic,title,bodyHtml,updatedAt}`. Endpoint đọc bốn resource cố định trong `policy-content/` qua `StorePolicyService`; `updatedAt` là mốc đóng băng `2026-09-01T00:00:00Z`, không còn lấy từ row policy trong DB. Các dòng liên hệ trong cả Bảo hành và Đổi trả được điền động từ setting nhóm `contact` hiện hành (hotline, Zalo, Messenger, địa chỉ, giờ mở cửa), không đóng cứng trong policy. Endpoint không nhận setting key động và không đưa policy vào payload `GET /api/v1/settings/public` chung. HTML được sanitize khi render; resource bắt buộc phải tồn tại nên không có fallback sang bản DB hay bản policy khác. Trợ lý BigBike dùng lại cùng nguồn đã hydrate. Trang Bảo mật vẫn tĩnh và không đi endpoint này. Quyết định 01/09/2026 thay thế quyết định 23/08/2026 về admin-editable policy.
 
+**Cập nhật nội dung Bảo hành 2026-10-08 (`POLICY_PAGE_RULE_011`):** hai dòng Đường chỉ/mối nối hàn nhiệt (áo/quần) và Da thật/da lộn/phần chống thấm/phản quang trong bảng Áo quần/Găng tay/Giày bảo hộ đổi từ 6 tháng thành **Không bảo hành** (EN: **No warranty**). Dây khóa kéo/khóa dán giữ 6 tháng, keo đế giày giữ 12 tháng. Cập nhật hai resource `policy-content/warranty.{vi,en}.html` để website và Trợ lý đọc cùng nguồn; response shape và mốc đóng băng `updatedAt` giữ nguyên.
+
 ## Article Content Contract
 
 `GET /api/v1/articles/{slug}` — public, no auth. Returns `ApiDataResponse<Article>` for one
@@ -726,6 +728,8 @@ hoặc hoàn tác hàng loạt ngoài các thao tác thư viện chung nêu trê
 
 Status: `CONFIRMED_FROM_CODE` — `AdminMediaController.java`, `AdminMediaFolderController.java`, `AdminMediaService.java`, `AdminMediaFolderService.java`, `MediaAutoFolderService.java`.
 
+**Hiệu năng Media (2026-10-13):** upload một object mới vẫn trả detail đầy đủ, với `usageCount=0`, `references=[]`, `tags=[]` vì file/mã media mới chưa được gắn vào nội dung. Nhánh tái sử dụng checksum phải trả tham chiếu và thẻ đang có của file cũ. Danh sách/thống kê vẫn tìm tham chiếu từ cùng các trường URL, HTML/JSON, snapshot và mã media; tối ưu cách đọc/so khớp không được bỏ sót nơi dùng, đổi số đếm hoặc nới chốt xóa vĩnh viễn. Không thay giới hạn, định dạng hay quyền upload.
+
 ## Homepage Slider Contract
 
 | Endpoint | Permission | Current behavior | Status | Evidence |
@@ -942,6 +946,13 @@ Status: `CONFIRMED_FROM_CODE`
 **New endpoint (V149):** `POST /api/v1/admin/products/homepage-blocks` — atomically sets the full ordered list of FEATURED_GRID products. Requires `products.update` permission. Request: `{ "featuredGrid": ["<id>", ...] }` (max 12 ids, each must be PUBLISHED). Response: updated list of FEATURED_GRID products.
 
 `homepageBlock` and `homepageOrder` are no longer editable in the per-product form; they are set exclusively via the homepage-blocks endpoint.
+
+**Đồng bộ sau lưu danh sách nổi bật (2026-10-18):** sau khi giao dịch lưu thành công,
+máy chủ xóa snapshot danh sách sản phẩm công khai VI/EN trước khi phát tag `products`
+để website đọc lại danh sách mới. Làm mới trang chủ bao gồm alias VI
+`/vi/internal/home` đang được proxy sử dụng, cùng các route locale hiện hữu. Lưu lỗi
+hoặc rollback không xóa snapshot và không phát yêu cầu làm mới. Không đổi payload,
+quyền, thứ tự hoặc địa chỉ công khai; xem `INTEGRATION_GUIDE.md` phần Web Revalidation.
 
 **Auto-clear on unpublish (owner decision 2026-07-28, `BUSINESS_RULES.md` `PRODUCT_RULE_015`):** whenever a product's `publishStatus` leaves `PUBLISHED` — via `PATCH /admin/products/{id}/publish-status`, `DELETE /admin/products/{id}` (soft delete), or a `PATCH /admin/products/{id}` that changes the status — the server resets `homepageBlock` to `NONE` and `homepageOrder` to `null`. Re-publishing does not restore the placement. This keeps `POST /admin/products/homepage-blocks` from being permanently blocked by a stale non-`PUBLISHED` id.
 
@@ -1265,6 +1276,7 @@ Powers the **live preview** in the product editor: render exactly what the store
 - **No persistence.** Backend validates the payload, builds a transient `ProductEntity` in memory via `applyProductPatch` (never `save`d), and maps it through the same detail mapper the storefront uses. No row is created or updated; the method is `@Transactional(readOnly = true)`.
 - **Validation mirrors create** (category required, slug rules, price/variant constraints) so the editor surfaces the same `400 VALIDATION_ERROR` live — **except slug uniqueness**, which is a persistence concern and is skipped for the dry-run. Without that carve-out, previewing an existing product would flag its own saved slug as a `DUPLICATE` and always `400`.
 - **Transient-only fields:** `rating`/`ratingCount` are `null` (a brand-new draft has no reviews); curated `relatedProducts` resolve read-only from their IDs.
+- **Iframe loading/failure state (2026-10-12):** the admin shows a loading state until its own storefront iframe sends `bigbike-preview-ready` from the configured storefront origin. If that handshake has not arrived after 15 seconds, show a storefront loading failure with a **Retry** action instead of an indefinitely blank panel. Retry reloads only the iframe and resends the latest unsaved preview when it is ready; it never saves or changes product/article publish status. Closing and reopening the panel starts a fresh handshake. This is distinct from dry-run validation errors, which retain their existing field-validation notice.
 
 Status: `CONFIRMED_FROM_CODE`
 
@@ -1790,6 +1802,13 @@ cho `description` trước đây). Field `description`/`description_en` **không
 là nguồn fallback cho SEO meta description. Tên cột cũ của Category không liên
 quan đến Product: `product.contentBottom` đã bị gỡ cùng hai cột sản phẩm ở V151.
 
+**Hiển thị/SEO (phiếu 2026-10-22, `SEO_RULE_013/014`):** intro chỉ render một lần trong HTML server;
+thu gọn/mở rộng dùng cùng khối. Web giữ và đặt `lang` trên `.bb-cat-intro` theo locale route.
+JSON-LD nằm tại server page, không nằm trong HTML admin hoặc được client chèn lại.
+CollectionPage ưu tiên `seo.description` đã resolve locale, sau đó chỉ chữ `.bb-ci-body`; giữ tối đa
+hai câu/160 ký tự, cắt ở cuối từ kèm `…` nếu câu đầu quá dài. Thiếu cả hai nguồn thì bỏ description.
+Không thay contract API, dữ liệu lưu hoặc giới hạn meta description.
+
 **Ghi (admin):** `POST/PATCH /api/v1/admin/categories` nhận thêm:
 - `introContent` (string, ≤50 000 ký tự, rich HTML) — bản tiếng Việt, ở root request.
 - `translations.en.introContent` (string, ≤50 000) — bản tiếng Anh → `intro_content_en`.
@@ -1957,6 +1976,12 @@ All four recognized categories participate in blocking regardless of the legacy 
 
 **Public storefront setting keys returned by `GET /api/v1/settings/public`:**
 
+**Homepage business JSON-LD exception (2026-10-22, `SEO_RULE_012`):** the homepage alone uses the
+owner-approved fixed `Organization` + `SportingGoodsStore` graph in `lib/seo/homepage-business.ts`.
+The graph's name is `Shop Bigbike`, independently of `site_name`; its telephone, address, coordinates,
+opening hours and social profiles do not follow the general/contact settings. `WebSite`/`SearchAction`
+and homepage metadata retain their existing settings-based behavior. No settings key or API field changes.
+
 - `general`:
   - `site_name` — public site/display name used by header/footer/SEO helpers.
   - `footer_description` — descriptive paragraph. Read by the header's mobile shop-info panel (`WpHeader.tsx`) and the web footer (`WpFooter.tsx` — reconnected 2026-07-04 as the sole exception).
@@ -1965,10 +1990,10 @@ All four recognized categories participate in blocking regardless of the legacy 
   - `contact_email`, `contact_address`
   - `hotline`, `hotline_2`
   - `facebook_url`, `messenger_url`, `zalo_url`, `youtube_url`, `tiktok_url`, `instagram_url`, `shopee_url`
-    - `shopee_url` — official Shopee storefront link, rendered on `/lien-he` and emitted in the homepage `LocalBusiness` JSON-LD `sameAs` (added V286). No longer rendered in the footer social list (footer hardcoded 2026-07-03, see below).
+    - `shopee_url` — official Shopee storefront link, rendered on `/lien-he` (added V286). Since the owner request of 2026-10-22 the homepage business graph uses the fixed approved profile instead of reading this setting (`SEO_RULE_012`). No longer rendered in the footer social list (footer hardcoded 2026-07-03, see below).
   - `messenger_display`, `zalo_display` — display text for the Messenger/Zalo lines in the floating-chat popup (falls back to the URL slug when empty).
 
-**Footer hardcoded 2026-07-03 (shop owner decision):** `WpFooter.tsx` no longer reads the `contact` group (`hotline`/`hotline_2`/`hotline_3`, `contact_email`, `contact_address`, `facebook_url`/`youtube_url`/`tiktok_url`/`instagram_url`/`shopee_url`) — values are fixed constants in the component, frozen at what was live on that date. The footer link list is hardcoded too: it no longer merges with `GET /api/v1/menus/footer` (that endpoint call was removed from `app/layout.tsx`; `WpMenuClient` no longer has a `"footer"` mode). These settings/the menu endpoint are unchanged and still live for every other consumer — editing them in Admin Settings/Menu still updates the header (full `contact` group), homepage, product page, `/lien-he`, `/gioi-thieu`, the floating-chat widget, and the order-confirmation page. **Note:** `footer_description` is the sole exception that was reconnected on 2026-07-04 to `WpFooter.tsx` (falling back to the hardcoded constant if empty). `footer_tagline`, `bct_url`, and `business_registration` had **no other consumer**, so they were deleted outright (`SettingDefinitionRegistry`, admin `constants.js`, `site_settings` rows via `V308__remove_footer_only_settings.sql`) rather than left orphaned — same pattern as the `public_about` removal (V274) below.
+**Footer hardcoded 2026-07-03 (shop owner decision):** `WpFooter.tsx` no longer reads the `contact` group (`hotline`/`hotline_2`/`hotline_3`, `contact_email`, `contact_address`, `facebook_url`/`youtube_url`/`tiktok_url`/`instagram_url`/`shopee_url`) — values are fixed constants in the component, frozen at what was live on that date. The footer link list is hardcoded too: it no longer merges with `GET /api/v1/menus/footer` (that endpoint call was removed from `app/layout.tsx`; `WpMenuClient` no longer has a `"footer"` mode). These settings/the menu endpoint are unchanged and still live for every other consumer — editing them in Admin Settings/Menu still updates the header (full `contact` group), product page, `/lien-he`, `/gioi-thieu`, the floating-chat widget, and the order-confirmation page. **Note:** `footer_description` is the sole exception that was reconnected on 2026-07-04 to `WpFooter.tsx` (falling back to the hardcoded constant if empty). `footer_tagline`, `bct_url`, and `business_registration` had **no other consumer**, so they were deleted outright (`SettingDefinitionRegistry`, admin `constants.js`, `site_settings` rows via `V308__remove_footer_only_settings.sql`) rather than left orphaned — same pattern as the `public_about` removal (V274) below.
 - `public_home`: **removed 2026-07-03 (V311).** See `DATA_CONTRACT.md` "`public_home` keys — removed" for the full list (promo banner, experience section, about section, featured/news/videos kicker+title) — all 15 keys are now hardcoded in `bigbike-web` (`app/page.tsx`), not read from `site_settings`.
 - `public_about`: **removed 2026-06-24 (V274).** Was the editable copy for the **About page** (`/gioi-thieu`, added in `V223`, re-seeded `V269`). The About page is **fully static** — copy from the i18n `About` namespace, 5 service tiles from theme assets (`AboutPageContent.tsx`); the web never consumed these settings. All 28 `about_page_*` keys were dropped from the DB, from `SettingDefinitionRegistry`, and the runtime `AboutServiceMediaSeeder` was deleted. The store/hotline/Facebook cards on the page still read the shared `contact` keys; brand logos still load from the brand taxonomy.
 - `public_product`: **no shared settings.** All product-detail content is per-product: commitment rows under the buy buttons (`product.commitments`, JSONB on `products`) and the trust-badge row above the title (`product.trustBadges`, HTML-only). The former `product_commitment_*` (V228) and `product_trust_*` keys were removed in V232/V233.

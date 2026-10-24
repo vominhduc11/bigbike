@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-22",
+  "deployedImage": "sha256:4d8a09f75bdb11aa12d6784b7f0cd0f8bcadc515836deeeb1105bb8820d874a0",
+  "rollbackTag": "bigbike-web:before-seo-20261022",
+  "unitTests": {
+    "files": 110,
+    "passed": 746
+  },
+  "browserTests": {
+    "passed": 10,
+    "baseUrl": "https://bigbike.vn",
+    "viewports": [
+      375,
+      768,
+      1440
+    ],
+    "reloadsPerCategory": 5
+  },
+  "schemaValidator": {
+    "endpoint": "https://validator.schema.org/validate",
+    "input": "full live homepage HTML via html form field",
+    "httpStatus": 200,
+    "rootTypes": [
+      "SportingGoodsStore",
+      "WebSite"
+    ],
+    "nonemptyErrorsOrWarnings": [],
+    "sourceHtmlSha256": "670b7b98bb595bcaa7e3dd748f3d09ba595bf186b70e99e19fc7ac687d1c4c8a",
+    "totalNumErrors": 0,
+    "totalNumWarnings": 0,
+    "urlFetchStatus": "Failed: validator could not fetch the URL; full live HTML code validation succeeded."
+  },
+  "richResultsTest": "Not completed: Google UI requests sign-in."
+}

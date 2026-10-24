@@ -1485,6 +1485,13 @@ Status: `CONFIRMED_FROM_CODE` — `CategoryEntity`, `CategoryTranslations` domai
 
 ### Category intro FAQ markup normalization (V1038)
 
+Owner request 2026-10-22 (`SEO_RULE_013/014`): the public page renders the intro once in server HTML,
+and its `.bb-cat-intro` wrapper carries the route locale as `lang`, including VI-content fallback
+on an EN route. This is a display normalization, not a rewrite of either stored language column.
+CollectionPage description uses localized `seo.description`, falling back only to `.bb-ci-body` text;
+it is at most two sentences/160 characters, or a word-boundary excerpt ending in `…` when the first
+sentence itself is too long. If neither source contains text, no description is emitted.
+
 The category intro structured mode remains the safe input source for the visible template. Its
 FAQ questions are rendered as `<h3 class="bb-ci-qt">` and the display HTML no longer
 contains `FAQPage`/`Question`/`Answer` microdata attributes. The public web emits one

@@ -33,12 +33,8 @@ import {
   listPublicSettings,
 } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
-import {
-  buildLocalBusinessJsonLd,
-  buildOrganizationJsonLd,
-  buildWebSiteJsonLd,
-  serializeJsonLd,
-} from "@/lib/seo/json-ld";
+import { buildWebSiteJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
+import { buildHomepageBusinessJsonLd } from "@/lib/seo/homepage-business";
 import { isSafeHomeVideoUrl, resolveMediaUrl, toLegacyWpMediaUrl } from "@/lib/utils/format";
 import { sanitizeRichHtml } from "@/lib/utils/html";
 import { pickSetting } from "@/lib/utils/settings";
@@ -49,7 +45,6 @@ import type { Locale } from "@/i18n/locale";
 // ISR: render tĩnh + revalidate on-demand theo tag (home/products/sliders…) do backend
 // WebRevalidationService phát khi admin đổi nội dung. Bỏ force-dynamic để không SSR.
 
-const HOME_ORG_LOGO = "/wp/logo.png";
 const DEFAULT_SITE_NAME = "BigBike";
 
 // Nội dung 4 khối tĩnh trang chủ (nhóm setting `public_home`, gỡ khỏi Cài đặt admin
@@ -138,8 +133,6 @@ export default async function HomePage({ params }: HomePageProps) {
 
   const settings = settingsResult.data ?? [];
   const siteName = pickSetting(settings, ["site_name"]) || DEFAULT_SITE_NAME;
-  const hotline = pickSetting(settings, ["hotline", "phone"]);
-  const address = pickSetting(settings, ["contact_address", "address"]);
   const homeContentBottomHtml = pickSetting(settings, ["home_content_bottom_html"]);
 
   const rawSliders = slidersResult.data ?? [];
@@ -191,45 +184,15 @@ export default async function HomePage({ params }: HomePageProps) {
       })
     : "";
 
-  const jsonLdOrg = serializeJsonLd(buildOrganizationJsonLd(siteName, HOME_ORG_LOGO, locale));
+  const jsonLdBusiness = serializeJsonLd(buildHomepageBusinessJsonLd());
   const jsonLdWeb = serializeJsonLd(
     buildWebSiteJsonLd(siteName, translatePath("/tim-kiem/", locale), locale),
-  );
-  // Hồ sơ chính thức (sameAs) lấy từ settings công khai — không hardcode.
-  const sameAsProfiles = [
-    pickSetting(settings, ["facebook_url"]),
-    pickSetting(settings, ["youtube_url"]),
-    pickSetting(settings, ["tiktok_url"]),
-    pickSetting(settings, ["instagram_url"]),
-    pickSetting(settings, ["shopee_url"]),
-    pickSetting(settings, ["zalo_url"]),
-  ].filter(Boolean);
-  const jsonLdLocalBusiness = serializeJsonLd(
-    buildLocalBusinessJsonLd(siteName, HOME_ORG_LOGO, address, hotline, {
-      email: pickSetting(settings, ["contact_email"]) || undefined,
-      sameAs: sameAsProfiles,
-      foundingDate: "2014",
-      areaServed: locale === "en" ? "Ho Chi Minh City" : "Thành phố Hồ Chí Minh",
-      priceRange: "₫₫",
-      locale,
-      // Lấy từ đúng settings đang hiển thị cho khách — sửa giờ trong trang quản trị
-      // là schema tự đổi theo, không phải sửa code. Dòng lễ/Tết không có giờ cụ thể
-      // nên builder tự bỏ qua.
-      openingHours: [
-        pickSetting(settings, ["opening_hours_weekday"]),
-        pickSetting(settings, ["opening_hours_weekend"]),
-      ],
-    }),
   );
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdOrg }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdBusiness }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdWeb }} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdLocalBusiness }}
-      />
 
       {/* ===== 1. Main banner ===== */}
       <HeroSlider slides={slides} />

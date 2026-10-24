@@ -29,6 +29,7 @@ const DEFAULT_PREVIEW_RATIO = 0.52
 const MAX_PREVIEW_RATIO = 0.62
 const FALLBACK_CONTENT_WIDTH = 1440
 const MAX_CONTENT_WIDTH = 1700
+const PREVIEW_LOAD_TIMEOUT_MS = 15_000
 
 function getViewportWidth() {
   return typeof window !== 'undefined' ? window.innerWidth : FALLBACK_CONTENT_WIDTH
@@ -65,8 +66,12 @@ function matchesDockedQuery() {
   return typeof window === 'undefined' ? true : window.matchMedia(DOCKED_QUERY).matches
 }
 
-export function LivePreview({
-  open,
+export function LivePreview({ open, ...props }) {
+  if (!open) return null
+  return <LivePreviewPanel key={`${props.webOrigin}${props.previewPath}`} {...props} />
+}
+
+function LivePreviewPanel({
   onClose,
   data,
   error,
@@ -90,6 +95,8 @@ export function LivePreview({
   const [hostSize, setHostSize] = useState({ width: 0, height: 0 })
   const [containerWidth, setContainerWidth] = useState(0)
   const [isDocked, setIsDocked] = useState(matchesDockedQuery)
+  const [frameStatus, setFrameStatus] = useState('loading')
+  const [frameAttempt, setFrameAttempt] = useState(0)
 
   // Bề rộng khung ở chế độ Máy tính — kéo được, nhớ qua localStorage.
   const [desktopWidth, setDesktopWidth] = useState(() => {
@@ -124,7 +131,6 @@ export function LivePreview({
   }, [])
 
   useLayoutEffect(() => {
-    if (!open) return undefined
     const parent = asideRef.current?.parentElement
     if (!parent) return undefined
     const measure = () => setContainerWidth(Math.round(parent.getBoundingClientRect().width))
@@ -132,7 +138,7 @@ export function LivePreview({
     const ro = new ResizeObserver(measure)
     ro.observe(parent)
     return () => ro.disconnect()
-  }, [open])
+  }, [])
 
   const onHandlePointerDown = useCallback(
     (e) => {
@@ -207,21 +213,24 @@ export function LivePreview({
   // trap focus (trap khiến bàn phím không Tab quay lại được form/trigger). Chỉ bắt Escape
   // để đóng — không cướp/giữ focus trong panel.
   useEffect(() => {
-    if (!open) return undefined
     function onKeyDown(e) {
       if (e.key === 'Escape') onClose?.()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [open, onClose])
+  }, [onClose])
 
   // Bắt tay: iframe báo "ready" khi mount → gửi ngay payload hiện tại (đọc qua ref
   // nên không stale, và không setState trong effect).
   useEffect(() => {
+    const timeout = window.setTimeout(() => setFrameStatus('error'), PREVIEW_LOAD_TIMEOUT_MS)
     function onMessage(event) {
       if (webOrigin && event.origin !== webOrigin) return
+      if (event.source !== iframeRef.current?.contentWindow) return
       if (event?.data?.type !== 'bigbike-preview-ready') return
+      window.clearTimeout(timeout)
       readyRef.current = true
+      setFrameStatus('ready')
       const current = dataRef.current
       if (current) {
         iframeRef.current?.contentWindow?.postMessage(
@@ -231,8 +240,11 @@ export function LivePreview({
       }
     }
     window.addEventListener('message', onMessage)
-    return () => window.removeEventListener('message', onMessage)
-  }, [webOrigin])
+    return () => {
+      window.clearTimeout(timeout)
+      window.removeEventListener('message', onMessage)
+    }
+  }, [webOrigin, frameAttempt])
 
   // Lưu data/lang mới nhất + gửi sang iframe nếu đã bắt tay xong. `lang` nằm trong
   // dependency để đổi VI/EN bắn ngay 1 message cập nhật chrome, không phải chờ
@@ -248,15 +260,15 @@ export function LivePreview({
     }
   }, [data, lang, webOrigin])
 
-  // Đóng pane → reset readiness (ref mutation, không phải setState).
-  useEffect(() => {
-    if (!open) readyRef.current = false
-  }, [open])
+  const retryFrame = () => {
+    readyRef.current = false
+    setFrameStatus('loading')
+    setFrameAttempt((attempt) => attempt + 1)
+  }
 
   // Đo vùng hiển thị để scale iframe vừa khung. useLayoutEffect đo trước khi paint
   // nên không nháy. ResizeObserver bắt cả khi cửa sổ trình duyệt đổi kích thước.
   useLayoutEffect(() => {
-    if (!open) return undefined
     const el = frameHostRef.current
     if (!el) return undefined
     const measure = () => setHostSize({ width: el.clientWidth, height: el.clientHeight })
@@ -264,9 +276,7 @@ export function LivePreview({
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [open])
-
-  if (!open) return null
+  }, [])
 
   const previewTitle = t(`${i18nPrefix}.title`, { defaultValue: 'Xem trước' })
 
@@ -325,7 +335,9 @@ export function LivePreview({
       <header className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-2">
         <Eye size={16} className="text-primary" />
         <span className="text-sm font-medium">{previewTitle}</span>
-        {loading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
+        {(loading || frameStatus === 'loading') && (
+          <Loader2 size={14} className="animate-spin text-muted-foreground" />
+        )}
 
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           {/* Ngôn ngữ nội dung — gọi lại dry-run khi đổi */}
@@ -412,13 +424,46 @@ export function LivePreview({
 
       {/* Iframe storefront thật — render ở bề rộng desktop/mobile thật rồi scale
           vừa khung để thấy đúng layout theo breakpoint, không bị kẹt ở tablet. */}
-      <div ref={frameHostRef} className="flex flex-1 justify-center overflow-hidden bg-muted p-3">
+      <div
+        ref={frameHostRef}
+        className="relative flex flex-1 justify-center overflow-hidden bg-muted p-3"
+      >
+        {frameStatus !== 'ready' && (
+          <div
+            role={frameStatus === 'error' ? 'alert' : 'status'}
+            className="absolute inset-3 z-10 flex flex-col items-center justify-center gap-3 bg-muted p-4 text-center text-sm text-muted-foreground"
+          >
+            {frameStatus === 'loading' ? (
+              <>
+                <Loader2 size={24} className="animate-spin" aria-hidden="true" />
+                <span>
+                  {t(`${i18nPrefix}.loading`, {
+                    defaultValue: 'Đang tải trang xem trước…',
+                  })}
+                </span>
+              </>
+            ) : (
+              <>
+                <AlertCircle size={24} aria-hidden="true" />
+                <span>
+                  {t(`${i18nPrefix}.loadFailed`, {
+                    defaultValue: 'Không tải được trang xem trước. Vui lòng thử lại.',
+                  })}
+                </span>
+                <Button type="button" variant="outline" onClick={retryFrame}>
+                  {t(`${i18nPrefix}.retry`, { defaultValue: 'Thử lại' })}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
         <div className="rte-canvas-frame">
           <div
             className="shadow"
             style={{ width: Math.round(targetWidth * scale), height: availHeight || '100%' }}
           >
             <iframe
+              key={frameAttempt}
               ref={iframeRef}
               title={previewTitle}
               src={`${webOrigin}${previewPath}`}

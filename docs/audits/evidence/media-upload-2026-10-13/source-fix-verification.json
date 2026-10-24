@@ -1,0 +1,156 @@
+{
+  "status": "Source fixed; all three production app images built with .env.vps; backend/admin live rollout awaits approval under AGENTS.md section 5.6.",
+  "readOnlyRealDataComparison": [
+    {
+      "operation": "original_collect_reference_blobs",
+      "milliseconds": 1438.13,
+      "sqlQueries": 69
+    },
+    {
+      "operation": "optimized_collect_reference_blobs",
+      "milliseconds": 1611.1,
+      "sqlQueries": 13
+    },
+    {
+      "referenceBlobInventoryIdentical": true,
+      "blobs": 8127,
+      "activeMedia": 4914
+    },
+    {
+      "operation": "optimized_stats_usage_all",
+      "milliseconds": 5454.37,
+      "sqlQueries": 13
+    },
+    {
+      "operation": "optimized_counts_all",
+      "milliseconds": 2604.29,
+      "sqlQueries": 13
+    },
+    {
+      "operation": "optimized_list_30",
+      "milliseconds": 2358.17,
+      "sqlQueries": 13
+    },
+    {
+      "operation": "original_literal_counts_all_same_snapshot",
+      "milliseconds": 99017.4,
+      "sqlQueries": 0
+    },
+    {
+      "allUsageCountsIdentical": true,
+      "allUsedMediaIdentical": true,
+      "usedCount": 2946,
+      "unusedCount": 1968
+    }
+  ],
+  "focusedBackendTests": {
+    "count": 47,
+    "failed": 0
+  },
+  "focusedAdminRechecks": {
+    "files": 7,
+    "count": 100,
+    "failed": 0
+  },
+  "adminLint": "passed",
+  "adminBuild": "passed",
+  "nginxBoundarySelfTest": "passed",
+  "warmReadOnlyRealDataTimings": [
+    {
+      "operation": "optimized_stats_real_data",
+      "run": 1,
+      "milliseconds": 1994.51,
+      "mediaCount": 4914,
+      "usedCount": 2946
+    },
+    {
+      "operation": "optimized_list_30_real_data",
+      "run": 1,
+      "milliseconds": 1089.67
+    },
+    {
+      "operation": "optimized_stats_real_data",
+      "run": 2,
+      "milliseconds": 1359.87,
+      "mediaCount": 4914,
+      "usedCount": 2946
+    },
+    {
+      "operation": "optimized_list_30_real_data",
+      "run": 2,
+      "milliseconds": 974.94
+    },
+    {
+      "operation": "optimized_stats_real_data",
+      "run": 3,
+      "milliseconds": 1538.58,
+      "mediaCount": 4914,
+      "usedCount": 2946
+    },
+    {
+      "operation": "optimized_list_30_real_data",
+      "run": 3,
+      "milliseconds": 950.62
+    }
+  ],
+  "fullAdminTests": {
+    "files": 127,
+    "tests": 1203,
+    "passed": 1195,
+    "failed": 8,
+    "initialStatus": "failed",
+    "failedFilesRechecked": true,
+    "rerunFiles": 7,
+    "rerunTests": 100,
+    "rerunFailed": 0
+  },
+  "fullBackendTests": {
+    "tests": 1535,
+    "failed": 2,
+    "errors": 0,
+    "skipped": 1,
+    "status": "failed",
+    "failureNames": [
+      "Phase1DCustomerAuthTest.login_withPhone_succeeds",
+      "ArticleExcerptAuthorRemovalMigrationPostgresTest.removesArticleColumnsAndOnlyArticleAuditKeys"
+    ],
+    "authClassRerun": {
+      "tests": 27,
+      "failed": 0
+    },
+    "articleMigrationClassRerun": {
+      "tests": 1,
+      "failed": 1
+    },
+    "unrelatedProductionClassesAndResourcesIdentical": true
+  },
+  "backendJarContentDiff": {
+    "changed": [
+      "BOOT-INF/classes/com/bigbike/bigbike_backend/service/admin/AdminMediaService$BulkHardDeleteResult.class",
+      "BOOT-INF/classes/com/bigbike/bigbike_backend/service/admin/AdminMediaService$MediaDownload.class",
+      "BOOT-INF/classes/com/bigbike/bigbike_backend/service/admin/AdminMediaService.class",
+      "BOOT-INF/classes/com/bigbike/bigbike_backend/service/admin/MediaReferenceService.class"
+    ],
+    "added": [
+      "BOOT-INF/classes/com/bigbike/bigbike_backend/service/admin/MediaReferenceMatcher$Node.class",
+      "BOOT-INF/classes/com/bigbike/bigbike_backend/service/admin/MediaReferenceMatcher.class"
+    ],
+    "removed": [
+      "BOOT-INF/classes/com/bigbike/bigbike_backend/service/admin/MediaReferenceService$1IdPath.class",
+      "BOOT-INF/classes/com/bigbike/bigbike_backend/service/admin/MediaReferenceService$2IdPath.class"
+    ]
+  },
+  "dockerBuild": {
+    "command": "docker compose --env-file .env.vps build",
+    "status": "passed",
+    "images": {
+      "backend": "sha256:ac753a533ee533fee2dedcbd3fbb7e07c1a89479cbb8df7914ac1b023a9df63d",
+      "admin": "sha256:e3a5871428cd3412858f82a30ec004c302f67e058635b7829ce38de8b82ca018",
+      "web": "sha256:de1d07ac45aecc117956039e046b284d85bf1cae21dd08a4afdc822af6816124"
+    },
+    "webMatchesRunningImage": true,
+    "envFilesChanged": false,
+    "servicesRecreated": false
+  },
+  "gitDiffWhitespace": "passed"
+}

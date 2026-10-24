@@ -1,0 +1,207 @@
+{
+  "date": "2026-10-13",
+  "scope": "Diagnostic only; one authorized new media upload, no business-data edits or application deployment.",
+  "site": "https://admin.bigbike.vn",
+  "browserLocation": "VPS-hosted Chromium; not the owner network or browser.",
+  "file": {
+    "name": "kiem-tra-toc-do-media.jpg",
+    "uploadedBytes": 7122,
+    "id": "a5a60d42-9a69-4b73-8aa1-1636ee89927d",
+    "storedBytes": 7122,
+    "width": 100,
+    "height": 100
+  },
+  "upload": {
+    "fileTransferMilliseconds": 109.4,
+    "responseMilliseconds": 802.3,
+    "waitingAfterTransferMilliseconds": 692.9,
+    "httpStatus": 201,
+    "visibleMillisecondsFromFileSelection": 2380,
+    "serverMilliseconds": 668.22,
+    "serverSuccessCountDelta": 1.0
+  },
+  "mediaRequests": [
+    {
+      "stage": "initial-library",
+      "method": "GET",
+      "path": "/api/v1/admin/media/tags",
+      "status": 200,
+      "milliseconds": 161
+    },
+    {
+      "stage": "initial-library",
+      "method": "GET",
+      "path": "/api/v1/admin/media-folders",
+      "status": 200,
+      "milliseconds": 154
+    },
+    {
+      "stage": "initial-library",
+      "method": "GET",
+      "path": "/api/v1/admin/media",
+      "status": 200,
+      "milliseconds": 1239
+    },
+    {
+      "stage": "initial-library",
+      "method": "GET",
+      "path": "/api/v1/admin/media/stats",
+      "status": 504,
+      "milliseconds": 30084
+    },
+    {
+      "stage": "upload",
+      "method": "POST",
+      "path": "/api/v1/admin/media",
+      "status": 201,
+      "milliseconds": 715
+    },
+    {
+      "stage": "upload",
+      "method": "GET",
+      "path": "/api/v1/admin/media-folders",
+      "status": 200,
+      "milliseconds": 156
+    },
+    {
+      "stage": "upload",
+      "method": "GET",
+      "path": "/api/v1/admin/media-folders",
+      "status": 200,
+      "milliseconds": 291
+    },
+    {
+      "stage": "upload",
+      "method": "GET",
+      "path": "/api/v1/admin/media",
+      "status": 200,
+      "milliseconds": 1185
+    },
+    {
+      "stage": "after-upload",
+      "method": "GET",
+      "path": "/api/v1/admin/media/stats",
+      "status": 504,
+      "milliseconds": 30109
+    }
+  ],
+  "stats": {
+    "httpFailures": [
+      {
+        "stage": "initial-library",
+        "method": "GET",
+        "path": "/api/v1/admin/media/stats",
+        "status": 504,
+        "milliseconds": 30084
+      },
+      {
+        "stage": "after-upload",
+        "method": "GET",
+        "path": "/api/v1/admin/media/stats",
+        "status": 504,
+        "milliseconds": 30109
+      }
+    ],
+    "serverCompletedFailureMilliseconds": 39360.39,
+    "serverCompleted500CountDelta": 1.0,
+    "readOnlyDeployedClassBenchmarkMilliseconds": 38744.73,
+    "connectionIdleTransactionLimitSeconds": 30,
+    "adminProxyReadTimeoutSeconds": 30
+  },
+  "readOnlyBenchmarks": [
+    {
+      "activeLibraryCount": 4913,
+      "sampleImageBytes": 7198,
+      "sampleWidth": 100,
+      "sampleHeight": 100
+    },
+    {
+      "operation": "upload_detail_reference_checks_1",
+      "milliseconds": 847.97,
+      "sqlQueries": 64
+    },
+    {
+      "operation": "upload_detail_reference_checks_2",
+      "milliseconds": 643.29,
+      "sqlQueries": 64
+    },
+    {
+      "operation": "upload_detail_reference_checks_3",
+      "milliseconds": 627.76,
+      "sqlQueries": 64
+    },
+    {
+      "operation": "list_usage_30_items_1",
+      "milliseconds": 1196.36,
+      "sqlQueries": 69
+    },
+    {
+      "operation": "list_usage_30_items_2",
+      "milliseconds": 1003.14,
+      "sqlQueries": 69
+    },
+    {
+      "operation": "read_reference_blobs_only",
+      "milliseconds": 725.88,
+      "sqlQueries": 69,
+      "blobCount": 8127,
+      "totalCharacters": 15677502
+    },
+    {
+      "operation": "read_existing_small_image_1",
+      "milliseconds": 142.62,
+      "httpStatus": 200,
+      "bytes": 7198
+    },
+    {
+      "operation": "compress_small_image_1",
+      "milliseconds": 52.57,
+      "sqlQueries": 0
+    },
+    {
+      "operation": "read_existing_small_image_2",
+      "milliseconds": 19.63,
+      "httpStatus": 200,
+      "bytes": 7198
+    },
+    {
+      "operation": "compress_small_image_2",
+      "milliseconds": 5.33,
+      "sqlQueries": 0
+    },
+    {
+      "operation": "read_existing_small_image_3",
+      "milliseconds": 6.94,
+      "httpStatus": 200,
+      "bytes": 7198
+    },
+    {
+      "operation": "compress_small_image_3",
+      "milliseconds": 6.45,
+      "sqlQueries": 0
+    }
+  ],
+  "runtimeGate": {
+    "passed": false,
+    "pageErrors": [],
+    "consoleErrors": [
+      "Executing inline script violates the following Content Security Policy directive 'script-src 'self' blob: 'unsafe-eval''. Either the 'unsafe-inline' keyword, a hash ('sha256-DkgbJ0SuRjbdxCGILQlhQA7+1Bw4ytIJXxwvHMZ/rKE='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked.",
+      "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920' violates the following Content Security Policy directive: \"script-src 'self' blob: 'unsafe-eval'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+    ],
+    "apiErrors": [
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/media/stats",
+        "status": 504
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/media/stats",
+        "status": 504
+      }
+    ]
+  },
+  "testRecordDisposition": "One test image remains in the media library under the explicitly authorized name; no deletion was authorized.",
+  "sourceChanges": false,
+  "restartsOrDeployment": false
+}

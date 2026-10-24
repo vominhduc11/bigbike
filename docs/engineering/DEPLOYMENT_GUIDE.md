@@ -18,7 +18,139 @@ env-file differs. `docker compose` loads exactly one env-file, so each file must
 - **Local:** `docker compose up -d --build` (reads `.env`, see `.env.example`). `CONFIRMED_FROM_CONFIG`
 - **VPS:** `docker compose --env-file .env.vps up -d --build` (see `.env.vps.example`). `CONFIRMED_FROM_CONFIG`
 
+### Sửa đồng bộ sản phẩm nổi bật 2026-10-18 — đã nạp và nghiệm thu
+
+Owner yêu cầu sửa chênh lệch danh sách nổi bật giữa admin/web và build bản mới bằng
+`.env.vps`. Bản sửa áp dụng cho backend và web: xóa snapshot danh sách sản phẩm sau
+commit trước khi phát revalidation, đồng thời bao phủ alias trang chủ/catalog/sản
+phẩm VI đang được proxy sử dụng. Căn cứ: `API_CONTRACT.md` phần **Product list —
+filter and sort params** và `INTEGRATION_GUIDE.md` phần **Web Revalidation**.
+
+Build backend bằng context tạm tách các thay đổi Media còn chờ nạp từ 2026-10-13;
+giữ nội dung bảo hành đã triển khai. Không sửa hay bỏ các thay đổi Media trong
+workspace. Build web dùng source hiện tại. Cả hai lấy cấu hình từ `.env.vps`, không
+thay file env. Giữ image đang chạy để hoàn tác, nạp riêng backend/web bằng
+`docker compose --env-file .env.vps up -d --no-deps --no-build bigbike-backend bigbike-web`.
+Không recreate admin hoặc dịch vụ dữ liệu. Giữ giới hạn bộ nhớ backend 1 GB, web
+512 MB. Nghiệm thu: đúng image mới, healthy, startup revalidation thành công,
+danh sách ID/thứ tự trên web VI/EN khớp PostgreSQL và API công khai. Không đổi danh
+sách nổi bật thật chỉ để kiểm thử. Kết quả cuối ghi tại
+`docs/audits/FEATURE_FEATURED_PRODUCTS_2026-10-18.md`. `OWNER_REQUESTED_2026-10-18`
+
+Kết quả: build thành công hai app bằng `.env.vps`, rồi nạp lần lượt backend và web
+với `--no-deps --no-build --wait`. Backend chạy image
+`sha256:c4ae3991d56fbec587e2ac5fbefc11366d9455b38ed553caa92a0522b802dbce`;
+web chạy image
+`sha256:f1022aab4dfb984cf1068dc9ca4d8b7bad98b01d5d2d588e0ef1ee96c4d931ac`.
+Cả hai healthy; startup revalidation trả 200. Đối chiếu PostgreSQL, public API
+VI/EN và trang chủ VI/EN qua localhost lẫn `https://bigbike.vn/` đều cùng 5 ID,
+đúng thứ tự đã lưu. Route revalidation trả đủ alias VI. So sánh jar xác nhận chỉ
+`HomepageBlockMutationService.class` khác bản trước; các resource, migration và
+Media giống bản đang chạy trước đợt này. Hai file env, giới hạn RAM và image/thời
+điểm khởi động của admin/PostgreSQL/Redis/MinIO không đổi.
+
+Đã giữ image cũ ở `bigbike-backend:before-featured-20261018` và
+`bigbike-web:before-featured-20261018`; image Media đã build nhưng chưa nạp trước đó
+được giữ thêm ở `bigbike-backend:pending-before-featured-20261018`. Web lint và
+735/735 bài kiểm đạt; 15/15 bài backend tập trung đạt. Bộ backend đầy đủ chạy
+1.539 bài, còn một failure cũ ở `ArticleExcerptAuthorRemovalMigrationPostgresTest`,
+một bài skipped và không có error; không ghi bộ đầy đủ là pass. Bản build web có
+các lượt tự thử lại trang tĩnh quá 60 giây khi chạy cùng bộ kiểm máy chủ, sau đó
+dựng đủ 95/95 trang và build thành công. Log ở
+`/tmp/bigbike-featured-*-20261018.log`; bằng chứng đã lọc tại
+`docs/audits/evidence/featured-products-2026-10-18/verification.json`.
+`DEPLOYED_AND_VERIFIED_2026-10-18`
+
+### Tối ưu upload Media 2026-10-13 — đã build, chờ nạp
+
+Owner yêu cầu sửa hiện tượng admin upload ảnh nhỏ vẫn chờ lâu và build bản mới nhất bằng `.env.vps`. Đã chạy `docker compose --env-file .env.vps build` thành công cho cả ba app, không sửa env; web dùng lại image đang chạy. Backend mới chỉ khác các class xử lý Media so với jar đang triển khai, không có migration/resource/đổi quyền. Admin sửa lượt làm mới thư viện/picker. Căn cứ: `API_CONTRACT.md` phần **5. Thư viện ảnh/video (Media)** và `API_FLOW_MAP.md` hàng **Admin media UI**. `OWNER_REQUESTED_BUILD_2026-10-13`
+
+Hai image đang chạy được giữ ở `bigbike-backend:before-media-performance-20261013` và `bigbike-admin:before-media-performance-20261013`. **Chưa nạp hoặc khởi động lại dịch vụ.** Sau approval theo `AGENTS.md` §5.6, nạp riêng hai app đã sửa bằng `docker compose --env-file .env.vps up -d --no-deps --no-build bigbike-backend bigbike-admin`. Nghiệm thu: đúng image mới, healthy, thống kê HTTP 200 dưới timeout, upload đúng một ảnh nhỏ mới trả 201 và hiện trong lưới, mỗi nhóm danh sách/thống kê/thư mục làm mới một lượt. Không recreate web hoặc dịch vụ dữ liệu. Các lỗi kiểm thử ngoài Media và số đo source/data parity được ghi rõ tại `docs/audits/FEATURE_MEDIA_UPLOAD_PERFORMANCE_2026-10-13.md`; chưa kết luận thời gian upload sau triển khai. `ROLLOUT_PENDING_APPROVAL`
+
+### Khôi phục xem trước sản phẩm 2026-10-12
+
+Chủ shop đã duyệt khởi động lại riêng website và cập nhật bản quản trị đã kiểm tra. Phạm vi: `docker compose --env-file .env.vps restart bigbike-web` giữ nguyên image web; build riêng `bigbike-admin` bằng `.env.vps`, giữ image quản trị đang chạy để hoàn tác, rồi nạp với `up -d --no-deps --no-build bigbike-admin`. Không nạp các thay đổi backend của phiên khác và không thay đổi hai file env hay dịch vụ dữ liệu. Nghiệm thu trên hệ thống đang dùng: healthy, preview VI/EN và trang chủ trả 200, khung xem trước hiển thị sản phẩm/ảnh, đổi thiết bị/ngôn ngữ và cập nhật nội dung chưa lưu không ghi sản phẩm. Báo cáo tại `docs/audits/FEATURE_PRODUCT_PREVIEW_2026-10-12.md`. `OWNER_APPROVED_2026-10-12`
+
+Kết quả: đã khởi động lại `bigbike-web` lúc 16:39 (giờ Việt Nam), giữ image `sha256:de1d07ac45aecc117956039e046b284d85bf1cae21dd08a4afdc822af6816124`; startup revalidation trả 200 và website trở lại healthy. Đã build/nạp riêng quản trị lúc 16:42 với image `sha256:b5ef976b6aed286660316a9f82ff1aa26b324ad55796ec47cb12e98b9a065619`, healthy; image trước giữ ở `bigbike-admin:before-product-preview-20261012`. Backend, PostgreSQL, Redis và MinIO giữ nguyên image/thời điểm khởi động, đều healthy.
+
+Kiểm HTTPS thực tế đạt: preview VI/EN và trang chủ trả 200; tám bước Playwright cho báo lỗi/Thử lại, VI/EN, Máy tính/Điện thoại, tên chưa lưu và đóng/mở lại đều đạt; ảnh sản phẩm tải được, không có lỗi trang hoặc API và không gọi thao tác ghi sản phẩm. Console còn thông báo Cloudflare beacon/inline script bị CSP chặn như trước thay đổi, không coi console hoàn toàn sạch. Log/ảnh tại `/tmp/bigbike-product-preview-{docker-build,docker-deploy,live-check}-20261012.log` và `/tmp/bigbike-product-preview-live*-20261012.png`.
+
+### Cập nhật bảo hành 2026-10-08
+
+Theo yêu cầu chủ shop, hai hạng mục ở `POLICY_PAGE_RULE_011` được đổi thành **Không bảo hành / No warranty** trong nguồn dùng chung của website và Trợ lý. Đã chạy `docker compose --env-file .env.vps build` cho ba app, rồi nạp riêng phần nội dung thay đổi bằng `docker compose --env-file .env.vps up -d --no-deps --no-build bigbike-backend`. Container backend dùng image `sha256:472786245647a5448c18707f7afc2542730ece54c5672fb192e8de03796a90b0`, trạng thái `healthy`; image trước giữ tại `bigbike-backend:before-warranty-20261008`. Web/admin build dùng cache và tiếp tục chạy trong container hiện có. Không thay đổi `.env.vps` hoặc các dịch vụ dữ liệu.
+
+Đã làm mới hai tag `store-policies` và `policy:warranty` qua route revalidation của web. Năm bài `StorePolicyServiceTest` đạt; kiểm HTTPS thực tế tại API policy và trang Bảo hành VI/EN xác nhận đúng hai dòng đổi thành không bảo hành, khóa kéo/khóa dán vẫn 6 tháng và keo đế giày vẫn 12 tháng. Log tại `/tmp/bigbike-warranty-{tests,docker-build,docker-deploy,live-checks}-20261008.log`; HTML đã kiểm tại `/tmp/bigbike-warranty-live-{vi,en}-20261008.html`. `OWNER_REQUESTED_2026-10-08`
+
 ### Nạp riêng bản web đã build
+
+Logo Bộ Công Thương 2026-10-23: chủ shop yêu cầu thêm logo xanh và liên kết xác nhận theo
+`BUSINESS_RULES.md` `POLICY_PAGE_RULE_010`, sau đó build bản web mới bằng `.env.vps`.
+Phạm vi build là `docker compose --env-file .env.vps build bigbike-web`; giữ nguyên file env
+và các dịch vụ đang chạy. Lệnh build chỉ tạo image mới; nạp image lên website là bước riêng
+theo hướng dẫn bên dưới.
+
+Kết quả 2026-10-23: build thành công, dựng đủ 95/95 trang; image mới
+`sha256:3cc448758a34bf939a6c153c24a43316ea55f578b4e7a8693b17f95614e25f21`, tag
+`bigbike-web:bct-20261023` và `bigbike-bigbike-web:latest`. Lint/guard, định dạng các file UI
+đã sửa và 110 file/746 bài Vitest đều đạt (lượt hoàn chỉnh dùng `--maxWorkers=2 --testTimeout=15000`
+sau khi đóng bản xem thử để giảm tải bộ nhớ). Playwright trên bản xem thử `http://localhost:3107`
+với backend thật xác nhận logo/liên kết đạt 6/6 tại 375/768/1440px cho VI/EN: ảnh tải được,
+giữ tỉ lệ, không tràn ngang, nhãn hỗ trợ đọc đúng ngôn ngữ; đã bấm và xác nhận tab mới mở
+đúng trang online.gov.vn. Đã xem ảnh chân trang mobile/desktop. Một lượt chụp sớm trên EN
+mobile phát sinh cảnh báo do công cụ tạm ẩn con trỏ trong ô tìm kiếm; kiểm lại sau khi tải xong,
+giữ nguyên con trỏ khi chụp, không có lỗi runtime. Một số lượt dev còn cảnh báo khung ảnh
+sản phẩm trang chủ ngoài phạm vi chân trang; không sửa trong đợt này.
+
+Tại thời điểm hoàn tất build, **chưa nạp image mới hoặc khởi động lại dịch vụ**. `docker ps --filter 'name=^/bigbike-web$'`
+và `docker inspect bigbike-web` xác nhận container web vẫn healthy, dùng image trước
+`sha256:4d8a09f75bdb11aa12d6784b7f0cd0f8bcadc515836deeeb1105bb8820d874a0`; đã giữ thêm tag
+`bigbike-web:before-bct-20261023`. Không sửa `.env`/`.env.vps` hoặc build/recreate backend,
+admin và dịch vụ dữ liệu. Log kiểm tra/build nằm tại `/tmp/bigbike-footer-bct-lint-20261023.log`,
+`/tmp/bigbike-footer-bct-tests-final-20261023.log`, `/tmp/bigbike-footer-bct-build-20261023.log`;
+kết quả trình duyệt/ảnh tại `/tmp/bigbike-footer-bct-browser-20261023.json`,
+`/tmp/bigbike-footer-bct-runtime-recheck-20261023.json`, `/tmp/bigbike-footer-bct-{vi,en}-{375,768,1440}-20261023.png`.
+
+Chủ shop đã yêu cầu nạp bản mới sau khi nhận kết quả build ngày 2026-10-23.
+Phạm vi được duyệt: `docker compose --env-file .env.vps up -d --no-deps --no-build --wait bigbike-web`,
+dùng đúng image `bigbike-web:bct-20261023` đã kiểm tra ở trên. Sau nạp kiểm image/healthy,
+HTML công khai và logo/liên kết trên website thật; giữ nguyên backend, admin, dịch vụ dữ liệu
+và hai file env. `OWNER_APPROVED_2026-10-23`
+
+Kết quả nạp 2026-10-23: lệnh được duyệt hoàn tất, `bigbike-web` chạy đúng image
+`sha256:3cc448758a34bf939a6c153c24a43316ea55f578b4e7a8693b17f95614e25f21`, trạng thái
+**healthy**. `docker inspect` trước/sau xác nhận backend, admin, PostgreSQL, Redis và MinIO
+giữ nguyên image và thời điểm khởi động. Trang chủ HTTPS trả 200, có logo và liên kết đúng;
+file logo công khai có SHA-256 `42ee1fa5050c4d69a810803275e61b7deb286ee4a49ff4da1e69e5025a97dc36`,
+trùng file gốc đã tải. Playwright trên `https://bigbike.vn/` và `/en/` kiểm logo đạt 6/6 ở
+375/768/1440px; đã bấm logo trên website thật và xác nhận mở đúng trang Bộ Công Thương trong
+tab mới. Bốn lượt 375/768 đạt trước khi tiến trình kiểm bị dừng; đã chạy riêng hai lượt 1440
+và kiểm thao tác bấm, đều đạt. Không có lỗi JavaScript của trang; console còn CSP chặn
+Cloudflare beacon và cảnh báo định dạng currency của Meta Pixel ngoài phạm vi logo,
+không thay CSP hoặc cấu hình theo dõi trong đợt này.
+
+Log nạp: `/tmp/bigbike-footer-bct-deploy-20261023.log`; trạng thái trước/sau tại
+`/tmp/bigbike-footer-bct-services-{before,after}-20261023.log`; HTML, logo và ảnh thực tế tại
+`/tmp/bigbike-footer-bct-live-vi-20261023.html`, `/tmp/bigbike-footer-bct-live-logo-20261023.png`,
+`/tmp/bigbike-footer-bct-live-{vi,en}-{375,768,1440}-20261023.png`. Hai lượt desktop và thao tác
+bấm được lưu tại `/tmp/bigbike-footer-bct-live-browser-20261023.json` và
+`/tmp/bigbike-footer-bct-live-click-20261023.log`.
+
+Phiếu SEO trang chủ/danh mục 2026-10-22: owner yêu cầu triển khai DEV-1–DEV-4 rồi build Docker bằng
+`.env.vps` thành bản mới. Chạy lint/test web và kiểm tra ranh giới domain, giữ image web đang chạy
+bằng tag `bigbike-web:before-seo-20261022`, build riêng `bigbike-web` với `.env.vps`, kiểm bản image mới
+trên cổng loopback tạm trước khi nạp riêng web. Không build/recreate backend, admin hoặc dịch vụ dữ liệu.
+Sau nạp, kiểm healthy và HTML/DOM trang chủ, danh mục cha/con/EN qua HTTPS. Không sửa `.env.vps`, CSP
+hoặc cài đặt Pixel trong phiếu này. Kết quả/image cụ thể được ghi sau khi các bước thực sự hoàn tất.
+
+Kết quả 2026-10-22: đã build/nạp riêng web bằng hai lệnh bên dưới. Container `bigbike-web` dùng image
+`sha256:4d8a09f75bdb11aa12d6784b7f0cd0f8bcadc515836deeeb1105bb8820d874a0`, trạng thái **healthy**,
+tag `bigbike-web:seo-20261022`; image trước giữ tại `bigbike-web:before-seo-20261022`. Lint/guard,
+746 bài kiểm web, TypeScript, kiểm ranh giới domain và 10 kịch bản Playwright HTTPS đều đạt.
+HTML/DOM trang chủ có 2 JSON-LD; danh mục cha/con/EN kiểm 5 lần/trang đều 1 intro/6 câu hỏi/3 JSON-LD,
+lang và mô tả đúng. Schema.org kiểm HTML mới trả 0 lỗi/0 cảnh báo; chế độ fetch URL không lấy được trang.
+Google Rich Results yêu cầu đăng nhập nên chưa xác nhận kết quả từ Google. CSP/Pixel không đổi;
+backend/admin và dịch vụ dữ liệu không được recreate trong đợt này. Bằng chứng:
+`docs/audits/FEATURE_HOME_CATEGORY_STRUCTURED_DATA_2026-10-22.md`.
 
 `docker compose --env-file .env.vps build bigbike-web` tạo image mới; container đang chạy tiếp tục dùng image cũ. Khi chủ shop yêu cầu áp dụng thay đổi lên website, nạp image đã kiểm tra bằng `docker compose --env-file .env.vps up -d --no-deps --no-build bigbike-web`. Giữ image trước đó để có thể hoàn tác; xác nhận container dùng đúng image mới, trạng thái healthy và nội dung hiển thị qua `https://bigbike.vn/`.
 
