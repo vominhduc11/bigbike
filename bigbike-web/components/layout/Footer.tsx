@@ -1,24 +1,22 @@
-import { Mail, MapPin, Minus, Phone, Plus } from "lucide-react";
+import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 import Link from "@/i18n/StorefrontLink";
 import { getTranslations } from "next-intl/server";
-import type { ReactNode } from "react";
 
 import { LocalizedSetting } from "@/components/i18n/LocalizedSetting";
 import { Tr } from "@/components/i18n/Tr";
 import { Container } from "@/components/layout/Container";
-import { FooterMenuLinks, FooterSupportLinks } from "@/components/layout/FooterMenuLinks";
+import {
+  FooterMenuLinks,
+  FooterSections,
+  FooterSupportLinks,
+} from "@/components/layout/FooterMenuLinks";
 import { SOCIAL_LINK_LABELS } from "@/lib/content/social-links";
 import { BUSINESS_IDENTITY, getBusinessLicense } from "@/lib/content/business-identity";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { cn } from "@/lib/utils";
 import { telHref } from "@/lib/utils/format";
-import { toHomePath } from "@/lib/utils/routes";
+import { toHomePath, translatePath } from "@/lib/utils/routes";
 import type { Locale } from "@/i18n/locale";
 import { pickSetting } from "@/lib/utils/settings";
 import { MediaImage } from "@/components/ui/MediaImage";
@@ -75,59 +73,10 @@ function SocialSvgIcon({ name }: { name: SocialChannel }) {
       height="20"
       aria-hidden="true"
       focusable="false"
-      className="shrink-0 fill-current text-brand-on-dark"
+      className="shrink-0 fill-current text-brand-inverse"
     >
       <path d={BRAND_ICON_PATH[name]} />
     </svg>
-  );
-}
-
-/**
- * Accordion "Thông tin"/"Bảo hành và hướng dẫn"/"Mạng xã hội" — dưới 992px:
- * mỗi nhóm mở mặc định và thu gọn độc lập khi bấm. Từ 992px: luôn mở + ẩn icon,
- * nhóm thông tin/hướng dẫn cùng cột, mạng xã hội cạnh bên; 768–991px vẫn xếp dọc.
- * Xem `AccordionPrimitive.Root`
- * className `min-[992px]:grid-cols-12`). forceMount để nội dung luôn có trong DOM
- * (SEO + desktop luôn mở), sổ/thu bằng animation trượt height (`animate-accordion-up/down`)
- * thay vì `display:none` — trạng thái đóng giữ height 0 nhờ `animation-fill-mode: forwards`
- * (xem `[data-footer-content][data-state="closed"]` trong globals.css). Desktop ≥992px ép
- * `!h-auto` để luôn hiện đủ, không phụ thuộc animation.
- */
-function AccordionPanel({
-  value,
-  title,
-  children,
-}: {
-  value: string;
-  title: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <AccordionItem
-      value={value}
-      data-footer-section={value}
-      className="mb-4 border-b border-white/10 pb-4 min-[992px]:mb-0 min-[992px]:border-none min-[992px]:pb-0"
-    >
-      <AccordionTrigger
-        className="group mb-4! min-h-11 w-full gap-2 py-0 pr-7.5 text-left font-cta text-b4-action font-semibold uppercase! text-white hover:text-brand-inverse max-[992px]:data-[state=closed]:mb-0! min-[992px]:mb-[15px]! min-[992px]:pointer-events-none"
-        indicator={
-          <span key="indicator" className="shrink-0 min-[992px]:hidden" aria-hidden>
-            <Plus className="icon-plus h-4 w-4 group-data-[state=open]:hidden" />
-            <Minus className="icon-minus hidden h-4 w-4 group-data-[state=open]:block" />
-          </span>
-        }
-      >
-        <span key="title">{title}</span>
-      </AccordionTrigger>
-      <AccordionContent
-        forceMount
-        data-footer-content
-        panelClassName="min-[992px]:!h-auto"
-        className="pb-0 text-a4-content"
-      >
-        {children}
-      </AccordionContent>
-    </AccordionItem>
   );
 }
 
@@ -142,8 +91,11 @@ export async function Footer({ locale }: { locale: Locale }) {
   const settingDescription = pickSetting(settingsResult.data ?? [], ["footer_description"]);
   const representativeValues = { name: BUSINESS_IDENTITY.representative };
   const businessDetails = (
-    <div className="space-y-3 text-a4-content leading-body text-white [overflow-wrap:anywhere]">
-      <p className="m-0 font-bold text-brand-inverse">{BUSINESS_IDENTITY.name}</p>
+    <div
+      data-footer-business-details
+      className="grid min-w-0 grid-cols-1 gap-x-10 gap-y-3 text-a4-content leading-body text-white [overflow-wrap:anywhere] md:grid-cols-2"
+    >
+      <p className="m-0 font-bold text-brand-inverse md:col-span-2">{BUSINESS_IDENTITY.name}</p>
       <p className="m-0">
         <Tr ns="PolicyContact" k="address" />: <Tr ns="Footer" k="address" />
       </p>
@@ -172,7 +124,7 @@ export async function Footer({ locale }: { locale: Locale }) {
         href="https://online.gov.vn/nen-tang/fdd92044-4eaa-4886-ac23-b8a8f324ff2d"
         target="_blank"
         rel="noopener noreferrer"
-        className="relative block aspect-[115/43] w-44 max-w-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse"
+        className="relative mt-2 block aspect-[115/43] w-44 max-w-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse md:col-span-2"
       >
         <MediaImage
           image={{ url: "/brand/commerce-certification.png", width: 230, height: 86 }}
@@ -190,163 +142,146 @@ export async function Footer({ locale }: { locale: Locale }) {
 
   return (
     <footer
+      id="site-footer"
       data-bb-full-bleed
       data-bb-focus="general_brand"
       className={cn(
-        "relative z-0 w-full font-body text-white",
+        "relative z-0 w-full bg-black font-body text-white",
         // Reserve space for the fixed mobile nav even inside FooterMobileGate.
         "max-md:[body:has(.bb-bottom-nav)_&]:pb-[calc(var(--bb-mobile-nav-height)+env(safe-area-inset-bottom))]",
       )}
     >
-      <div data-footer-top className="bg-footer-top pt-15 md:pb-[85px]">
-        <Container variant="blog" className="px-[15px]!">
-          <div className="grid grid-cols-1 gap-x-7.5 md:grid-cols-12">
-            <div className="md:col-span-7">
-              <h2
-                data-footer-intro
-                className="mb-10! font-cta text-a1-title font-semibold uppercase leading-title"
-              >
-                <Tr ns="Footer" k="taglineLong" />
-              </h2>
-              <div data-footer-contacts className="mb-7.5 flex min-w-0 flex-col gap-3">
-                {FOOTER_HOTLINES.map((phone) => (
-                  <p
-                    key={phone}
-                    className="m-0! min-w-0 font-cta text-b3-promo font-semibold uppercase"
-                  >
-                    <a
-                      href={telHref(phone)}
-                      className="flex min-h-11 min-w-0 items-center gap-3 normal-case text-white! no-underline! [overflow-wrap:anywhere] sm:gap-[29px]"
-                      data-analytics-location="footer"
+      <div data-footer-top className="bg-footer-top py-8 lg:py-12">
+        <Container>
+          <FooterSections
+            contact={
+              <div data-footer-contacts className="min-w-0">
+                <h2
+                  data-footer-intro
+                  className="mb-4 font-cta text-a2-page font-semibold uppercase leading-snug"
+                >
+                  <Tr ns="Footer" k="contactTitle" />
+                </h2>
+                <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
+                  {FOOTER_HOTLINES.map((phone) => (
+                    <Button
+                      key={phone}
+                      asChild
+                      variant="outline"
+                      className="min-h-12 justify-start gap-2 border-white/30 px-3 py-3 text-a4-content text-white! hover:border-brand-inverse hover:bg-white/5 hover:not-disabled:scale-100 focus-visible:outline-brand-inverse"
                     >
-                      <Phone className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                      {phone}
-                    </a>
-                  </p>
-                ))}
-                <p className="m-0! flex min-w-0 items-start gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]">
-                  <a
-                    href={`mailto:${FOOTER_EMAIL}`}
-                    className="flex min-h-11 min-w-0 items-center gap-3 text-white! no-underline! sm:gap-[29px]"
-                  >
-                    <Mail className="h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                    <span
-                      data-footer-email
-                      className="min-w-0 normal-case [overflow-wrap:anywhere]"
-                    >
-                      {FOOTER_EMAIL}
-                    </span>
-                  </a>
-                </p>
-                <p className="m-0! flex min-w-0 items-start gap-3 font-cta text-b3-promo font-semibold uppercase sm:gap-[29px]">
-                  <MapPin className="mt-1 h-6 w-6 shrink-0 text-brand-on-dark" aria-hidden />
-                  <span className="min-w-0 normal-case [overflow-wrap:anywhere]">
-                    <Tr ns="Footer" k="address" />
+                      <a href={telHref(phone)} data-analytics-location="footer">
+                        <Phone className="h-4 w-4 shrink-0 text-brand-inverse" aria-hidden />
+                        <span className="whitespace-nowrap">{phone}</span>
+                      </a>
+                    </Button>
+                  ))}
+                </div>
+                <a
+                  href={`mailto:${FOOTER_EMAIL}`}
+                  className="mb-3 flex min-h-11 min-w-0 items-center gap-3 text-a4-content text-white! no-underline! hover:text-brand-inverse! focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse"
+                >
+                  <Mail className="h-5 w-5 shrink-0 text-brand-inverse" aria-hidden />
+                  <span data-footer-email className="min-w-0 [overflow-wrap:anywhere]">
+                    {FOOTER_EMAIL}
                   </span>
-                </p>
+                </a>
+                <Link
+                  href={translatePath("/lien-he/", locale)}
+                  className="group flex min-h-11 min-w-0 items-start gap-3 text-a4-content leading-body text-white! no-underline! focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse"
+                >
+                  <MapPin className="mt-1 h-5 w-5 shrink-0 text-brand-inverse" aria-hidden />
+                  <span className="min-w-0 [overflow-wrap:anywhere]">
+                    <Tr ns="Footer" k="address" />
+                    <span className="mt-2 flex min-h-11 items-center gap-2 text-brand-inverse group-hover:underline group-hover:underline-offset-4">
+                      <Tr ns="Footer" k="visitStore" />
+                      <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
+                    </span>
+                  </span>
+                </Link>
               </div>
-            </div>
-            <div className="md:col-span-5">
-              <p data-footer-description className="mb-[27px]! text-a4-content leading-body">
-                <LocalizedSetting
-                  vi={settingDescription}
-                  en={settingDescription}
-                  fallback={<Tr ns="Footer" k="description" />}
-                />
-              </p>
-              <Accordion
-                type="multiple"
-                defaultValue={["menu", "support", "social"]}
-                className="grid grid-cols-1 gap-x-7.5 min-[992px]:grid-cols-12"
-              >
-                <div className="min-[992px]:col-span-7">
-                  <div data-footer-menu>
-                    <AccordionPanel value="menu" title={<Tr ns="Footer" k="infoHeading" />}>
-                      <FooterMenuLinks />
-                    </AccordionPanel>
-                  </div>
-                  <div
-                    data-footer-support
-                    className="min-[992px]:mt-4 min-[992px]:border-t min-[992px]:border-white/10 min-[992px]:pt-4"
+            }
+            sections={[
+              {
+                value: "menu",
+                title: <Tr ns="Footer" k="infoHeading" />,
+                content: <FooterMenuLinks />,
+              },
+              {
+                value: "support",
+                title: <Tr ns="Footer" k="warrantyGuidesHeading" />,
+                content: <FooterSupportLinks />,
+              },
+              {
+                value: "social",
+                title: <Tr ns="Footer" k="socialHeading" />,
+                content: (
+                  <ul className="m-0 grid list-none grid-cols-2 gap-x-4 gap-y-2 p-0 lg:grid-cols-1">
+                    {SOCIAL_CHANNELS.map((key) => {
+                      const profile = SOCIAL_LINK_LABELS[key];
+                      return (
+                        <li key={key} className="min-w-0">
+                          <a
+                            rel="nofollow noopener noreferrer"
+                            target="_blank"
+                            href={FOOTER_SOCIAL_LINKS[key]}
+                            aria-label={`${profile.platform} - ${profile.displayName}`}
+                            className="group flex min-h-14 min-w-0 items-center gap-2 text-white! no-underline! focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-inverse"
+                          >
+                            <SocialSvgIcon name={key} />
+                            <span className="min-w-0 [overflow-wrap:anywhere]">
+                              <span className="block group-hover:text-brand-inverse">
+                                {profile.platform}
+                              </span>
+                              <span className="block text-a5-meta text-[var(--bb-text-inverse-secondary)]">
+                                {profile.displayName}
+                              </span>
+                            </span>
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ),
+              },
+              {
+                value: "about",
+                title: <Tr ns="Footer" k="aboutHeading" />,
+                content: (
+                  <p
+                    data-footer-description
+                    className="m-0 text-a4-content leading-body text-[var(--bb-text-inverse-secondary)]"
                   >
-                    <AccordionPanel
-                      value="support"
-                      title={<Tr ns="Footer" k="warrantyGuidesHeading" />}
-                    >
-                      <FooterSupportLinks />
-                    </AccordionPanel>
-                  </div>
-                </div>
-                <div data-footer-social className="min-[992px]:col-span-5">
-                  <AccordionPanel value="social" title={<Tr ns="Footer" k="socialHeading" />}>
-                    <ul className="m-0 flex list-none flex-col gap-0 p-0">
-                      {SOCIAL_CHANNELS.map((key) => {
-                        const profile = SOCIAL_LINK_LABELS[key];
-                        return (
-                          <li key={key}>
-                            <a
-                              rel="nofollow noopener noreferrer"
-                              target="_blank"
-                              href={FOOTER_SOCIAL_LINKS[key]}
-                              aria-label={`${profile.platform} - ${profile.displayName}`}
-                              className="flex min-h-11 items-center gap-5! text-white! no-underline!"
-                            >
-                              <SocialSvgIcon name={key} />
-                              <span>{profile.displayName}</span>
-                            </a>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </AccordionPanel>
-                </div>
-              </Accordion>
-            </div>
-          </div>
+                    <LocalizedSetting
+                      vi={settingDescription}
+                      en={settingDescription}
+                      fallback={<Tr ns="Footer" k="description" />}
+                    />
+                  </p>
+                ),
+              },
+            ]}
+          />
         </Container>
       </div>
-      <div className="bg-footer-top md:hidden">
-        <Container data-footer-registration variant="blog" className="px-[15px]! pb-4">
-          {businessDetails}
-        </Container>
-        <div className="bg-black">
-          <Container
-            variant="blog"
-            className="grid min-h-[85px] grid-cols-3 items-center px-[15px]! py-[15px]"
-          >
-            <p className="col-span-2 m-0 text-a5-meta leading-5">
-              {t("copyright", { year: new Date().getFullYear() })}
-            </p>
-            <Link href={toHomePath(locale)} className="justify-self-end">
+      <div className="bg-black py-8">
+        <Container data-footer-registration>{businessDetails}</Container>
+        <Container className="mt-6">
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-white/15 pt-6">
+            <Link
+              href={toHomePath(locale)}
+              className="flex min-h-11 shrink-0 items-center focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse"
+            >
               <MediaImage
                 image={{ url: "/brand/footer-wordmark.png", width: 150, height: 55 }}
                 altFallback="BigBike"
-                sizes="100px"
-                className="h-auto w-25"
+                sizes="120px"
+                className="h-auto w-30"
               />
             </Link>
-          </Container>
-        </div>
-      </div>
-      <div className="hidden bg-black md:block!">
-        <Container variant="blog" className="px-[15px]!">
-          <div className="grid grid-cols-12 items-center gap-x-7.5 pb-[31px] pt-7.5">
-            <div className="col-span-2">
-              <Link href={toHomePath(locale)} className="inline-block">
-                <MediaImage
-                  image={{ url: "/brand/footer-wordmark.png", width: 150, height: 55 }}
-                  altFallback="BigBike"
-                  sizes="150px"
-                  className="h-auto w-37.5"
-                />
-              </Link>
-            </div>
-            <div className="col-span-4">
-              <p className="m-0">{t("copyright", { year: new Date().getFullYear() })}</p>
-            </div>
-            <div data-footer-registration className="col-span-6 min-w-0">
-              {businessDetails}
-            </div>
+            <p className="m-0 text-a5-meta leading-body text-[var(--bb-text-inverse-secondary)]">
+              {t("copyright", { year: new Date().getFullYear() })}
+            </p>
           </div>
         </Container>
       </div>

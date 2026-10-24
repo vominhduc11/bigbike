@@ -217,7 +217,7 @@ test("Ba dòng liên hệ chân trang không bị cắt ở 320px", async ({ pag
   await expect(email).toHaveText("bigbikevnshop@gmail.com");
   expectLinesInside(await renderedTextLines(email), "Email chân trang");
 
-  const rows = await page.locator("[data-footer-contacts] > p").evaluateAll((nodes) =>
+  const rows = await page.locator("[data-footer-contacts] a").evaluateAll((nodes) =>
     nodes.map((node) => {
       const rect = node.getBoundingClientRect();
       return { left: rect.left, right: rect.right, viewportWidth: window.innerWidth };
@@ -235,18 +235,19 @@ test("Liên kết chân trang và nút Mua ngay có vùng bấm an toàn trên �
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, "/");
 
+  await page.locator('[data-footer-section="menu"] button').click();
   const compactPolicyLinks = await page.locator("[data-footer-menu] li a").evaluateAll((nodes) =>
     nodes.map((node) => {
       const rect = node.getBoundingClientRect();
       return { top: rect.top, bottom: rect.bottom, height: rect.height };
     }),
   );
-  expect(compactPolicyLinks).toHaveLength(5);
-  for (const link of compactPolicyLinks) expect(link.height).toBeGreaterThanOrEqual(24);
+  expect(compactPolicyLinks).toHaveLength(7);
+  for (const link of compactPolicyLinks) expect(link.height).toBeGreaterThanOrEqual(44);
   for (let index = 1; index < compactPolicyLinks.length; index += 1) {
     expect(
       compactPolicyLinks[index].top - compactPolicyLinks[index - 1].bottom,
-    ).toBeGreaterThanOrEqual(8);
+    ).toBeGreaterThanOrEqual(4);
   }
 
   for (const selector of ["[data-footer-contacts] a", "[data-footer-social] a"]) {

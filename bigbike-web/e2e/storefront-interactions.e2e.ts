@@ -45,16 +45,16 @@ test.describe("Shell interactions — header scroll + footer scroll @desktop", (
 test.describe("Footer accordion @mobile", () => {
   test.use({ viewport: MOBILE });
 
-  test("information section can collapse and reopen", async ({ page }) => {
+  test("information section starts compact and can open and close", async ({ page }) => {
     await settle(page, "/");
     const section = page.locator('footer [data-footer-section="menu"]');
     const trigger = section.getByRole("button");
     const content = section.locator("[data-footer-content]");
-    await expect(content).toBeVisible();
-    await trigger.click();
     await expect(content).toBeHidden();
     await trigger.click();
     await expect(content).toBeVisible();
+    await trigger.click();
+    await expect(content).toBeHidden();
   });
 });
 

@@ -221,20 +221,6 @@
   }
 }
 
-/* Footer accordion (mobile <992px) dùng forceMount → nội dung không unmount khi
-   đóng. Nếu để mặc định, sau khi `accordion-up` chạy xong height sẽ trả về auto và
-   danh sách "nhảy" hiện lại. Giữ trạng thái cuối (height 0) bằng animation-fill-mode:
-   forwards — CHỈ cho trạng thái đóng để lúc mở (accordion-down) vẫn về height auto tự
-   nhiên, tránh kẹt chiều cao khi tải trang. Xem Footer.tsx `[data-footer-content]`. */
-[data-footer-content][data-state="closed"] {
-  animation-fill-mode: forwards;
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-footer-content] {
-    animation-duration: 1ms !important;
-  }
-}
-
 /* shadcn Sheet motion. Kept explicit because the imported animate utilities
    are not emitted reliably by the current Tailwind build. */
 [data-bb-sheet-overlay] {
@@ -3284,23 +3270,6 @@ body .banner-ads > .container > .row {
   .bb-success {
     margin: 24px auto 34px;
   }
-
-  body > footer .bg-footer-top a {
-    min-width: 0;
-    gap: 12px;
-    /* Hotline/email uses B2; this media query only adjusts layout spacing. */
-  }
-
-  /* Nav links (accordion) and social links are NOT hotline numbers — reset to body size */
-  body > footer .bg-footer-top ul a {
-    gap: 0;
-  }
-
-  body > footer .bg-footer-top a span {
-    min-width: 0;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
 }
 
 /* Contrast normalizers for legacy WP-parity selectors.
@@ -3338,15 +3307,6 @@ body .banner-ads > .container > .row {
 .return-to-shop .button.wc-backward:focus-visible {
   background: var(--bb-action-primary-hover);
   color: var(--bb-text-inverse);
-}
-
-body > footer .bg-footer-top h3 button span {
-  color: var(--bb-brand-primary-on-dark);
-}
-
-body > footer .bg-footer-top a:hover,
-body > footer .bg-footer-top a:focus-visible {
-  color: var(--bb-brand-primary-inverse);
 }
 
 html[data-bb-header-panel] .bb-floating-contact-anchor,
