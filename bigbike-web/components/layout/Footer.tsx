@@ -73,7 +73,7 @@ function SocialSvgIcon({ name }: { name: SocialChannel }) {
       height="20"
       aria-hidden="true"
       focusable="false"
-      className="shrink-0 fill-current text-brand-inverse"
+      className="shrink-0 fill-current text-brand-on-dark"
     >
       <path d={BRAND_ICON_PATH[name]} />
     </svg>
@@ -95,7 +95,7 @@ export async function Footer({ locale }: { locale: Locale }) {
       data-footer-business-details
       className="grid min-w-0 grid-cols-1 gap-x-10 gap-y-3 text-a4-content leading-body text-white [overflow-wrap:anywhere] md:grid-cols-2"
     >
-      <p className="m-0 font-bold text-brand-inverse md:col-span-2">{BUSINESS_IDENTITY.name}</p>
+      <p className="m-0 font-bold text-brand-on-dark md:col-span-2">{BUSINESS_IDENTITY.name}</p>
       <p className="m-0">
         <Tr ns="PolicyContact" k="address" />: <Tr ns="Footer" k="address" />
       </p>
@@ -109,7 +109,10 @@ export async function Footer({ locale }: { locale: Locale }) {
       <p className="m-0">
         <Tr ns="PolicyContact" k="hotline" />: {FOOTER_HOTLINES.join(" - ")}{" "}
         <Tr ns="PolicyContact" k="email" />:{" "}
-        <a href={`mailto:${FOOTER_EMAIL}`} className="text-white! underline underline-offset-4">
+        <a
+          href={`mailto:${FOOTER_EMAIL}`}
+          className="text-white! no-underline! focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+        >
           {FOOTER_EMAIL}
         </a>
       </p>
@@ -124,7 +127,7 @@ export async function Footer({ locale }: { locale: Locale }) {
         href="https://online.gov.vn/nen-tang/fdd92044-4eaa-4886-ac23-b8a8f324ff2d"
         target="_blank"
         rel="noopener noreferrer"
-        className="relative mt-2 block aspect-[115/43] w-44 max-w-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse md:col-span-2"
+        className="relative mt-2 block aspect-[115/43] w-44 max-w-full no-underline! focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white md:col-span-2"
       >
         <MediaImage
           image={{ url: "/brand/commerce-certification.png", width: 230, height: 86 }}
@@ -168,10 +171,10 @@ export async function Footer({ locale }: { locale: Locale }) {
                       key={phone}
                       asChild
                       variant="outline"
-                      className="min-h-12 justify-start gap-2 border-white/30 px-3 py-3 text-a4-content text-white! hover:border-brand-inverse hover:bg-white/5 hover:not-disabled:scale-100 focus-visible:outline-brand-inverse"
+                      className="min-h-12 justify-start gap-2 border-white/30 px-3 py-3 text-a4-content text-white! no-underline! hover:border-brand-on-dark hover:bg-white/5 hover:not-disabled:scale-100 focus-visible:outline-white"
                     >
                       <a href={telHref(phone)} data-analytics-location="footer">
-                        <Phone className="h-4 w-4 shrink-0 text-brand-inverse" aria-hidden />
+                        <Phone className="h-4 w-4 shrink-0 text-brand-on-dark" aria-hidden />
                         <span className="whitespace-nowrap">{phone}</span>
                       </a>
                     </Button>
@@ -179,23 +182,23 @@ export async function Footer({ locale }: { locale: Locale }) {
                 </div>
                 <a
                   href={`mailto:${FOOTER_EMAIL}`}
-                  className="mb-3 flex min-h-11 min-w-0 items-center gap-3 text-a4-content text-white! no-underline! hover:text-brand-inverse! focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse"
+                  className="mb-3 flex min-h-11 min-w-0 items-center gap-3 text-a4-content text-white! no-underline! focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                 >
-                  <Mail className="h-5 w-5 shrink-0 text-brand-inverse" aria-hidden />
+                  <Mail className="h-5 w-5 shrink-0 text-brand-on-dark" aria-hidden />
                   <span data-footer-email className="min-w-0 [overflow-wrap:anywhere]">
                     {FOOTER_EMAIL}
                   </span>
                 </a>
                 <Link
                   href={translatePath("/lien-he/", locale)}
-                  className="group flex min-h-11 min-w-0 items-start gap-3 text-a4-content leading-body text-white! no-underline! focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse"
+                  className="flex min-h-11 min-w-0 items-start gap-3 text-a4-content leading-body text-white! no-underline! focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                 >
-                  <MapPin className="mt-1 h-5 w-5 shrink-0 text-brand-inverse" aria-hidden />
+                  <MapPin className="mt-1 h-5 w-5 shrink-0 text-brand-on-dark" aria-hidden />
                   <span className="min-w-0 [overflow-wrap:anywhere]">
                     <Tr ns="Footer" k="address" />
-                    <span className="mt-2 flex min-h-11 items-center gap-2 text-brand-inverse group-hover:underline group-hover:underline-offset-4">
+                    <span className="mt-2 flex min-h-11 items-center gap-2 text-white">
                       <Tr ns="Footer" k="visitStore" />
-                      <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
+                      <ArrowUpRight className="h-4 w-4 shrink-0 text-brand-on-dark" aria-hidden />
                     </span>
                   </span>
                 </Link>
@@ -226,13 +229,11 @@ export async function Footer({ locale }: { locale: Locale }) {
                             target="_blank"
                             href={FOOTER_SOCIAL_LINKS[key]}
                             aria-label={`${profile.platform} - ${profile.displayName}`}
-                            className="group flex min-h-14 min-w-0 items-center gap-2 text-white! no-underline! focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-inverse"
+                            className="flex min-h-14 min-w-0 items-center gap-2 text-white! no-underline! focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                           >
                             <SocialSvgIcon name={key} />
                             <span className="min-w-0 [overflow-wrap:anywhere]">
-                              <span className="block group-hover:text-brand-inverse">
-                                {profile.platform}
-                              </span>
+                              <span className="block">{profile.platform}</span>
                               <span className="block text-a5-meta text-[var(--bb-text-inverse-secondary)]">
                                 {profile.displayName}
                               </span>
@@ -270,7 +271,7 @@ export async function Footer({ locale }: { locale: Locale }) {
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t border-white/15 pt-6">
             <Link
               href={toHomePath(locale)}
-              className="flex min-h-11 shrink-0 items-center focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-inverse"
+              className="flex min-h-11 shrink-0 items-center no-underline! focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
             >
               <MediaImage
                 image={{ url: "/brand/footer-wordmark.png", width: 150, height: 55 }}

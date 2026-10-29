@@ -74,11 +74,11 @@ export function FooterSections({
             <AccordionTrigger
               disabled={desktop}
               tabIndex={desktop ? -1 : undefined}
-              className="group min-h-14 justify-start gap-3 py-3 text-left text-white hover:text-brand-inverse focus-visible:outline-brand-inverse disabled:cursor-default disabled:opacity-100 lg:mb-3 lg:min-h-11 lg:py-0"
+              className="group min-h-14 justify-start gap-3 py-3 text-left text-white hover:no-underline focus-visible:outline-white disabled:cursor-default disabled:opacity-100 lg:mb-3 lg:min-h-11 lg:py-0"
               indicator={
                 <span
                   key="indicator"
-                  className="order-first shrink-0 text-brand-inverse lg:hidden"
+                  className="order-first shrink-0 text-brand-on-dark lg:hidden"
                   aria-hidden
                 >
                   <Plus className="h-4 w-4 group-data-[state=open]:hidden" />
@@ -139,7 +139,7 @@ function renderLink(item: { href: string; label: string }, locale: string) {
   return (
     <Link
       href={translatePath(item.href, locale as Locale)}
-      className="flex min-h-11 items-center py-2 text-[var(--bb-text-inverse-secondary)]! no-underline! hover:text-brand-inverse! focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-inverse"
+      className="flex min-h-11 items-center py-2 text-[var(--bb-text-inverse-secondary)]! no-underline! hover:text-white! focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
     >
       {item.label}
     </Link>

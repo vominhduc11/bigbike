@@ -76,7 +76,7 @@ Accessibility mappings:
 
 - `#FF0C09` remains the canonical brand red primitive. For small text, links, prices, badges, and button backgrounds that carry white text, use the AA-safe red token (`--bb-brand-primary-aa`, currently `#CC0906`).
 - `#007BFF` remains the canonical blue primitive. For body links and small informational text on light backgrounds, use `--bb-link-text` (currently `#005FCC`).
-- On dark header surfaces, red hover/active states may use the canonical brand red (`--bb-brand-primary-on-dark`). On the footer top strip `#3A3A3A`, use `--bb-brand-primary-inverse` for red hover accents.
+- On dark header surfaces, red hover/active states may use the canonical brand red (`--bb-brand-primary-on-dark`). Footer accents also use this canonical red (`#FF0C09`), per the owner's request on 2026-10-25. On the footer top strip `#3A3A3A`, keep small text white/light gray and use red icons or borders; canonical red text has insufficient contrast on this gray. Footer links, including the legal email, and collapsible group headings have no underline at rest or on hover, per the owner's follow-up request the same day. Red text is allowed on the black bottom bar. Keyboard focus outlines stay white. Do not use the pink `--bb-brand-primary-inverse` token in the footer.
 - Default subtle dividers can stay light (`#DDDDDD` / `#CECECE`), but form controls and selected/important borders must use `--bb-border-control` or a stronger token.
 
 ---
@@ -267,7 +267,7 @@ Theo `CHAT_RULE_070` và phản hồi chủ shop yêu cầu giống giao diện 
 
 - Top strip nền `#3A3A3A` (khớp WP).
 - Bottom bar nền `#000000`.
-- Heading trắng, link `#CECECE`, hover đỏ.
+- Heading trắng, link `#CECECE`; hover chữ trắng, không gạch dưới. Mọi liên kết footer (kể cả email pháp lý) và tiêu đề nhóm thu gọn không có gạch dưới ở trạng thái thường hoặc hover theo yêu cầu bổ sung của chủ shop ngày 2026-10-25. Biểu tượng, viền nút khi hover và tên hộ kinh doanh trên nền đen dùng đỏ thương hiệu `--bb-brand-primary-on-dark`; không dùng đỏ hồng. Dòng “Xem thông tin cửa hàng” giữ chữ trắng, mũi tên đỏ. Viền focus bàn phím trắng để đọc rõ trên nền tối.
 - Divider `#333333`.
 - Thông tin hộ kinh doanh trên nền tối dùng token chữ trắng `--bb-text-inverse` để đọc rõ.
 - Khối hộ kinh doanh theo `POLICY_PAGE_RULE_004` có năm dòng: tên pháp lý (chữ đậm, token đỏ trên nền tối), địa chỉ đầy đủ, GPKD/ngày cấp/nơi cấp, hotline/email, người đại diện/chức vụ. Các dòng thông tin chữ trắng. Khối này có đủ cả địa chỉ và hotline/email, không phụ thuộc nhóm liên hệ phía trên. Theo `POLICY_PAGE_RULE_010` (chủ shop cho phép ngày 2026-10-23), bên dưới năm dòng có logo xanh “Đã thông báo Bộ Công Thương”: dùng asset gốc `public/brand/commerce-certification.png` (230×86px), khung rộng 176px, giữ nguyên màu/tỉ lệ, không cắt ảnh. Hiển thị trên máy tính/điện thoại ở cả VI/EN; bấm mở trang xác nhận `https://online.gov.vn/nen-tang/fdd92044-4eaa-4886-ac23-b8a8f324ff2d` trong tab mới.

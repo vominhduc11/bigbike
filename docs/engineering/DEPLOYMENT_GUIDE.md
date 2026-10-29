@@ -18,6 +18,144 @@ env-file differs. `docker compose` loads exactly one env-file, so each file must
 - **Local:** `docker compose up -d --build` (reads `.env`, see `.env.example`). `CONFIRMED_FROM_CONFIG`
 - **VPS:** `docker compose --env-file .env.vps up -d --build` (see `.env.vps.example`). `CONFIRMED_FROM_CONFIG`
 
+### Đồng bộ màu đỏ footer — build 2026-10-25
+
+Chủ shop yêu cầu sửa màu chủ đạo của footer và build bản mới. Điểm nhấn dùng đỏ
+thương hiệu `#FF0C09` theo `bigbike-web/STYLEGUIDE.md` phần Palette/Footer; chữ nhỏ
+trên nền xám giữ màu sáng, hover có gạch đỏ để duy trì độ tương phản.
+Build riêng web bằng `docker compose --env-file .env.vps build bigbike-web`, đúng
+env-file của container hiện tại; giữ image đang chạy bằng tag hoàn tác trước khi build.
+Phạm vi chỉ tạo image mới; nạp image lên website vẫn là bước riêng khi owner yêu cầu.
+Không sửa file env hoặc build/recreate backend, admin và dịch vụ dữ liệu.
+Kiểm tra mã nguồn: lint/guard, Prettier hai component đã sửa và `git diff --check`
+đạt. Lượt Vitest đầy đủ có 106/110 file, 742/746 bài đạt; bốn bài hết giới hạn 5 giây
+khi chạy đồng thời với các kiểm tra khác. Chạy lại riêng bốn file đó với
+`--maxWorkers=1 --testTimeout=15000` đạt 4/4 file, 29/29 bài, không đổi mã kiểm thử.
+
+Playwright trên bản xem thử nguồn `http://localhost:3002`, dùng backend thật, đã
+cập nhật có chủ đích hai ảnh chuẩn footer desktop/mobile vì đổi màu thương hiệu;
+hai kịch bản ảnh đạt. Kiểm màu thực tế ở 1440/390px xác nhận biểu tượng/tên pháp lý
+`rgb(255, 12, 9)`, hover chữ trắng/gạch đỏ, màu viền focus trắng, không tràn ngang,
+không còn `brand-inverse` trong footer. Không có lỗi JavaScript hoặc phản hồi HTTP
+lỗi trong lượt kiểm màu; console vẫn có cảnh báo hydration của header và CORS giỏ
+hàng do cổng xem thử không nằm trong origin được phép. Không sửa cấu hình hệ thống
+để che các cảnh báo này. Hai kịch bản `footer-mobile.e2e.ts` VI/EN chưa đạt vì route
+chính sách trên bản dev tự chuyển hướng vòng (301 về chính nó); không kết luận
+toàn bộ E2E đạt, không sửa routing trong task màu sắc. Bản xem thử tạm đã dừng.
+
+Bằng chứng màu/runtime: `/tmp/bigbike-footer-color-browser-20261025.json` và hai
+ảnh `bigbike-web/e2e/__screenshots__/visual.e2e.ts/footer-{desktop,mobile}.png`.
+Build Docker đã thành công, dựng đủ 95/95 trang, kiểm TypeScript đạt. Một số trang
+vượt 60 giây ở lượt dựng đầu đã được Next tự thử lại và hoàn tất. Image mới:
+`sha256:b0edfa4b6069a3a36a820407b3192a96af24649d305212aa563a599bb05b0d08`,
+tag `bigbike-web:footer-color-20261025` và `bigbike-bigbike-web:latest`.
+Image trước build được giữ ở `bigbike-web:before-footer-color-20261025-095432`.
+
+**Tại thời điểm kết thúc build, chưa nạp image mới lên website.** Đối chiếu bằng `docker inspect bigbike-web
+bigbike-admin bigbike-backend bigbike-postgres bigbike-redis bigbike-minio` xác nhận
+cả sáu container giữ nguyên ID/image/thời điểm khởi động và đều healthy; hai file
+env giữ nguyên SHA-256. Web đang chạy vẫn dùng
+`sha256:ab5fcd31ee60b089c8800c5c3e82bf93d3baa1dfe83adc8fdb94d7491a43ec01`.
+Chưa kiểm trình duyệt trên image mới đang chạy; phần kiểm màu bên trên chạy trên
+bản xem thử source, không ghi nhận là đã nghiệm thu bản triển khai.
+
+Log build: `/tmp/bigbike-footer-color-docker-build-final-20261025.log`.
+Đối chiếu trước/sau: `/tmp/bigbike-footer-color-before-20261025.json` và
+`/tmp/bigbike-footer-color-build-verification-20261025.json`.
+`BUILT_NOT_DEPLOYED_2026-10-25`
+`OWNER_REQUESTED_BUILD_2026-10-25`
+
+Chủ shop sau đó đã yêu cầu “nạp đi” ngày 2026-10-25. Phạm vi được duyệt: nạp riêng
+image web `bigbike-web:footer-color-20261025` ở trên bằng
+`docker compose --env-file .env.vps up -d --no-deps --no-build --wait --wait-timeout 180 bigbike-web`.
+Trước nạp đã xác nhận tag image đúng bản đã build, tag hoàn tác trùng bản đang chạy,
+toàn bộ biến môi trường Compose truyền vào web và giới hạn bộ nhớ khớp container
+hiện tại. Sau nạp kiểm image/healthy, startup revalidation, màu footer qua HTTPS,
+luồng chân trang VI/EN và đối chiếu các dịch vụ còn lại.
+`OWNER_APPROVED_DEPLOY_2026-10-25`
+
+Kết quả nạp: web đã dùng đúng image `sha256:b0edfa4b6069a3a36a820407b3192a96af24649d305212aa563a599bb05b0d08`,
+healthy; startup revalidation trả 200. Trang chủ HTTPS VI/EN trả 200 và có markup màu
+mới. Playwright `footer-mobile.e2e.ts` trên `https://bigbike.vn` đạt 2/2 VI/EN tại
+320/375/390/430/768/1024/1440px, gồm mở/thu, bàn phím, chữ 200%, không tràn ngang;
+lỗi chuyển hướng của bản dev không xuất hiện trên bản triển khai. Kiểm màu/hover/focus
+đạt 6/6 VI/EN ở 375/768/1440px; đã xem ảnh mobile/desktop. Không có lỗi JavaScript,
+hydration hoặc HTTP lỗi; mỗi trang vẫn có CSP chặn Cloudflare beacon như trước.
+Backend/admin/PostgreSQL/Redis/MinIO giữ nguyên container/image/thời điểm khởi động,
+hai file env giữ nguyên SHA-256. Bằng chứng: `/tmp/bigbike-footer-color-deploy-20261025.log`,
+`/tmp/bigbike-footer-color-deploy-verification-20261025.json`,
+`/tmp/bigbike-footer-color-live-e2e-20261025.json`,
+`/tmp/bigbike-footer-color-live-browser-20261025.json`.
+`DEPLOYED_AND_VERIFIED_2026-10-25`
+
+Chủ shop tiếp tục yêu cầu bỏ gạch dưới khi hover liên kết footer trong lúc nghiệm thu.
+Áp dụng bản sửa theo `bigbike-web/STYLEGUIDE.md` phần Footer, build và nạp lại riêng
+web theo phạm vi triển khai đã duyệt; giữ màu đỏ mới và viền focus bàn phím trắng.
+Lượt bổ sung đã build thành công 95/95 trang, TypeScript đạt, image
+`sha256:752868d979543dc152f7ef8f3493102bb85460f60868d919258581d7a12fc3e7`,
+tag `bigbike-web:footer-hover-20261025`. Lint hai component, Prettier, guard dữ liệu
+và kiểm encoding đạt; không thêm CSS hoặc mã kiểm thử vào repo. Chưa chạy lại bộ
+unit đầy đủ sau lượt chỉ đổi class hiển thị này.
+
+Đã nạp riêng web bằng `docker compose --env-file .env.vps up -d --no-deps --no-build
+--wait --wait-timeout 180 bigbike-web`; container dùng đúng image trên, healthy,
+startup revalidation trả 200. Giữ bản trước lượt bỏ gạch dưới ở
+`bigbike-web:before-footer-hover-20261025-100953`. Kiểm `docker inspect` xác nhận năm
+dịch vụ còn lại giữ nguyên container/image/thời điểm khởi động, đều healthy, hai
+file env giữ nguyên SHA-256. Log: `/tmp/bigbike-footer-hover-build-20261025.log`,
+`/tmp/bigbike-footer-hover-deploy-20261025.log`; đối chiếu tại
+`/tmp/bigbike-footer-hover-deploy-verification-20261025.json`.
+Nghiệm thu HTTPS đã đạt: `footer-mobile.e2e.ts` VI/EN đạt 2/2, hai kịch bản ảnh
+footer desktop/mobile đạt và cập nhật có chủ đích ảnh chuẩn vì email pháp lý cũng
+bỏ gạch dưới. Đã kiểm trực tiếp 21 liên kết ở mỗi tổ hợp VI/EN × 375/768/1440px
+(126 lượt hover): không liên kết hoặc phần tử con nào có gạch dưới, tiêu đề nhóm
+thu gọn cũng không có gạch dưới khi hover. Màu nhấn vẫn `rgb(255, 12, 9)`, link
+chính sách hover chữ trắng, viền chọn bằng bàn phím trắng/nét liền/2px, không tràn
+ngang. Không có lỗi JavaScript/hydration hoặc HTTP lỗi; vẫn ghi nhận CSP chặn
+Cloudflare beacon như trước. Đã xem ảnh mobile/desktop sau cập nhật.
+Kết quả: `/tmp/bigbike-footer-hover-live-e2e-20261025.json`,
+`/tmp/bigbike-footer-hover-live-browser-20261025.json`; ảnh tại
+`/tmp/bigbike-footer-hover-live-{vi,en}-{375,768,1440}-20261025.png`.
+`FOOTER_NO_UNDERLINE_DEPLOYED_AND_VERIFIED_2026-10-25`
+`OWNER_REQUESTED_FOOTER_HOVER_UPDATE_2026-10-25`
+
+### Build và nạp bản mới sau pull 2026-10-24
+
+Chủ shop yêu cầu build lại sau khi pull commit `85662e73`, sau đó yêu cầu nạp bản mới
+lên hệ thống. Phạm vi: build cả ba app bằng `docker compose --env-file .env.vps build`,
+giữ image đang chạy để hoàn tác, rồi nạp riêng từng app với
+`docker compose --env-file .env.vps up -d --no-deps --no-build --wait <service>`.
+Kiểm tra image, health, phản hồi HTTP và startup revalidation sau nạp. Đối chiếu trước
+khi nạp xác nhận các biến môi trường được Compose truyền cho ba app khớp container
+đang chạy; giữ giới hạn bộ nhớ backend 1 GB, admin 128 MB, web 512 MB. Không recreate
+PostgreSQL, Redis hoặc MinIO. Kết quả được bổ sung sau khi thực hiện.
+`OWNER_APPROVED_2026-10-24`
+
+Kết quả: build thành công cả ba app, web dựng đủ 95/95 trang. Đã nạp lần lượt backend,
+admin và web bằng lệnh có `--wait`; `docker inspect` xác nhận đúng image mới và cả ba
+`running/healthy`:
+
+- Backend: `sha256:7397e06601feb7d900650ace2042a48557fc4ab0a8ef37cf3cb43006f9053594`.
+- Admin: `sha256:dd439b9985d3115f5353ee9a22a886b4fbe755b8c85bde3eea833c7415818143`.
+- Web: `sha256:ab5fcd31ee60b089c8800c5c3e82bf93d3baa1dfe83adc8fdb94d7491a43ec01`.
+
+Image trước nạp được giữ tại `<service>:before-rebuild-20261024-032120`. So sánh
+466 resource/class migration với bản backend trước nạp không có khác biệt. Các dịch vụ
+PostgreSQL/Redis/MinIO giữ nguyên image và thời điểm khởi động, đều healthy. Startup
+revalidation của web trả HTTP 200. Kiểm HTTP với User-Agent trình duyệt: health backend,
+admin localhost/HTTPS và trang chủ HTTPS VI/EN đều trả 200; HTML trang chủ có marker chân
+trang mới. Playwright `footer-mobile.e2e.ts` chạy trên `https://bigbike.vn`, một worker,
+đạt 2/2 kịch bản VI/EN tại 320/375/390/430/768/1024/1440px: mở/thu nhóm liên kết,
+điều hướng bàn phím, giữ lựa chọn khi đổi cỡ, đủ thông tin shop, cỡ chữ 200% và không
+tràn ngang. Không có lỗi JavaScript/hydration hoặc phản hồi HTTP lỗi trong hai lượt
+trình duyệt; mỗi lượt còn một cảnh báo CSP chặn Cloudflare beacon như trước, không sửa
+CSP trong đợt này. Không chạy lại bộ unit test đầy đủ; không đo lại upload Media thật.
+
+Log: `/tmp/bigbike-rebuild-20261024.log`, `/tmp/bigbike-rebuild-deploy-{backend,admin,web}-20261024.log`.
+Bằng chứng: `/tmp/bigbike-rebuild-{images,verification,rollback}-20261024.json`,
+`/tmp/bigbike-rebuild-footer-e2e-20261024.json`.
+`DEPLOYED_AND_VERIFIED_2026-10-24`
+
 ### Sửa đồng bộ sản phẩm nổi bật 2026-10-18 — đã nạp và nghiệm thu
 
 Owner yêu cầu sửa chênh lệch danh sách nổi bật giữa admin/web và build bản mới bằng
@@ -61,11 +199,11 @@ dựng đủ 95/95 trang và build thành công. Log ở
 `docs/audits/evidence/featured-products-2026-10-18/verification.json`.
 `DEPLOYED_AND_VERIFIED_2026-10-18`
 
-### Tối ưu upload Media 2026-10-13 — đã build, chờ nạp
+### Tối ưu upload Media 2026-10-13 — đã nạp trong đợt 2026-10-24
 
 Owner yêu cầu sửa hiện tượng admin upload ảnh nhỏ vẫn chờ lâu và build bản mới nhất bằng `.env.vps`. Đã chạy `docker compose --env-file .env.vps build` thành công cho cả ba app, không sửa env; web dùng lại image đang chạy. Backend mới chỉ khác các class xử lý Media so với jar đang triển khai, không có migration/resource/đổi quyền. Admin sửa lượt làm mới thư viện/picker. Căn cứ: `API_CONTRACT.md` phần **5. Thư viện ảnh/video (Media)** và `API_FLOW_MAP.md` hàng **Admin media UI**. `OWNER_REQUESTED_BUILD_2026-10-13`
 
-Hai image đang chạy được giữ ở `bigbike-backend:before-media-performance-20261013` và `bigbike-admin:before-media-performance-20261013`. **Chưa nạp hoặc khởi động lại dịch vụ.** Sau approval theo `AGENTS.md` §5.6, nạp riêng hai app đã sửa bằng `docker compose --env-file .env.vps up -d --no-deps --no-build bigbike-backend bigbike-admin`. Nghiệm thu: đúng image mới, healthy, thống kê HTTP 200 dưới timeout, upload đúng một ảnh nhỏ mới trả 201 và hiện trong lưới, mỗi nhóm danh sách/thống kê/thư mục làm mới một lượt. Không recreate web hoặc dịch vụ dữ liệu. Các lỗi kiểm thử ngoài Media và số đo source/data parity được ghi rõ tại `docs/audits/FEATURE_MEDIA_UPLOAD_PERFORMANCE_2026-10-13.md`; chưa kết luận thời gian upload sau triển khai. `ROLLOUT_PENDING_APPROVAL`
+Hai image trước đợt build 13/10 được giữ ở `bigbike-backend:before-media-performance-20261013` và `bigbike-admin:before-media-performance-20261013`. **Tại thời điểm 13/10 chưa nạp; bản sửa đã được nạp cùng bản mới ngày 24/10 theo yêu cầu owner và kết quả ở mục trên.** Các tiêu chí Media riêng cần đo lại gồm thống kê HTTP 200 dưới timeout, upload đúng một ảnh nhỏ mới trả 201 và hiện trong lưới, mỗi nhóm danh sách/thống kê/thư mục làm mới một lượt. Đợt 24/10 kiểm image/health và chân trang, không tải ảnh thử nên chưa kết luận thời gian upload sau triển khai. Các lỗi kiểm thử ngoài Media và số đo source/data parity trước nạp được ghi tại `docs/audits/FEATURE_MEDIA_UPLOAD_PERFORMANCE_2026-10-13.md`. `DEPLOYED_2026-10-24; UPLOAD_REMEASUREMENT_NOT_RUN`
 
 ### Khôi phục xem trước sản phẩm 2026-10-12
 
