@@ -1,0 +1,330 @@
+{
+  "checkedOn": "2026-10-29",
+  "timezone": "Asia/Saigon",
+  "repositoryHead": "8324bc035",
+  "scope": "Read-only review of the supplied DEV-1–DEV-6 ticket against related web/admin/backend code, canonical docs, deployment configuration and public production responses.",
+  "categories": [
+    {
+      "url": "https://bigbike.vn/danh-muc/mu-bao-hiem/",
+      "status": 200,
+      "html": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "vi"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Mũ bảo hiểm moto AGV, LS2, ILM và nón bảo hiểm chính hãng Caberg, NIC: so sánh fullface, 3/4, lật hàm, dual sport theo nhu cầu tại TP.HCM.",
+            "inLanguage": "vi"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "dom": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "vi"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Mũ bảo hiểm moto AGV, LS2, ILM và nón bảo hiểm chính hãng Caberg, NIC: so sánh fullface, 3/4, lật hàm, dual sport theo nhu cầu tại TP.HCM.",
+            "inLanguage": "vi"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "consoleErrors": [
+        "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+      ]
+    },
+    {
+      "url": "https://bigbike.vn/danh-muc/mu-bao-hiem-fullface/",
+      "status": 200,
+      "html": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "vi"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Mũ bảo hiểm fullface AGV, Caberg, NIC, ILM, LS2 chính hãng tại TP.HCM. Shop cân mũ kèm kính, đội thử tại chỗ, kiểm tem ECE 22.06 và DOT từng mã.",
+            "inLanguage": "vi"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "dom": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "vi"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Mũ bảo hiểm fullface AGV, Caberg, NIC, ILM, LS2 chính hãng tại TP.HCM. Shop cân mũ kèm kính, đội thử tại chỗ, kiểm tem ECE 22.06 và DOT từng mã.",
+            "inLanguage": "vi"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "consoleErrors": [
+        "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+      ]
+    },
+    {
+      "url": "https://bigbike.vn/danh-muc/tai-nghe-bluetooth-mu-bao-hiem/",
+      "status": 200,
+      "html": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "vi"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Tai nghe bộ đàm gắn mũ bảo hiểm SCS chính hãng tại TP.HCM. Bản đi một mình, bản đôi, mesh nhóm 10 người, bản có camera.",
+            "inLanguage": "vi"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "dom": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "vi"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Tai nghe bộ đàm gắn mũ bảo hiểm SCS chính hãng tại TP.HCM. Bản đi một mình, bản đôi, mesh nhóm 10 người, bản có camera.",
+            "inLanguage": "vi"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "consoleErrors": [
+        "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+      ]
+    },
+    {
+      "url": "https://bigbike.vn/en/categories/motorcycle-helmet-intercom/",
+      "status": 200,
+      "html": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "en"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Genuine SCS Bluetooth helmet intercom headsets in HCMC. Solo units, two-rider sets, mesh groups of ten, and camera versions.",
+            "inLanguage": "en"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "dom": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "en"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Genuine SCS Bluetooth helmet intercom headsets in HCMC. Solo units, two-rider sets, mesh groups of ten, and camera versions.",
+            "inLanguage": "en"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "consoleErrors": [
+        "Sending form data to 'https://www.facebook.com/tr/' violates the following Content Security Policy directive: \"form-action 'self'\". The request has been blocked.\n",
+        "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+      ]
+    },
+    {
+      "url": "https://bigbike.vn/en/categories/full-face-helmets/",
+      "status": 200,
+      "html": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "en"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Genuine AGV, Caberg, NIC, ILM and LS2 full face helmets in Ho Chi Minh City. Weighed with shields, fitted in-store, ECE 22.06 and DOT labels checked.",
+            "inLanguage": "en"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "dom": {
+        "intro": 1,
+        "questions": 6,
+        "langs": [
+          "en"
+        ],
+        "schemas": [
+          {
+            "type": "BreadcrumbList"
+          },
+          {
+            "type": "CollectionPage",
+            "description": "Genuine AGV, Caberg, NIC, ILM and LS2 full face helmets in Ho Chi Minh City. Weighed with shields, fitted in-store, ECE 22.06 and DOT labels checked.",
+            "inLanguage": "en"
+          },
+          {
+            "type": "FAQPage"
+          }
+        ]
+      },
+      "consoleErrors": [
+        "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked."
+      ]
+    }
+  ],
+  "http": {
+    "danhGia": {
+      "noSlash": {
+        "status": 308,
+        "location": "/danh-gia/"
+      },
+      "trailingSlash": {
+        "status": 404,
+        "title": "404 — BigBike"
+      }
+    },
+    "review": {
+      "noSlash": {
+        "status": 308,
+        "location": "/review/"
+      },
+      "trailingSlash": {
+        "status": 404,
+        "title": "404 — BigBike"
+      }
+    },
+    "taggedDanhGia": {
+      "status": 308,
+      "location": "/danh-gia/?utm_source=qr&utm_medium=offline&utm_campaign=qr-danh-gia"
+    },
+    "sitemap": {
+      "status": 200,
+      "locCount": 786,
+      "exactRootReviewRoutes": [],
+      "initialAttempt": "Timeout at 20 seconds; subsequent successful requests returned 200."
+    },
+    "admin": {
+      "status": 200,
+      "cloudflareBeaconInSampledHtml": false,
+      "formAction": "'self'"
+    },
+    "googleReview": {
+      "shortLink": "https://g.page/r/Cd14EwcL5yuNEBM/review",
+      "observedDestination": "https://search.google.com/local/writereview?placeid=ChIJeXyMi5UudTER3XgTBwvnK40",
+      "unauthenticatedNextHost": "accounts.google.com"
+    }
+  },
+  "homepage": {
+    "vi": {
+      "jsonLdScripts": 2,
+      "graphTypes": [
+        "Organization",
+        "SportingGoodsStore"
+      ],
+      "storeName": "Shop Bigbike",
+      "mainTelephone": "+84764640679",
+      "otherSchema": "WebSite",
+      "searchAction": true
+    },
+    "en": {
+      "status": 200,
+      "jsonLdScripts": 2,
+      "graphTypes": [
+        "Organization",
+        "SportingGoodsStore"
+      ],
+      "otherSchema": "WebSite",
+      "ga4InstallCount": 1,
+      "metaInstallCount": 1
+    }
+  },
+  "product": {
+    "url": "https://bigbike.vn/product/tai-nghe-bluetooth-intercom-2-may-scs-s10x/",
+    "status": 200,
+    "ga4InstallCount": 1,
+    "metaInstallCount": 1,
+    "cloudflareScriptCspBlocked": true
+  },
+  "checks": {
+    "vitest": {
+      "filesPassed": 7,
+      "testsPassed": 130
+    },
+    "dockerPs": "Failed: local Docker Desktop Linux daemon pipe unavailable.",
+    "browser": "Chromium desktop; no physical mobile/in-app browser validation performed."
+  },
+  "limits": [
+    "No access to authenticated GA4 Realtime/DebugView, Meta Events Manager or Cloudflare dashboard.",
+    "No cart/order/review mutations, deployment, account-setting changes or source-code changes.",
+    "Category pages were sampled once in the recorded batch; this review does not claim the five-reload acceptance suite was rerun."
+  ]
+}
