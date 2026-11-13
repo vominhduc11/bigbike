@@ -1,0 +1,64 @@
+{
+  "productId": "wp-prod-35222",
+  "scope": "real media registry and matching BK088 variant gallery; content inspected visually",
+  "groups": [
+    {
+      "color": "XÁM",
+      "skus": [
+        "BK088-XAM2-38",
+        "BK088-XAM2-37",
+        "BK088-XAM2-36",
+        "BK088-XAM2-39",
+        "BK088-XAM2-40",
+        "BK088-XAM2-41",
+        "BK088-XAM2-42",
+        "BK088-XAM2-43",
+        "BK088-XAM2-44",
+        "BK088-XAM2-45"
+      ],
+      "existingGalleryUrl": "/media/migration/wordpress/16/16cbf1cefa087afea577f335b74460d6e126b8031ee3e2bd2db4da93dee946dd/giay-bao-ve-komine-bk0889-300x300-1.jpg",
+      "galleryActualSize": [
+        300,
+        300
+      ],
+      "candidateId": "ea4f3a82-1314-3639-b860-727290829a31",
+      "candidateUrl": "/media/migration/wordpress/29/29e0fae91a466f6cc5d8ad045f7b4e5fb46561079d03edf0b7db643d8406e6dd/giay-bao-ve-komine-bk0889.jpg",
+      "candidateActualSize": [
+        1200,
+        1200
+      ],
+      "sameAspectRatio": true,
+      "meanAbsolutePixelDifferenceAfterDownscale": 1.3901851851851852
+    },
+    {
+      "color": "ĐEN",
+      "skus": [
+        "BK088-DEN-39",
+        "BK088-DEN-38",
+        "BK088-DEN-37",
+        "BK088-DEN-36",
+        "BK088-DEN-40",
+        "BK088-DEN-41",
+        "BK088-DEN-42",
+        "BK088-DEN-43",
+        "BK088-DEN-44",
+        "BK088-DEN-45"
+      ],
+      "existingGalleryUrl": "/media/migration/wordpress/8f/8f9b8b6f2d9f3039d43f33ece2d6a2b3106a2198ba7ae3707433b68980334d3c/GIAY-KOMINE-BK088-MAU-DEN-1.jpg",
+      "galleryActualSize": [
+        1500,
+        631
+      ],
+      "candidateId": "10bffa47-4e14-3dde-a769-eff52b1104ab",
+      "candidateUrl": "/media/migration/wordpress/bb/bb76d2b22b858f0a5e9cb313001437816833942b8b2e272657e59d2ad7010568/giay-bao-ve-komine-bk0887.jpg",
+      "candidateActualSize": [
+        1200,
+        1200
+      ],
+      "sameAspectRatio": false
+    }
+  ],
+  "status": "PREPARED_PENDING_OWNER_APPROVAL",
+  "visualVerdict": "Đã mở cả hai ảnh ứng viên 1200 và hai ảnh gallery hiện tại: cùng mẫu giày BK088, đúng xám/đen; không hoán màu. Xám khớp ảnh 300 khi hạ kích thước để so, sai khác JPEG trung bình 1,39/255.",
+  "plannedChange": "Chọn lại ảnh đại diện/gallery đúng màu cho 10 BK088-XAM2 và 10 BK088-DEN bằng hai object MinIO hiện có; không upload đè/xóa object cũ, không sửa SKU/ID/giá/tồn."
+}

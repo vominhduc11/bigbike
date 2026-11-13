@@ -1,4 +1,9 @@
 {
+  "GoogleReviewLink": {
+    "title": "Đánh giá BigBike trên Google",
+    "waiting": "Đang chuyển đến Google. Nếu trang không tự chuyển, vui lòng bấm liên kết bên dưới.",
+    "continue": "Tiếp tục đến Google"
+  },
   "Common": {
     "loading": "Đang tải…",
     "addToCart": "Thêm vào giỏ",
@@ -80,15 +85,9 @@
     "shopInfoDescription": "Giới thiệu và thông tin liên hệ của {siteName}.",
     "shopInfoContactHeading": "Thông tin liên hệ",
     "wpContactStore": "Cửa hàng Bigbike",
-    "wpHoursWeekday": "T2 - T6: 09h00 - 21h00",
-    "wpHoursWeekend": "T7 / CN: 09h00 - 18h00",
-    "wpHoursHoliday": "Lễ / Tết: nghỉ",
     "closeDrawer": "Đóng",
     "shopInfoStoreLabel": "Shop bảo hộ {siteName}",
     "shopInfoDefaultDescription": "Shop Bigbike.vn chuyên cung cấp đồ bảo hộ moto, xe máy, phượt, mũ bảo hộ Full Face, mũ lật cằm, mũ 3/4, mũ cào cào, áo giáp, quần bảo hộ, găng tay, balo, túi đeo moto và các phụ kiện thời trang.",
-    "shopInfoDefaultHoursLine1": "T2-T6: 09:00-21:00",
-    "shopInfoDefaultHoursLine2": "T7-CN: 09:00-18:00",
-    "shopInfoDefaultHoursLine3": "Lễ/Tết: nghỉ",
     "mobileZaloSupport": "Zalo hỗ trợ nhanh",
     "megaMenuEmpty": "Chọn một danh mục để xem chi tiết.",
     "languageLabel": "Ngôn ngữ",
@@ -990,7 +989,6 @@
     "hotlineUrgentPrompt": "Cần gấp? Gọi ngay:",
     "hotlineOr": "hoặc",
     "zaloCtaUrgent": "Nhắn Zalo nếu cần hỗ trợ gấp",
-    "footerHours": "Thứ 2–7: 9:00–21:00 · Chủ nhật: 9:00–18:00",
     "customerDetailsTitle": "Thông tin nhận hàng",
     "recipientLabel": "Người nhận",
     "phoneFieldLabel": "Số điện thoại",
@@ -1171,8 +1169,6 @@
     "aboutConnectTitle": "KẾT NỐI ĐỂ CHÚNG TÔI CÓ THỂ GẦN BẠN HƠN",
     "aboutConnectBody1": "Bigbike hiện đã nhận được hơn 80 đánh giá 5 sao trên Google Maps và nhận được nhiều lời khen ngợi khác. Đây chính là những động lực to lớn để chúng tôi tiếp tục cố gắng trở thành người bạn đồng hành tốt nhất của cộng đồng biker Việt Nam.",
     "aboutConnectBody2": "Hãy liên hệ với chúng tôi để được tư vấn thêm về các thông tin chi tiết sản phẩm và để nhận được giá ưu đãi tốt nhất.",
-    "weekdayHours": "Thứ 2 - Thứ 6: 09:00 - 21:00",
-    "weekendHours": "Thứ 7, Chủ Nhật: 09:00 - 18:00",
     "advisorThu": "0764.640.679 - Mrs. Thư / ZALO",
     "advisorTri": "090.690.2404 - Mr. Trí",
     "serviceTiles": {
@@ -1272,6 +1268,7 @@
     "loadingAria": "Đang tải giỏ hàng"
   },
   "PdpBuyBox": {
+    "priceVerificationPending": "Trang đang hiển thị bản lưu gần nhất. Tạm chưa thể mua khi chưa xác nhận lại giá và tình trạng còn hàng.",
     "stockOut": "HẾT HÀNG",
     "zaloConsult": "Tư vấn qua Zalo",
     "mobileZaloConsult": "Tư vấn Zalo",

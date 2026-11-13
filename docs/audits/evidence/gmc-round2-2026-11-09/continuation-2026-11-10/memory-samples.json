@@ -1,0 +1,26 @@
+[
+  {
+    "at": "2026-11-10T00:45:50.301598+00:00",
+    "health": "healthy",
+    "restartCount": 0,
+    "sample": "426553344\nlow 0\nhigh 0\nmax 0\noom 0\noom_kill 0\nPID   COMMAND          RSS\n    1 node              46m\n   17 next-server (v   343m\n12672 ps                  4\n"
+  },
+  {
+    "at": "2026-11-10T00:46:50.525248+00:00",
+    "health": "healthy",
+    "restartCount": 0,
+    "sample": "519176192\nlow 0\nhigh 0\nmax 0\noom 0\noom_kill 0\nPID   COMMAND          RSS\n    1 node              46m\n   17 next-server (v   429m\n12715 ps                  4\n"
+  },
+  {
+    "at": "2026-11-10T00:47:50.778307+00:00",
+    "health": "healthy",
+    "restartCount": 0,
+    "sample": "521654272\nlow 0\nhigh 0\nmax 0\noom 0\noom_kill 0\nPID   COMMAND          RSS\n    1 node              46m\n   17 next-server (v   436m\n12760 ps                  4\n"
+  },
+  {
+    "at": "2026-11-10T00:48:51.091840+00:00",
+    "health": "healthy",
+    "restartCount": 0,
+    "sample": "517197824\nlow 0\nhigh 0\nmax 0\noom 0\noom_kill 0\nPID   COMMAND          RSS\n    1 node              37m\n   17 next-server (v   429m\n12819 ps                  4\n"
+  }
+]

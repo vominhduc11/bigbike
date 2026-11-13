@@ -1,0 +1,340 @@
+{
+  "note": "Five serial samples, 500ms delay. Shared live VPS, loopback bypassing CDN/TLS; diagnostic only, not an SLO or before/after benchmark.",
+  "results": [
+    {
+      "name": "settings",
+      "url": "http://127.0.0.1:8080/api/v1/settings/public",
+      "samples": [
+        {
+          "status": 200,
+          "ttfb_ms": 12.413,
+          "total_ms": 13.297,
+          "bytes": 5482,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 10.739,
+          "total_ms": 11.171,
+          "bytes": 5482,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 12.687,
+          "total_ms": 18.255,
+          "bytes": 5482,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 7.167,
+          "total_ms": 7.394,
+          "bytes": 5482,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 9.807,
+          "total_ms": 10.017,
+          "bytes": 5482,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        }
+      ],
+      "summary_ms": {
+        "p50": 11.171,
+        "p95": 18.255,
+        "p99": 18.255
+      }
+    },
+    {
+      "name": "categories",
+      "url": "http://127.0.0.1:8080/api/v1/categories",
+      "samples": [
+        {
+          "status": 200,
+          "ttfb_ms": 22.393,
+          "total_ms": 28.078,
+          "bytes": 158822,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 10.886,
+          "total_ms": 14.853,
+          "bytes": 158822,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 12.494,
+          "total_ms": 16.095,
+          "bytes": 158822,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 16.6,
+          "total_ms": 23.933,
+          "bytes": 158822,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 11.919,
+          "total_ms": 14.048,
+          "bytes": 158822,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        }
+      ],
+      "summary_ms": {
+        "p50": 16.095,
+        "p95": 28.078,
+        "p99": 28.078
+      }
+    },
+    {
+      "name": "products",
+      "url": "http://127.0.0.1:8080/api/v1/products?page=1&limit=20",
+      "samples": [
+        {
+          "status": 200,
+          "ttfb_ms": 118.77,
+          "total_ms": 122.302,
+          "bytes": 55514,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 81.975,
+          "total_ms": 82.587,
+          "bytes": 55514,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 111.807,
+          "total_ms": 112.506,
+          "bytes": 55514,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 79.747,
+          "total_ms": 99.096,
+          "bytes": 55514,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 96.671,
+          "total_ms": 97.073,
+          "bytes": 55514,
+          "headers": {
+            "Vary": "origin,access-control-request-method,access-control-request-headers,accept-encoding",
+            "Cache-Control": "public, max-age=60",
+            "Content-Type": "application/json"
+          }
+        }
+      ],
+      "summary_ms": {
+        "p50": 99.096,
+        "p95": 122.302,
+        "p99": 122.302
+      }
+    },
+    {
+      "name": "home",
+      "url": "http://127.0.0.1:3000/vi",
+      "samples": [
+        {
+          "status": 200,
+          "ttfb_ms": 28.481,
+          "total_ms": 29.808,
+          "bytes": 525582,
+          "headers": {
+            "Vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "Cache-Control": "s-maxage=300, stale-while-revalidate=31535700",
+            "Content-Type": "text/html; charset=utf-8"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 33.956,
+          "total_ms": 41.017,
+          "bytes": 525582,
+          "headers": {
+            "Vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "Cache-Control": "s-maxage=300, stale-while-revalidate=31535700",
+            "Content-Type": "text/html; charset=utf-8"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 33.437,
+          "total_ms": 35.983,
+          "bytes": 525582,
+          "headers": {
+            "Vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "Cache-Control": "s-maxage=300, stale-while-revalidate=31535700",
+            "Content-Type": "text/html; charset=utf-8"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 42.04,
+          "total_ms": 43.471,
+          "bytes": 525582,
+          "headers": {
+            "Vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "Cache-Control": "s-maxage=300, stale-while-revalidate=31535700",
+            "Content-Type": "text/html; charset=utf-8"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 33.682,
+          "total_ms": 34.468,
+          "bytes": 525582,
+          "headers": {
+            "Vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding",
+            "x-nextjs-cache": "HIT",
+            "Cache-Control": "s-maxage=300, stale-while-revalidate=31535700",
+            "Content-Type": "text/html; charset=utf-8"
+          }
+        }
+      ],
+      "summary_ms": {
+        "p50": 35.983,
+        "p95": 43.471,
+        "p99": 43.471
+      }
+    },
+    {
+      "name": "admin-shell",
+      "url": "http://127.0.0.1:4000/",
+      "samples": [
+        {
+          "status": 200,
+          "ttfb_ms": 13.5,
+          "total_ms": 13.811,
+          "bytes": 2422,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Vary": "Accept-Encoding",
+            "Cache-Control": "no-cache"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 2.487,
+          "total_ms": 2.728,
+          "bytes": 2422,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Vary": "Accept-Encoding",
+            "Cache-Control": "no-cache"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 2.313,
+          "total_ms": 2.69,
+          "bytes": 2422,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Vary": "Accept-Encoding",
+            "Cache-Control": "no-cache"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 2.271,
+          "total_ms": 2.601,
+          "bytes": 2422,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Vary": "Accept-Encoding",
+            "Cache-Control": "no-cache"
+          }
+        },
+        {
+          "status": 200,
+          "ttfb_ms": 6.533,
+          "total_ms": 6.784,
+          "bytes": 2422,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Vary": "Accept-Encoding",
+            "Cache-Control": "no-cache"
+          }
+        }
+      ],
+      "summary_ms": {
+        "p50": 2.728,
+        "p95": 13.811,
+        "p99": 13.811
+      }
+    }
+  ]
+}

@@ -12,6 +12,35 @@ const value = (item: Element, name: string) =>
   item.getElementsByTagNameNS(namespace, name)[0]?.textContent;
 
 describe("Google Merchant feed", () => {
+  it("normalizes only all-uppercase parent names while preserving brand and models", () => {
+    const product = merchantVariants();
+    product.name = "ÁO BẢO HỘ KOMINE JK-177";
+    product.brand = { id: "komine", slug: "komine", name: "KOMINE" };
+    const [item] = parse(buildMerchantFeed([product]).xml);
+    expect(value(item, "title")).toBe("Áo bảo hộ KOMINE JK-177 - Xanh / M");
+    product.name = "Áo KOMINE JK-177";
+    expect(value(parse(buildMerchantFeed([product]).xml)[0], "title")).toBe(
+      "Áo KOMINE JK-177 - Xanh / M",
+    );
+  });
+
+  it("prefers an original >=800 over a thumbnail and keeps every SKU when no image meets 800", () => {
+    const product = merchantVariants();
+    product.variants![0].gallery = [
+      {
+        mediaType: "image",
+        image: { url: "/media/blue-1600x1600.jpg", width: 1600, height: 1600 },
+      },
+      { mediaType: "image", image: { url: "/media/blue-original.jpg", width: 900, height: 900 } },
+      { mediaType: "image", image: { url: "/media/blue-largest.jpg", width: 1200, height: 1200 } },
+    ];
+    const feed = buildMerchantFeed([product]);
+    expect(feed.itemCount).toBe(2);
+    expect(value(parse(feed.xml)[0], "image_link")).toContain("/blue-largest.jpg");
+    expect(feed.xml).not.toContain("blue-1600x1600.jpg");
+    expect(value(parse(feed.xml)[1], "image_link")).toContain("/kiem-thu.webp");
+  });
+
   it("exports actual price, sale, stock, images and XML-safe Vietnamese content", () => {
     const product = merchantProduct({
       name: 'Áo <b>Đỏ</b> & "Xanh"\u0001',
@@ -54,6 +83,45 @@ describe("Google Merchant feed", () => {
     expect(value(red, "price")).toBe("900000 VND");
     expect(value(red, "availability")).toBe("out_of_stock");
     expect(value(red, "image_link")).toContain("/kiem-thu.webp");
+  });
+
+  it("replaces a known small color cover only with a sufficiently large image from its own gallery", () => {
+    const product = merchantVariants();
+    const [blue, red] = product.variants!;
+    blue.image = { url: "/media/blue-small.jpg", width: 50, height: 50 };
+    blue.gallery = [
+      { mediaType: "image", image: { url: "/media/blue-small.jpg", width: 50, height: 50 } },
+      { mediaType: "image", image: { url: "/media/blue-large.jpg", width: 1176, height: 1176 } },
+    ];
+    red.image = { url: "/media/red-small.jpg", width: 50, height: 50 };
+    red.gallery = [
+      { mediaType: "image", image: { url: "/media/red-large.jpg", width: 800, height: 800 } },
+    ];
+    const items = parse(buildMerchantFeed([product]).xml);
+    expect(value(items[0], "image_link")).toContain("/blue-large.jpg");
+    expect(value(items[1], "image_link")).toContain("/red-large.jpg");
+    expect(items[0].textContent).not.toContain("blue-small.jpg");
+    expect(items[0].textContent).not.toContain("red-large.jpg");
+  });
+
+  it("uses the largest known own image without borrowing a different color", () => {
+    const product = merchantVariants();
+    const [blue, red] = product.variants!;
+    blue.image = { url: "/media/blue-unknown.jpg" };
+    blue.gallery = [
+      { mediaType: "image", image: { url: "/media/blue-large.jpg", width: 900, height: 900 } },
+    ];
+    red.image = { url: "/media/red-small.jpg", width: 50, height: 50 };
+    red.gallery = [
+      { mediaType: "image", image: { url: "/media/red-unknown.jpg" } },
+      { mediaType: "image", image: { url: "/media/red-narrow.jpg", width: 900, height: 499 } },
+    ];
+    product.gallery = [
+      { mediaType: "image", image: { url: "/media/shared.jpg", width: 1000, height: 1000 } },
+    ];
+    const items = parse(buildMerchantFeed([product]).xml);
+    expect(value(items[0], "image_link")).toContain("/blue-large.jpg");
+    expect(value(items[1], "image_link")).toContain("/red-narrow.jpg");
   });
 
   it("keeps distinct groups when two parent products share a SKU permitted by the catalog", () => {
@@ -113,5 +181,14 @@ describe("Google Merchant feed", () => {
 
   it("returns a valid empty feed only for genuinely empty or excluded input", () => {
     expect(parse(buildMerchantFeed([]).xml)).toHaveLength(0);
+  });
+
+  it("rejects a single product colliding with another product's variant SKU", () => {
+    const variants = merchantVariants();
+    const single = merchantProduct({ id: "single", sku: "e2e_gmc_blue_m" });
+    expect(() => buildMerchantFeed([single, variants])).toThrow("GMC_SKU_DUPLICATE");
+    expect(() => buildMerchantFeed([variants, single])).toThrow("GMC_SKU_DUPLICATE");
+    single.publishStatus = "DRAFT";
+    expect(buildMerchantFeed([single, variants]).itemCount).toBe(2);
   });
 });

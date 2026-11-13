@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Ruler } from "lucide-react";
+import { getStoreHours } from "@/lib/content/store-hours";
 import { telHref } from "@/lib/utils/format";
 
 const HOTLINE = "0906902404";
@@ -70,10 +71,6 @@ const COPY = {
   hotline: { vi: "Hotline", en: "Hotline" },
   zalo: { vi: "Zalo", en: "Zalo" },
   workingTimeLabel: { vi: "Giờ làm việc", en: "Working hours" },
-  workingTimeValue: {
-    vi: "Thứ 2 – Thứ 7: 9:00 – 21:00 · Chủ nhật: 9:00 – 18:00",
-    en: "Mon – Sat: 9:00 AM – 9:00 PM · Sun: 9:00 AM – 6:00 PM",
-  },
 } satisfies Record<string, Bi>;
 
 type Step = { title: Bi; body: Bi };
@@ -501,7 +498,8 @@ export function ClothingSizeGuideContent({ locale }: { locale: string }) {
           </span>
         </div>
         <div className="text-a5-meta text-muted-foreground leading-normal border-t border-border/50 pt-3">
-          <strong>{t(lang, COPY.workingTimeLabel)}:</strong> {t(lang, COPY.workingTimeValue)}
+          <strong>{t(lang, COPY.workingTimeLabel)}:</strong>{" "}
+          {Object.values(getStoreHours(lang)).join(" · ")}
         </div>
       </div>
     </div>

@@ -1,0 +1,24 @@
+{
+  "productId": "prod_7b15a51ac22c49cd9c2b120a1d3154ba",
+  "slug": "mu-bao-hiem-fullface-ls2-ff808-stream-ii",
+  "sourceUrl": "https://bigbike.vn/media/uploads/fca8b73b-9ab8-4482-819f-da95d8bd9f7f/mu-bao-hiem-ls2-of-808-mau-trang.png",
+  "sourceBytes": 1792652,
+  "sourceSha256": "489b649d647a4273fea0d3b16e1501ddd4ff95850abbb695b7d9d0c4b491d5f8",
+  "matchesPreviousDryRunSource": true,
+  "preparedFile": "prepared-media/ff808-white-optimized.jpg",
+  "outputBytes": 160714,
+  "outputSha256": "550964918a6d3b07a21a24128e933002a27d1c40ddf799bd63f4540c723d910f",
+  "width": 1254,
+  "height": 1254,
+  "mime": "image/jpeg",
+  "transparent": false,
+  "affectedSkus": [
+    "MFF-LS2-FF808-TRANG-M",
+    "MFF-LS2-FF808-TRANG-L",
+    "MFF-LS2-FF808-TRANG-XL",
+    "MFF-LS2-FF808-TRANG-XXL",
+    "MFF-LS2-FF808-TRANG-XXXL"
+  ],
+  "plannedChanges": "Upload new object through admin media; replace only matching source URL in white variant image/gallery; retain original object and all unrelated product data.",
+  "status": "PREPARED_NOT_UPLOADED_PENDING_OWNER_APPROVAL"
+}

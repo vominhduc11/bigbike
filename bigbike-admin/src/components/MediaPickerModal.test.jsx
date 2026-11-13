@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MediaPickerModal } from './MediaPickerModal'
@@ -163,6 +163,98 @@ beforeEach(() => {
 // Sau đợt tinh gọn, picker chỉ còn đúng một việc: tìm — tải lên — chọn. Sửa mô tả
 // ảnh và xoá file đã chuyển hẳn về màn Thư viện media.
 describe('MediaPickerModal', () => {
+  it.each(['resolve', 'reject'])(
+    'giữ bộ lọc mới nhất khi yêu cầu cũ %s muộn và vẫn chuyển trang được',
+    async (lateResult) => {
+      const user = userEvent.setup()
+      const pending = []
+      const pageResponse = (media) => ({
+        ...mediaResponse([media]),
+        pagination: { page: 1, pageSize: 30, totalItems: 90, totalPages: 3 },
+      })
+      mocks.fetchMediaTags.mockResolvedValue(['Mũ'])
+      mocks.fetchMedia.mockResolvedValueOnce(pageResponse(firstMedia))
+      mocks.fetchMedia.mockImplementation(
+        () =>
+          new Promise((resolve, reject) => {
+            pending.push({ resolve, reject })
+          }),
+      )
+      renderPicker()
+      await screen.findByTitle('helmet-one.jpg')
+      await user.click(screen.getByRole('button', { name: 'media.picker.next' }))
+      await waitFor(() => expect(pending).toHaveLength(1))
+
+      await user.selectOptions(screen.getByRole('combobox', { name: 'media.folders' }), 'NONE')
+      await waitFor(() => expect(pending).toHaveLength(2))
+      await user.selectOptions(screen.getByRole('combobox', { name: 'media.popularTags' }), 'Mũ')
+      await waitFor(() => expect(pending).toHaveLength(3))
+      const latest = {
+        ...firstMedia,
+        id: 'latest',
+        filename: 'latest.jpg',
+        publicUrl: '/media/latest.jpg',
+      }
+      await act(async () => pending[2].resolve(pageResponse(latest)))
+      expect(await screen.findByTitle('latest.jpg')).toBeInTheDocument()
+
+      await act(async () => {
+        for (const request of pending.slice(0, 2)) {
+          if (lateResult === 'reject') request.reject(new Error('Yêu cầu cũ thất bại'))
+          else request.resolve(pageResponse(firstMedia))
+        }
+      })
+      expect(screen.getByTitle('latest.jpg')).toBeInTheDocument()
+      expect(screen.queryByTitle('helmet-one.jpg')).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'media.picker.next' }))
+      await waitFor(() =>
+        expect(mocks.fetchMedia).toHaveBeenLastCalledWith(
+          expect.objectContaining({ page: 2, folderFilter: 'NONE', tag: 'Mũ' }),
+        ),
+      )
+      expect(mocks.fetchMedia.mock.calls.map(([query]) => query.page)).toEqual([1, 2, 1, 1, 2])
+      await act(async () => pending[3].resolve(pageResponse(latest)))
+    },
+  )
+
+  it.each(['search', 'folder', 'tag'])(
+    'đổi %s từ trang sau chỉ yêu cầu trang đầu của bộ lọc mới',
+    async (filter) => {
+      const user = userEvent.setup()
+      mocks.fetchMediaTags.mockResolvedValue(['Mũ'])
+      mocks.fetchMedia.mockResolvedValue({
+        ...mediaResponse([firstMedia]),
+        pagination: { page: 1, pageSize: 30, totalItems: 90, totalPages: 3 },
+      })
+      renderPicker()
+      await screen.findByTitle('helmet-one.jpg')
+      await user.click(screen.getByRole('button', { name: 'media.picker.next' }))
+      await waitFor(() =>
+        expect(mocks.fetchMedia).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })),
+      )
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'media.picker.next' })).toBeEnabled(),
+      )
+      mocks.fetchMedia.mockClear()
+
+      if (filter === 'search') {
+        fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'helmet' } })
+      } else {
+        await user.selectOptions(
+          screen.getByRole('combobox', {
+            name: filter === 'folder' ? 'media.folders' : 'media.popularTags',
+          }),
+          filter === 'folder' ? 'NONE' : 'Mũ',
+        )
+      }
+
+      await waitFor(() =>
+        expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({ page: 1 })),
+      )
+      expect(mocks.fetchMedia.mock.calls.map(([query]) => query.page)).toEqual([1])
+    },
+  )
+
   it('không còn nút sửa thông tin hay xoá file bên trong picker', async () => {
     renderPicker()
 

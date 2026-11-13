@@ -36,22 +36,34 @@ public class PublishedProductListingCache {
     }
 
     private final Map<String, Snapshot> snapshots = new ConcurrentHashMap<>();
+    private final Object publicationLock = new Object();
+    private volatile long generation;
 
     /** Returns the cached listing for {@code locale}, loading it through {@code loader} on a miss. */
     public List<Product> get(String locale, Supplier<List<Product>> loader) {
         String key = locale == null || locale.isBlank() ? DEFAULT_LOCALE : locale;
+        long loadGeneration = generation;
         Instant now = Instant.now();
         Snapshot cached = snapshots.get(key);
         if (cached != null && cached.isFresh(now)) {
             return cached.products();
         }
         List<Product> loaded = List.copyOf(loader.get());
-        snapshots.put(key, new Snapshot(loaded, now));
+        // Loading may overlap an admin commit. Publishing must be atomic with invalidation,
+        // otherwise that older load can restore the cleared snapshot for another full TTL.
+        synchronized (publicationLock) {
+            if (generation == loadGeneration) {
+                snapshots.put(key, new Snapshot(loaded, now));
+            }
+        }
         return loaded;
     }
 
     /** Drops every locale snapshot. Called after a catalogue write commits. */
     public void invalidate() {
-        snapshots.clear();
+        synchronized (publicationLock) {
+            generation++;
+            snapshots.clear();
+        }
     }
 }

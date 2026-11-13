@@ -1,0 +1,1804 @@
+{
+  "checkedAtUtc": "2026-10-29T08:52:40.532955+00:00",
+  "authorization": "Owner requested đưa lên production in this conversation, 2026-10-29",
+  "status": "deployed and verified",
+  "scope": "web only",
+  "release": {
+    "rollbackTag": "bigbike-web:before-dev56-20261029-083348",
+    "releaseTag": "bigbike-web:dev56-20261029-083348",
+    "previousImage": "sha256:752868d979543dc152f7ef8f3493102bb85460f60868d919258581d7a12fc3e7",
+    "startedAtUtc": "2026-10-29T08:33:48.674962+00:00",
+    "composeCommand": "docker compose --env-file .env.vps",
+    "newImage": "sha256:784537ca43a9bbcdf2229385dba312994eaa89ab98abf92fdac86fe28d469e01",
+    "candidateRemoved": true
+  },
+  "services": {
+    "bigbike-web": {
+      "id": "96beb65b550c827e1a2647d4aaa280eef9381d0ad2a1f785ae882bbc415e815e",
+      "image": "sha256:784537ca43a9bbcdf2229385dba312994eaa89ab98abf92fdac86fe28d469e01",
+      "startedAt": "2026-10-29T08:43:17.597853349Z",
+      "health": "healthy",
+      "memoryBytes": 536870912,
+      "idUnchanged": false,
+      "imageUnchanged": false,
+      "startedAtUnchanged": false
+    },
+    "bigbike-admin": {
+      "id": "c92ef3e8616c45460f1260dc9667abebf9f16f8e3be4896747f134f523b98d26",
+      "image": "sha256:dd439b9985d3115f5353ee9a22a886b4fbe755b8c85bde3eea833c7415818143",
+      "startedAt": "2026-10-24T03:29:00.953860082Z",
+      "health": "healthy",
+      "memoryBytes": 134217728,
+      "idUnchanged": true,
+      "imageUnchanged": true,
+      "startedAtUnchanged": true
+    },
+    "bigbike-backend": {
+      "id": "5a6850cc962970378ef0a598da60a97d275910f001b6c8c2408d089b846d832d",
+      "image": "sha256:7397e06601feb7d900650ace2042a48557fc4ab0a8ef37cf3cb43006f9053594",
+      "startedAt": "2026-10-24T03:27:52.279777825Z",
+      "health": "healthy",
+      "memoryBytes": 1073741824,
+      "idUnchanged": true,
+      "imageUnchanged": true,
+      "startedAtUnchanged": true
+    },
+    "bigbike-postgres": {
+      "id": "517654330f544d050fbda248552154cc345750708dd777d522050facb1591808",
+      "image": "sha256:108b27c919e6e7bc124350fb265deea9adac58e118eade428c6d1ad44b90debe",
+      "startedAt": "2026-09-06T13:11:55.84558863Z",
+      "health": "healthy",
+      "memoryBytes": 536870912,
+      "idUnchanged": true,
+      "imageUnchanged": true,
+      "startedAtUnchanged": true
+    },
+    "bigbike-redis": {
+      "id": "290f9a4fc7aa5769ab4feb1110469667761bbe0487142f03e0fca33a089efecd",
+      "image": "sha256:2a51817f79255c8b69f86a974459c2e0359aff81417d80158f2b9e541e6f4b33",
+      "startedAt": "2026-09-06T13:11:55.829381147Z",
+      "health": "healthy",
+      "memoryBytes": 201326592,
+      "idUnchanged": true,
+      "imageUnchanged": true,
+      "startedAtUnchanged": true
+    },
+    "bigbike-minio": {
+      "id": "8b958d2ab8f44fefedfcac5974f5f1a6fdf9580801ae68a1e5462c3881bfbc0c",
+      "image": "sha256:9d668e47f1fc60ea49af4203deee87a657eb1aa0e2761fee2c7c2d1df282c880",
+      "startedAt": "2026-09-06T13:11:55.900833164Z",
+      "health": "healthy",
+      "memoryBytes": 805306368,
+      "idUnchanged": true,
+      "imageUnchanged": true,
+      "startedAtUnchanged": true
+    }
+  },
+  "envFilesUnchanged": true,
+  "commands": [
+    "docker compose --env-file .env.vps build bigbike-web",
+    "docker compose --env-file .env.vps up -d --no-deps --no-build --wait --wait-timeout 180 bigbike-web"
+  ],
+  "productionBuild": "Webpack Docker build with .env.vps; fresh TypeScript/prerender verification passed",
+  "priorCodeVerification": "112 files / 769 Vitest tests; 13 browser cases and 11 regression scenarios previously verified on the same source",
+  "candidate": {
+    "passed": true,
+    "rows": [
+      {
+        "path": "/danh-gia/",
+        "status": 200,
+        "locale": "vi",
+        "noindex": true,
+        "manualLink": true,
+        "utmPreserved": true,
+        "ga4": "G-REZM4NT0CS",
+        "metaPixel": "460465848002810",
+        "slashlessStatus": 308
+      },
+      {
+        "path": "/review/",
+        "status": 200,
+        "locale": "en",
+        "noindex": true,
+        "manualLink": true,
+        "utmPreserved": true,
+        "ga4": "G-REZM4NT0CS",
+        "metaPixel": "460465848002810",
+        "slashlessStatus": 308
+      },
+      {
+        "path": "/en/review/",
+        "status": 200,
+        "locale": "en",
+        "noindex": true,
+        "manualLink": true,
+        "utmPreserved": true,
+        "ga4": "G-REZM4NT0CS",
+        "metaPixel": "460465848002810",
+        "slashlessStatus": 308
+      },
+      {
+        "path": "/",
+        "status": 200,
+        "jsonLdCount": 2
+      },
+      {
+        "path": "/en/",
+        "status": 200,
+        "jsonLdCount": 2
+      },
+      {
+        "path": "/danh-muc/mu-bao-hiem/",
+        "status": 200,
+        "jsonLdCount": 3
+      },
+      {
+        "path": "/en/categories/full-face-helmets/",
+        "status": 200,
+        "jsonLdCount": 3
+      }
+    ],
+    "sitemap": true,
+    "robots": true
+  },
+  "publicHttp": {
+    "base": "https://bigbike.vn",
+    "passed": true,
+    "rows": [
+      {
+        "path": "/danh-gia/",
+        "status": 200,
+        "locale": "vi",
+        "noindex": true,
+        "manualLink": true,
+        "utmPreserved": true,
+        "ga4": "G-REZM4NT0CS",
+        "metaPixel": "460465848002810",
+        "slashlessStatus": 308
+      },
+      {
+        "path": "/review/",
+        "status": 200,
+        "locale": "en",
+        "noindex": true,
+        "manualLink": true,
+        "utmPreserved": true,
+        "ga4": "G-REZM4NT0CS",
+        "metaPixel": "460465848002810",
+        "slashlessStatus": 308
+      },
+      {
+        "path": "/en/review/",
+        "status": 200,
+        "locale": "en",
+        "noindex": true,
+        "manualLink": true,
+        "utmPreserved": true,
+        "ga4": "G-REZM4NT0CS",
+        "metaPixel": "460465848002810",
+        "slashlessStatus": 308
+      },
+      {
+        "path": "/",
+        "status": 200,
+        "jsonLdCount": 2
+      },
+      {
+        "path": "/en/",
+        "status": 200,
+        "jsonLdCount": 2
+      },
+      {
+        "path": "/danh-muc/mu-bao-hiem/",
+        "status": 200,
+        "jsonLdCount": 3
+      },
+      {
+        "path": "/en/categories/full-face-helmets/",
+        "status": 200,
+        "jsonLdCount": 3
+      }
+    ],
+    "sitemap": true,
+    "robots": true
+  },
+  "publicBrowser": {
+    "checkedAtUtc": "2026-10-29T08:44:21.901Z",
+    "base": "https://bigbike.vn",
+    "routing": "public Cloudflare HTTPS",
+    "homepage": [
+      {
+        "path": "/",
+        "status": 200,
+        "lang": "vi",
+        "ga4InitCount": 1,
+        "ga4LoaderCount": 1,
+        "metaInitCount": 1,
+        "jsonLd": [
+          {
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "Organization",
+                "@id": "https://bigbike.vn/#organization",
+                "name": "Shop Bigbike",
+                "alternateName": [
+                  "BigBike.vn",
+                  "Shop Bảo Hộ Bigbike"
+                ],
+                "url": "https://bigbike.vn/",
+                "logo": "https://bigbike.vn/wp/logo.png",
+                "email": "bigbikevnshop@gmail.com",
+                "foundingDate": "2014",
+                "sameAs": [
+                  "https://www.google.com/maps?cid=10172478217895770333",
+                  "https://www.facebook.com/bigbikegear",
+                  "https://www.youtube.com/@bigbike-shop",
+                  "https://www.tiktok.com/@bigbike.vn",
+                  "https://shopee.vn/shopbaohobigbike",
+                  "https://zalo.me/84764640679"
+                ]
+              },
+              {
+                "@type": "SportingGoodsStore",
+                "@id": "https://bigbike.vn/#store",
+                "name": "Shop Bigbike",
+                "alternateName": "BigBike.vn",
+                "description": "Shop đồ bảo hộ mô tô chính hãng tại TP.HCM từ 2014: mũ bảo hiểm, áo giáp, găng tay, giày bảo hộ, tai nghe bluetooth.",
+                "url": "https://bigbike.vn/",
+                "logo": "https://bigbike.vn/wp/logo.png",
+                "image": "https://bigbike.vn/wp/logo.png",
+                "telephone": "+84764640679",
+                "email": "bigbikevnshop@gmail.com",
+                "priceRange": "₫₫",
+                "currenciesAccepted": "VND",
+                "parentOrganization": {
+                  "@id": "https://bigbike.vn/#organization"
+                },
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "79/30/52 Âu Cơ",
+                  "addressLocality": "Phường Hòa Bình",
+                  "addressRegion": "Thành phố Hồ Chí Minh",
+                  "postalCode": "700000",
+                  "addressCountry": "VN"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": 10.7699006,
+                  "longitude": 106.648536
+                },
+                "hasMap": "https://www.google.com/maps?cid=10172478217895770333",
+                "openingHoursSpecification": [
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": [
+                      "Monday",
+                      "Tuesday",
+                      "Wednesday",
+                      "Thursday",
+                      "Friday",
+                      "Saturday"
+                    ],
+                    "opens": "09:00",
+                    "closes": "21:00"
+                  },
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": "Sunday",
+                    "opens": "09:00",
+                    "closes": "17:00"
+                  }
+                ],
+                "contactPoint": [
+                  {
+                    "@type": "ContactPoint",
+                    "telephone": "+84764640679",
+                    "contactType": "customer service",
+                    "availableLanguage": [
+                      "Vietnamese",
+                      "English"
+                    ]
+                  },
+                  {
+                    "@type": "ContactPoint",
+                    "telephone": "+84906902404",
+                    "contactType": "sales",
+                    "availableLanguage": "Vietnamese"
+                  }
+                ],
+                "areaServed": [
+                  {
+                    "@type": "City",
+                    "name": "Thành phố Hồ Chí Minh"
+                  },
+                  {
+                    "@type": "Country",
+                    "name": "Việt Nam"
+                  }
+                ],
+                "sameAs": [
+                  "https://www.google.com/maps?cid=10172478217895770333",
+                  "https://www.facebook.com/bigbikegear",
+                  "https://www.tiktok.com/@bigbike.vn"
+                ]
+              }
+            ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "BigBike",
+            "url": "https://bigbike.vn/",
+            "inLanguage": "vi",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://bigbike.vn/tim-kiem/?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
+      },
+      {
+        "path": "/en/",
+        "status": 200,
+        "lang": "en",
+        "ga4InitCount": 1,
+        "ga4LoaderCount": 1,
+        "metaInitCount": 1,
+        "jsonLd": [
+          {
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "Organization",
+                "@id": "https://bigbike.vn/#organization",
+                "name": "Shop Bigbike",
+                "alternateName": [
+                  "BigBike.vn",
+                  "Shop Bảo Hộ Bigbike"
+                ],
+                "url": "https://bigbike.vn/",
+                "logo": "https://bigbike.vn/wp/logo.png",
+                "email": "bigbikevnshop@gmail.com",
+                "foundingDate": "2014",
+                "sameAs": [
+                  "https://www.google.com/maps?cid=10172478217895770333",
+                  "https://www.facebook.com/bigbikegear",
+                  "https://www.youtube.com/@bigbike-shop",
+                  "https://www.tiktok.com/@bigbike.vn",
+                  "https://shopee.vn/shopbaohobigbike",
+                  "https://zalo.me/84764640679"
+                ]
+              },
+              {
+                "@type": "SportingGoodsStore",
+                "@id": "https://bigbike.vn/#store",
+                "name": "Shop Bigbike",
+                "alternateName": "BigBike.vn",
+                "description": "Shop đồ bảo hộ mô tô chính hãng tại TP.HCM từ 2014: mũ bảo hiểm, áo giáp, găng tay, giày bảo hộ, tai nghe bluetooth.",
+                "url": "https://bigbike.vn/",
+                "logo": "https://bigbike.vn/wp/logo.png",
+                "image": "https://bigbike.vn/wp/logo.png",
+                "telephone": "+84764640679",
+                "email": "bigbikevnshop@gmail.com",
+                "priceRange": "₫₫",
+                "currenciesAccepted": "VND",
+                "parentOrganization": {
+                  "@id": "https://bigbike.vn/#organization"
+                },
+                "address": {
+                  "@type": "PostalAddress",
+                  "streetAddress": "79/30/52 Âu Cơ",
+                  "addressLocality": "Phường Hòa Bình",
+                  "addressRegion": "Thành phố Hồ Chí Minh",
+                  "postalCode": "700000",
+                  "addressCountry": "VN"
+                },
+                "geo": {
+                  "@type": "GeoCoordinates",
+                  "latitude": 10.7699006,
+                  "longitude": 106.648536
+                },
+                "hasMap": "https://www.google.com/maps?cid=10172478217895770333",
+                "openingHoursSpecification": [
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": [
+                      "Monday",
+                      "Tuesday",
+                      "Wednesday",
+                      "Thursday",
+                      "Friday",
+                      "Saturday"
+                    ],
+                    "opens": "09:00",
+                    "closes": "21:00"
+                  },
+                  {
+                    "@type": "OpeningHoursSpecification",
+                    "dayOfWeek": "Sunday",
+                    "opens": "09:00",
+                    "closes": "17:00"
+                  }
+                ],
+                "contactPoint": [
+                  {
+                    "@type": "ContactPoint",
+                    "telephone": "+84764640679",
+                    "contactType": "customer service",
+                    "availableLanguage": [
+                      "Vietnamese",
+                      "English"
+                    ]
+                  },
+                  {
+                    "@type": "ContactPoint",
+                    "telephone": "+84906902404",
+                    "contactType": "sales",
+                    "availableLanguage": "Vietnamese"
+                  }
+                ],
+                "areaServed": [
+                  {
+                    "@type": "City",
+                    "name": "Thành phố Hồ Chí Minh"
+                  },
+                  {
+                    "@type": "Country",
+                    "name": "Việt Nam"
+                  }
+                ],
+                "sameAs": [
+                  "https://www.google.com/maps?cid=10172478217895770333",
+                  "https://www.facebook.com/bigbikegear",
+                  "https://www.tiktok.com/@bigbike.vn"
+                ]
+              }
+            ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "BigBike",
+            "url": "https://bigbike.vn/en/",
+            "inLanguage": "en",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://bigbike.vn/en/search/?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
+      }
+    ],
+    "categories": [
+      {
+        "path": "/danh-muc/mu-bao-hiem/",
+        "status": 200,
+        "intros": 1,
+        "questions": 6,
+        "lang": "vi",
+        "schemas": [
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Trang chủ",
+                "item": "https://bigbike.vn/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Sản phẩm",
+                "item": "https://bigbike.vn/sp/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Mũ bảo hiểm",
+                "item": "https://bigbike.vn/danh-muc/mu-bao-hiem/"
+              }
+            ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "Mũ bảo hiểm",
+            "description": "Mũ bảo hiểm moto AGV, LS2, ILM và nón bảo hiểm chính hãng Caberg, NIC: so sánh fullface, 3/4, lật hàm, dual sport theo nhu cầu tại TP.HCM.",
+            "url": "https://bigbike.vn/danh-muc/mu-bao-hiem/",
+            "inLanguage": "vi",
+            "image": [
+              "https://bigbike.vn/media/uploads/ac767bd3-e351-4870-ab71-9bf0e1181491/codex_image_aug_28__2026__04_41_31_pm.png"
+            ],
+            "mainEntity": {
+              "@type": "ItemList",
+              "itemListOrder": "https://schema.org/ItemListOrderAscending",
+              "numberOfItems": 23,
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Mũ bảo hiểm 3/4 LS2 OF626",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-3-4-ls2-of626/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm 3/4 LS2 OF626",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-3-4-ls2-of626/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "Mũ bảo hiểm fullface Caberg Drift Evo II Carbon",
+                  "url": "https://bigbike.vn/product/caberg-drift-evo-ii-carbon/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface Caberg Drift Evo II Carbon",
+                    "url": "https://bigbike.vn/product/caberg-drift-evo-ii-carbon/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": "Mũ bảo hiểm fullface AGV K3",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-agv-k3/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface AGV K3",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-agv-k3/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 4,
+                  "name": "Mũ bảo hiểm tháo hàm ILM HS711",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-thao-ham-ilm-hs711/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm tháo hàm ILM HS711",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-thao-ham-ilm-hs711/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 5,
+                  "name": "Mũ bảo hiểm nửa đầu Xpeed IS-2V",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-nua-dau-xpeed-is-2v/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm nửa đầu Xpeed IS-2V",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-nua-dau-xpeed-is-2v/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 6,
+                  "name": "Mũ bảo hiểm dual sport ILM WS902",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-dual-sport-ilm-ws902/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm dual sport ILM WS902",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-dual-sport-ilm-ws902/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 7,
+                  "name": "Mũ bảo hiểm lật hàm LS2 FF901 Advant X Carbon",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm lật hàm LS2 FF901 Advant X Carbon",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 8,
+                  "name": "Mũ bảo hiểm fullface AGV K1S",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-agv-k1s/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface AGV K1S",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-agv-k1s/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 9,
+                  "name": "Mũ bảo hiểm dualsport LS2 MX702 Pioneer II",
+                  "url": "https://bigbike.vn/product/ls2-mx702-pioneer-ii/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm dualsport LS2 MX702 Pioneer II",
+                    "url": "https://bigbike.vn/product/ls2-mx702-pioneer-ii/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 10,
+                  "name": "Mũ bảo hiểm fullface ILM MF510 Racing",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ilm-mf510-racing/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface ILM MF510 Racing",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ilm-mf510-racing/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 11,
+                  "name": "Mũ bảo hiểm fullface retro ILM Z503",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-retro-ilm-z503/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface retro ILM Z503",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-retro-ilm-z503/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 12,
+                  "name": "Mũ bảo hiểm dual sport Caberg Tanami Carbon",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-dual-sport-caberg-tanami-carbon/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm dual sport Caberg Tanami Carbon",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-dual-sport-caberg-tanami-carbon/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 13,
+                  "name": "Mũ bảo hiểm tháo hàm ILM Z302",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-thao-ham-ilm-z302/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm tháo hàm ILM Z302",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-thao-ham-ilm-z302/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 14,
+                  "name": "Mũ bảo hiểm fullface ILM MF509",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ilm-mf509/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface ILM MF509",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ilm-mf509/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 15,
+                  "name": "Mũ bảo hiểm nửa đầu LS2 OF610",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-nua-dau-ls2-of610/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm nửa đầu LS2 OF610",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-nua-dau-ls2-of610/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 16,
+                  "name": "Mũ bảo hiểm 3/4 LS2 OF616 Airflow II",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-3-4-ls2-of616-airflow-ii/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm 3/4 LS2 OF616 Airflow II",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-3-4-ls2-of616-airflow-ii/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 17,
+                  "name": "Mũ bảo hiểm fullface NIC N01F",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n01f/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface NIC N01F",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n01f/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 18,
+                  "name": "Mũ bảo hiểm Fullface NIC N02",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n02/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm Fullface NIC N02",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n02/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 19,
+                  "name": "Mũ bảo hiểm fullface NIC N01",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n01/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface NIC N01",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n01/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 20,
+                  "name": "Mũ bảo hiểm fullface Caberg Avalon X",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-caberg-avalon-x-italy/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface Caberg Avalon X",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-caberg-avalon-x-italy/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 21,
+                  "name": "Mũ bảo hiểm 3/4 LS2 Bob OF601",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-3-4-ls2-bob-of601/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm 3/4 LS2 Bob OF601",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-3-4-ls2-bob-of601/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 22,
+                  "name": "Mũ bảo hiểm 3/4 LS2 OF600 Copter II",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-3-4-ls2-of600-copter-ii/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm 3/4 LS2 OF600 Copter II",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-3-4-ls2-of600-copter-ii/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 23,
+                  "name": "Mũ bảo hiểm fullface LS2 FF800 Storm",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ls2-ff800-storm/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface LS2 FF800 Storm",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ls2-ff800-storm/"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Chuẩn ECE 22.06, DOT và QCVN khác nhau ra sao?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "ECE 22.06 là chuẩn châu Âu, DOT là chuẩn Mỹ, cách thử và cách cấp chứng nhận khác nhau. Phần lớn mũ ở đây theo ECE 22.06. Mũ ILM in DOT, nhiều mã có thêm ECE 22.06 trên tem hàng thật, còn XPEED mang QCVN. Anh em đọc tem trên mũ và trang sản phẩm từng mã, không suy chuẩn theo tên hãng, vì cùng hãng vẫn có mã theo chuẩn khác nhau."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Đo đầu và chọn cỡ mũ thế nào cho vừa?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Lấy thước dây mềm đo vòng đầu chỗ to nhất, giữ thước ngang, rồi đối chiếu bảng cỡ trên từng trang sản phẩm. Mũ mới phải ôm đều hai bên má, không có điểm nào đau nhói. Lót trong mềm dần sau thời gian đội. Nếu chỉ một chỗ bị ép đau thì lên cỡ, hoặc đổi sang vỏ mũ hãng khác."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Nên chọn fullface, mũ 3/4, lật hàm hay dual sport?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Chạy đường trường và chạy nhanh thì lấy fullface, vì cằm được che kín, còn ba nhóm kia đều hở hoặc mở được ở đúng chỗ đó. Đi phố quãng ngắn thì mũ 3/4 thoáng hơn. Hay dừng, hay nói chuyện thì chọn lật hàm hoặc tháo hàm. Đường trộn nhựa với đất thì dual sport. Riêng lật hàm và tháo hàm, xem chứng nhận cấp cho cấu hình nào."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Lắp tai nghe hoặc camera lên mũ được không?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Phần lớn mũ có sẵn hốc loa đúc trong lót trong, kèm rãnh luồn dây, tức là có chỗ dành sẵn cho bộ tai nghe. Fullface và lật hàm dễ giấu dây hơn mũ nửa đầu. Hốc loa mỗi mã một khác. Anh em mang mũ ra shop ướm thử trước khi chốt bộ tai nghe. Camera thì ướm vị trí, xem có che tầm nhìn không rồi mới dán đế."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Ngân sách từng mức thì mua được mũ nào?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Ba tầm rõ rệt. Tầm phổ thông là nhóm 3/4 và nửa đầu như LS2 OF610 cùng vài mã fullface cơ bản như ILM Z503, đủ cho anh em chạy phố hằng ngày. Tầm giữa mở rộng lựa chọn về kiểu vỏ và kiểu dùng. Tầm cao dành cho anh em muốn đúng hãng và đúng vật liệu vỏ. Dùng bộ lọc giá để khoanh vùng. Chốt kiểu mũ và cỡ đầu trước, lọc giá sau."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Bảo hành và đồ kèm theo mũ thế nào?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Bảo hành áp theo hãng. ILM và XPEED 12 tháng tính từ ngày mua, Caberg và NIC 24 tháng, AGV 60 tháng với điều kiện quét mã QR kích hoạt trong 30 ngày. Riêng LS2 tính theo từng linh kiện, hỏi shop khi mua. Mũ nào cũng kèm khăn trùm đầu chống bụi và vệ sinh mũ miễn phí trong 1 năm. Mũ đã ngã mạnh một lần thì nên thay, kể cả khi vỏ nhìn còn lành."
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/danh-muc/mu-bao-hiem-fullface/",
+        "status": 200,
+        "intros": 1,
+        "questions": 6,
+        "lang": "vi",
+        "schemas": [
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Trang chủ",
+                "item": "https://bigbike.vn/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Sản phẩm",
+                "item": "https://bigbike.vn/sp/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Mũ bảo hiểm",
+                "item": "https://bigbike.vn/danh-muc/mu-bao-hiem/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "name": "Mũ bảo hiểm Fullface",
+                "item": "https://bigbike.vn/danh-muc/mu-bao-hiem-fullface/"
+              }
+            ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "Mũ bảo hiểm Fullface",
+            "description": "Mũ bảo hiểm fullface AGV, Caberg, NIC, ILM, LS2 chính hãng tại TP.HCM. Shop cân mũ kèm kính, đội thử tại chỗ, kiểm tem ECE 22.06 và DOT từng mã.",
+            "url": "https://bigbike.vn/danh-muc/mu-bao-hiem-fullface/",
+            "inLanguage": "vi",
+            "image": [
+              "https://bigbike.vn/media/uploads/9e11d5f4-81a0-498d-9beb-9ec4b3ed8d8f/mu_bao_hiem_fullface.jpg"
+            ],
+            "mainEntity": {
+              "@type": "ItemList",
+              "itemListOrder": "https://schema.org/ItemListOrderAscending",
+              "numberOfItems": 11,
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Mũ bảo hiểm fullface Caberg Drift Evo II Carbon",
+                  "url": "https://bigbike.vn/product/caberg-drift-evo-ii-carbon/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface Caberg Drift Evo II Carbon",
+                    "url": "https://bigbike.vn/product/caberg-drift-evo-ii-carbon/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "Mũ bảo hiểm fullface AGV K3",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-agv-k3/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface AGV K3",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-agv-k3/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": "Mũ bảo hiểm fullface AGV K1S",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-agv-k1s/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface AGV K1S",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-agv-k1s/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 4,
+                  "name": "Mũ bảo hiểm fullface ILM MF510 Racing",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ilm-mf510-racing/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface ILM MF510 Racing",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ilm-mf510-racing/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 5,
+                  "name": "Mũ bảo hiểm fullface retro ILM Z503",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-retro-ilm-z503/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface retro ILM Z503",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-retro-ilm-z503/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 6,
+                  "name": "Mũ bảo hiểm fullface ILM MF509",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ilm-mf509/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface ILM MF509",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ilm-mf509/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 7,
+                  "name": "Mũ bảo hiểm fullface NIC N01F",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n01f/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface NIC N01F",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n01f/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 8,
+                  "name": "Mũ bảo hiểm Fullface NIC N02",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n02/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm Fullface NIC N02",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n02/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 9,
+                  "name": "Mũ bảo hiểm fullface NIC N01",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n01/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface NIC N01",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-nic-n01/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 10,
+                  "name": "Mũ bảo hiểm fullface Caberg Avalon X",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-caberg-avalon-x-italy/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface Caberg Avalon X",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-caberg-avalon-x-italy/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 11,
+                  "name": "Mũ bảo hiểm fullface LS2 FF800 Storm",
+                  "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ls2-ff800-storm/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Mũ bảo hiểm fullface LS2 FF800 Storm",
+                    "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ls2-ff800-storm/"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Mũ bảo hiểm fullface ở đây có số cân thực tế ra sao?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Shop cân mũ kèm kính: Caberg Drift Evo II Carbon đen bóng cỡ L 1.476g, AGV K1S cỡ L 1.554g và NIC N01F cỡ M 1.305g. Cùng lượt cân, NIC N02 cỡ S đạt 1.252g, hợp nữ và nam đầu nhỏ. Đừng xếp hạng nhẹ nặng giữa các cỡ. Số cân không nói được điểm tì, nên vẫn phải đội thử."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Đầu tròn, đầu oval, người đầu nhỏ và nữ hợp mã nào?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Dáng lòng phải đúng. Drift và AGV K1S theo oval gọn. K3 và ILM MF510 cũng thuộc nhóm oval gọn. Avalon X và NIC N01 có lòng tròn. Shop đội thử NIC N02 cỡ S trên đầu 57 cm thấy chật cứng, nên cỡ nhỏ vẫn phải thử theo đúng dáng đầu từng người. Mũ fullface giảm chấn thương vùng đầu và cằm chứ không loại bỏ rủi ro khi va chạm."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "AGV, Caberg, NIC và ILM mang chuẩn gì, tem nằm ở đâu?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "AGV K3 và NIC N01F mang ECE 22.06 trên tem sau gáy, còn hộp của mẫu AGV dán QCVN 2:2021/BKHCN và ghi sản xuất tại Việt Nam. Avalon X in ECE 22.06 trên tem kính, sau gáy dán QUATEST 3. NIC N01 chỉ có DOT và QUATEST 2, không có ECE. MF510 và MF509 của ILM in DOT cùng ECE 22.06 trên tem sau gáy. Xem tem từng mã. LS2 FF800 hỏi shop xem tem trước khi mua."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Loại kín cằm có kính râm trong, kính đổi màu hay Pinlock?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Kính râm trong có trên Avalon X và ILM MF509. NIC N02 dùng kính đổi màu mặc định, còn N01F có kính đổi màu ở cỡ lớn, cả hai đều không có kính râm trong. Pinlock được lắp sẵn trên Drift. MF509 có lá Pinlock trong hộp. NIC N01 không kèm Pinlock. Đồ kèm khác theo mã, vì vậy anh em kiểm hộp thực tế trước khi chốt."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Đeo kính cận với mũ bảo hiểm trùm đầu được không?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "AGV K1S Asian Fit có lối cho gọng kính trong phần lót, không phải cạy lót má. K3 cũng có lối này và lót má nhiều độ dày, vì vậy lệch một bên má thì đổi lót má thay vì đổi cả mũ. Đây là nhóm đáng thử trước. Gọng kính rộng là giới hạn. Mang đúng kính thường dùng tới shop để kiểm độ ép ở thái dương."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Lót trong tháo giặt được không, bảo hành từng hãng ra sao?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Lót trong của ILM MF510 và ILM Z503 tháo giặt được. AGV 60 tháng theo tem hộp, phải quét mã QR kích hoạt trong 30 ngày kể từ ngày mua. Caberg và NIC bảo hành 24 tháng, ILM 12 tháng, còn LS2 phải hỏi shop theo từng mã thay vì dùng chung một mốc. Điều kiện từng hãng khác nhau."
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/danh-muc/tai-nghe-bluetooth-mu-bao-hiem/",
+        "status": 200,
+        "intros": 1,
+        "questions": 6,
+        "lang": "vi",
+        "schemas": [
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Trang chủ",
+                "item": "https://bigbike.vn/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Sản phẩm",
+                "item": "https://bigbike.vn/sp/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "Tai nghe bluetooth mũ bảo hiểm",
+                "item": "https://bigbike.vn/danh-muc/tai-nghe-bluetooth-mu-bao-hiem/"
+              }
+            ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "Tai nghe bluetooth mũ bảo hiểm",
+            "description": "Tai nghe bộ đàm gắn mũ bảo hiểm SCS chính hãng tại TP.HCM. Bản đi một mình, bản đôi, mesh nhóm 10 người, bản có camera.",
+            "url": "https://bigbike.vn/danh-muc/tai-nghe-bluetooth-mu-bao-hiem/",
+            "inLanguage": "vi",
+            "image": [
+              "https://bigbike.vn/media/uploads/42dd44ad-79da-4ff6-b09c-3b9ab357c17a/codex_image_aug_29__2026__03_05_44_pm.png"
+            ],
+            "mainEntity": {
+              "@type": "ItemList",
+              "itemListOrder": "https://schema.org/ItemListOrderAscending",
+              "numberOfItems": 9,
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Camera hành trình gắn mũ bảo hiểm SCS Cam-S",
+                  "url": "https://bigbike.vn/product/camera-hanh-trinh-scs-cam-s/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Camera hành trình gắn mũ bảo hiểm SCS Cam-S",
+                    "url": "https://bigbike.vn/product/camera-hanh-trinh-scs-cam-s/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "Tai nghe mũ bảo hiểm intercom Mesh SCS T2 Plus",
+                  "url": "https://bigbike.vn/product/tai-nghe-bluetooth-mesh-intercom-scs-t2-plus-cho-mu-bao-hiem/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Tai nghe mũ bảo hiểm intercom Mesh SCS T2 Plus",
+                    "url": "https://bigbike.vn/product/tai-nghe-bluetooth-mesh-intercom-scs-t2-plus-cho-mu-bao-hiem/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": "Tai nghe mũ bảo hiểm SCS S7X",
+                  "url": "https://bigbike.vn/product/tai-nghe-scs-s7x-bluetooth-cho-mu-bao-hiem/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Tai nghe mũ bảo hiểm SCS S7X",
+                    "url": "https://bigbike.vn/product/tai-nghe-scs-s7x-bluetooth-cho-mu-bao-hiem/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 4,
+                  "name": "Tai nghe mũ bảo hiểm intercom kèm 2 camera SCS S12",
+                  "url": "https://bigbike.vn/product/tai-nghe-bluetooth-intercom-dual-camera-scs-s12/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Tai nghe mũ bảo hiểm intercom kèm 2 camera SCS S12",
+                    "url": "https://bigbike.vn/product/tai-nghe-bluetooth-intercom-dual-camera-scs-s12/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 5,
+                  "name": "Tai nghe mũ bảo hiểm intercom kèm camera SCS G7+",
+                  "url": "https://bigbike.vn/product/tai-nghe-bluetooth-camera-intercom-scs-g7/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Tai nghe mũ bảo hiểm intercom kèm camera SCS G7+",
+                    "url": "https://bigbike.vn/product/tai-nghe-bluetooth-camera-intercom-scs-g7/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 6,
+                  "name": "Bộ phụ kiện tai nghe SCS",
+                  "url": "https://bigbike.vn/product/bo-phu-kien-scs/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Bộ phụ kiện tai nghe SCS",
+                    "url": "https://bigbike.vn/product/bo-phu-kien-scs/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 7,
+                  "name": "Tai nghe mũ bảo hiểm intercom SCS S10X",
+                  "url": "https://bigbike.vn/product/tai-nghe-bluetooth-intercom-2-may-scs-s10x/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Tai nghe mũ bảo hiểm intercom SCS S10X",
+                    "url": "https://bigbike.vn/product/tai-nghe-bluetooth-intercom-2-may-scs-s10x/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 8,
+                  "name": "Tai nghe mũ bảo hiểm SCS S9X",
+                  "url": "https://bigbike.vn/product/tai-nghe-scs-s9x-bluetooth-cho-mu-bao-hiem/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Tai nghe mũ bảo hiểm SCS S9X",
+                    "url": "https://bigbike.vn/product/tai-nghe-scs-s9x-bluetooth-cho-mu-bao-hiem/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 9,
+                  "name": "Tai nghe mũ bảo hiểm mesh intercom SCS S13",
+                  "url": "https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s13/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Tai nghe mũ bảo hiểm mesh intercom SCS S13",
+                    "url": "https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s13/"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Tai nghe bluetooth mũ bảo hiểm SCS chọn bản nào theo cách đi?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Đi một mình, chọn SCS S7X hoặc SCS S9X, chỉ nối điện thoại. Đi đôi, lấy bộ đôi SCS S10X. Đi nhóm, chọn SCS S13 hoặc SCS T2 Plus, vào Mesh một chạm. Vừa nói vừa quay, chọn SCS G7+, camera ở mức tích hợp. Chỉ quay: camera rời SCS Cam-S. SCS làm đủ phần cốt lõi: nghe chỉ đường, nghe gọi, nói chuyện nhóm, dễ dùng, pin lâu, chi phí hợp lý."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Bộ đàm gắn mũ bảo hiểm được mấy người, xa bao nhiêu, Mesh khác gì Bluetooth?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Theo công bố SCS: bộ đôi S10X 2 người và 1.000 m, G7+ tới 4 người và 500 m, Mesh tới 10 người và 1.000 m. Bluetooth ghép từng cặp, còn Mesh MST 2.0 cho cả nhóm vào cùng mạng bằng một chạm và tự nối lại khi rớt sóng. Nối chéo hãng khác chỉ một kèm một qua Bluetooth, không vào Mesh. Mesh đầy đủ chỉ khi cả nhóm dùng SCS."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Pin dùng bao lâu, sạc mấy giờ, Bluetooth 5.3 là gì?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Theo công bố SCS, S10X, S13 và T2 Plus dùng bộ đàm khoảng 25 giờ, chờ tới 480 giờ, còn S9X nghe nhạc tới 35 giờ. Cả bốn máy sạc đầy qua USB-C khoảng 2 giờ. S9X và S10X dùng Bluetooth 5.3, riêng S9X nối được hai điện thoại cùng lúc. Bluetooth 5.3 là phiên bản kết nối, không phải số người hay tầm xa."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Lắp cho loại mũ nào, máy nào có thông báo tiếng Việt?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Tai nghe mũ fullface trong dòng này cũng dùng cho mũ 3/4 và mũ lật hàm, loa mỏng đặt vào hốc tai. SCS S9X và SCS S10X báo tiếng Việt lẫn tiếng Anh. SCS S13 và SCS T2 Plus chỉ tiếng Anh và tiếng Trung. Máy đọc trạng thái kết nối và pin, không dịch nội dung nhạc hay cuộc gọi."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Đeo tai nghe khi chạy xe máy có bị phạt không?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Có quy định hạn chế dùng thiết bị âm thanh khi lái xe máy, mức phạt có thể thay đổi. Anh em kiểm tra quy định đang áp dụng. Shop khuyên ghép máy, cài đặt và chỉnh âm lượng trước khi khởi hành. Chỉ trao đổi lúc dừng nghỉ. Không thao tác máy hay app khi đang chạy. Thông tin tham khảo, không thay tư vấn pháp lý."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Tai nghe SCS kháng nước tới đâu, bảo hành và thay loa mic ra sao?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Theo công bố SCS, S9X, S10X, S13 và T2 Plus mang IP67, còn S7X và G7+ xem chỉ số trên tem máy. Máy chính bảo hành 24 tháng, phụ kiện 3 tháng. IP67 không dành cho ngâm nước. Đóng kín nắp USB-C và không xịt nước áp lực trực tiếp, vì máy vào nước do ngâm hoặc hở nắp thường không thuộc bảo hành. Loa, mic, kẹp có bộ phụ kiện thay thế, không gồm máy."
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/en/categories/motorcycle-helmet-intercom/",
+        "status": 200,
+        "intros": 1,
+        "questions": 6,
+        "lang": "en",
+        "schemas": [
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://bigbike.vn/en/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Products",
+                "item": "https://bigbike.vn/en/products/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "BLUETOOTH HELMET INTERCOM",
+                "item": "https://bigbike.vn/en/categories/motorcycle-helmet-intercom/"
+              }
+            ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "BLUETOOTH HELMET INTERCOM",
+            "description": "Genuine SCS Bluetooth helmet intercom headsets in HCMC. Solo units, two-rider sets, mesh groups of ten, and camera versions.",
+            "url": "https://bigbike.vn/en/categories/motorcycle-helmet-intercom/",
+            "inLanguage": "en",
+            "image": [
+              "https://bigbike.vn/media/uploads/42dd44ad-79da-4ff6-b09c-3b9ab357c17a/codex_image_aug_29__2026__03_05_44_pm.png"
+            ],
+            "mainEntity": {
+              "@type": "ItemList",
+              "itemListOrder": "https://schema.org/ItemListOrderAscending",
+              "numberOfItems": 9,
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "SCS Cam-S motorcycle helmet dash cam",
+                  "url": "https://bigbike.vn/en/product/scs-cam-s-motorcycle-helmet-dash-cam/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "SCS Cam-S motorcycle helmet dash cam",
+                    "url": "https://bigbike.vn/en/product/scs-cam-s-motorcycle-helmet-dash-cam/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "SCS T2 Plus motorcycle helmet mesh intercom",
+                  "url": "https://bigbike.vn/en/product/scs-t2-plus-motorcycle-helmet-mesh-intercom/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "SCS T2 Plus motorcycle helmet mesh intercom",
+                    "url": "https://bigbike.vn/en/product/scs-t2-plus-motorcycle-helmet-mesh-intercom/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": "SCS S7X motorcycle helmet Bluetooth headset",
+                  "url": "https://bigbike.vn/en/product/scs-s7x-motorcycle-helmet-bluetooth-headset/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "SCS S7X motorcycle helmet Bluetooth headset",
+                    "url": "https://bigbike.vn/en/product/scs-s7x-motorcycle-helmet-bluetooth-headset/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 4,
+                  "name": "SCS S12 motorcycle helmet intercom with dual camera",
+                  "url": "https://bigbike.vn/en/product/scs-s12-motorcycle-helmet-intercom-dual-camera/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "SCS S12 motorcycle helmet intercom with dual camera",
+                    "url": "https://bigbike.vn/en/product/scs-s12-motorcycle-helmet-intercom-dual-camera/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 5,
+                  "name": "SCS G7+ motorcycle helmet intercom with camera",
+                  "url": "https://bigbike.vn/en/product/scs-g7-plus-motorcycle-helmet-bluetooth-intercom-camera/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "SCS G7+ motorcycle helmet intercom with camera",
+                    "url": "https://bigbike.vn/en/product/scs-g7-plus-motorcycle-helmet-bluetooth-intercom-camera/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 6,
+                  "name": "SCS headset accessories kits",
+                  "url": "https://bigbike.vn/en/product/scs-headset-accessories-kits/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "SCS headset accessories kits",
+                    "url": "https://bigbike.vn/en/product/scs-headset-accessories-kits/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 7,
+                  "name": "SCS S10X motorcycle helmet Bluetooth intercom",
+                  "url": "https://bigbike.vn/en/product/scs-s10x-motorcycle-helmet-bluetooth-intercom/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "SCS S10X motorcycle helmet Bluetooth intercom",
+                    "url": "https://bigbike.vn/en/product/scs-s10x-motorcycle-helmet-bluetooth-intercom/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 8,
+                  "name": "SCS S9X motorcycle helmet bluetooth headset",
+                  "url": "https://bigbike.vn/en/product/scs-s9x-motorcycle-helmet-bluetooth-headset/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "SCS S9X motorcycle helmet bluetooth headset",
+                    "url": "https://bigbike.vn/en/product/scs-s9x-motorcycle-helmet-bluetooth-headset/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 9,
+                  "name": "SCS S13 motorcycle helmet Mesh intercom",
+                  "url": "https://bigbike.vn/en/product/scs-s13-motorcycle-helmet-mesh-intercom/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "SCS S13 motorcycle helmet Mesh intercom",
+                    "url": "https://bigbike.vn/en/product/scs-s13-motorcycle-helmet-mesh-intercom/"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Which SCS setup suits solo riding, a pair, group Mesh, or video?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Solo phone use points to SCS S7X or SCS S9X; neither has intercom. Riding pairs get the complete SCS S10X set. Groups choose SCS S13 or SCS T2 Plus for one-touch Mesh. Conversation plus video points to SCS G7+ at integrated camera quality. SCS Cam-S records video without any intercom."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How many riders, what range, and how does Mesh differ from Bluetooth?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "SCS lists these maximums: 2 riders and 1,000 m for the S10X pair, 4 riders and 500 m for G7+, 10 riders and 1,000 m for Mesh. A mesh intercom puts the whole SCS group on one network and reconnects after a drop. Mixed brands connect only one-to-one over Bluetooth and do not enter Mesh."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What do talk time, standby and Bluetooth 5.3 mean?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "SCS lists about 25 hours talk time and 480 hours standby for S10X, S13 and T2 Plus. SCS S9X is rated for up to 35 hours of music. All four charge fully over USB-C in roughly 2 hours. SCS S9X and SCS S10X use Bluetooth 5.3, with dual-phone pairing on the solo model."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which helmets fit, and which units have Vietnamese voice prompts?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "SCS units fit full face, open face and modular helmets. Thin speakers sit in the helmet’s speaker pockets, and the control unit stays outside the shell. Every unit has English voice prompts. Vietnamese appears only on SCS S9X and SCS S10X, while SCS S13 and SCS T2 Plus also offer Chinese. Prompts report connection and battery status only."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I use a helmet intercom while riding in Vietnam?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Vietnam restricts some uses of audio devices while operating a motorcycle, and the applicable penalty can change. Check the rule in force before riding. This is general information, not legal advice. Pair the helmet intercom and set its volume before moving. Use group talk at rest stops, without touching the unit or app on the road."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What does IP67 cover, and can I replace a speaker or microphone?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "SCS lists IP67 water resistance for S9X, S10X, S13, and T2 Plus; check the unit label on S7X and G7+. Main units carry 24 months, accessories 3 months. IP67 does not permit submersion. Keep the USB-C cover closed and avoid direct high-pressure spray. Replacement speakers, microphones and clips are sold as an accessory kit without the main unit."
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/en/categories/full-face-helmets/",
+        "status": 200,
+        "intros": 1,
+        "questions": 6,
+        "lang": "en",
+        "schemas": [
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Home",
+                "item": "https://bigbike.vn/en/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Products",
+                "item": "https://bigbike.vn/en/products/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 3,
+                "name": "MOTORCYCLE HELMETS",
+                "item": "https://bigbike.vn/en/categories/motorcycle-helmets/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 4,
+                "name": "FULLFACE HELMET",
+                "item": "https://bigbike.vn/en/categories/full-face-helmets/"
+              }
+            ]
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "FULLFACE HELMET",
+            "description": "Genuine AGV, Caberg, NIC, ILM and LS2 full face helmets in Ho Chi Minh City. Weighed with shields, fitted in-store, ECE 22.06 and DOT labels checked.",
+            "url": "https://bigbike.vn/en/categories/full-face-helmets/",
+            "inLanguage": "en",
+            "image": [
+              "https://bigbike.vn/media/uploads/9e11d5f4-81a0-498d-9beb-9ec4b3ed8d8f/mu_bao_hiem_fullface.jpg"
+            ],
+            "mainEntity": {
+              "@type": "ItemList",
+              "itemListOrder": "https://schema.org/ItemListOrderAscending",
+              "numberOfItems": 11,
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Caberg Drift Evo II Carbon full face helmet",
+                  "url": "https://bigbike.vn/en/product/caberg-drift-evo-ii-carbon/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Caberg Drift Evo II Carbon full face helmet",
+                    "url": "https://bigbike.vn/en/product/caberg-drift-evo-ii-carbon/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "AGV K3 full face helmet",
+                  "url": "https://bigbike.vn/en/product/agv-k3-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "AGV K3 full face helmet",
+                    "url": "https://bigbike.vn/en/product/agv-k3-full-face-helmet/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 3,
+                  "name": "AGV K1S full face helmet",
+                  "url": "https://bigbike.vn/en/product/agv-k1s-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "AGV K1S full face helmet",
+                    "url": "https://bigbike.vn/en/product/agv-k1s-full-face-helmet/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 4,
+                  "name": "ILM MF510 Racing full face helmet",
+                  "url": "https://bigbike.vn/en/product/ilm-mf510-racing-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "ILM MF510 Racing full face helmet",
+                    "url": "https://bigbike.vn/en/product/ilm-mf510-racing-full-face-helmet/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 5,
+                  "name": "ILM Z503 retro full face helmet",
+                  "url": "https://bigbike.vn/en/product/ilm-z503-retro-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "ILM Z503 retro full face helmet",
+                    "url": "https://bigbike.vn/en/product/ilm-z503-retro-full-face-helmet/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 6,
+                  "name": "ILM MF509 full face helmet",
+                  "url": "https://bigbike.vn/en/product/ilm-mf509-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "ILM MF509 full face helmet",
+                    "url": "https://bigbike.vn/en/product/ilm-mf509-full-face-helmet/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 7,
+                  "name": "NIC N01F full face helmet",
+                  "url": "https://bigbike.vn/en/product/nic-n01f-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "NIC N01F full face helmet",
+                    "url": "https://bigbike.vn/en/product/nic-n01f-full-face-helmet/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 8,
+                  "name": "NIC N02 full face helmet",
+                  "url": "https://bigbike.vn/en/product/nic-n02-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "NIC N02 full face helmet",
+                    "url": "https://bigbike.vn/en/product/nic-n02-full-face-helmet/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 9,
+                  "name": "NIC N01 full face helmet",
+                  "url": "https://bigbike.vn/en/product/nic-n01-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "NIC N01 full face helmet",
+                    "url": "https://bigbike.vn/en/product/nic-n01-full-face-helmet/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 10,
+                  "name": "Caberg Avalon X full face helmet",
+                  "url": "https://bigbike.vn/en/product/caberg-avalon-x-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "Caberg Avalon X full face helmet",
+                    "url": "https://bigbike.vn/en/product/caberg-avalon-x-full-face-helmet/"
+                  }
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 11,
+                  "name": "LS2 FF800 Storm full face helmet",
+                  "url": "https://bigbike.vn/en/product/ls2-ff800-storm-full-face-helmet/",
+                  "item": {
+                    "@type": "Product",
+                    "name": "LS2 FF800 Storm full face helmet",
+                    "url": "https://bigbike.vn/en/product/ls2-ff800-storm-full-face-helmet/"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "How much did the sampled helmets weigh with their face shields?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "BigBike weighed the helmets with their face shields: Caberg Drift Evo II Carbon gloss-black L 1,476g, AGV K1S L 1,554g, and NIC N01F M 1,305g. NIC N02 S came to 1,252g and is aimed at women or men with smaller heads. Do not rank models by these figures because the sampled sizes differ. Weight does not reveal pressure points, so an in-store fitting still decides the fit."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which head shapes suit Western riders, women and riders with smaller heads?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Western riders often have intermediate oval heads. Drift and AGV K1S Asian Fit share that shape. K3 and ILM MF510 follow it. Avalon X and NIC N01 are round oval. During an in-store try-on, NIC N02 size S was far too tight on a 57 cm head, so women and men with smaller heads still need to test it. A full face helmet reduces head and chin injury; it does not remove the risk."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which certification labels are on these helmets, and where?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "AGV K3 and NIC N01F carry ECE 22.06 on their rear labels, while the AGV box also shows QCVN 2:2021/BKHCN. Caberg Avalon X prints ECE 22.06 on the face shield label and has QUATEST 3 at the rear. NIC N01 carries DOT and QUATEST 2, not ECE. ILM MF510 and MF509 carry both DOT and ECE 22.06 on the rear label. QUATEST is the Vietnam certification mark. Ask the shop to show the LS2 FF800 label before buying."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which face shield and Pinlock setups come with these helmets?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Pinlock contents vary by model. Drift has its Pinlock insert fitted, while MF509 includes an insert in the box. NIC N02 ships with a photochromic shield, N01F offers one in larger sizes, and neither has a drop-down sun visor or a Pinlock insert. NIC N01 also omits the insert. Avalon X and ILM MF509 use a drop-down sun visor. Choose by the shield setup you will use, since box contents differ."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can prescription-glasses wearers use the eyeglass channels?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "K3 combines an eyeglass channel with cheek pads in different thicknesses, while AGV K1S Asian Fit has the same channel through its comfort liner. The channels avoid prying the cheek pads apart. Frame width remains the limit, especially around the temples. Different pad thicknesses let the shop correct uneven cheek pressure without replacing the whole helmet. Bring the glasses used most often for an in-store check."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which liners come out for washing, and what warranty applies?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "ILM MF510 and ILM Z503 have a removable liner for cleaning. The AGV box label gives 60 months, provided the QR code is activated within 30 days of purchase. Caberg and NIC carry 24 months, while ILM carries 12 months. Ask the shop for the LS2 term by model. Terms differ by brand."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "review": [
+      {
+        "path": "/danh-gia/",
+        "status": 200,
+        "aliasRetained": true,
+        "utmPreserved": true,
+        "oneEvent": true,
+        "redirected": true
+      },
+      {
+        "path": "/review/",
+        "status": 200,
+        "aliasRetained": true,
+        "utmPreserved": true,
+        "oneEvent": true,
+        "redirected": true
+      }
+    ],
+    "telemetryDelivery": "intercepted; not account receipt",
+    "measurements": [
+      {
+        "event": "review_link_open",
+        "measurementId": "G-REZM4NT0CS",
+        "pageLocation": "https://bigbike.vn/danh-gia/?utm_source=qr&utm_medium=offline&utm_campaign=qr-danh-gia",
+        "requestedTransport": "beacon",
+        "actualResourceType": "fetch",
+        "method": "POST"
+      },
+      {
+        "event": "review_link_open",
+        "measurementId": "G-REZM4NT0CS",
+        "pageLocation": "https://bigbike.vn/review/?utm_source=qr&utm_medium=offline&utm_campaign=qr-danh-gia",
+        "requestedTransport": "beacon",
+        "actualResourceType": "fetch",
+        "method": "POST"
+      }
+    ],
+    "cloudflare": [
+      {
+        "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+        "status": 200
+      },
+      {
+        "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+        "status": 200
+      },
+      {
+        "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+        "status": 200
+      },
+      {
+        "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+        "status": 200
+      },
+      {
+        "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+        "status": 200
+      },
+      {
+        "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+        "status": 200
+      },
+      {
+        "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+        "status": 200
+      },
+      {
+        "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+        "status": 200
+      },
+      {
+        "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+        "status": 200
+      }
+    ],
+    "pageErrors": [],
+    "cspErrors": [],
+    "passed": true
+  },
+  "publicNoscript": {
+    "passed": true,
+    "base": "https://bigbike.vn",
+    "javaScriptEnabled": false,
+    "automaticRefresh": true,
+    "manualLink": true,
+    "arrivals": 2
+  },
+  "startupRevalidationHttpStatus": 200,
+  "candidateRemoved": true,
+  "committed": false,
+  "pushed": false,
+  "limits": [
+    "Physical Safari/Android and Zalo/Messenger not tested",
+    "GA4/Meta account receipt and processed attribution not verified; test telemetry intercepted",
+    "NEXT_PUBLIC_CLARITY_PROJECT_ID remains blank as before release",
+    "Server log includes oversized article-cache warnings and generic-route NoFallbackError; source URL not identified. No failing acceptance URL or page/CSP error reproduced. No unrelated code change made."
+  ]
+}

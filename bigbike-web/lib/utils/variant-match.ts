@@ -38,8 +38,8 @@ export function isColorAttribute(name: string): boolean {
 
 /** Share recognized color/size identities across dictionary and legacy bilingual labels. */
 export function normalizeAttributeName(name: string): string {
-  if (isColorAttribute(name)) return "color";
   const normalized = normalizeValue(name);
+  if (COLOR_ATTRIBUTE_KEYS.has(normalized)) return "color";
   return SIZE_ATTRIBUTE_KEYS.has(normalized) ? "size" : normalized;
 }
 

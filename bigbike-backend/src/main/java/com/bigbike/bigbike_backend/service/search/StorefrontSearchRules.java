@@ -6,6 +6,8 @@ import com.bigbike.bigbike_backend.domain.catalog.ProductVariantOption;
 import com.bigbike.bigbike_backend.repository.catalog.ProductSearchTerms;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -161,7 +163,13 @@ public final class StorefrontSearchRules {
 
     public static Comparator<Product> relevanceComparator(String query) {
         List<String> terms = productTerms(query);
-        return Comparator.comparing((Product product) -> matchProduct(product, terms), ProductMatch.ORDER)
+        // One score per product for this sort. Ranking expands every variant/option and
+        // normalizes every field; recomputing it on each comparison makes that O(n log n).
+        // Identity keys avoid hashing the full product graph. The synchronized wrapper keeps
+        // this comparator safe if an internal caller later uses a parallel stream.
+        Map<Product, ProductMatch> matches = Collections.synchronizedMap(new IdentityHashMap<>());
+        return Comparator.comparing((Product product) ->
+                        matches.computeIfAbsent(product, candidate -> matchProduct(candidate, terms)), ProductMatch.ORDER)
                 .thenComparing(product -> product.stockState() != ProductStockState.IN_STOCK)
                 .thenComparing(Product::createdAt, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(Product::id, Comparator.nullsLast(String::compareTo));

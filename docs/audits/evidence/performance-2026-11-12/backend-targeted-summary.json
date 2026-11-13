@@ -1,0 +1,51 @@
+[
+  {
+    "name": "com.bigbike.bigbike_backend.service.catalog.CatalogVisualFacetCatalogTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "com.bigbike.bigbike_backend.service.admin.AdminMediaServiceUploadTest",
+    "tests": "3",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "com.bigbike.bigbike_backend.service.catalog.CatalogVisualLabelLocalizerTest",
+    "tests": "2",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "com.bigbike.bigbike_backend.service.media.ImageCompressionServiceTest",
+    "tests": "10",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "com.bigbike.bigbike_backend.service.catalog.CatalogColorAccessibilityLabelServiceTest",
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "com.bigbike.bigbike_backend.service.admin.ImageVariantServiceTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "com.bigbike.bigbike_backend.service.catalog.CatalogColorAccessibilityLabelServicePostgresTest",
+    "tests": "4",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  }
+]

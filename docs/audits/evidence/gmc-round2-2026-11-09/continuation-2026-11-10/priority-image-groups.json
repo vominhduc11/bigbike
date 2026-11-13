@@ -1,0 +1,290 @@
+{
+  "OF610": {
+    "skus": [
+      "LS2-OF610-2-DEN-XSS",
+      "LS2-OF610-2-DEN-ML",
+      "LS2-OF610-2-DEN-XL2XL",
+      "LS2-OF610-2-TRANG2-XSS1590000",
+      "LS2-OF610-2-TRANG2-ML",
+      "LS2-OF610-2-TRANG2-XL2XL",
+      "LS2-OF610-2-XAM2-XSS",
+      "LS2-OF610-2-XAM2-ML",
+      "LS2-OF610-2-XAM2-XL2XL",
+      "LS2-OF610-DEN",
+      "LS2-OF610-GUONG",
+      "LS2-OF610-TRANG2"
+    ],
+    "images": [
+      {
+        "url": "https://bigbike.vn/media/migration/wordpress/09/0969b259da9afd18d503f01388f306bb0c85f8491466cf3e22e7d182becd79c9/z7100657511766_3f1d6c0632d5637931df4e8e3e1b0233.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 12202,
+        "contentType": "image/jpeg",
+        "width": 600,
+        "height": 600,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": false,
+        "seconds": 0.246
+      },
+      {
+        "url": "https://bigbike.vn/media/migration/wordpress/2e/2e7f8bb7da822618375f340a62efce2dc105f659b123002efa0b3cc4b0617a60/OF610-Gloss-Black-400x400-1.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 10969,
+        "contentType": "image/jpeg",
+        "width": 400,
+        "height": 400,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": true,
+        "seconds": 0.861
+      },
+      {
+        "url": "https://bigbike.vn/media/migration/wordpress/34/3470d4a76e029823ac0c85746f75899dccb3e924ad04a2415bbb2726864cf201/z7100657613933_304d11f32355d028087846a56cc8daa5.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 21536,
+        "contentType": "image/jpeg",
+        "width": 600,
+        "height": 600,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": false,
+        "seconds": 0.347
+      },
+      {
+        "url": "https://bigbike.vn/media/migration/wordpress/68/689d0bf1061554dc71a7b1820ff42ee5f024725a5965eb92719b1a7ea52b0c7f/OF610-Nardo-400x400-1.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 11031,
+        "contentType": "image/jpeg",
+        "width": 400,
+        "height": 400,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": true,
+        "seconds": 0.288
+      },
+      {
+        "url": "https://bigbike.vn/media/migration/wordpress/7f/7f4ad9b489a6e1e045bf95788bad20a4ff3408798d77b8b8226505d879d43ad0/z7100657469630_32ecabac84d028a2baef841418412c31.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 6301,
+        "contentType": "image/jpeg",
+        "width": 600,
+        "height": 600,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": false,
+        "seconds": 0.332
+      },
+      {
+        "url": "https://bigbike.vn/media/migration/wordpress/f8/f83c86de4285eaaf08c84db4a6916af680b55faf1a9d9c2215c65215ad4a047d/OF610-Gloss-White-400x400-1.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 10659,
+        "contentType": "image/jpeg",
+        "width": 400,
+        "height": 400,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": true,
+        "seconds": 1.142
+      }
+    ]
+  },
+  "OF616": {
+    "skus": [
+      "LS2-OF616-XANHLA-XL"
+    ],
+    "images": [
+      {
+        "url": "https://bigbike.vn/media/migration/wordpress/cf/cf05e32a25c64158edf810d861a9d29ee6b20592eb1af9e514fb9bf638debca3/OF616-BRUSH-Gloss-Black-H-V-Yellow-400x400-1.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 11765,
+        "contentType": "image/jpeg",
+        "width": 400,
+        "height": 400,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": true,
+        "seconds": 0.858
+      }
+    ]
+  },
+  "OF626": {
+    "skus": [
+      "LS2 OF626-GLOSSBLACK-L",
+      "LS2 OF626-GLOSSBLACK-XXL",
+      "LS2 OF626-JUZHENBLACKRED-L",
+      "LS2 OF626-JUZHENBLACKRED-XXL"
+    ],
+    "images": [
+      {
+        "url": "https://bigbike.vn/media/uploads/41ffe9b8-b3bb-45f5-a80f-b306c3be8d5e/30420.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 406816,
+        "contentType": "image/jpeg",
+        "width": 1000,
+        "height": 1000,
+        "format": "JPEG",
+        "under800": false,
+        "thumbnailName": false,
+        "seconds": 0.913
+      },
+      {
+        "url": "https://bigbike.vn/media/uploads/efd5e4ea-7576-4dfc-a759-e55a441536aa/l.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 13875,
+        "contentType": "image/jpeg",
+        "width": 447,
+        "height": 447,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": false,
+        "seconds": 0.494
+      }
+    ]
+  },
+  "GK257": {
+    "skus": [
+      "GT-KOM-GK257-BK-M",
+      "GT-KOM-GK257-BK-L",
+      "GT-KOM-GK257-BK-XL",
+      "GT-KOM-GK257-BK-2XL",
+      "GT-KOM-GK257-BK-3XL"
+    ],
+    "images": [
+      {
+        "url": "https://bigbike.vn/media/uploads/2ba44eab-63ad-4a66-8590-de577067c58d/images.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 17382,
+        "contentType": "image/jpeg",
+        "width": 447,
+        "height": 447,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": false,
+        "seconds": 0.737
+      }
+    ]
+  },
+  "GRT729": {
+    "skus": [
+      "TUIX-GIVI-GRT729"
+    ],
+    "images": [
+      {
+        "url": "https://bigbike.vn/media/uploads/28fb80b7-1722-4c4e-b0ea-fcf7086440bd/grt729_components.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 218108,
+        "contentType": "image/jpeg",
+        "width": 1000,
+        "height": 1000,
+        "format": "JPEG",
+        "under800": false,
+        "thumbnailName": false,
+        "seconds": 0.469
+      }
+    ]
+  },
+  "FF808": {
+    "skus": [
+      "MFF-LS2-FF808-DEN-M",
+      "MFF-LS2-FF808-TRANG-M",
+      "MFF-LS2-FF808-XAM-M",
+      "MFF-LS2-FF808-DEN-L",
+      "MFF-LS2-FF808-TRANG-L",
+      "MFF-LS2-FF808-XAM-L",
+      "MFF-LS2-FF808-DEN-XL",
+      "MFF-LS2-FF808-TRANG-XL",
+      "MFF-LS2-FF808-XAM-XL",
+      "MFF-LS2-FF808-DEN-XXL",
+      "MFF-LS2-FF808-TRANG-XXL",
+      "MFF-LS2-FF808-XAM-XXL",
+      "MFF-LS2-FF808-DEN-XXXL",
+      "MFF-LS2-FF808-TRANG-XXXL",
+      "MFF-LS2-FF808-XAM-XXXL"
+    ],
+    "images": [
+      {
+        "url": "https://bigbike.vn/media/uploads/68d66378-4f5a-4b95-8609-1b49fd2720b4/mu-bao-hiem-ls2-of-808-mau-xam.png",
+        "errors": [],
+        "status": 200,
+        "bytes": 1943697,
+        "contentType": "image/png",
+        "width": 1254,
+        "height": 1254,
+        "format": "PNG",
+        "under800": false,
+        "thumbnailName": false,
+        "transparent": false,
+        "seconds": 1.026
+      },
+      {
+        "url": "https://bigbike.vn/media/uploads/776fc3da-aa88-4e0f-872f-33e58b4d08a6/mu-bao-hiem-ls2-of-808-mau-den.png",
+        "errors": [],
+        "status": 200,
+        "bytes": 1712721,
+        "contentType": "image/png",
+        "width": 1254,
+        "height": 1254,
+        "format": "PNG",
+        "under800": false,
+        "thumbnailName": false,
+        "transparent": false,
+        "seconds": 0.825
+      },
+      {
+        "url": "https://bigbike.vn/media/uploads/fca8b73b-9ab8-4482-819f-da95d8bd9f7f/mu-bao-hiem-ls2-of-808-mau-trang.png",
+        "errors": [],
+        "status": 200,
+        "bytes": 1792652,
+        "contentType": "image/png",
+        "width": 1254,
+        "height": 1254,
+        "format": "PNG",
+        "under800": false,
+        "thumbnailName": false,
+        "transparent": false,
+        "seconds": 1.235
+      }
+    ]
+  },
+  "BK088-XAM2": {
+    "skus": [
+      "BK088-XAM2-38",
+      "BK088-XAM2-37",
+      "BK088-XAM2-36",
+      "BK088-XAM2-39",
+      "BK088-XAM2-40",
+      "BK088-XAM2-41",
+      "BK088-XAM2-42",
+      "BK088-XAM2-43",
+      "BK088-XAM2-44",
+      "BK088-XAM2-45"
+    ],
+    "images": [
+      {
+        "url": "https://bigbike.vn/media/migration/wordpress/16/16cbf1cefa087afea577f335b74460d6e126b8031ee3e2bd2db4da93dee946dd/giay-bao-ve-komine-bk0889-300x300-1.jpg",
+        "errors": [],
+        "status": 200,
+        "bytes": 5190,
+        "contentType": "image/jpeg",
+        "width": 300,
+        "height": 300,
+        "format": "JPEG",
+        "under800": true,
+        "thumbnailName": true,
+        "seconds": 0.358
+      }
+    ]
+  }
+}

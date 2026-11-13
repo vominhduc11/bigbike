@@ -1,0 +1,62 @@
+{
+  "reviewed_at_utc": "2026-11-13T13:29:05.130026+00:00",
+  "scope": "Source-only review of integrated isolated-CI/browser orchestration. No browser, Docker workload, benchmark, remote workflow or runtime acceptance executed by this review.",
+  "reviewer": "frontend_media agent",
+  "independence": "Independent from Lead implementation for browser/run_ci/compose/proxy/launcher; admin_smoke.py was authored by this reviewer and this pass is self-review of that helper.",
+  "source_identities": [
+    {
+      "path": "scripts/performance/browser.cjs",
+      "sha256": "65920c7635b04230c2f95432124dbb7d9781608a90addd5b9f1675f95f2ec559"
+    },
+    {
+      "path": "scripts/performance/run_ci.py",
+      "sha256": "023f501cac65dbc2329d0b3443f2bcd344f5508025b2ca1ffd974fd8d94cc1a5"
+    },
+    {
+      "path": "scripts/performance/compose.ci.yml",
+      "sha256": "d9b06c93e07a503f5306455c750800395f0fa2cd00190ea4adef1370fd643711"
+    },
+    {
+      "path": "scripts/performance/api.ci.conf",
+      "sha256": "ed704be5e1c7f1595d342105a73a550cdac707a29a08e415ccd38e2e88853c80"
+    },
+    {
+      "path": "scripts/performance/admin_smoke.py",
+      "sha256": "d8469b7f179fb78dc9f5f3b099713f59c08ff4b3318fc78a3d15c98a6d75cbc8"
+    },
+    {
+      "path": "scripts/performance/Dockerfile.web",
+      "sha256": "c383d2c4c748bb30b1908222a291e8fae7cef6b2befe2203ade515f9c2900fb0"
+    },
+    {
+      "path": "scripts/performance/launch-web.cjs",
+      "sha256": "a771a398c32e187e64bc888eb51fedbc2dd04bec09a35e1330ff24cb82f6f2ff"
+    }
+  ],
+  "previous_findings_resolved_in_inspected_source": [
+    "Admin routes now use actual /admin paths",
+    "Rotated refresh cookie carried across viewport contexts",
+    "Admin requires successful endpoint response and actual ScreenHeader/screen content",
+    "Search uses real SearchPageForm and URL query state",
+    "Browser fills real checkout selects/confirmation, checks checkout response and real confirmation URL",
+    "Representative home/PDP image load explicitly checked",
+    "CLS starts session at first shift; unsupported LCP/CLS remain null, observers independent",
+    "Sanitized progress identifies surface/step on partial failure",
+    "Existing Admin smoke runs through the mature cookie/quality fixture and gates missing/skipped/failed tests",
+    "Separate scoped coarse edge budgets and dynamic Docker DNS are present for all three exposed application ports",
+    "Node22/glibc lab runtime and nested/flat standalone entrypoint handled explicitly",
+    "Local API/image/script/stylesheet/font/media requestfailed events now count and fail the browser gate without storing raw URLs/errors",
+    "ERR_ABORTED navigation cancellations are counted separately; intentionally blocked external requests remain separately counted",
+    "Local or unlocated console errors now count and fail the gate; external-origin console errors are separately counted"
+  ],
+  "remaining_findings": [],
+  "concrete_app_selector_or_contract_blockers_found": [],
+  "unchanged_limits": [
+    "No variant interaction: seeded catalog products are simple",
+    "Existing Admin smoke desktop only and omits discontinued-products route",
+    "No claim of all-screen CRUD, bulk/report, account lifecycle, field INP or production capacity",
+    "Actual remote workflow execution still required; source review cannot certify images/proxies/CORS/DNS/runtime data compatibility"
+  ],
+  "last_followup_scope": "Re-read exact added browser requestfailed/console listeners and final persisted counters/failure gate. No test/build/browser/remote command run; other source identities refreshed without expanding previous review scope.",
+  "conclusion": "No remaining concrete source blocker identified in the reviewed workload. This is not a runtime pass or whole-system performance acceptance."
+}

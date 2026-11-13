@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-10T00:41:56.174Z",
+  "sourceImage": "sha256:f8c00411746da82a697d434204c8447840fc3796ee3d53ff6bf4fc8310580196",
+  "isolated": true,
+  "productionInterrupted": false,
+  "tests": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "status": 200,
+      "fallbackBeforeSnapshotLocked": true,
+      "liveSnapshotUnlocks": true
+    }
+  ],
+  "errors": [
+    "TimeoutError: page.waitForFunction: Timeout 20000ms exceeded."
+  ],
+  "ok": false
+}

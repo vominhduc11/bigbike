@@ -11,6 +11,8 @@ import {
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getStoreHours, isStoreOpenAt } from "@/lib/content/store-hours";
 import { Container } from "@/components/layout/Container";
 import { telHref } from "@/lib/utils/format";
 import { SOCIAL_LINK_LABELS } from "@/lib/content/social-links";
@@ -272,51 +274,51 @@ export function ContactMap({ contact }: { contact: ContactInfo }) {
   const locale = useLocale();
   const vi = locale === "vi";
   const { main: mainAddr } = getAddressParts(contact.address || "");
-  const mapUrl = contact.address
-    ? `https://www.google.com/maps?q=${encodeURIComponent(contact.address)}&z=17&output=embed`
-    : "";
-
-  if (!mapUrl) return null;
+  const mapUrl = "https://maps.google.com/maps?cid=10172478217895770333&output=embed";
 
   return (
-    <div data-bb-full-bleed className="relative mb-7.5 h-105 w-full overflow-hidden bg-secondary">
-      <iframe
-        src={mapUrl}
-        title={vi ? "Bản đồ vị trí Shop Bảo Hộ Bigbike.vn" : "BigBike store location map"}
-        className="block h-full w-full border-0"
-        allowFullScreen
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-      />
-      <div className="pointer-events-none absolute inset-0">
-        <Container className="relative h-full">
-          {mainAddr && (
-            <div className="pointer-events-auto absolute right-4 top-18 z-[var(--bb-z-overlay)] flex max-w-[min(270px,calc(100%_-_32px))] items-center gap-2.5 border border-border bg-background px-3 py-2 shadow-md md:right-0">
-              <span className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-brand">
-                <MapPin size={16} color={COLORS.inverse} />
-              </span>
-              <span>
-                <span className="block font-cta text-b5-label font-semibold uppercase tracking-wide text-muted-foreground">
-                  {vi ? "Cửa hàng chính" : "Main store"}
+    <div data-bb-full-bleed className="mb-8">
+      <div className="relative h-105 w-full overflow-hidden bg-secondary">
+        <iframe
+          src={mapUrl}
+          title={vi ? "Bản đồ vị trí Shop Bảo Hộ Bigbike.vn" : "BigBike store location map"}
+          className="block h-full w-full border-0"
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+        <div className="pointer-events-none absolute inset-0">
+          <Container className="relative h-full">
+            {mainAddr && (
+              <div className="pointer-events-auto absolute right-4 top-18 z-[var(--bb-z-overlay)] flex max-w-[min(270px,calc(100%_-_32px))] items-center gap-2.5 border border-border bg-background px-3 py-2 shadow-md md:right-0">
+                <span className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-brand">
+                  <MapPin size={16} color={COLORS.inverse} />
                 </span>
-                <strong className="block font-body text-a5-meta font-bold leading-body text-foreground">
-                  {mainAddr}
-                </strong>
-              </span>
-            </div>
-          )}
+                <span>
+                  <span className="block font-cta text-b5-label font-semibold uppercase tracking-wide text-muted-foreground">
+                    {vi ? "Cửa hàng chính" : "Main store"}
+                  </span>
+                  <strong className="block font-body text-a5-meta font-bold leading-body text-foreground">
+                    {mainAddr}
+                  </strong>
+                </span>
+              </div>
+            )}
+          </Container>
+        </div>
+      </div>
+      <Container className="mt-4 flex justify-end">
+        <Button asChild>
           <a
-            href={`https://maps.google.com/?q=${encodeURIComponent(contact.address)}`}
+            href="https://www.google.com/maps/dir/?api=1&destination=Shop+Bigbike&destination_place_id=ChIJeXyMi5UudTER3XgTBwvnK40"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={vi ? "Mở Google Maps" : "Open in Google Maps"}
-            className="pointer-events-auto absolute bottom-4 right-4 flex items-center gap-1.5 bg-brand px-3 py-2 text-a5-meta font-bold text-white no-underline shadow-md md:right-0"
           >
-            <ExternalLink size={13} color={COLORS.inverse} />
-            <span>{vi ? "Xem trên Maps" : "Open in Maps"}</span>
+            <ExternalLink size={16} aria-hidden="true" />
+            {vi ? "Chỉ đường" : "Directions"}
           </a>
-        </Container>
-      </div>
+        </Button>
+      </Container>
     </div>
   );
 }
@@ -332,14 +334,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
       setMounted(true);
     });
     const checkOpenStatus = () => {
-      const vnTime = getVietnamTime();
-      const day = vnTime.getDay();
-      const timeValue = vnTime.getHours() * 100 + vnTime.getMinutes();
-      if (day === 0) {
-        setIsOpenNow(timeValue >= 900 && timeValue < 1800);
-      } else {
-        setIsOpenNow(timeValue >= 900 && timeValue < 2100);
-      }
+      setIsOpenNow(isStoreOpenAt(getVietnamTime()));
     };
     checkOpenStatus();
     const interval = setInterval(checkOpenStatus, 60000);
@@ -354,7 +349,7 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
   const { main: mainAddr, sub: subAddr } = getAddressParts(contact.address || "");
   const zaloPhone = getZaloDisplayPhone(contact.zaloUrl || "");
 
-  const hasHours = contact.hoursWeekday || contact.hoursWeekend || contact.hoursHoliday;
+  const hours = getStoreHours(locale);
 
   const stats = [
     { value: "11+", label: vi ? "Năm hoạt động" : "Years active" },
@@ -378,79 +373,52 @@ export function ContactPageContent({ contact }: { contact: ContactInfo }) {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             {/* Giờ làm việc */}
-            {hasHours && (
-              <InfoRow
-                icon={<Clock size={16} color={COLORS.red} />}
-                label={vi ? "Giờ làm việc" : "Opening hours"}
+            <InfoRow
+              icon={<Clock size={16} color={COLORS.red} />}
+              label={vi ? "Giờ làm việc" : "Opening hours"}
+            >
+              <div
+                data-contact-hours
+                className="grid gap-1 text-a4-content font-bold text-foreground"
               >
+                {Object.values(hours).map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+              {/* Badge mở/đóng cửa — chỉ render sau mount (tránh hydration mismatch) */}
+              {mounted && (
                 <div
-                  className="text-a4-content"
+                  className="font-cta text-b5-label uppercase tracking-wide"
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "auto 1fr",
-                    gap: "4px 16px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 10,
+                    padding: "3px 10px",
+                    fontWeight: 700,
+                    background: isOpenNow ? COLORS.successBg : COLORS.dangerBg,
+                    color: isOpenNow ? COLORS.successText : COLORS.red,
                   }}
                 >
-                  {contact.hoursWeekday && (
-                    <>
-                      <span style={{ color: COLORS.muted }}>{vi ? "T2 – T7" : "Mon – Sat"}</span>
-                      <span style={{ color: COLORS.text, fontWeight: 700 }}>
-                        {contact.hoursWeekday}
-                      </span>
-                    </>
-                  )}
-                  {contact.hoursWeekend && (
-                    <>
-                      <span style={{ color: COLORS.muted }}>{vi ? "Chủ nhật" : "Sunday"}</span>
-                      <span style={{ color: COLORS.text, fontWeight: 700 }}>
-                        {contact.hoursWeekend}
-                      </span>
-                    </>
-                  )}
-                  {contact.hoursHoliday && (
-                    <>
-                      <span style={{ color: COLORS.muted }}>{vi ? "Lễ / Tết" : "Holidays"}</span>
-                      <span style={{ color: COLORS.text, fontWeight: 700 }}>
-                        {contact.hoursHoliday}
-                      </span>
-                    </>
-                  )}
-                </div>
-                {/* Badge mở/đóng cửa — chỉ render sau mount (tránh hydration mismatch) */}
-                {mounted && (
-                  <div
-                    className="font-cta text-b5-label uppercase tracking-wide"
+                  <span
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      marginTop: 10,
-                      padding: "3px 10px",
-                      fontWeight: 700,
-                      background: isOpenNow ? COLORS.successBg : COLORS.dangerBg,
-                      color: isOpenNow ? COLORS.successText : COLORS.red,
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: isOpenNow ? COLORS.successText : COLORS.red,
+                      display: "inline-block",
                     }}
-                  >
-                    <span
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: "50%",
-                        background: isOpenNow ? COLORS.successText : COLORS.red,
-                        display: "inline-block",
-                      }}
-                    />
-                    {isOpenNow
-                      ? vi
-                        ? "Đang mở cửa"
-                        : "Open now"
-                      : vi
-                        ? "Đang đóng cửa"
-                        : "Closed now"}
-                  </div>
-                )}
-              </InfoRow>
-            )}
+                  />
+                  {isOpenNow
+                    ? vi
+                      ? "Đang mở cửa"
+                      : "Open now"
+                    : vi
+                      ? "Đang đóng cửa"
+                      : "Closed now"}
+                </div>
+              )}
+            </InfoRow>
 
             {/* Địa chỉ */}
             {contact.address && (

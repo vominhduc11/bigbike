@@ -1,0 +1,17 @@
+{
+  "tests": "5",
+  "failures": "0",
+  "errors": "0",
+  "skipped": "0",
+  "time": "3.852",
+  "cases": [
+    "equalNamesAlwaysKeepAscendingIdsEvenWhenDescending",
+    "simultaneousRequestsUseIndependentSortKeys",
+    "preservesVietnameseCaseAndCanonicalEquivalentOrderBothDirectionsAcrossPages",
+    "keepsAllRepositoryFilterArgumentsAndEnglishProjection",
+    "homepageFilteringKeepsExactTotalsBeforePaging"
+  ],
+  "command": "MAVEN_OPTS=-Xmx768m JAVA_TOOL_OPTIONS=-Xmx1024m ./mvnw -B -Dtest=AdminCatalogReadServiceNameSortTest -DforkCount=1 test",
+  "exit_code": 0,
+  "candidate_source_sha256": "19e53a69f99b74bda01dd6c08fe78517c5430b8f0af5324ac4882e1fc464bd79"
+}

@@ -14,13 +14,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class PasswordService {
 
-    // Argon2id with OWASP-recommended parameters (memory=65536KB, iterations=3, parallelism=4)
+    // Retain the existing Argon2id policy for real and dummy verification alike.
     private static final Argon2PasswordEncoder ENCODER =
             Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
 
-    // Dummy hash for timing-safe "user not found" checks — prevents user enumeration.
+    // Generate once with the same encoder/cost as newly stored account hashes.
+    // This public sentinel is only for timing work, never an account credential.
     private static final String TIMING_DUMMY_HASH =
-            "$argon2id$v=19$m=65536,t=3,p=4$dummysaltdummysalt$dummyhashvaluedummyhashvaluedummy";
+            ENCODER.encode("BigBike timing sentinel, never an account credential");
 
     // PHPass base64 alphabet (different from standard base64)
     private static final String PHPASS_ITOA64 =
@@ -62,11 +63,7 @@ public class PasswordService {
      * preventing user enumeration attacks.
      */
     public void dummyVerify(String rawPassword) {
-        try {
-            ENCODER.matches(rawPassword, TIMING_DUMMY_HASH);
-        } catch (Exception ignored) {
-            // dummy hash is intentionally invalid — we only care about timing
-        }
+        ENCODER.matches(rawPassword, TIMING_DUMMY_HASH);
     }
 
     // ── PHPass support ────────────────────────────────────────────────────────

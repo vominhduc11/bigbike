@@ -1,0 +1,44 @@
+{
+  "admin_lint": {
+    "status": "passed",
+    "exit_code": 0,
+    "elapsed_seconds": 182.28,
+    "command": "npm run lint"
+  },
+  "admin_build": {
+    "status": "passed",
+    "exit_code": 0,
+    "elapsed_seconds": 113.46,
+    "command": "npm run build"
+  },
+  "web_lint": {
+    "status": "passed",
+    "exit_code": 0,
+    "elapsed_seconds": 68.51,
+    "command": "npm run lint"
+  },
+  "web_build": {
+    "status": "passed",
+    "exit_code": 0,
+    "elapsed_seconds": 320.68,
+    "command": "npm run build -- --webpack"
+  },
+  "backend_verify_before_dummy_fix": {
+    "status": "passed",
+    "exit_code": 0,
+    "elapsed_seconds": 683.23,
+    "command": "./mvnw -B verify -DforkCount=1"
+  },
+  "password_dummy_targeted": {
+    "status": "passed",
+    "exit_code": 0,
+    "elapsed_seconds": 126.3,
+    "command": "./mvnw -B -Dtest=PasswordDummyVerificationTest,PasswordServiceTest,PasswordServiceWpHashTest,AdminAuthApiTest,AdminAuthSecurityTest test -DforkCount=1"
+  },
+  "backend_verify": {
+    "status": "passed",
+    "exit_code": 0,
+    "elapsed_seconds": 657.89,
+    "command": "./mvnw -B verify -DforkCount=1"
+  }
+}

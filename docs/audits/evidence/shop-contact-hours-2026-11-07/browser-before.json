@@ -1,0 +1,143 @@
+[
+  {
+    "path": "/en/",
+    "errors": [],
+    "console": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/products/?_rsc=ry-B8umWgNEV4JR9"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/product/kewig-m36-c1s/?_rsc=ry-B8umWgNEV4JR9"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/product/ao-giap-moto-adventure-spyke-sahara-vented/?_rsc=ry-B8umWgNEV4JR9"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/product/tai-nghe-bluetooth-intercom-2-may-scs-s10x/?_rsc=ry-B8umWgNEV4JR9"
+      }
+    ],
+    "http": [
+      {
+        "url": "https://bigbike.vn/en/products/?_rsc=ry-B8umWgNEV4JR9",
+        "status": 503
+      },
+      {
+        "url": "https://bigbike.vn/en/product/kewig-m36-c1s/?_rsc=ry-B8umWgNEV4JR9",
+        "status": 503
+      },
+      {
+        "url": "https://bigbike.vn/en/product/ao-giap-moto-adventure-spyke-sahara-vented/?_rsc=ry-B8umWgNEV4JR9",
+        "status": 503
+      },
+      {
+        "url": "https://bigbike.vn/en/product/tai-nghe-bluetooth-intercom-2-may-scs-s10x/?_rsc=ry-B8umWgNEV4JR9",
+        "status": 503
+      }
+    ],
+    "failure": "page.goto: Timeout 90000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://bigbike.vn/en/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "path": "/lien-he/",
+    "errors": [],
+    "console": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/product/tai-nghe-bluetooth-intercom-2-may-scs-s10x/?_rsc=ry-B8umWgNEV4JR9"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/cart/?_rsc=ry-B8umWgNEV4JR9"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/contact/?_rsc=ry-B8umWgNEV4JR9"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/about/?_rsc=ry-B8umWgNEV4JR9"
+      },
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/lien-he/"
+      }
+    ],
+    "http": [
+      {
+        "url": "https://bigbike.vn/en/product/tai-nghe-bluetooth-intercom-2-may-scs-s10x/?_rsc=ry-B8umWgNEV4JR9",
+        "status": 503
+      },
+      {
+        "url": "https://bigbike.vn/en/cart/?_rsc=ry-B8umWgNEV4JR9",
+        "status": 503
+      },
+      {
+        "url": "https://bigbike.vn/en/contact/?_rsc=ry-B8umWgNEV4JR9",
+        "status": 503
+      },
+      {
+        "url": "https://bigbike.vn/en/about/?_rsc=ry-B8umWgNEV4JR9",
+        "status": 503
+      },
+      {
+        "url": "https://bigbike.vn/lien-he/",
+        "status": 503
+      }
+    ],
+    "status": 503
+  },
+  {
+    "path": "/en/contact/",
+    "errors": [],
+    "console": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/contact/"
+      }
+    ],
+    "http": [
+      {
+        "url": "https://bigbike.vn/en/contact/",
+        "status": 503
+      }
+    ],
+    "failure": "Cannot read properties of null (reading 'status')"
+  },
+  {
+    "path": "/huong-dan/size-trang-phuc/",
+    "errors": [],
+    "console": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/huong-dan/size-trang-phuc/"
+      }
+    ],
+    "http": [
+      {
+        "url": "https://bigbike.vn/huong-dan/size-trang-phuc/",
+        "status": 503
+      }
+    ],
+    "failure": "Cannot read properties of null (reading 'status')"
+  },
+  {
+    "path": "/en/guide/clothing-size/",
+    "errors": [],
+    "console": [
+      {
+        "text": "Failed to load resource: the server responded with a status of 503 ()",
+        "url": "https://bigbike.vn/en/guide/clothing-size/"
+      }
+    ],
+    "http": [
+      {
+        "url": "https://bigbike.vn/en/guide/clothing-size/",
+        "status": 503
+      }
+    ],
+    "failure": "Cannot read properties of null (reading 'status')"
+  }
+]

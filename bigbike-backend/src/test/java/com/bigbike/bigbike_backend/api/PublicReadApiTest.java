@@ -17,7 +17,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -256,15 +255,22 @@ class PublicReadApiTest {
     }
 
     @Test
-    @Disabled("Requires V1000 catalog seed (disabled) — data not available in H2 test context")
     void shouldReturnCategoryAndBrandDetailBySlug() throws Exception {
-        mockMvc.perform(get("/api/v1/categories/mu-bao-hiem"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.slug").value("mu-bao-hiem"));
+        String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        CategoryEntity category = seedCategory("pub-detail-category-" + suffix, "Danh mục thử " + suffix);
+        BrandEntity brand = seedBrand("pub-detail-brand-" + suffix, "Thương hiệu thử " + suffix);
 
-        mockMvc.perform(get("/api/v1/brands/ls2"))
+        mockMvc.perform(get("/api/v1/categories/" + category.getSlug()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.slug").value("ls2"));
+                .andExpect(jsonPath("$.data.id").value(category.getId()))
+                .andExpect(jsonPath("$.data.name").value(category.getName()))
+                .andExpect(jsonPath("$.data.slug").value(category.getSlug()));
+
+        mockMvc.perform(get("/api/v1/brands/" + brand.getSlug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(brand.getId()))
+                .andExpect(jsonPath("$.data.name").value(brand.getName()))
+                .andExpect(jsonPath("$.data.slug").value(brand.getSlug()));
     }
 
     // ── Catalog facets ──────────────────────────────────────────────────────────

@@ -1,0 +1,15 @@
+{
+  "verifiedHttpAt": "2026-11-07T03:50:08.048000+00:00",
+  "window": "From successful deployed HTTP acceptance through completed browser acceptance",
+  "services": {
+    "bigbike-web": {
+      "errorEntries": 0
+    },
+    "bigbike-backend": {
+      "errorEntries": 0
+    },
+    "bigbike-admin": {
+      "errorEntries": 0
+    }
+  }
+}

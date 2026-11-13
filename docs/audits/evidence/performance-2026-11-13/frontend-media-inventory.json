@@ -1,0 +1,2067 @@
+{
+  "generated_utc": "2026-11-13T06:39:04.931893+00:00",
+  "scope_note": "Inventory derived from workspace source, not deployed-route or full-system certification. Hashes identify inspected source. Function tests are separately reported; no performance target inferred. Prior four optimizations are historical and not new work.",
+  "web_routes": [
+    {
+      "file": "bigbike-web/app/[locale]/(auth)/dang-ky/page.tsx",
+      "sha256": "ab3a34d4c7be00f52fbca7fcf849501ce1a25f3c1a9871f29db7875981da20d1",
+      "internal_path_pattern": "/[locale]/dang-ky",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "@/i18n/StorefrontLink",
+        "@/lib/seo/metadata",
+        "@/components/auth/AuthPageFrame",
+        "@/components/i18n/Tr",
+        "./RegisterForm",
+        "./RegisterFormIsland",
+        "next-intl/server",
+        "@/i18n/locale",
+        "@/lib/utils/routes"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(auth)/dang-nhap/page.tsx",
+      "sha256": "0c98a2080bee1958377bce84773a3b28162ad456a0c5c6df57d603adbce896ad",
+      "internal_path_pattern": "/[locale]/dang-nhap",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "@/i18n/StorefrontLink",
+        "@/lib/seo/metadata",
+        "@/components/auth/AuthPageFrame",
+        "@/components/i18n/Tr",
+        "./LoginForm",
+        "./LoginFormIsland",
+        "next-intl/server",
+        "@/i18n/locale",
+        "@/lib/utils/routes"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(auth)/quen-mat-khau/page.tsx",
+      "sha256": "0e5509bc5f4aca7873a0c253331f6bf733cc8e6a0891a9214570a50ced2a8355",
+      "internal_path_pattern": "/[locale]/quen-mat-khau",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "@/lib/seo/metadata",
+        "@/lib/utils/routes",
+        "@/components/auth/AuthPageFrame",
+        "./ForgotPasswordFlow",
+        "./ForgotPasswordFlowIsland",
+        "next-intl/server",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(auth)/xac-nhan-email/page.tsx",
+      "sha256": "01f5d5f117474d0315f67afffaafcc48308dba2f4fbf56423e2d68a4edacec6c",
+      "internal_path_pattern": "/[locale]/xac-nhan-email",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "@/lib/seo/metadata",
+        "@/components/auth/AuthPageFrame",
+        "./VerifyEmailContent",
+        "next-intl/server",
+        "@/i18n/locale",
+        "@/lib/utils/routes"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(review)/internal/google-review/page.tsx",
+      "sha256": "28f364569ec851c63d8398b0ef2116c7f9c1d7f5e3e37307f075e5d22d24ba14",
+      "internal_path_pattern": "/[locale]/internal/google-review",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "next-intl/server",
+        "@/i18n/locale",
+        "@/components/layout/Container",
+        "@/components/ui/button",
+        "@/components/analytics/ReviewLinkRedirect",
+        "@/lib/review-link",
+        "@/lib/seo/metadata"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/(home)/page.tsx",
+      "sha256": "8c8f825e38a3351d128a5e8b8b697520115f99e8bf4835d4210f5526166ee0ea",
+      "internal_path_pattern": "/[locale]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "@/i18n/StorefrontLink",
+        "react-dom",
+        "next-intl/server",
+        "@/components/i18n/Tr",
+        "@/components/home/HeroSlider",
+        "@/components/home/heroSliderModel",
+        "@/components/layout/Container",
+        "@/components/home/HomeCategoryGrid",
+        "@/components/home/HomeNewsList",
+        "@/components/home/DeferredHomeCarousels",
+        "@/components/ui/MediaImage",
+        "@/components/home/HomeLocalizedSettings",
+        "@/lib/api/public-api",
+        "@/lib/seo/metadata",
+        "@/lib/seo/json-ld",
+        "@/lib/seo/homepage-business",
+        "@/lib/utils/format",
+        "@/lib/utils/html",
+        "@/lib/utils/settings",
+        "@/lib/utils/routes",
+        "@/lib/contracts/public",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/[slug]/page.tsx",
+      "sha256": "75e796d1657b712ee1b866774713468d57423606cd1261d7581da3a4e1e59098",
+      "internal_path_pattern": "/[locale]/[slug]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next/navigation",
+        "@/i18n/locale",
+        "@/lib/content/static-pages",
+        "@/lib/utils/routes"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/brands/[slug]/page.tsx",
+      "sha256": "ab82dd8abeb7b0dadea21b96d2d6a46df10c82c72af35645f8aa95e96bcc1fc9",
+      "internal_path_pattern": "/[locale]/brands/[slug]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "next/navigation",
+        "next-intl/server",
+        "@/components/layout/PageHero",
+        "@/components/layout/Container",
+        "@/components/catalog/CatalogClient",
+        "@/components/catalog/CatalogDefault",
+        "@/components/ui/collapsible-content",
+        "@/components/i18n/AltSlugProvider",
+        "@/components/i18n/LocalizedContent",
+        "@/lib/api/public-api",
+        "@/lib/seo/json-ld",
+        "@/lib/seo/metadata",
+        "@/lib/utils/format",
+        "@/lib/utils/html",
+        "@/lib/utils/routes",
+        "@/components/catalog/BrandLogo",
+        "@/lib/utils/slug",
+        "@/components/layout/RichContent",
+        "@/i18n/locale",
+        "@/lib/utils/catalog-list-params",
+        "@/lib/utils/query"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/brands/page.tsx",
+      "sha256": "9b576cd048b34f662b272d434ed7033f2606f8dd0fd31f777fa9fec70093f7e5",
+      "internal_path_pattern": "/[locale]/brands",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "next-intl/server",
+        "@/components/layout/PageHero",
+        "@/components/layout/Container",
+        "@/components/i18n/Tr",
+        "@/lib/api/public-api",
+        "@/lib/seo/metadata",
+        "@/lib/utils/routes",
+        "@/lib/utils/page-hero",
+        "@/lib/utils/format",
+        "./BrandListClient",
+        "./BrandListDefault",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/chinh-sach/[slug]/page.tsx",
+      "sha256": "fb269071c0fc5edd2c0c31647e1bb3ba18ccbfc4565286767abee73028e3e041",
+      "internal_path_pattern": "/[locale]/chinh-sach/[slug]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "next/navigation",
+        "next-intl/server",
+        "@/lib/content/static-pages",
+        "@/lib/api/public-api",
+        "@/lib/content/policy-pages",
+        "@/lib/seo/metadata",
+        "@/components/policy/PrivacyPolicyContent",
+        "@/components/policy/PolicyContact",
+        "@/components/layout/StaticPageShell",
+        "@/components/layout/StaticSidebarLayout",
+        "@/lib/utils/html",
+        "@/components/layout/RichContent",
+        "@/lib/utils/routes",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/danh-muc/[slug]/page.tsx",
+      "sha256": "571401f787cd45f253de1c1db797638c953ad6f21c35db6af54739aa7abf4d3b",
+      "internal_path_pattern": "/[locale]/danh-muc/[slug]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "next/navigation",
+        "next-intl/server",
+        "@/components/layout/PageHero",
+        "@/components/layout/Container",
+        "@/components/catalog/CatalogClient",
+        "@/components/ui/collapsible-content",
+        "@/components/i18n/AltSlugProvider",
+        "@/components/i18n/LocalizedContent",
+        "@/components/i18n/Tr",
+        "@/lib/api/public-api",
+        "./resolve-category",
+        "@/lib/seo/json-ld",
+        "@/lib/seo/category-intro",
+        "@/lib/seo/metadata",
+        "@/lib/utils/format",
+        "@/lib/utils/html",
+        "@/lib/utils/routes",
+        "@/lib/utils/slug",
+        "@/components/layout/RichContent",
+        "@/i18n/locale",
+        "@/lib/utils/catalog-list-params",
+        "@/lib/utils/query"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/dat-hang/order-received/[id]/route.ts",
+      "sha256": "75070503abcab62115f0a91b250775175428acfdc9f951db5c5231141db0b377",
+      "internal_path_pattern": "/[locale]/dat-hang/order-received/[id]",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "next/server"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/dat-hang/page.tsx",
+      "sha256": "000b3079c872d82306efe9202ad20f559fd1b570ba784c01bb143c39cbb5a8a3",
+      "internal_path_pattern": "/[locale]/dat-hang",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "@/components/layout/StaticPageShell",
+        "@/components/layout/Container",
+        "@/components/layout/CheckoutPageHeading",
+        "@/components/checkout/CheckoutClient",
+        "@/components/i18n/Tr",
+        "@/lib/api/public-api",
+        "next-intl/server",
+        "@/lib/utils/routes",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/don-hang/xac-nhan/page.tsx",
+      "sha256": "745f492b74eb1dcdad442d58ef2d0fb6c82cb2b3b7dd21b705498b981cf6f892",
+      "internal_path_pattern": "/[locale]/don-hang/xac-nhan",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "next-intl/server",
+        "@/lib/seo/metadata",
+        "./OrderConfirmView",
+        "./OrderConfirmClient",
+        "@/lib/utils/routes",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/gio-hang/page.tsx",
+      "sha256": "5e2e4fb428152562f9636f596b944aad8138c117f34853a2b784521c8ee23254",
+      "internal_path_pattern": "/[locale]/gio-hang",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "@/components/layout/StaticPageShell",
+        "@/components/layout/Container",
+        "@/components/layout/CheckoutPageHeading",
+        "@/components/cart/CartClient",
+        "@/components/i18n/Tr",
+        "next-intl/server",
+        "@/i18n/locale",
+        "@/lib/utils/routes"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/gioi-thieu/page.tsx",
+      "sha256": "da8cbd10a4ffe331026ca99129572a9526d015156b5ad58241bf867cb6ffaca1",
+      "internal_path_pattern": "/[locale]/gioi-thieu",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "next-intl/server",
+        "@/components/layout/StaticPageShell",
+        "@/components/layout/Container",
+        "@/components/about/AboutPageContent",
+        "@/lib/api/public-api",
+        "@/lib/seo/metadata",
+        "@/lib/utils/format",
+        "@/lib/utils/routes",
+        "@/lib/utils/settings",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/huong-dan/[...sub]/page.tsx",
+      "sha256": "71ebd8d66eadf21e707a73704d486272b00664b73452cbe9328f0f10c0cd6669",
+      "internal_path_pattern": "/[locale]/huong-dan/[...sub]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "next-intl/server",
+        "../GuidePage",
+        "@/lib/seo/metadata",
+        "@/lib/content/static-pages",
+        "@/i18n/locale",
+        "../GuidePage"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/huong-dan/page.tsx",
+      "sha256": "cf78af7eeaf5ddb1ff1d57a790136d121da5f92f92108edf98e4dd90a62e8936",
+      "internal_path_pattern": "/[locale]/huong-dan",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "next-intl/server",
+        "./GuidePage",
+        "@/lib/seo/metadata",
+        "@/lib/utils/routes",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/internal/home/page.tsx",
+      "sha256": "d27d62883a9dda6ba5ab12fb7e3364b03364c0fd3bb7b1ecf21e7211a8c9a482",
+      "internal_path_pattern": "/[locale]/internal/home",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "@/app/[locale]/(storefront)/(home)/page"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/internal/product/[slug]/page.tsx",
+      "sha256": "f13ec3f1e600e5ae70146ff0a1760669d45fccdc1f22fdf44e861c157a09e412",
+      "internal_path_pattern": "/[locale]/internal/product/[slug]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "@/app/[locale]/(storefront)/product/[slug]/page"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/internal/sp/page.tsx",
+      "sha256": "47dfb114ae04be07def69cff1506b6279c6bf0311cb22a259776466fd61c090f",
+      "internal_path_pattern": "/[locale]/internal/sp",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "@/app/[locale]/(storefront)/sp/page",
+        "@/lib/utils/query"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/legacy/sp/[...slug]/page.tsx",
+      "sha256": "e28231bbbb686c13c7ce30348e0e41d9c8b4e630f0f40aac8ac8ab8aac913e9a",
+      "internal_path_pattern": "/[locale]/legacy/sp/[...slug]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "@/app/[locale]/(storefront)/sp/[slug].html/page"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/lien-he/page.tsx",
+      "sha256": "de6beddcf72318d577e6671eed956e3b715f8fd42324f8e94cb08264db803115",
+      "internal_path_pattern": "/[locale]/lien-he",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "@/lib/content/store-hours",
+        "next",
+        "next-intl/server",
+        "@/components/layout/StaticPageShell",
+        "@/components/layout/Container",
+        "@/components/contact/ContactPageContent",
+        "@/lib/api/public-api",
+        "@/lib/seo/metadata",
+        "@/lib/utils/routes",
+        "@/lib/utils/settings",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/preview/article/page.tsx",
+      "sha256": "e3c7b4e34788049c5637e92e9360e4b576934eaed2cfa45d4c85c69f7782239e",
+      "internal_path_pattern": "/[locale]/preview/article",
+      "kind": "page",
+      "client_component": true,
+      "imports": [
+        "react",
+        "next-intl",
+        "@/app/[locale]/(storefront)/tin-tuc/[slug]/ArticleView",
+        "@/components/layout/Container",
+        "@/components/preview/PreviewGuard",
+        "@/components/providers/ClientIntlProvider",
+        "@/lib/contracts/public",
+        "@/i18n/locale",
+        "@/env"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/preview/product/page.tsx",
+      "sha256": "a8bced4d67483c643d4562cf075335b3d3294349172f7cfc4f982a35301f3340",
+      "internal_path_pattern": "/[locale]/preview/product",
+      "kind": "page",
+      "client_component": true,
+      "imports": [
+        "react",
+        "next-intl",
+        "@/components/catalog/ProductView",
+        "@/components/layout/Container",
+        "@/components/preview/PreviewGuard",
+        "@/components/providers/ClientIntlProvider",
+        "@/lib/api/client-api",
+        "@/lib/contracts/public",
+        "@/lib/contracts/public",
+        "@/i18n/locale",
+        "@/env"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/product/[slug]/page.tsx",
+      "sha256": "18ec7e86a1ffc235545c959b68bec9f046659f2a91e2364af40f168452d4a45d",
+      "internal_path_pattern": "/[locale]/product/[slug]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "next/navigation",
+        "next-intl/server",
+        "@/lib/api/resilient-product",
+        "@/components/i18n/AltSlugProvider",
+        "@/components/catalog/ProductView",
+        "@/lib/api/public-api",
+        "@/lib/seo/json-ld",
+        "@/lib/seo/metadata",
+        "@/lib/utils/format",
+        "@/lib/utils/routes",
+        "@/lib/utils/slug",
+        "@/i18n/locale",
+        "@/lib/utils/product-breadcrumb",
+        "@/lib/utils/product-variant-link"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/sp/[slug].html/page.tsx",
+      "sha256": "674e2685c06294b5c58de5426b3c0faf6158b3806c30a747b1919e0d0cce27a9",
+      "internal_path_pattern": "/[locale]/sp/[slug].html",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "next/navigation",
+        "next-intl/server",
+        "@/components/catalog/LegacyDiscontinuedProductView",
+        "@/components/catalog/ProductView",
+        "@/lib/api/discontinued-suggestions",
+        "@/lib/api/public-api",
+        "@/lib/contracts/public",
+        "@/lib/seo/metadata",
+        "@/lib/utils/format",
+        "@/lib/utils/routes",
+        "@/lib/utils/slug",
+        "@/lib/utils/product-breadcrumb",
+        "@/lib/utils/settings",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/sp/page.tsx",
+      "sha256": "e951f3997b3c41dd4f49c6ac8fab5353a2ecdf1da5af059f5baea90919f120fe",
+      "internal_path_pattern": "/[locale]/sp",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "next-intl/server",
+        "@/components/layout/PageHero",
+        "@/components/layout/Container",
+        "@/components/catalog/CatalogClient",
+        "@/components/catalog/CatalogDefault",
+        "@/lib/api/public-api",
+        "@/lib/seo/metadata",
+        "@/lib/utils/format",
+        "@/lib/utils/page-hero",
+        "@/lib/utils/routes",
+        "@/i18n/locale",
+        "@/lib/utils/catalog-list-params",
+        "@/lib/utils/query"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/tai-khoan/don-hang/[id]/page.tsx",
+      "sha256": "5dc32bbe1f193efbb779725365ddff2d28c9c4ba31345937457157c652481bfd",
+      "internal_path_pattern": "/[locale]/tai-khoan/don-hang/[id]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "@/components/layout/AccountShell",
+        "./OrderDetailContentIsland"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/tai-khoan/don-hang/page.tsx",
+      "sha256": "7b32d963eb3b67f4287aa135aa01eeaa4ca361b4d26702139e99d81fe7821a77",
+      "internal_path_pattern": "/[locale]/tai-khoan/don-hang",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "react",
+        "@/components/layout/AccountShell",
+        "./OrderHistoryContent"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/tai-khoan/edit-account/page.tsx",
+      "sha256": "e351ee092b6bb10ab943668aac7e3419e6de75f3207b39f99ff3f6155416bac9",
+      "internal_path_pattern": "/[locale]/tai-khoan/edit-account",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "@/components/layout/AccountShell",
+        "./EditAccountContent"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/tai-khoan/edit-address/[type]/page.tsx",
+      "sha256": "21d0a62fd592f567b423c2f10b7d1a9e56d54916977f30a56b6ac94786b513cd",
+      "internal_path_pattern": "/[locale]/tai-khoan/edit-address/[type]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "@/components/layout/AccountShell",
+        "./AddressBookContent"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/tai-khoan/page.tsx",
+      "sha256": "2da168e398faa48e96fa0f3453a3c9c9393c4d79d1b657f2e530f1d4ff956ef7",
+      "internal_path_pattern": "/[locale]/tai-khoan",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "@/components/layout/AccountShell",
+        "./DashboardContent"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/tim-kiem/page.tsx",
+      "sha256": "cec8652ca184a389dcdac8443c18b8d062829f9b0d1fd90f57402e7f7ba232fe",
+      "internal_path_pattern": "/[locale]/tim-kiem",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "next-intl/server",
+        "@/components/layout/PageHero",
+        "@/components/layout/Container",
+        "@/components/catalog/CatalogClient",
+        "@/components/catalog/SearchPageForm",
+        "@/components/content/ArticleCard",
+        "@/lib/api/public-api",
+        "@/lib/seo/metadata",
+        "@/lib/utils/format",
+        "@/lib/utils/page-hero",
+        "@/lib/utils/routes",
+        "@/i18n/locale",
+        "@/lib/utils/catalog-list-params",
+        "@/lib/utils/query"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/tin-tuc/[slug]/page.tsx",
+      "sha256": "33fb0fbe45d78c193f4af2ebf95f9c5326e4ea18ca1d46b66c28233a4de0ac8a",
+      "internal_path_pattern": "/[locale]/tin-tuc/[slug]",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "next/navigation",
+        "next-intl/server",
+        "@/components/layout/PageHero",
+        "@/components/layout/Container",
+        "@/lib/api/public-api",
+        "@/lib/contracts/public",
+        "@/lib/seo/json-ld",
+        "@/lib/seo/metadata",
+        "@/lib/utils/format",
+        "@/lib/utils/page-hero",
+        "@/lib/utils/settings",
+        "@/lib/utils/text",
+        "@/lib/utils/routes",
+        "@/lib/utils/slug",
+        "@/components/i18n/Tr",
+        "@/components/i18n/AltSlugProvider",
+        "./ArticleView",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/tin-tuc/page.tsx",
+      "sha256": "3cde32dd871ca531a8ab0b5f28d0fe05fc8271a189ac82c64e6020afcc4c105a",
+      "internal_path_pattern": "/[locale]/tin-tuc",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "react",
+        "next-intl/server",
+        "@/components/layout/PageHero",
+        "@/components/layout/Container",
+        "@/lib/api/public-api",
+        "@/lib/seo/metadata",
+        "@/lib/utils/format",
+        "@/lib/utils/page-hero",
+        "@/lib/utils/routes",
+        "./ArticleListClient",
+        "./ArticleListDefault",
+        "@/components/i18n/Tr",
+        "@/i18n/locale"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/[locale]/(storefront)/tu-choi-thu-moi-danh-gia/page.tsx",
+      "sha256": "3202102a3e4bf69c30ab78af874d60931077e8e585f003d870ee6bdd0bdceba7",
+      "internal_path_pattern": "/[locale]/tu-choi-thu-moi-danh-gia",
+      "kind": "page",
+      "client_component": false,
+      "imports": [
+        "next",
+        "next-intl/server",
+        "@/components/layout/StaticPageShell",
+        "@/components/layout/Container",
+        "@/lib/utils/routes",
+        "@/i18n/locale",
+        "./ReviewInvitationOptOutClient"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/api/products/[id]/reviews/route.ts",
+      "sha256": "886ba95f9ea19dd7ee617532facb16647942897861f764027ee28e0f51782632",
+      "internal_path_pattern": "/api/products/[id]/reviews",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "next/server",
+        "@/lib/api/backend-proxy"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/api/products/[id]/snapshot/route.ts",
+      "sha256": "48fa242b2cc1d5f1986fdc57f286e6b37adff6087cded4fe81ca008a2ffc3285",
+      "internal_path_pattern": "/api/products/[id]/snapshot",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "@/lib/api/backend-proxy"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/api/products/[id]/stock/route.ts",
+      "sha256": "10e6d96e9d6d5533d00f4eb6b5a04d167ec43464f8330527a4e21ec3703e566c",
+      "internal_path_pattern": "/api/products/[id]/stock",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "@/lib/api/backend-proxy"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/api/products/[id]/variants/route.ts",
+      "sha256": "8c8fb3d15b7bdc88c65e55fbf63180c45dd2d3e16baa35ba8fbe9be7e51f3446",
+      "internal_path_pattern": "/api/products/[id]/variants",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "@/lib/api/backend-proxy"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/api/revalidate/route.ts",
+      "sha256": "e4c4e95bd93a8ab49b78cba97b63338eeb0f9816b983646b3fbb1b8841fdc561",
+      "internal_path_pattern": "/api/revalidate",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "next/cache",
+        "next/server",
+        "@/lib/api/product-fallback-store",
+        "@/env",
+        "@/lib/utils/revalidation"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/api/search-suggest/route.ts",
+      "sha256": "c0d3baf74a570d5db3ceafb4d42a7916b1c39b8908a56e2fdc7dc80dfd0fdb8c",
+      "internal_path_pattern": "/api/search-suggest",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "next/server",
+        "@/env",
+        "@/lib/api/backend-proxy"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/google-local-inventory.tsv/route.ts",
+      "sha256": "b26700cb190e835197301e3869227626200122b2f10ef9e3acb29b2ebc4b1fc6",
+      "internal_path_pattern": "/google-local-inventory.tsv",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "@/lib/merchant/catalog",
+        "@/lib/merchant/local-inventory",
+        "@/env"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "passed",
+        "test_files": [
+          "__tests__/merchant/local-route.test.ts"
+        ],
+        "scope": "Mocked route/metadata unit test only; runtime integration not verified"
+      }
+    },
+    {
+      "file": "bigbike-web/app/google-merchant.xml/route.ts",
+      "sha256": "ceab24147155c811ccf96ac5e9235acb5bc2b87fdcb421b8e5edee3519a9acd7",
+      "internal_path_pattern": "/google-merchant.xml",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "@/lib/merchant/catalog",
+        "@/lib/merchant/feed"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "passed",
+        "test_files": [
+          "__tests__/merchant/route.test.ts"
+        ],
+        "scope": "Mocked route/metadata unit test only; runtime integration not verified"
+      }
+    },
+    {
+      "file": "bigbike-web/app/robots.ts",
+      "sha256": "a565c487cc6a982c4fde544db76b3eb57e4edd2933c8ec1cfe8dc2d187ba9546",
+      "internal_path_pattern": "/",
+      "kind": "metadata",
+      "client_component": false,
+      "imports": [
+        "next",
+        "@/lib/utils/routes"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "passed",
+        "test_files": [
+          "__tests__/seo/robots.test.ts",
+          "__tests__/seo/robots-noindex.test.ts"
+        ],
+        "scope": "Mocked route/metadata unit test only; runtime integration not verified"
+      }
+    },
+    {
+      "file": "bigbike-web/app/seo/gone/route.ts",
+      "sha256": "6fd41907e5eee6c43a3278c2c7ac4e457e762c63520abf439ce8cc6097d82801",
+      "internal_path_pattern": "/seo/gone",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "next/server"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/seo/not-found/route.ts",
+      "sha256": "8ecb5a5deb748e161cbe0ab9dad569cbdc71778b25cfac62a4bb02d18d74cf84",
+      "internal_path_pattern": "/seo/not-found",
+      "kind": "route",
+      "client_component": false,
+      "imports": [
+        "next/server"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not independently mapped in focused run; see test summary for component-level coverage"
+      }
+    },
+    {
+      "file": "bigbike-web/app/sitemap.ts",
+      "sha256": "b71828e3489ff34cafda0ce3d007c0bf2fb040d85b9a276ac28592776681c95a",
+      "internal_path_pattern": "/",
+      "kind": "metadata",
+      "client_component": false,
+      "imports": [
+        "next",
+        "@/lib/api/public-api",
+        "@/lib/content/static-pages",
+        "@/lib/content/policy-pages",
+        "@/lib/utils/routes"
+      ],
+      "source_inventory": "enumerated and import boundary inspected; not full semantic review",
+      "functional_runtime": "not run: isolated candidate stack not available locally; running containers are a separate deployment",
+      "performance": "not measured: isolated candidate production build/browser required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "passed",
+        "test_files": [
+          "__tests__/seo/sitemap.test.ts"
+        ],
+        "scope": "Mocked route/metadata unit test only; runtime integration not verified"
+      }
+    }
+  ],
+  "admin_screens": [
+    {
+      "file": "bigbike-admin/src/screens/AcceptInviteScreen.jsx",
+      "screen": "AcceptInviteScreen",
+      "sha256": "db88df8b97c37e3d47f4b4b296b24800b08c0f3e5b3222d8a21503095806f3fc",
+      "wired_in_App": true,
+      "list_path_hints": [],
+      "adjacent_unit_test": false,
+      "api_module_imports": [
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/AdminUsersScreen.jsx",
+      "screen": "AdminUsersScreen",
+      "sha256": "bbed020b0429b565646992f599dbf48c233075e07f424e1001a80eb6362cc7e2",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/admin-users"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/AssignmentRolesScreen.jsx",
+      "screen": "AssignmentRolesScreen",
+      "sha256": "b82e8a68e93ddc6536201342d7fdb07caadf4a993b9976f503410abe589f19c1",
+      "wired_in_App": false,
+      "list_path_hints": [],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/queryKeys"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/AuditLogListScreen.jsx",
+      "screen": "AuditLogListScreen",
+      "sha256": "207842e16ea98e200f1bfc8b8150c58f795423eb7f86b9de478fb19615708107",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/audit-logs"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/useUrlQuery"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/BannerScreen.jsx",
+      "screen": "BannerScreen",
+      "sha256": "385bdd15703a25c6778923065ac64d7f5302cdac9c53e2e75d2672bc36d9efc9",
+      "wired_in_App": false,
+      "list_path_hints": [],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/BrandDetailScreen.jsx",
+      "screen": "BrandDetailScreen",
+      "sha256": "981caff9b463f6be64ec14c35262e0ec9910a9db77050d5782992e8204df0973",
+      "wired_in_App": true,
+      "list_path_hints": [],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/BrandListScreen.jsx",
+      "screen": "BrandListScreen",
+      "sha256": "8c4739d3151a018ee854e653e4e56740d24738974f4cb4086f37ba86b80e64eb",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/brands"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/useUrlQuery"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/CategoryDetailScreen.jsx",
+      "screen": "CategoryDetailScreen",
+      "sha256": "0526deb013e75f83308ac5c2656d6ece2fb0a39127dab4b9ae28101b2dd7a507",
+      "wired_in_App": true,
+      "list_path_hints": [],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/CategoryListScreen.jsx",
+      "screen": "CategoryListScreen",
+      "sha256": "6281ec46a76b5476f8e9765bffc8ac333fd6a98550c650b72c6cbcec52cfc1d3",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/categories"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/useUrlQuery",
+        "../lib/queryKeys"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/ContentDetailScreen.jsx",
+      "screen": "ContentDetailScreen",
+      "sha256": "991af08fe38c4839b77af0ebec7b90d345a3439bc56890be46b00336a7af9758",
+      "wired_in_App": true,
+      "list_path_hints": [],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/ContentListScreen.jsx",
+      "screen": "ContentListScreen",
+      "sha256": "3b7e477dae333b5ef015ed8013696d58b72fe88907025f9e391ecbfd5c722f21",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/content"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/useUrlQuery"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/CustomerDetailScreen.jsx",
+      "screen": "CustomerDetailScreen",
+      "sha256": "9d8c2da5e403d3e267d6dcb4d1be5477275acb9974d628f3ff04076a07644728",
+      "wired_in_App": true,
+      "list_path_hints": [],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "../lib/adminApi",
+        "@tanstack/react-query"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/CustomerListScreen.jsx",
+      "screen": "CustomerListScreen",
+      "sha256": "22d424d07edc77d8fdecda6dcea05164801c5a401fe4226af636831928cc5fb3",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/customers"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/useUrlQuery",
+        "@/lib/auth"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/DashboardScreen.jsx",
+      "screen": "DashboardScreen",
+      "sha256": "02140841077fd14ffda76146e83b66e126d8b5f5e005d6da530c98aabd0575ed",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/dashboard"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/auth",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/FeaturedProductsScreen.jsx",
+      "screen": "FeaturedProductsScreen",
+      "sha256": "c255b38e1dbb4a0b271341faea5e62f5e00a017d8ba592f360460c622652afec",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/featured-products"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/HomeHighlightsScreen.jsx",
+      "screen": "HomeHighlightsScreen",
+      "sha256": "ad4fb0a3553b731c5d4f451fe1863df5539914317dd70376827ce003c5e060ee",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/home-highlights"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/HomeVideoListScreen.jsx",
+      "screen": "HomeVideoListScreen",
+      "sha256": "c33bd3a0cf0620d7691e26c736ece464ec41c634a8ee710c26b3eec6d0f34f8e",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/home-videos"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "@/lib/auth"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/LegacyDiscontinuedProductsScreen.jsx",
+      "screen": "LegacyDiscontinuedProductsScreen",
+      "sha256": "3cba01981e35456f08bbbb8d7d5675271fb9926e3ee2567f66cd013d4cd16ff9",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/discontinued-products"
+      ],
+      "adjacent_unit_test": false,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "@/lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/LoginScreen.jsx",
+      "screen": "LoginScreen",
+      "sha256": "330f5626cdc8e5f4204c204a93f9f1ce7d0c9a87777a125c5a9d31f049ff5507",
+      "wired_in_App": true,
+      "list_path_hints": [],
+      "adjacent_unit_test": false,
+      "api_module_imports": [
+        "../lib/adminApi",
+        "../lib/auth"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/MediaLibraryScreen.jsx",
+      "screen": "MediaLibraryScreen",
+      "sha256": "30f97595f26dfe5f3bd5655ec4dfc6f9a220589f71a3e3c77409b94d04c6a534",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/media"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/MenuScreen.jsx",
+      "screen": "MenuScreen",
+      "sha256": "f06cecf8c359c928322c0aa9e3f0456fd4c5e7f2645951d28a2f0c90b0448d8c",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/menus"
+      ],
+      "adjacent_unit_test": false,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/queryKeys"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/OrderDetailScreen.jsx",
+      "screen": "OrderDetailScreen",
+      "sha256": "40d135cb86642aea8e85f7209566f2a2ce3f18c71e16088bc87566a22280701b",
+      "wired_in_App": true,
+      "list_path_hints": [],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/OrderListScreen.jsx",
+      "screen": "OrderListScreen",
+      "sha256": "e3e80997ebc6c067fe2659840c4011e5a49410f890bd64900208de1d5b2eac7c",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/orders"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/useUrlQuery",
+        "../lib/auth"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/ProductDetailScreen.jsx",
+      "screen": "ProductDetailScreen",
+      "sha256": "1d55bef539dcdf4ab1ce96c9b445916870073823003c35ee1d46ae69123adc76",
+      "wired_in_App": true,
+      "list_path_hints": [],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/queryKeys"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/ProductListScreen.jsx",
+      "screen": "ProductListScreen",
+      "sha256": "50b3489fe6e92986a540e6352237e5b43f7eb4550eb02192e490f5943c6a0e1d",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/products"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "@/lib/auth",
+        "../lib/adminApi",
+        "../lib/useUrlQuery",
+        "../lib/queryKeys"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/RedirectListScreen.jsx",
+      "screen": "RedirectListScreen",
+      "sha256": "333f086a537b1456a39d223ce8f1c41636fc02c3c75d99c921f0254c2b9b1b4c",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/redirects"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/useUrlQuery"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/ReportsScreen.jsx",
+      "screen": "ReportsScreen",
+      "sha256": "7e3305344a5209fded33cb8864d85aa97759e4c34dddc899eb77cc4c59b34ab6",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/reports"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/auth",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/ReviewDetailScreen.jsx",
+      "screen": "ReviewDetailScreen",
+      "sha256": "8767dfdec6c7c87678ecc71894a541603589b5c6e83bc1cb26d74b6e9c332142",
+      "wired_in_App": true,
+      "list_path_hints": [],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/ReviewListScreen.jsx",
+      "screen": "ReviewListScreen",
+      "sha256": "cd12f6e55c9a341f363f5892214920ad57cea92758819d92e1b18cab490a62f2",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/reviews"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi",
+        "../lib/useUrlQuery"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/RolesScreen.jsx",
+      "screen": "RolesScreen",
+      "sha256": "aa93eaddf8965bb5ca8742de1f55428b789b3c5b922ccd1973db53402ad2ba79",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/roles"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/SettingsScreen.jsx",
+      "screen": "SettingsScreen",
+      "sha256": "82a805a7ad06176b2807294d1369a2d89f92da8ba98c4d37d982020b05c2f1a4",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/settings"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    },
+    {
+      "file": "bigbike-admin/src/screens/SliderListScreen.jsx",
+      "screen": "SliderListScreen",
+      "sha256": "58f024648c15a576ae3d4f20484b77a68974899d263666de932f01f26b2a1951",
+      "wired_in_App": true,
+      "list_path_hints": [
+        "/admin/sliders"
+      ],
+      "adjacent_unit_test": true,
+      "api_module_imports": [
+        "@tanstack/react-query",
+        "../lib/adminApi"
+      ],
+      "source_inventory": "enumerated, route wiring and API module boundary inspected; not full CRUD/permission audit",
+      "functional_runtime": "not run: isolated authenticated candidate stack required",
+      "performance": "not measured: authenticated production browser/API scenario required",
+      "fixed_this_pass": false,
+      "functional_unit": {
+        "status": "not run for screen itself; shared auth/media components covered separately"
+      }
+    }
+  ],
+  "admin_switch_cases": [
+    "dashboard",
+    "products-list",
+    "legacy-discontinued-products",
+    "product-create",
+    "product-detail",
+    "categories-list",
+    "category-create",
+    "category-detail",
+    "brands-list",
+    "brand-create",
+    "brand-detail",
+    "content-list",
+    "content-create",
+    "content-detail",
+    "orders-list",
+    "order-detail",
+    "customers-list",
+    "customer-detail",
+    "media-library",
+    "menus",
+    "sliders",
+    "home-videos",
+    "home-highlights",
+    "redirects",
+    "reviews",
+    "review-detail",
+    "admin-users",
+    "settings",
+    "audit-logs",
+    "reports",
+    "roles",
+    "featured-products"
+  ],
+  "focused_semantic_source_reviews": [
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminMediaService.java",
+      "sha256": "b0ee27917c2f1d6f78dc2b5ff09e18dba1aa882cd761573601d94ea567165734"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+      "sha256": "8220ab2731b6668123504ea7e9806162b6d3639e6bf3f5d11106892af0e2fd3d"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+      "sha256": "5ea5c52f3f83b4e7b46e1911d6acc7139eae8860b95e4e57dae307b403964596"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageDimensions.java",
+      "sha256": "572193a3524315b856950031340a97522409d624eaff73e9288de8ed2d05f8b8"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminMediaController.java",
+      "sha256": "ddb21a52d4a00f8806868b412629a5c56b4c0d896612a1fdc18b249e4ef52c6d"
+    },
+    {
+      "file": "bigbike-admin/src/components/MediaPickerModal.jsx",
+      "sha256": "ec342accab8e468c5a92c5ee60a59b7e0a7fe71c72e012614993f2f4261c8d16"
+    },
+    {
+      "file": "bigbike-admin/src/components/VideoPickerModal.jsx",
+      "sha256": "930f082b2c51067a16703e5ed7ebe8dc773d6d70c70bf3d3cf2097ac58d3d14b"
+    },
+    {
+      "file": "bigbike-web/components/ui/MediaImage.tsx",
+      "sha256": "3eaa014c8fb5b749f55b632c70bc731ba7d9e08dcc33094820a6d579a5cbba58"
+    },
+    {
+      "file": "bigbike-web/components/catalog/ProductGallery.tsx",
+      "sha256": "4e42d3c803df0dc00c865a1cb3858297f8cfbc85757554490b9e435ebbfc97d1"
+    },
+    {
+      "file": "bigbike-web/components/catalog/ProductCard.tsx",
+      "sha256": "072f1140c4c828ad59c650f2aa5787e0b40f9f31d5baa5d37d4edea8a799f65c"
+    },
+    {
+      "file": "bigbike-web/components/catalog/ReadingProgressBar.tsx",
+      "sha256": "5a374a8142f908cd08631b0c9a0f13f71c9ca7017f157649eb109d0b8b3e2dfc"
+    },
+    {
+      "file": "bigbike-web/lib/analytics.ts",
+      "sha256": "d53c7eeee3e9be26d2d98a47a159de6099d3318d0f098ce25a5d533ea2375cc4"
+    },
+    {
+      "file": "bigbike-web/components/analytics/AnalyticsRuntime.tsx",
+      "sha256": "da25a46bc34d1e3a113640529d68411a9b80af94c2901a7076dd3820c879168d"
+    },
+    {
+      "file": "bigbike-web/lib/api/public-api.ts",
+      "sha256": "a75d339caff5bd7eb64db1de69bcde2c526c8c90dfa1aa84de3312794b6c00f8"
+    },
+    {
+      "file": "bigbike-web/lib/api/client-api.ts",
+      "sha256": "c3a0a9140b33252c8bb7a83ea73852a52499ec3441523c16b920bc1b00cf2e66"
+    },
+    {
+      "file": "bigbike-web/i18n/routing.ts",
+      "sha256": "aea1207b3510034dd16667d6c91dc772790facd66d1e310bf179ad4a1cefa6df"
+    }
+  ],
+  "counts": {
+    "web_route_and_metadata_files": 49,
+    "admin_screen_modules": 32,
+    "admin_switch_cases": 32
+  },
+  "media_and_shared_components": [
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminMediaService.java",
+      "source_review": "Reviewed validation/original compression/dimensions/dedup/storage/download, no source edit",
+      "functional_unit": "3 upload cases passed",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "not measured end-to-end",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+      "source_review": "Reviewed and fixed repeated decode for eligible variants",
+      "functional_unit": "6 variant cases passed",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "Offline component paired profile in media-profile-comparison.json, no storage/HTTP timing",
+      "fixed_this_pass": true
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+      "source_review": "Reviewed and added decoded-source overload preserving encode/fallback",
+      "functional_unit": "14 compression cases passed",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "Offline component paired profile in media-profile-comparison.json",
+      "fixed_this_pass": true
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageDimensions.java",
+      "source_review": "Reviewed full-decode and WebP-header fallback; deliberately retained to avoid changing malformed-input acceptance",
+      "functional_unit": "3 dimension cases passed",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "not independently timed as upload dimension stage",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminMediaController.java",
+      "source_review": "Reviewed permission/streaming/multipart boundaries",
+      "functional_unit": "not run HTTP end-to-end in this agent",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "not measured",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-admin/src/components/MediaPickerModal.jsx",
+      "source_review": "Reviewed existing filter-reset and stale-response protection",
+      "functional_unit": "Picker focused tests passed",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "Historical request-count reduction retained, no new latency measurement",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-admin/src/components/VideoPickerModal.jsx",
+      "source_review": "Reviewed existing filter-reset and stale-response protection",
+      "functional_unit": "Picker focused tests passed",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "Historical request-count reduction retained, no new latency measurement",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-web/components/ui/MediaImage.tsx",
+      "source_review": "Reviewed image allowlist/dimensions/sizes/defaults",
+      "functional_unit": "not independently tested in this agent",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "not measured browser bytes/LCP",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-web/components/catalog/ProductGallery.tsx",
+      "source_review": "Reviewed main/thumbnail responsive sizes and preload",
+      "functional_unit": "not independently tested in this agent",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "not measured browser bytes/LCP",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-web/components/catalog/ProductCard.tsx",
+      "source_review": "Reviewed responsive card image sizing",
+      "functional_unit": "not independently tested in this agent",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "not measured browser bytes/LCP",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-web/components/catalog/ReadingProgressBar.tsx",
+      "source_review": "Reviewed existing requestAnimationFrame ref/transform/cleanup",
+      "functional_unit": "4 focused performance component cases passed",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "React commit reduction historical only; no INP claim",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-web/lib/analytics.ts",
+      "source_review": "Reviewed eventID/purchase ID/variant view dedup",
+      "functional_unit": "Focused analytics tests passed",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "External delivery not tested; no field tracking claim",
+      "fixed_this_pass": false
+    },
+    {
+      "file": "bigbike-web/components/analytics/AnalyticsRuntime.tsx",
+      "source_review": "Reviewed shared measurement surface integration",
+      "functional_unit": "Focused analytics runtime tests passed",
+      "functional_runtime": "not run: isolated candidate runtime required",
+      "performance": "No external collection, field INP or production delivery test",
+      "fixed_this_pass": false
+    }
+  ]
+}

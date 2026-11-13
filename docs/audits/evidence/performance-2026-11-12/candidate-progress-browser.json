@@ -1,0 +1,26 @@
+[
+  {
+    "reducedMotion": "no-preference",
+    "mobile": {
+      "transform": "matrix(0.319927, 0, 0, 1, 0, 0)",
+      "transition": "0.1s",
+      "transitionProperty": "transform, translate, scale, rotate",
+      "width": 116.7733154296875,
+      "expected": 116.77330895795247
+    },
+    "desktop": "none",
+    "errors": []
+  },
+  {
+    "reducedMotion": "reduce",
+    "mobile": {
+      "transform": "matrix(0.319927, 0, 0, 1, 0, 0)",
+      "transition": "0.001s",
+      "transitionProperty": "none",
+      "width": 116.7733154296875,
+      "expected": 116.77330895795247
+    },
+    "desktop": "none",
+    "errors": []
+  }
+]

@@ -1,0 +1,908 @@
+{
+  "note": "Checked-in contract inventory, not proof every operation is live. OpenAPI drift test is the executable cross-check. No authenticated load tests performed. No sample data retained.",
+  "controllers": 52,
+  "mapping_annotations": 211,
+  "jpa_repository_files": 61,
+  "contract_operations": [
+    {
+      "method": "GET",
+      "path": "/api/v1/products",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/products/{slug}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/products/{productId}/reviews",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/products/{productId}/reviews",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/products/{productId}/reviews/photos",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/review-invitations/unsubscribe",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/categories",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/brands",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/catalog/facets",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/articles",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/articles/{slug}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/articles/{slug}/recommendations",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/settings/public",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/sliders",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/menus/{location}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/sliders",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/sliders",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/orders/lookup",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/customer/auth/register",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/customer/auth/login",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/customer/auth/refresh",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/customer/auth/logout",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/customer/me",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/customer/me/avatar",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/customer/me/avatar",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/cart",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/cart",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/cart/items",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/cart/items/{itemId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/cart/items/{itemId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/checkout",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/customer/orders",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/customer/orders/{orderId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/refresh",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/admin-users",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/admin-users",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/admin-users/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/admin-users/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/quick-search",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/orders",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/orders/{orderId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/orders/{orderId}/status",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/customers",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/customers/summary",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/customers/{customerId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/customers/{customerId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/customers/{customerId}/status",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/customers/{customerId}/avatar",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/media",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/media",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/media/{mediaId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/media/{mediaId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/media/{mediaId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/settings",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/settings/{settingKey}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/menus",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/menus",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/menus/{menuId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/menus/{menuId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/menus/{menuId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/menus/{menuId}/items",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/menus/{menuId}/items/{itemId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/menus/{menuId}/items/{itemId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/menus/{menuId}/items/reorder",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/dashboard",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/size-scale-groups",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/size-scale-groups",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/size-scale-groups/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/size-scale-groups/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/size-scales",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/size-scales",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/size-scales/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/size-scales/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/size-scales/{scaleId}/values",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/size-scale-values/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/size-scale-values/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/products",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/products",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/products/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/products/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/products/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/products/{id}/publish",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/products/preview",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/products/{id}/restore",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/products/{id}/permanent",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/products/homepage-blocks",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/products/export.csv",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/products/import/validate",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/products/import/commit",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/products/import/export/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/categories",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/categories",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/categories/permanent-delete-impact",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/categories/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/categories/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/categories/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/categories/{id}/restore",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/categories/{id}/permanent",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/brands",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/brands",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/brands/logo/import-url",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/brands/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/brands/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/brands/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/brands/{id}/restore",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/brands/{id}/permanent",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/content",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/content/{type}/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/content/{type}/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/content/articles",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/content/articles/preview",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/categories/tree",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/content/articles/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/content/articles/{id}/restore",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/content/articles/{id}/permanent",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/product-assignment",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/media/stats",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/media/tags",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/media/bulk-move",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/media/bulk-delete",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/media/bulk-restore",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/media/bulk-hard-delete",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/media/{mediaId}/references",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/media/{mediaId}/download",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/media-folders",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/media-folders",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/media-folders/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/media-folders/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/media/{mediaId}/restore",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/reviews",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/reviews/summary",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/reviews/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/reviews/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/reviews/{id}/status",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/reviews/bulk-status",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/reviews/bulk-delete",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/sliders/reorder",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/sliders/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/sliders/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/home-videos",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/home-videos",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/home-videos/reorder",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/home-videos/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/home-videos/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/inventory",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/inventory/summary",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/reports/analytics",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/reports/orders/export",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/reports/customers/export",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/roles",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/roles",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/permissions",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/roles/{id}/permissions",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/roles/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/audit-logs",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/redirects",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/redirects",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/redirects/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/redirects/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/redirects/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/redirect",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/redirects/active",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/redirects/hit/{redirectId}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/orders/{orderId}/allowed-transitions",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/orders/{orderId}/audit",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/home-videos",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/search-suggest",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/customer/auth/verify-email",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/customer/addresses",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/customer/addresses",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/customer/addresses/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/customer/addresses/{id}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/home/category-highlights",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/home/category-highlights",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/policies/{topic}",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/notifications",
+      "performance_coverage": "not_load_benchmarked"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/notifications/mark-all-read",
+      "performance_coverage": "not_load_benchmarked"
+    }
+  ]
+}

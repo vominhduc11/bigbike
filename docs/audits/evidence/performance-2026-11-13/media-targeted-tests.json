@@ -1,0 +1,38 @@
+{
+  "command": "./mvnw -B test -Dtest=ImageCompressionServiceTest,ImageVariantServiceTest,AdminMediaServiceUploadTest,ImageDimensionsTest -DforkCount=1 -DargLine=-Xmx512m -Dspring.test.context.cache.maxSize=1",
+  "scope": "Fresh main/test source compilation in this run; targeted unit/component tests, not HTTP/storage benchmark",
+  "suites": [
+    {
+      "suite": "com.bigbike.bigbike_backend.service.media.ImageCompressionServiceTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_seconds": 7.697
+    },
+    {
+      "suite": "com.bigbike.bigbike_backend.service.media.ImageDimensionsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_seconds": 0.042
+    },
+    {
+      "suite": "com.bigbike.bigbike_backend.service.admin.AdminMediaServiceUploadTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_seconds": 7.684
+    },
+    {
+      "suite": "com.bigbike.bigbike_backend.service.admin.ImageVariantServiceTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "time_seconds": 1.13
+    }
+  ]
+}

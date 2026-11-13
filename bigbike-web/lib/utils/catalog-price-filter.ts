@@ -43,9 +43,11 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function numberFormatLocale(locale: string): "vi-VN" | "en-US" {
-  return locale === "vi" ? "vi-VN" : "en-US";
-}
+// Slider cập nhật nhiều nhãn trong lúc kéo; không khởi tạo Intl cho từng nhãn.
+const priceInputFormatters = {
+  vi: new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }),
+  en: new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }),
+};
 
 /** Formats a full VND amount without shortening it to millions/billions. */
 export function formatPriceInput(
@@ -54,9 +56,7 @@ export function formatPriceInput(
 ): string {
   const parsed = finiteInteger(value);
   if (parsed == null) return "";
-  return new Intl.NumberFormat(numberFormatLocale(locale), {
-    maximumFractionDigits: 0,
-  }).format(parsed);
+  return priceInputFormatters[locale === "vi" ? "vi" : "en"].format(parsed);
 }
 
 /** Formats the amount together with the locale-appropriate currency unit. */

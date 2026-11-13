@@ -1,0 +1,119 @@
+{
+  "settings": {
+    "vi": {
+      "status": 200,
+      "introductionProsePreserved": true,
+      "addressCorrect": true,
+      "changedKeys": [
+        "home_content_bottom_html"
+      ]
+    },
+    "en": {
+      "status": 200,
+      "introductionProsePreserved": true,
+      "addressCorrect": true,
+      "changedKeys": [
+        "home_content_bottom_html",
+        "contact_address"
+      ]
+    }
+  },
+  "feeds": {
+    "xmlStatus": 200,
+    "tsvStatus": 200,
+    "items": 1184,
+    "allIdsPricesAvailabilityMatch": true
+  },
+  "pages": {
+    "/en/": {
+      "status": 200,
+      "hoursCorrect": true,
+      "noOldAddressOrHours": true,
+      "noClarityLoader": true
+    },
+    "/lien-he/": {
+      "status": 200,
+      "hoursCorrect": true,
+      "noOldAddressOrHours": true,
+      "noClarityLoader": true
+    },
+    "/en/contact/": {
+      "status": 200,
+      "hoursCorrect": true,
+      "noOldAddressOrHours": true,
+      "noClarityLoader": true
+    },
+    "/huong-dan/size-trang-phuc/": {
+      "status": 200,
+      "hoursCorrect": true,
+      "noOldAddressOrHours": true,
+      "noClarityLoader": true
+    },
+    "/en/guide/clothing-size/": {
+      "status": 200,
+      "hoursCorrect": true,
+      "noOldAddressOrHours": true,
+      "noClarityLoader": true
+    },
+    "/product/mu-bao-hiem-fullface-ls2-ff800-storm/": {
+      "status": 200,
+      "hoursCorrect": true,
+      "noOldAddressOrHours": true,
+      "noClarityLoader": true
+    },
+    "/en/product/mu-bao-hiem-fullface-ls2-ff800-storm/": {
+      "status": 200,
+      "hoursCorrect": true,
+      "noOldAddressOrHours": true,
+      "noClarityLoader": true
+    }
+  },
+  "preserved": {
+    ".env": true,
+    ".env.vps": true,
+    "existingTrackedWork": true,
+    "configurationFlags": {
+      "NEXT_PUBLIC_CLARITY_PROJECT_ID": false,
+      "NEXT_PUBLIC_META_PIXEL_ID": true,
+      "GMC_STORE_CODE": true
+    }
+  },
+  "services": [
+    {
+      "name": "/bigbike-web",
+      "health": "healthy",
+      "image": "sha256:47aecbc31efa2c7d56540834fd4312501353ab6b0ac3d8628dd003558e986a88",
+      "memoryLimitBytes": 536870912
+    },
+    {
+      "name": "/bigbike-backend",
+      "health": "healthy",
+      "image": "sha256:dc23f8e64cc4dd484cb82dd8e9506e152b63c61bb21947aebedb2558aba9d72a",
+      "memoryLimitBytes": 2147483648
+    },
+    {
+      "name": "/bigbike-admin",
+      "health": "healthy",
+      "image": "sha256:8dea43a4e5ea559ba4ef283873c7531d184a7bba0845df9a6f42bf0086b0641f",
+      "memoryLimitBytes": 134217728
+    },
+    {
+      "name": "/bigbike-postgres",
+      "health": "healthy",
+      "image": "sha256:108b27c919e6e7bc124350fb265deea9adac58e118eade428c6d1ad44b90debe",
+      "memoryLimitBytes": 536870912
+    },
+    {
+      "name": "/bigbike-redis",
+      "health": "healthy",
+      "image": "sha256:2a51817f79255c8b69f86a974459c2e0359aff81417d80158f2b9e541e6f4b33",
+      "memoryLimitBytes": 201326592
+    },
+    {
+      "name": "/bigbike-minio",
+      "health": "healthy",
+      "image": "sha256:9d668e47f1fc60ea49af4203deee87a657eb1aa0e2761fee2c7c2d1df282c880",
+      "memoryLimitBytes": 805306368
+    }
+  ]
+}

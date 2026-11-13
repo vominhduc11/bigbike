@@ -1,4 +1,9 @@
 {
+  "GoogleReviewLink": {
+    "title": "Review BigBike on Google",
+    "waiting": "Redirecting to Google. If you are not redirected, please use the link below.",
+    "continue": "Continue to Google"
+  },
   "Common": {
     "loading": "Loading…",
     "addToCart": "Add to cart",
@@ -80,15 +85,9 @@
     "shopInfoDescription": "Introduction and contact information for {siteName}.",
     "shopInfoContactHeading": "Contact information",
     "wpContactStore": "BigBike Store",
-    "wpHoursWeekday": "Mon - Fri: 09:00 - 21:00",
-    "wpHoursWeekend": "Sat / Sun: 09:00 - 18:00",
-    "wpHoursHoliday": "Holidays: closed",
     "closeDrawer": "Close",
     "shopInfoStoreLabel": "{siteName} store",
     "shopInfoDefaultDescription": "BigBike specializes in genuine motorcycle and touring gear, including full-face, flip-up, three-quarter and motocross helmets, motorcycle jackets, protective trousers, gloves, backpacks, motorcycle bags and fashion accessories.",
-    "shopInfoDefaultHoursLine1": "Mon - Fri: 09:00 - 21:00",
-    "shopInfoDefaultHoursLine2": "Sat / Sun: 09:00 - 18:00",
-    "shopInfoDefaultHoursLine3": "Public holidays: closed",
     "mobileZaloSupport": "Fast Zalo support",
     "megaMenuEmpty": "Select a category to see details.",
     "languageLabel": "Language",
@@ -990,7 +989,6 @@
     "hotlineUrgentPrompt": "Need it urgently? Call now:",
     "hotlineOr": "or",
     "zaloCtaUrgent": "Message us on Zalo for urgent help",
-    "footerHours": "Mon–Sat: 9:00–21:00 · Sunday: 9:00–18:00",
     "customerDetailsTitle": "Delivery information",
     "recipientLabel": "Recipient",
     "phoneFieldLabel": "Phone number",
@@ -1171,8 +1169,6 @@
     "aboutConnectTitle": "CONNECT SO WE CAN STAY CLOSER TO YOU",
     "aboutConnectBody1": "Bigbike has received more than 80 five-star Google Maps reviews and many other compliments. That encouragement keeps us working to become the best companion for Vietnam's biker community.",
     "aboutConnectBody2": "Contact us for detailed product advice and the best available offers.",
-    "weekdayHours": "Mon - Fri: 09:00 - 21:00",
-    "weekendHours": "Sat, Sun: 09:00 - 18:00",
     "advisorThu": "0764.640.679 - Mrs. Thư / ZALO",
     "advisorTri": "090.690.2404 - Mr. Tri",
     "serviceTiles": {
@@ -1272,6 +1268,7 @@
     "loadingAria": "Loading cart"
   },
   "PdpBuyBox": {
+    "priceVerificationPending": "Showing the last saved product details. Purchasing is paused until price and availability can be verified.",
     "stockOut": "OUT OF STOCK",
     "zaloConsult": "Consult via Zalo",
     "mobileZaloConsult": "Zalo chat",

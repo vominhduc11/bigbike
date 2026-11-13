@@ -1,0 +1,22 @@
+{
+  "public": {
+    "content-type": "application/xml; charset=utf-8",
+    "cache-control": "no-store",
+    "x-merchant-item-count": "1187",
+    "x-merchant-product-count": "213",
+    "status": 200,
+    "seconds": 5.332694
+  },
+  "origin": {
+    "cache-control": "no-store",
+    "content-type": "application/xml; charset=utf-8",
+    "x-merchant-item-count": "1187",
+    "x-merchant-product-count": "213",
+    "status": 200,
+    "seconds": 4.462857
+  },
+  "redirect": {
+    "status": 301,
+    "location": "/product/day-thun-rang-non-bao-hiem-hanh-ly-kewig-bd-1s/?variant=var_2a9de4e6a23c47e7b38f87c686875622"
+  }
+}

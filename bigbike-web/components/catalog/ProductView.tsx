@@ -1,5 +1,7 @@
 "use client";
 
+import { getStoreHours } from "@/lib/content/store-hours";
+
 import { Fragment, useEffect, type ReactNode } from "react";
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
@@ -60,6 +62,7 @@ import { LocalizedLink } from "@/components/i18n/LocalizedLink";
 type ProductViewProps = {
   product: Product;
   initialVariantId?: string;
+  fallback?: boolean;
   /** Site settings for the bottom contact band + trust block NAP. Public PDP passes
    *  server-fetched settings; live-preview fetches the same public endpoint client-side
    *  so Hotline/Địa chỉ match the live page. */
@@ -140,6 +143,7 @@ function MobileTrustLine({ product }: { product: Product }) {
 export function ProductView({
   product,
   initialVariantId,
+  fallback = false,
   settings,
   breadcrumbCategories = [],
   previewMode = false,
@@ -183,8 +187,8 @@ export function ProductView({
   const hotline = pickSetting(activeSettings, ["hotline", "phone"]);
   const zaloUrl = pickSetting(activeSettings, ["zalo_url"]);
   const zaloDisplay = pickSetting(activeSettings, ["zalo_display"]);
-  const hoursWeekday = pickSetting(activeSettings, ["opening_hours_weekday"]);
-  const hoursWeekend = pickSetting(activeSettings, ["opening_hours_weekend"]);
+  const hoursWeekday = getStoreHours(locale).weekday;
+  const hoursWeekend = [getStoreHours(locale).weekend, getStoreHours(locale).holiday].join(" · ");
   // Khối cam kết dưới nút mua hàng (V232) + dải tin cậy trên tên sản phẩm (V233) giờ quản theo
   // TỪNG sản phẩm (product.commitments / product.trustBadges) — PurchaseSection tự đọc thẳng
   // từ product, không còn lấy từ settings.
@@ -510,6 +514,7 @@ export function ProductView({
       key={`${product.id}:${initialVariantId ?? "default"}`}
       product={product}
       initialVariantId={initialVariantId}
+      fallback={fallback}
       gallery={gallery}
       rating={rating}
       ratingCount={ratingCount}

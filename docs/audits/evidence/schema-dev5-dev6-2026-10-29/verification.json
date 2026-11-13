@@ -1,0 +1,351 @@
+{
+  "checkedAtUtc": "2026-10-29T08:24:28.555645+00:00",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "workspace": "/root/myproject/bigbike",
+  "baselineHead": "4c4499ca8ed432f8e7ca7c8e95122b8a747c1c1d",
+  "scope": "DEV-5/DEV-6 implementation and independent verification only; no production deployment",
+  "cloudflareOwnerDecision": "Keep Web Analytics, explicitly confirmed in this conversation",
+  "docsFirst": [
+    "docs/business/BUSINESS_RULES.md ANALYTICS_RULE_007/008, SEO_RULE_004",
+    "docs/engineering/INTEGRATION_GUIDE.md Google review invitation bridge / Cloudflare Web Analytics CSP / Meta Pixel",
+    "docs/engineering/DEPLOYMENT_GUIDE.md Storefront analytics / Google review link and CSP delivery"
+  ],
+  "checks": {
+    "webLint": {
+      "status": "passed",
+      "command": "npm run lint",
+      "additional": "npx eslint on added/updated e2e and unit tests"
+    },
+    "webVitest": {
+      "status": "passed",
+      "command": "npm run test -- --maxWorkers=2",
+      "files": 112,
+      "tests": 769
+    },
+    "webBuild": {
+      "status": "passed",
+      "command": "npm run build",
+      "typescript": "passed",
+      "log": "/tmp/bigbike-dev56-build-final.log"
+    },
+    "format": "passed on all changed/new source; git diff --check passed",
+    "boundary": "bash deploy/nginx/tests/domain-boundary-config-test.sh --self-test: positive and two negative cases passed",
+    "reviewBrowser": {
+      "command": "PW_BASE_URL=http://localhost:3105 PW_GA4_MEASUREMENT_ID=G-REZM4NT0CS npx playwright test e2e/google-review-link.e2e.ts --workers=1 --reporter=json",
+      "stats": {
+        "startTime": "2026-10-29T07:37:31.718Z",
+        "duration": 25732.023999999998,
+        "expected": 13,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "tests": [
+        {
+          "title": "server HTML, robots, language, CSP and slash normalization: /danh-gia/",
+          "status": "passed",
+          "durationMs": 686
+        },
+        {
+          "title": "server HTML, robots, language, CSP and slash normalization: /review/",
+          "status": "passed",
+          "durationMs": 119
+        },
+        {
+          "title": "server HTML, robots, language, CSP and slash normalization: /en/review/",
+          "status": "passed",
+          "durationMs": 133
+        },
+        {
+          "title": "browser navigation once with callback, fresh opening counts again",
+          "status": "passed",
+          "durationMs": 2219
+        },
+        {
+          "title": "browser navigation once with blocked, fresh opening counts again",
+          "status": "passed",
+          "durationMs": 3509
+        },
+        {
+          "title": "browser navigation once with no-callback, fresh opening counts again",
+          "status": "passed",
+          "durationMs": 3039
+        },
+        {
+          "title": "actual CSP permits Meta form transport and loading the retained Cloudflare script",
+          "status": "passed",
+          "durationMs": 766
+        },
+        {
+          "title": "JavaScript off: server link and two-second refresh both work",
+          "status": "passed",
+          "durationMs": 2921
+        },
+        {
+          "title": "real sitemap and robots keep the invitation crawlable but unlisted",
+          "status": "passed",
+          "durationMs": 6146
+        },
+        {
+          "title": "manual fallback is readable at mobile-375x812",
+          "status": "passed",
+          "durationMs": 332
+        },
+        {
+          "title": "manual fallback is readable at tablet-768x1024",
+          "status": "passed",
+          "durationMs": 333
+        },
+        {
+          "title": "manual fallback is readable at desktop-1440x900",
+          "status": "passed",
+          "durationMs": 307
+        },
+        {
+          "title": "real Google tag assembles review event with original UTM (collection intercepted)",
+          "status": "passed",
+          "durationMs": 2023
+        }
+      ]
+    },
+    "wireFollowUp": {
+      "stats": {
+        "startTime": "2026-10-29T07:41:43.267Z",
+        "duration": 4941.201,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "purpose": "Additional assertion of ep.transport_type=beacon and whitelist-only evidence serialization"
+    },
+    "dev1To4Regression": {
+      "mainRunStats": {
+        "startTime": "2026-10-29T07:39:18.956Z",
+        "duration": 93186.428,
+        "expected": 10,
+        "skipped": 0,
+        "unexpected": 1,
+        "flaky": 0
+      },
+      "tests": [
+        {
+          "title": "trang chủ chỉ có graph doanh nghiệp và WebSite: /",
+          "status": "passed",
+          "durationMs": 1934
+        },
+        {
+          "title": "trang chủ chỉ có graph doanh nghiệp và WebSite: /en/",
+          "status": "passed",
+          "durationMs": 1408
+        },
+        {
+          "title": "HTML và DOM nhất quán qua 5 lần tải: /danh-muc/mu-bao-hiem/",
+          "status": "passed",
+          "durationMs": 17008
+        },
+        {
+          "title": "HTML và DOM nhất quán qua 5 lần tải: /danh-muc/mu-bao-hiem-fullface/",
+          "status": "passed",
+          "durationMs": 9132
+        },
+        {
+          "title": "HTML và DOM nhất quán qua 5 lần tải: /danh-muc/tai-nghe-bluetooth-mu-bao-hiem/",
+          "status": "passed",
+          "durationMs": 9872
+        },
+        {
+          "title": "HTML và DOM nhất quán qua 5 lần tải: /en/categories/motorcycle-helmet-intercom/",
+          "status": "passed",
+          "durationMs": 17181
+        },
+        {
+          "title": "HTML và DOM nhất quán qua 5 lần tải: /en/categories/full-face-helmets/",
+          "status": "passed",
+          "durationMs": 11266
+        },
+        {
+          "title": "mô tả dự phòng chỉ lấy đoạn giới thiệu khi danh mục chưa nhập SEO",
+          "status": "passed",
+          "durationMs": 2358
+        },
+        {
+          "title": "mở/thu intro và đổi danh mục không nhân đôi nội dung: mobile-375x812",
+          "status": "passed",
+          "durationMs": 5022
+        },
+        {
+          "title": "mở/thu intro và đổi danh mục không nhân đôi nội dung: tablet-768x1024",
+          "status": "passed",
+          "durationMs": 4572
+        },
+        {
+          "title": "mở/thu intro và đổi danh mục không nhân đôi nội dung: desktop-1440x900",
+          "status": "failed",
+          "durationMs": 9637
+        }
+      ],
+      "followUpStats": {
+        "startTime": "2026-10-29T07:43:20.722Z",
+        "duration": 9183.350999999999,
+        "expected": 1,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "followUpTests": [
+        {
+          "title": "mở/thu intro và đổi danh mục không nhân đôi nội dung: desktop-1440x900",
+          "status": "passed",
+          "durationMs": 6389
+        }
+      ],
+      "finalUniqueScenariosPassed": 11,
+      "note": "Main run passed 10/11. Desktop client navigation exceeded the original 5 s component wait. A focused recheck passed with a 30 s readiness wait; only test timing changed. Five category pages each reloaded five times; VI/EN homepage, description fallback and responsive interaction checked."
+    }
+  },
+  "routes": [
+    {
+      "path": "/danh-gia/",
+      "locale": "vi",
+      "htmlStatus": 200,
+      "slashlessStatus": 308,
+      "queryPreserved": true,
+      "robotsMeta": "noindex, nofollow",
+      "xRobotsTag": "noindex, nofollow"
+    },
+    {
+      "path": "/review/",
+      "locale": "en",
+      "htmlStatus": 200,
+      "slashlessStatus": 308,
+      "queryPreserved": true,
+      "aliasPreserved": true,
+      "robotsMeta": "noindex, nofollow",
+      "xRobotsTag": "noindex, nofollow"
+    },
+    {
+      "path": "/en/review/",
+      "locale": "en",
+      "htmlStatus": 200,
+      "slashlessStatus": 308,
+      "queryPreserved": true,
+      "robotsMeta": "noindex, nofollow",
+      "xRobotsTag": "noindex, nofollow"
+    }
+  ],
+  "qrPath": "/danh-gia/?utm_source=qr&utm_medium=offline&utm_campaign=qr-danh-gia",
+  "destinationConfig": "bigbike-web/lib/review-link.ts GOOGLE_REVIEW_URL; change constant then rebuild and release web",
+  "browser": "Chromium desktop on isolated localhost standalone preview, real backend and MinIO; downstream Google and analytics delivery intercepted",
+  "viewports": [
+    {
+      "width": 375,
+      "height": 812
+    },
+    {
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "width": 1440,
+      "height": 900
+    }
+  ],
+  "ga4Wire": {
+    "measurementId": "G-REZM4NT0CS",
+    "library": "Real script downloaded from www.googletagmanager.com and served unchanged as warm-cache equivalent",
+    "requestedTransportType": "beacon",
+    "observedResourceType": "fetch",
+    "observedMethod": "POST",
+    "collectRequests": [
+      {
+        "endpoint": "https://analytics.google.com/g/collect",
+        "method": "POST",
+        "resourceType": "fetch",
+        "parameters": {
+          "tid": "G-REZM4NT0CS",
+          "en": "page_view",
+          "dl": "http://localhost/danh-gia/?utm_source=qr&utm_medium=offline&utm_campaign=qr-danh-gia",
+          "ep.transport_type": null
+        },
+        "collection": "intercepted before delivery; not account receipt"
+      },
+      {
+        "endpoint": "https://analytics.google.com/g/collect",
+        "method": "POST",
+        "resourceType": "fetch",
+        "parameters": {
+          "tid": "G-REZM4NT0CS",
+          "en": "review_link_open",
+          "dl": "http://localhost:3105/danh-gia/?utm_source=qr&utm_medium=offline&utm_campaign=qr-danh-gia",
+          "ep.transport_type": "beacon"
+        },
+        "collection": "intercepted before delivery; not account receipt"
+      }
+    ],
+    "collectionInterceptedBeforeDelivery": true,
+    "accountReceiptVerified": false,
+    "interpretation": "Google serialized ep.transport_type=beacon but Chromium used fetch. This is real-library network-boundary payload verification, not proof of navigator.sendBeacon use or GA4 account receipt."
+  },
+  "csp": {
+    "scriptSrcAdded": [
+      "https://static.cloudflareinsights.com"
+    ],
+    "formAction": "'self' https://www.facebook.com",
+    "connectSrcChanged": false,
+    "adminChanged": false,
+    "realCloudflareScriptLoadStatus": 200,
+    "metaFormNavigationAllowedInChromium": true,
+    "downstreamMetaFormIntercepted": true,
+    "pixelReinstalled": false,
+    "manualPageViewAdded": false
+  },
+  "liveBaseline": [
+    {
+      "url": "http://localhost:3000/danh-gia/",
+      "status": 404,
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: https://*.clarity.ms https://c.bing.com https://media.bigbike.vn; media-src 'self' blob: https: https://media.bigbike.vn; font-src 'self' data:; connect-src 'self' https: https://api.bigbike.vn https://www.google-analytics.com https://*.clarity.ms https://c.bing.com; frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com https://www.tiktok.com https://www.facebook.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    },
+    {
+      "url": "http://localhost:3000/review/",
+      "status": 404,
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: https://*.clarity.ms https://c.bing.com https://media.bigbike.vn; media-src 'self' blob: https: https://media.bigbike.vn; font-src 'self' data:; connect-src 'self' https: https://api.bigbike.vn https://www.google-analytics.com https://*.clarity.ms https://c.bing.com; frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com https://www.tiktok.com https://www.facebook.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    },
+    {
+      "url": "https://bigbike.vn/danh-gia/",
+      "status": 403,
+      "csp": null
+    },
+    {
+      "url": "https://bigbike.vn/review/",
+      "status": 403,
+      "csp": null
+    }
+  ],
+  "notVerified": [
+    "Safari/Android physical devices",
+    "Zalo/Messenger in-app browsers",
+    "Google Maps and Google sign-in on physical devices",
+    "GA4 account Realtime/DebugView and processed session acquisition",
+    "Meta Test Events account receipt",
+    "Clarity account receipt"
+  ],
+  "boundaries": {
+    "deployedProduction": false,
+    "committed": false,
+    "pushed": false,
+    "sharedContainerStateChanged": false,
+    "envFilesChanged": false,
+    "backendOrAdminChanged": false,
+    "productReviewOrEmailFlowChanged": false,
+    "originalWindowsTicketReadable": false,
+    "taskOwnedPreviewStopped": true
+  },
+  "previewBuildConfiguration": {
+    "ga4": "G-REZM4NT0CS, collection intercepted",
+    "meta": "disabled in verification preview only",
+    "clarity": "disabled in verification preview only",
+    "productionImage": "not built or deployed; verification artifact uses isolated configuration"
+  },
+  "subsequentProductionDeploymentEvidence": "deployment.json"
+}

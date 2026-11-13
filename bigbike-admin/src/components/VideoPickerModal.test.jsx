@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { VideoPickerModal } from './VideoPickerModal'
@@ -87,6 +87,98 @@ beforeEach(() => {
 })
 
 describe('VideoPickerModal', () => {
+  it.each(['resolve', 'reject'])(
+    'giữ bộ lọc mới nhất khi yêu cầu cũ %s muộn và vẫn chuyển trang được',
+    async (lateResult) => {
+      const user = userEvent.setup()
+      const pending = []
+      const pageResponse = (media) => ({
+        ...response([media]),
+        pagination: { page: 1, pageSize: 20, totalItems: 90, totalPages: 3 },
+      })
+      mocks.fetchMediaTags.mockResolvedValue(['Mũ'])
+      mocks.fetchMedia.mockResolvedValueOnce(pageResponse(video))
+      mocks.fetchMedia.mockImplementation(
+        () =>
+          new Promise((resolve, reject) => {
+            pending.push({ resolve, reject })
+          }),
+      )
+      renderPicker()
+      await screen.findByTitle('gioi-thieu.mp4')
+      await user.click(screen.getByRole('button', { name: 'homeVideos.picker.next' }))
+      await waitFor(() => expect(pending).toHaveLength(1))
+
+      await user.selectOptions(screen.getByRole('combobox', { name: 'media.folders' }), 'NONE')
+      await waitFor(() => expect(pending).toHaveLength(2))
+      await user.selectOptions(screen.getByRole('combobox', { name: 'media.popularTags' }), 'Mũ')
+      await waitFor(() => expect(pending).toHaveLength(3))
+      const latest = {
+        ...video,
+        id: 'latest',
+        filename: 'latest.mp4',
+        publicUrl: '/media/latest.mp4',
+      }
+      await act(async () => pending[2].resolve(pageResponse(latest)))
+      expect(await screen.findByTitle('latest.mp4')).toBeInTheDocument()
+
+      await act(async () => {
+        for (const request of pending.slice(0, 2)) {
+          if (lateResult === 'reject') request.reject(new Error('Yêu cầu cũ thất bại'))
+          else request.resolve(pageResponse(video))
+        }
+      })
+      expect(screen.getByTitle('latest.mp4')).toBeInTheDocument()
+      expect(screen.queryByTitle('gioi-thieu.mp4')).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'homeVideos.picker.next' }))
+      await waitFor(() =>
+        expect(mocks.fetchMedia).toHaveBeenLastCalledWith(
+          expect.objectContaining({ page: 2, folderFilter: 'NONE', tag: 'Mũ' }),
+        ),
+      )
+      expect(mocks.fetchMedia.mock.calls.map(([query]) => query.page)).toEqual([1, 2, 1, 1, 2])
+      await act(async () => pending[3].resolve(pageResponse(latest)))
+    },
+  )
+
+  it.each(['search', 'folder', 'tag'])(
+    'đổi %s từ trang sau chỉ yêu cầu trang đầu của bộ lọc mới',
+    async (filter) => {
+      const user = userEvent.setup()
+      mocks.fetchMediaTags.mockResolvedValue(['Mũ'])
+      mocks.fetchMedia.mockResolvedValue({
+        ...response([video]),
+        pagination: { page: 1, pageSize: 30, totalItems: 90, totalPages: 3 },
+      })
+      renderPicker()
+      await screen.findByTitle('gioi-thieu.mp4')
+      await user.click(screen.getByRole('button', { name: 'homeVideos.picker.next' }))
+      await waitFor(() =>
+        expect(mocks.fetchMedia).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })),
+      )
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'homeVideos.picker.next' })).toBeEnabled(),
+      )
+      mocks.fetchMedia.mockClear()
+
+      if (filter === 'search') {
+        fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'helmet' } })
+      } else {
+        await user.selectOptions(
+          screen.getByRole('combobox', {
+            name: filter === 'folder' ? 'media.folders' : 'media.popularTags',
+          }),
+          filter === 'folder' ? 'NONE' : 'Mũ',
+        )
+      }
+
+      await waitFor(() =>
+        expect(mocks.fetchMedia).toHaveBeenCalledWith(expect.objectContaining({ page: 1 })),
+      )
+      expect(mocks.fetchMedia.mock.calls.map(([query]) => query.page)).toEqual([1])
+    },
+  )
+
   it('không gọi API và giải thích rõ khi thiếu quyền xem media', async () => {
     mocks.hasPermission.mockReturnValue(false)
     renderPicker()

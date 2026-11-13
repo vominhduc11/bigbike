@@ -1,0 +1,8 @@
+{
+  "webFatalHeapErrors": 0,
+  "webNoFallbackErrors": 0,
+  "startupRevalidate200": true,
+  "webFallbackCache": {
+    "entries": 4
+  }
+}

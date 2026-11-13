@@ -1,3 +1,4 @@
+import { resolveStoreHours } from "./store-hours";
 import rawPages from "./static-pages.json";
 
 // Metadata trang thông tin (chính sách, hướng dẫn…) cố định trong code.
@@ -53,7 +54,10 @@ export function getStaticPage(slug: string, locale: string): LocalizedStaticPage
   return {
     slug: p.slug,
     title: pick(p.titleEn, p.title, locale),
-    body: pickBody(p.bodyEn, p.body, locale),
+    body:
+      slug === "cach-do-size-trang-phuc"
+        ? resolveStoreHours(pickBody(p.bodyEn, p.body, locale), locale)
+        : pickBody(p.bodyEn, p.body, locale),
     heroTitle: pickN(p.heroTitleEn, p.heroTitle, locale),
     seoTitle: pickN(p.seoTitleEn, p.seoTitle, locale),
     seoDescription: pickN(p.seoDescriptionEn, p.seoDescription, locale),

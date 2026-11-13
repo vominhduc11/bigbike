@@ -1,0 +1,169 @@
+{
+  "reviewer": "backend_migrations agent, independent of CI implementation",
+  "scope": "Static source/configuration review only; no remote workflow or local isolated stack executed; no performance acceptance implied.",
+  "reviewed_source_sha256": [
+    {
+      "path": "ci_guard.py",
+      "sha256": "39d5b0771d4c089aee395d43a737de95c52e8e739589efd3795147ab559ebee1"
+    },
+    {
+      "path": "compose.ci.yml",
+      "sha256": "54d8137cbdb35b4767578a3c0980d6eb1f629c8f30e1bb41b8b35c26be095e2d"
+    },
+    {
+      "path": "api.ci.conf",
+      "sha256": "70639e8b86cad9d10aa5d8dc9628fc2e5bd21ce72943c0a8a6c136f11d968aec"
+    },
+    {
+      "path": "Dockerfile.backend",
+      "sha256": "bced81be2423611036b204e4b123ba25bcfd7fa1057bae74e168a5edcf396dee"
+    },
+    {
+      "path": "Dockerfile.web",
+      "sha256": "432727c7f3beb09782fa3300041d6e67e2ed143cb592490e50a8abd6ede140b9"
+    },
+    {
+      "path": "Dockerfile.admin",
+      "sha256": "eec555c9f4021de0454d39b1fe243292a00f83aec03257bb475ef2b4fb9bed0e"
+    },
+    {
+      "path": "fixtures.py",
+      "sha256": "15f72e1836e4f7eeebebb1f748eaed8b235a093d64fa7c762f28dffc107a1928"
+    },
+    {
+      "path": "stack_checks.py",
+      "sha256": "d774a74f446cef25a0933383aa688a7687146c7fa9314fd0f9ea2d1f93b6c302"
+    },
+    {
+      "path": "s3_setup.py",
+      "sha256": "2193a32911fc51fec3a00b192244720d289d0565899e0db58c0001289693d1cb"
+    },
+    {
+      "path": "run_ci.py",
+      "sha256": "9fe614df77fc52207911f0aafdc7f84a5143eaab51cebed2f52e3f4af43b1a75"
+    },
+    {
+      "path": "browser.cjs",
+      "sha256": "2d06076a479558f9a218ec5bbd7ee7eccfaffd13805ca9a275e5d380ac38535c"
+    },
+    {
+      "path": "benchmark_api.py",
+      "sha256": "181017c60f153741e9ef2d9d26a789db93a77ea9211faa0aedb9c66a43ea4750"
+    }
+  ],
+  "findings": [
+    {
+      "id": "CI-QA-001",
+      "severity": "blocker",
+      "files": "compose.ci.yml",
+      "finding": "Ingress shared host overlapped public bigbike-backend; startup rejects overlapping groups.",
+      "review_status": "Fixed in source: shared hosts now localhost,127.0.0.1; runtime not run."
+    },
+    {
+      "id": "CI-QA-002",
+      "severity": "blocker",
+      "files": "compose.ci.yml/run_ci.py",
+      "finding": "Web needs INTERNAL_API_TOKEN and baked internal media rewrite origin, otherwise redirect auth/media fail.",
+      "review_status": "Web token alias/media build env now present; runtime not run."
+    },
+    {
+      "id": "CI-QA-003",
+      "severity": "blocker",
+      "files": "browser.cjs",
+      "finding": "Saved one-time refresh cookie cannot be reused in a fresh second viewport context after first context rotates it.",
+      "review_status": "Reported to Lead; frontend specialist independently reviewing resolution."
+    },
+    {
+      "id": "CI-QA-004",
+      "severity": "blocker",
+      "files": "browser.cjs",
+      "finding": "Admin paths must use /admin prefix. SPA200 alone can certify not-found shell; require expected API and visible screen/empty state assertions.",
+      "review_status": "Reported to Lead; frontend specialist independently reviewing resolution."
+    },
+    {
+      "id": "CI-QA-005",
+      "severity": "high",
+      "files": "run_ci.py",
+      "finding": "900s access token can expire after media/browser/Lighthouse plus630s API workload; perform normal login immediately before API load.",
+      "review_status": "Reported to Lead; no TTL/security change requested."
+    },
+    {
+      "id": "CI-QA-006",
+      "severity": "medium",
+      "files": "api.ci.conf",
+      "finding": "Lab proxy429 default HTML lacks documented Retry-After,no-store and standard error envelope.",
+      "review_status": "Reported to Lead; do not relax limiter."
+    },
+    {
+      "id": "CI-QA-007",
+      "severity": "medium",
+      "files": "stack_checks.py",
+      "finding": "urllib follows redirects unless rejected, risking token forwarding and concealing unexpected3xx.",
+      "review_status": "Fixed in source via NoRedirect; runtime not run."
+    },
+    {
+      "id": "CI-QA-008",
+      "severity": "high",
+      "files": "baseline-manifest.json",
+      "finding": "New decode-reuse optimization changes candidate ImageVariantService SHA; existing manifest must fail until re-audited. Preserve pre-existing compression changes in both arms.",
+      "review_status": "Reported to Lead; keep identical current compression helper source in both arms if old4arg path remains behaviorally equivalent."
+    },
+    {
+      "id": "CI-QA-009",
+      "severity": "medium",
+      "files": "stack_checks.py/fixtures.py",
+      "finding": "Media dimensions merely reported and min-alpha assertion too weak; fixtures do not cover >2000 original resize,>1MB opaque conversion,multi-upload,interruption/retry.",
+      "review_status": "Reported to Lead; improve applicable assertions and explicitly preserve uncovered scope."
+    },
+    {
+      "id": "CI-QA-010",
+      "severity": "low",
+      "files": "run_ci.py/benchmark_api.py",
+      "finding": "Product public list parameter is size; current limit parameter ignored and coincides with default20.",
+      "review_status": "Reported to Lead."
+    },
+    {
+      "id": "CI-QA-011",
+      "severity": "high",
+      "files": "stack_checks.py/fixtures.py/browser.cjs",
+      "finding": "Empty CI bucket lacks legacy slider objects seeded by canonical migrations; homepage hero can404 while page shell/API succeed. No generated products pinnedFEATURED_GRID. This makes home metrics unrepresentative and potentially artificially favorable.",
+      "review_status": "Reported to Lead: configure synthetic actual MinIO hero + featured products through normal CI-only admin APIs, assert hero images load and grid is present; otherwise fail/mark unavailable."
+    }
+  ],
+  "positive_checks": [
+    "Guards require GitHub-hosted runner, job-owned Docker namespace and temporary-directory boundary.",
+    "Root env/provider credentials excluded from build subprocess environment; source only tracked files and clean revision, no app env files.",
+    "Before/After source identities check exact attributed difference set, sequential fresh stacks and same media bytes.",
+    "Normal login, CSRF, guest cart isolation, no-store and anonymous media/admin denial are exercised by proposed actual API scenario.",
+    "Private bucket defaults remain separate; public-read policy scoped to ephemeral public bucket only.",
+    "Fresh schema test457migrations with two synthetic fixtures passed, no copied customers/orders/admins."
+  ],
+  "limitations": [
+    "Security boundary/functional correctness needs actual CI stack startup before acceptance.",
+    "Media timing is request wall time; no separated server processing/transfer measurement yet.",
+    "Aggregate pg_stat_statements counters include collector/background work; not exact queries/request.",
+    "Full controller/background inventory does not certify every route/job was functionally tested or measured."
+  ],
+  "recheck": {
+    "scope": "Source-only follow-up; actual CI not executed.",
+    "confirmed_fixed": [
+      "CI-QA-001 ingress host disjointness",
+      "CI-QA-002 web token alias and baked internal media rewrite env",
+      "CI-QA-005 fresh normal login immediately beforeAPI workload",
+      "CI-QA-007 no-redirect handler",
+      "CI-QA-010 size parameter"
+    ],
+    "partially_fixed": [
+      "CI-QA-006 now has JSON429+Retry-After+no-store; meta.requestId/timestamp still missing at last recheck"
+    ],
+    "frontend_specialist_rechecking": [
+      "CI-QA-003 refresh-cookie rotation",
+      "CI-QA-004 screen/API assertions"
+    ],
+    "pending": [
+      "CI-QA-008 latest baseline attribution",
+      "CI-QA-009 media coverage/stronger assertions",
+      "CI-QA-011 meaningful homepage fixtures"
+    ]
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "at": "2026-11-09T15:18:09.498846+00:00",
+  "requests": [
+    {
+      "url": "https://bigbike.vn/google-merchant.xml",
+      "status": 200,
+      "seconds": 9.702,
+      "bytes": 1719681,
+      "contentType": "application/xml; charset=utf-8",
+      "generatedAt": "2026-11-09T15:17:57.155Z"
+    },
+    {
+      "url": "https://bigbike.vn/product/mu-bao-hiem-fullface-ls2-ff800-storm/?variant=wp-var-9102",
+      "status": 200,
+      "seconds": 2.092,
+      "bytes": 438540,
+      "contentType": "text/html; charset=utf-8",
+      "generatedAt": null,
+      "sku": "FF800OB-XANHLA-XXL",
+      "skuInHtml": true,
+      "productJsonLd": true
+    },
+    {
+      "url": "https://bigbike.vn/product/ao-bao-ho-moto-nu-ls2-zoom-lady/?variant=var_2421c3d88d4a4e10bd9480e389969979",
+      "status": 200,
+      "seconds": 0.867,
+      "bytes": 425688,
+      "contentType": "text/html; charset=utf-8",
+      "generatedAt": null,
+      "sku": "LS2-ZOOM-LADY-S",
+      "skuInHtml": true,
+      "productJsonLd": true
+    },
+    {
+      "url": "https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s13/",
+      "status": 200,
+      "seconds": 1.175,
+      "bytes": 537171,
+      "contentType": "text/html; charset=utf-8",
+      "generatedAt": null,
+      "sku": "SCS-S13",
+      "skuInHtml": true,
+      "productJsonLd": true
+    },
+    {
+      "url": "https://bigbike.vn/google-local-inventory.tsv",
+      "status": 200,
+      "seconds": 4.965,
+      "bytes": 64651,
+      "contentType": "text/tab-separated-values; charset=utf-8",
+      "generatedAt": "2026-11-09T15:18:07.468Z"
+    },
+    {
+      "url": "https://bigbike.vn/",
+      "status": 200,
+      "seconds": 0.426,
+      "bytes": 527379,
+      "contentType": "text/html; charset=utf-8",
+      "generatedAt": null,
+      "html": true
+    },
+    {
+      "url": "https://bigbike.vn/en/",
+      "status": 200,
+      "seconds": 1.047,
+      "bytes": 532613,
+      "contentType": "text/html; charset=utf-8",
+      "generatedAt": null,
+      "html": true
+    },
+    {
+      "url": "https://admin.bigbike.vn/",
+      "status": 200,
+      "seconds": 0.433,
+      "bytes": 3903,
+      "contentType": "text/html; charset=utf-8",
+      "generatedAt": null,
+      "html": true
+    }
+  ],
+  "feed": {
+    "items": 1184,
+    "missingBrand": [
+      "ALTL-MAO",
+      "ALTL-5FDUAL",
+      "ALTL-QUAN",
+      "D30VT-COMBO3",
+      "D30VT-LUNG",
+      "D30VT-TAY",
+      "D30VT-VAI"
+    ],
+    "wpVarLinks": 720,
+    "localItems": 1184,
+    "localDifferences": [],
+    "missingLocalIds": []
+  }
+}

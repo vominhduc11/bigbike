@@ -1,0 +1,30 @@
+{
+  "command": "./mvnw -B -Dtest=Phase1DCustomerAuthTest,PublishedProductListingCacheTest,CatalogReferenceCacheEvictorTest test -DforkCount=1",
+  "suites": [
+    {
+      "suite": "com.bigbike.bigbike_backend.api.Phase1DCustomerAuthTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.bigbike.bigbike_backend.repository.catalog.PublishedProductListingCacheTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.bigbike.bigbike_backend.service.admin.CatalogReferenceCacheEvictorTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "tests": 32,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0
+}

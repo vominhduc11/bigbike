@@ -1,0 +1,54 @@
+{
+  "time_utc": "2026-11-13T08:27:39.440008+00:00",
+  "services": [
+    {
+      "name": "/bigbike-backend",
+      "container_id": "519e901adf8b97f6502be51788bceee8552655978e7b3bbab632a823011a78c5",
+      "started_at": "2026-11-13T03:37:02.449794641Z",
+      "restart_count": 0,
+      "image": "sha256:dafe638fd53ad7e9931dec1bf286ce6de60d3a7e8b22e64632af273fad258580"
+    },
+    {
+      "name": "/bigbike-web",
+      "container_id": "038e5e620999df383a2024707a631ecec2c195300a649d5ce6b7a8eb7d034fd1",
+      "started_at": "2026-11-13T03:38:01.925794325Z",
+      "restart_count": 0,
+      "image": "sha256:bf7fa41d519d7bb72f4cdac89e22ed289d092f56aada4bc3178c64c7ec3f11d6"
+    },
+    {
+      "name": "/bigbike-admin",
+      "container_id": "b2b6a1773c8d350807ec09c5c7374e3da87356c616f020bb3c8cb1807010bb15",
+      "started_at": "2026-11-13T03:38:01.922613016Z",
+      "restart_count": 0,
+      "image": "sha256:26f41d916b98bd1508fff755b4f4b6fab01822448ddc2e4cffe17816b584ef92"
+    },
+    {
+      "name": "/bigbike-postgres",
+      "container_id": "517654330f544d050fbda248552154cc345750708dd777d522050facb1591808",
+      "started_at": "2026-09-06T13:11:55.84558863Z",
+      "restart_count": 0,
+      "image": "sha256:108b27c919e6e7bc124350fb265deea9adac58e118eade428c6d1ad44b90debe"
+    },
+    {
+      "name": "/bigbike-minio",
+      "container_id": "8b958d2ab8f44fefedfcac5974f5f1a6fdf9580801ae68a1e5462c3881bfbc0c",
+      "started_at": "2026-09-06T13:11:55.900833164Z",
+      "restart_count": 0,
+      "image": "sha256:9d668e47f1fc60ea49af4203deee87a657eb1aa0e2761fee2c7c2d1df282c880"
+    },
+    {
+      "name": "/bigbike-redis",
+      "container_id": "290f9a4fc7aa5769ab4feb1110469667761bbe0487142f03e0fca33a089efecd",
+      "started_at": "2026-09-06T13:11:55.829381147Z",
+      "restart_count": 0,
+      "image": "sha256:2a51817f79255c8b69f86a974459c2e0359aff81417d80158f2b9e541e6f4b33"
+    }
+  ],
+  "note": "Read-only container identity and Flyway summary. No runtime application rebuild, restart, migration or load measurement performed.",
+  "flyway_latest_observed": "1094 succeeded (SELECT only; V1095 not applied)",
+  "commands": [
+    "docker ps --format <name/status>",
+    "docker inspect --format <name/id/start/restarts/image> <six BigBike services>",
+    "docker exec bigbike-postgres sh -c psql SELECT version,success FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 3"
+  ]
+}

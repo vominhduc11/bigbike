@@ -1,0 +1,235 @@
+{
+  "scope": "Offline decode/compression component only; no upload/network/storage time; no capacity or field-CWV claim",
+  "mode": "reuse",
+  "java_version": "17.0.18",
+  "max_heap_bytes": 268435456,
+  "warmup_sets": 2,
+  "samples": 5,
+  "results": [
+    {
+      "fixture": "jpeg-noise-2000x1200",
+      "source_sha256": "7811d1bf1db66d23eb05eb63915c2a37a6686ecc5b674d34796012e0545c088d",
+      "source_bytes": 1443426,
+      "source_width": 2000,
+      "source_height": 1200,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        429565717,
+        450639575,
+        424999947,
+        423876717,
+        412226277
+      ],
+      "sample_allocated_bytes": [
+        72433992,
+        72432800,
+        72430696,
+        72441424,
+        72430168
+      ],
+      "median_millis": 424.999947,
+      "median_allocated_bytes": 72432800,
+      "outputs": [
+        {
+          "sha256": "d9e694df2e8b02907a1147a3800ee3663d4a4d3adceb0760b8c03b3b44a82787",
+          "bytes": 15840,
+          "width": 300,
+          "height": 180,
+          "alpha": false,
+          "corner_alpha": 255
+        },
+        {
+          "sha256": "86cdbaeeceda506e11f52927b12997f0cd07a54b43f36647d79ee9572b67a0c2",
+          "bytes": 174818,
+          "width": 800,
+          "height": 480,
+          "alpha": false,
+          "corner_alpha": 255
+        },
+        {
+          "sha256": "a918ce7fd77c9e811b1b7aad059954f793a8130e9c004acbf9570929cfa452c6",
+          "bytes": 922582,
+          "width": 1600,
+          "height": 960,
+          "alpha": false,
+          "corner_alpha": 255
+        }
+      ]
+    },
+    {
+      "fixture": "png-opaque-noise-2000x1200",
+      "source_sha256": "772281aa2799c58af8bbc7d6d8fb5eb6d8804ec3d974292c4ce8c3ed3c818e1d",
+      "source_bytes": 7206091,
+      "source_width": 2000,
+      "source_height": 1200,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        1002046639,
+        1051568766,
+        1077533899,
+        1074693018,
+        1031129677
+      ],
+      "sample_allocated_bytes": [
+        73964592,
+        73964616,
+        73961344,
+        73961256,
+        73961472
+      ],
+      "median_millis": 1051.568766,
+      "median_allocated_bytes": 73961472,
+      "outputs": [
+        {
+          "sha256": "0a542e623fc110ee1253c7162320df11f84fc234034ac932960366f4b01158dc",
+          "bytes": 119699,
+          "width": 300,
+          "height": 180,
+          "alpha": false,
+          "corner_alpha": 255
+        },
+        {
+          "sha256": "557ca1c694a5222378f6ff7d74836254e618f9a54ce1f7ec800e208b5ed946f4",
+          "bytes": 991582,
+          "width": 800,
+          "height": 480,
+          "alpha": false,
+          "corner_alpha": 255
+        },
+        {
+          "sha256": "8aa9e2a4a9ee017a4a2b3955ac9e85577c61dd9da3dd185096c17087ef055aeb",
+          "bytes": 4418886,
+          "width": 1600,
+          "height": 960,
+          "alpha": false,
+          "corner_alpha": 255
+        }
+      ]
+    },
+    {
+      "fixture": "png-alpha-noise-2000x1200",
+      "source_sha256": "4da28ae67fea90e6df907de25436e30dc265cf9b4ab5d12190122bddbf8c74f9",
+      "source_bytes": 8238491,
+      "source_width": 2000,
+      "source_height": 1200,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        2479821398,
+        2487392415,
+        2361135093,
+        2469283996,
+        2387255631
+      ],
+      "sample_allocated_bytes": [
+        92548728,
+        92548736,
+        92548912,
+        92548696,
+        92548912
+      ],
+      "median_millis": 2469.283996,
+      "median_allocated_bytes": 92548736,
+      "outputs": [
+        {
+          "sha256": "857fc9619577338512fb4dc6c6af60672edab051c770889399881d454ee87cef",
+          "bytes": 117795,
+          "width": 300,
+          "height": 180,
+          "alpha": true,
+          "corner_alpha": 96
+        },
+        {
+          "sha256": "83d54056bf32d75a2aa6fab23ff666354810807b99ee92d24d3a71480a611872",
+          "bytes": 1002511,
+          "width": 800,
+          "height": 480,
+          "alpha": true,
+          "corner_alpha": 96
+        },
+        {
+          "sha256": "9865525963365859e2d6da317d6274a514d8d8b6902dd33c9946e1a07706533b",
+          "bytes": 4367681,
+          "width": 1600,
+          "height": 960,
+          "alpha": true,
+          "corner_alpha": 96
+        }
+      ]
+    },
+    {
+      "fixture": "customer-photo-wide.webp",
+      "source_sha256": "c0bb83cecdc47f0cdc952618347b50492cfbca33fb8b9041f6b079bc0acd4d7f",
+      "source_bytes": 10676,
+      "source_width": 1700,
+      "source_height": 8,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        25035000,
+        27067932,
+        21234219,
+        43440336,
+        29925228
+      ],
+      "sample_allocated_bytes": [
+        7474192,
+        7474264,
+        7474192,
+        7474232,
+        7474280
+      ],
+      "median_millis": 27.067932,
+      "median_allocated_bytes": 7474232,
+      "outputs": [
+        {
+          "sha256": "81c166474dec636b5de7b2bfa71f1bc7d4e2ce99a3d03711729e950e5d1d0e35",
+          "bytes": 720,
+          "width": 300,
+          "height": 1,
+          "alpha": false,
+          "corner_alpha": 255
+        },
+        {
+          "sha256": "ca616f07655e97cf9981f8a9f834e7d38a7651ed68c98c28fbe74aa1417c62af",
+          "bytes": 8917,
+          "width": 800,
+          "height": 4,
+          "alpha": false,
+          "corner_alpha": 255
+        },
+        {
+          "sha256": "c0bb83cecdc47f0cdc952618347b50492cfbca33fb8b9041f6b079bc0acd4d7f",
+          "bytes": 10676,
+          "width": 1700,
+          "height": 8,
+          "alpha": false,
+          "corner_alpha": 255
+        }
+      ]
+    },
+    {
+      "fixture": "customer-photo-alpha.webp",
+      "source_sha256": "e043cfd1425e25d281bcdbaf5274856d2f815a095d857c49cce08ce71509dd39",
+      "source_bytes": 9362,
+      "source_width": 48,
+      "source_height": 48,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        7217512,
+        6955879,
+        6690472,
+        7006923,
+        6748221
+      ],
+      "sample_allocated_bytes": [
+        150824,
+        150864,
+        150824,
+        150688,
+        150648
+      ],
+      "median_millis": 6.955879,
+      "median_allocated_bytes": 150824,
+      "outputs": []
+    }
+  ]
+}

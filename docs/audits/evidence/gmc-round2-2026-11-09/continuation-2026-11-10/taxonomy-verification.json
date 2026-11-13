@@ -1,0 +1,157 @@
+{
+  "checkedAt": "2026-11-10T00:46:47.356874+00:00",
+  "sourceUrl": "https://www.google.com/basepages/producttype/taxonomy-with-ids.en-US.txt",
+  "taxonomyVersion": "# Google_Product_Taxonomy_Version: 2021-09-21",
+  "viUrlStatus": 404,
+  "proposedRows": 30,
+  "numericRows": 24,
+  "allNumericPathsMatch": true,
+  "rows": [
+    {
+      "slug": "`balo-phuot-balo-moto`",
+      "id": "100",
+      "matchesOfficialPath": true,
+      "path": "Luggage & Bags > Backpacks"
+    },
+    {
+      "slug": "`gia-do-dien-thoai-xe-may`",
+      "id": "5613",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories"
+    },
+    {
+      "slug": "`mu-bao-hiem-fullface`",
+      "id": "2110",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Helmets"
+    },
+    {
+      "slug": "`mu-bao-hiem`",
+      "id": "2110",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Helmets"
+    },
+    {
+      "slug": "`mu-bao-hiem-dual-sport`",
+      "id": "2110",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Helmets"
+    },
+    {
+      "slug": "`phu-kien-camera-hanh-trinh`",
+      "id": "2096",
+      "matchesOfficialPath": true,
+      "path": "Cameras & Optics > Camera & Optic Accessories"
+    },
+    {
+      "slug": "`tui-deo-hong-tui-deo-dui`",
+      "id": "104",
+      "matchesOfficialPath": true,
+      "path": "Luggage & Bags > Fanny Packs"
+    },
+    {
+      "slug": "`ao-quan-moto-mua-he`",
+      "id": "5517",
+      "matchesOfficialPath": true,
+      "path": "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing"
+    },
+    {
+      "slug": "`mu-bao-hiem-lat-ham-thao-ham`",
+      "id": "2110",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Helmets"
+    },
+    {
+      "slug": "`tui-treo-xe-may-tui-hit-binh-xang`",
+      "id": "5512",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Storage & Cargo > Motorcycle Bags & Panniers"
+    },
+    {
+      "slug": "`ao-mua-do-di-mua-moto`",
+      "id": "3066",
+      "matchesOfficialPath": true,
+      "path": "Apparel & Accessories > Clothing > Outerwear > Rain Suits"
+    },
+    {
+      "slug": "`ao-quan-moto-touring`",
+      "id": "5517",
+      "matchesOfficialPath": true,
+      "path": "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing"
+    },
+    {
+      "slug": "`ao-quan-bao-ho`",
+      "id": "5517",
+      "matchesOfficialPath": true,
+      "path": "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing"
+    },
+    {
+      "slug": "`gang-tay-xe-may-moto`",
+      "id": "5908",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Gloves"
+    },
+    {
+      "slug": "`mu-bao-hiem-3-4`",
+      "id": "2110",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Helmets"
+    },
+    {
+      "slug": "`ao-quan-moto-adventure`",
+      "id": "5517",
+      "matchesOfficialPath": true,
+      "path": "Apparel & Accessories > Clothing > Activewear > Motorcycle Protective Clothing"
+    },
+    {
+      "slug": "`giay-bao-ho-moto-phuot`",
+      "id": "187",
+      "matchesOfficialPath": true,
+      "path": "Apparel & Accessories > Shoes"
+    },
+    {
+      "slug": "`giap-bao-ho-tay-chan`",
+      "id": "5547",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear"
+    },
+    {
+      "slug": "`tai-nghe-bluetooth-mu-bao-hiem`",
+      "id": "543627",
+      "matchesOfficialPath": true,
+      "path": "Electronics > Audio > Audio Components > Headphones & Headsets > Headsets"
+    },
+    {
+      "slug": "`giay-mua-he`",
+      "id": "187",
+      "matchesOfficialPath": true,
+      "path": "Apparel & Accessories > Shoes"
+    },
+    {
+      "slug": "`giay-touring`",
+      "id": "187",
+      "matchesOfficialPath": true,
+      "path": "Apparel & Accessories > Shoes"
+    },
+    {
+      "slug": "`gang-tay-mua-he`",
+      "id": "5908",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Gloves"
+    },
+    {
+      "slug": "`gang-tay-touring`",
+      "id": "5908",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories > Vehicle Safety & Security > Motorcycle Protective Gear > Motorcycle Gloves"
+    },
+    {
+      "slug": "`phu-kien-cho-xe`",
+      "id": "5613",
+      "matchesOfficialPath": true,
+      "path": "Vehicles & Parts > Vehicle Parts & Accessories"
+    }
+  ],
+  "notApplied": true,
+  "correctedProposal": "tui-treo-xe-may-tui-hit-binh-xang: 5540 (bicycle computer accessories) -> 5512 (motorcycle bags and panniers), pending shop approval"
+}

@@ -39,6 +39,19 @@ public class ImageCompressionService {
         }
         if (decoded == null) return source;
 
+        return compress(source, mime, profile, decoded);
+    }
+
+    /**
+     * Reuses a decoded source for synchronous responsive variants. The image must
+     * come from {@code source}; callers retain ownership and this method does not
+     * mutate it. Encoding and original-byte fallback match {@link #compress(byte[], String, CompressionProfile)}.
+     */
+    public byte[] compress(byte[] source, String mimeType, CompressionProfile profile, BufferedImage decoded) {
+        if (source == null || source.length == 0 || decoded == null) return source;
+        String mime = mimeType == null ? "" : mimeType.toLowerCase(Locale.ROOT);
+        if (!mime.startsWith("image/")) return source;
+
         int sourceWidth = decoded.getWidth();
         int sourceHeight = decoded.getHeight();
         int relevantDimension = profile.squareCrop() ? Math.min(sourceWidth, sourceHeight) : sourceWidth;
@@ -74,6 +87,48 @@ public class ImageCompressionService {
             log.warn("Image compression failed, keeping original: {}", e.getMessage());
             return source;
         }
+    }
+
+    public record CompressedImage(byte[] bytes, String mimeType) {}
+
+    /** MEDIA_RULE_006: only opaque, large admin PNGs may change format. */
+    public CompressedImage compressAdminOriginal(byte[] source, String mimeType, CompressionProfile profile) {
+        if (source != null && source.length > 1_000_000 && "image/png".equals(mimeType)) {
+            try {
+                BufferedImage image = ImageIO.read(new ByteArrayInputStream(source));
+                if (image != null && isOpaque(image)) {
+                    for (double quality : new double[]{0.85, 0.75, 0.65, 0.55, 0.45, 0.35}) {
+                        ByteArrayOutputStream output = new ByteArrayOutputStream();
+                        var builder = Thumbnails.of(image).outputFormat("jpg").outputQuality(quality);
+                        if (image.getWidth() > profile.maxWidth()) {
+                            int targetWidth = Math.max(profile.maxWidth(),
+                                    (int) Math.ceil(800.0 * image.getWidth() / image.getHeight()));
+                            builder.width(Math.min(image.getWidth(), targetWidth));
+                        } else {
+                            builder.scale(1.0);
+                        }
+                        builder.toOutputStream(output);
+                        byte[] result = output.toByteArray();
+                        if (result.length > 0 && result.length < 500_000) {
+                            return new CompressedImage(result, "image/jpeg");
+                        }
+                    }
+                }
+            } catch (Exception exception) {
+                log.warn("Could not optimize admin PNG; preserving the accepted image");
+            }
+        }
+        return new CompressedImage(compress(source, mimeType, profile), mimeType);
+    }
+
+    private boolean isOpaque(BufferedImage image) {
+        if (!image.getColorModel().hasAlpha()) return true;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                if ((image.getRGB(x, y) >>> 24) != 255) return false;
+            }
+        }
+        return true;
     }
 
     /**

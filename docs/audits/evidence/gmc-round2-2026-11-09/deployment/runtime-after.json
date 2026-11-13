@@ -1,0 +1,73 @@
+{
+  "at": "2026-11-09T15:17:49.897871+00:00",
+  "containers": [
+    {
+      "name": "bigbike-web",
+      "id": "d101161dac0a432122b9e95a34baecddaf922f00f729748a443571ee9c74351d",
+      "image": "sha256:f8c00411746da82a697d434204c8447840fc3796ee3d53ff6bf4fc8310580196",
+      "startedAt": "2026-11-09T15:16:27.668805684Z",
+      "health": "healthy",
+      "memory": 1073741824,
+      "restartCount": 0,
+      "sameContainerAsBefore": false,
+      "matchesBuiltImage": true
+    },
+    {
+      "name": "bigbike-admin",
+      "id": "2a19a8b2c0bba17abf167884f01d9001245aa258187587b02d8b33fddc732877",
+      "image": "sha256:8dea43a4e5ea559ba4ef283873c7531d184a7bba0845df9a6f42bf0086b0641f",
+      "startedAt": "2026-11-07T03:41:18.049572738Z",
+      "health": "healthy",
+      "memory": 134217728,
+      "restartCount": 0,
+      "sameContainerAsBefore": true,
+      "matchesBuiltImage": true
+    },
+    {
+      "name": "bigbike-backend",
+      "id": "8e735dced8d298baf5348a00ddc846832392cc8792236f43785b2e7ba07163fd",
+      "image": "sha256:3d7882bf052320fff42be456478d93ea8d0f147948767e72f7f1eb9d6a20de44",
+      "startedAt": "2026-11-09T15:15:33.833370494Z",
+      "health": "healthy",
+      "memory": 2147483648,
+      "restartCount": 0,
+      "sameContainerAsBefore": false,
+      "matchesBuiltImage": true
+    },
+    {
+      "name": "bigbike-postgres",
+      "id": "517654330f544d050fbda248552154cc345750708dd777d522050facb1591808",
+      "image": "sha256:108b27c919e6e7bc124350fb265deea9adac58e118eade428c6d1ad44b90debe",
+      "startedAt": "2026-09-06T13:11:55.84558863Z",
+      "health": "healthy",
+      "memory": 536870912,
+      "restartCount": 0,
+      "sameContainerAsBefore": true,
+      "matchesBuiltImage": null
+    },
+    {
+      "name": "bigbike-redis",
+      "id": "290f9a4fc7aa5769ab4feb1110469667761bbe0487142f03e0fca33a089efecd",
+      "image": "sha256:2a51817f79255c8b69f86a974459c2e0359aff81417d80158f2b9e541e6f4b33",
+      "startedAt": "2026-09-06T13:11:55.829381147Z",
+      "health": "healthy",
+      "memory": 201326592,
+      "restartCount": 0,
+      "sameContainerAsBefore": true,
+      "matchesBuiltImage": null
+    },
+    {
+      "name": "bigbike-minio",
+      "id": "8b958d2ab8f44fefedfcac5974f5f1a6fdf9580801ae68a1e5462c3881bfbc0c",
+      "image": "sha256:9d668e47f1fc60ea49af4203deee87a657eb1aa0e2761fee2c7c2d1df282c880",
+      "startedAt": "2026-09-06T13:11:55.900833164Z",
+      "health": "healthy",
+      "memory": 805306368,
+      "restartCount": 0,
+      "sameContainerAsBefore": true,
+      "matchesBuiltImage": null
+    }
+  ],
+  "envFilesUnchanged": true,
+  "dataContainersUnchanged": true
+}

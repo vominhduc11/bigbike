@@ -1,0 +1,25 @@
+{
+  "scope": "Snapshots preserve all prior user changes plus four historical optimizations; only new decoded-image reuse may differ afterward. Local snapshot paths are not portable CI inputs.",
+  "files": [
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+      "sha256": "705410bad64e18d797f9cd50746e0824092efbbc5eedc83843f4ced9382a2dd9",
+      "snapshot": "/tmp/bigbike-perf-20261113-media-before/bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+      "sha256": "8a302930d5ac6f9281f0b1152e857cf74f3ac9940994e3af6b263006e9ca4e5a",
+      "snapshot": "/tmp/bigbike-perf-20261113-media-before/bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/media/ImageCompressionServiceTest.java",
+      "sha256": "72555cefbbb2b053a3db396a9a808a53bd0b04f4ea18be9322d42a99dc624254",
+      "snapshot": "/tmp/bigbike-perf-20261113-media-before/bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/media/ImageCompressionServiceTest.java"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/admin/ImageVariantServiceTest.java",
+      "sha256": "902071b71d562abb97fb84ed3a7e76154cbca860242e546a5a71c741b8b51a72",
+      "snapshot": "/tmp/bigbike-perf-20261113-media-before/bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/admin/ImageVariantServiceTest.java"
+    }
+  ]
+}

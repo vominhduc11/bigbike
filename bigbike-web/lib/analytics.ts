@@ -1,7 +1,9 @@
+import { translatePath } from "@/lib/utils/routes";
 import type { Cart, CartItem, OrderDetail, OrderLineItem } from "@/lib/contracts/commerce";
 import type { Product, ProductVariant } from "@/lib/contracts/public";
 import { derivePricing } from "@/lib/pricing";
 import { env } from "@/env";
+import { REVIEW_LINK_WAIT_MS } from "@/lib/review-link";
 
 declare global {
   interface Window {
@@ -76,6 +78,102 @@ function sendEvent(name: string, params: Record<string, unknown>): void {
   window.clarity?.("event", name);
 }
 
+/**
+ * Google-review bridge: one opening, one event, one bounded completion. This deliberately
+ * does not use a session claim: a fresh opening of the same URL is a new observation.
+ * Deferring the first attempt lets React's effect replay cancel before sending anything.
+ */
+export function trackReviewLinkOpen(onComplete: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const startedAt = Date.now();
+  let finished = false;
+  let sent = false;
+  let attemptTimer: number | undefined;
+  const cancel = () => {
+    finished = true;
+    window.clearTimeout(deadlineTimer);
+    window.clearTimeout(attemptTimer);
+  };
+  const complete = () => {
+    if (finished) return;
+    cancel();
+    onComplete();
+  };
+  const deadlineTimer = window.setTimeout(complete, REVIEW_LINK_WAIT_MS);
+  const attempt = () => {
+    if (finished || sent || !env.NEXT_PUBLIC_GA4_MEASUREMENT_ID) return;
+    const remainingMs = REVIEW_LINK_WAIT_MS - (Date.now() - startedAt);
+    if (remainingMs <= 0) return;
+    if (typeof window.gtag !== "function") {
+      attemptTimer = window.setTimeout(attempt, Math.min(25, remainingMs));
+      return;
+    }
+    sent = true;
+    try {
+      sendEvent("review_link_open", {
+        send_to: env.NEXT_PUBLIC_GA4_MEASUREMENT_ID,
+        page_location: window.location.href,
+        transport_type: "beacon",
+        event_timeout: Math.max(1, remainingMs - 50),
+        event_callback: complete,
+      });
+    } catch {
+      // A failing analytics library must not keep the customer on the bridge.
+      complete();
+    }
+  };
+  attemptTimer = window.setTimeout(attempt, 0);
+  return cancel;
+}
+
+let viewedPage = "";
+const viewedItems = new Set<string>();
+const LOCALE_VIEW_KEY = "bb_analytics:locale_view";
+let localeView: { path: string; items: string[]; expires: number } | undefined;
+
+/** Transfer only a pending locale switch, also when an anchor forces document navigation. */
+export function preserveAnalyticsProductView(targetPath: string): void {
+  if (typeof window === "undefined" || !viewedItems.size) return;
+  localeView = {
+    path: targetPath.split(/[?#]/)[0],
+    items: [...viewedItems],
+    expires: Date.now() + 30_000,
+  };
+  try {
+    window.sessionStorage.setItem(LOCALE_VIEW_KEY, JSON.stringify(localeView));
+  } catch {
+    /* Best effort. */
+  }
+}
+
+export function observeAnalyticsPage(pathname: string): void {
+  const page = translatePath(pathname, "vi").split(/[?#]/)[0];
+  if (page === viewedPage) return;
+  viewedPage = page;
+  viewedItems.clear();
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.sessionStorage.getItem(LOCALE_VIEW_KEY);
+    if (raw) localeView = JSON.parse(raw);
+    window.sessionStorage.removeItem(LOCALE_VIEW_KEY);
+  } catch {
+    /* Storage may be blocked. */
+  }
+  if (
+    localeView &&
+    localeView.path === pathname &&
+    localeView.expires >= Date.now() &&
+    Array.isArray(localeView.items)
+  ) {
+    localeView.items.forEach((item) => viewedItems.add(item));
+  }
+  localeView = undefined;
+}
+
+function metaEventId(): string {
+  return `web_${globalThis.crypto.randomUUID()}`;
+}
+
 type MetaStandardEvent =
   | "ViewContent"
   | "AddToCart"
@@ -96,11 +194,7 @@ function sendMetaEvent(
   eventId?: string,
 ): void {
   if (typeof window === "undefined" || typeof window.fbq !== "function") return;
-  if (eventId) {
-    window.fbq("track", name, params, { eventID: eventId });
-    return;
-  }
-  window.fbq("track", name, params);
+  window.fbq("track", name, params, { eventID: eventId ?? metaEventId() });
 }
 
 /**
@@ -309,6 +403,11 @@ export function trackViewItem(product: Product, variant?: ProductVariant): void 
     value,
     items: [item],
   });
+  if (typeof window === "undefined") return;
+  observeAnalyticsPage(window.location.pathname);
+  const identity = `${product.id}:${item.item_id}`;
+  if (viewedItems.has(identity) || typeof window.fbq !== "function") return;
+  viewedItems.add(identity);
   sendMetaEvent("ViewContent", {
     ...metaCommercePayload([item], value),
     content_name: item.item_name,

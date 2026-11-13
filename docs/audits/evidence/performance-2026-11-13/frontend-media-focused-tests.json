@@ -1,0 +1,241 @@
+{
+  "results": [
+    {
+      "app": "admin",
+      "success": true,
+      "test_files": 5,
+      "tests": 63,
+      "passed": 63,
+      "failed": 0,
+      "pending": 0,
+      "wall_seconds": 27.022,
+      "suites": [
+        {
+          "file": "bigbike-admin/src/components/MediaPickerModal.test.jsx",
+          "status": "passed",
+          "passed": 20,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-admin/src/components/VideoPickerModal.test.jsx",
+          "status": "passed",
+          "passed": 13,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-admin/src/lib/adminApi.session.test.js",
+          "status": "passed",
+          "passed": 15,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-admin/src/lib/auth.test.jsx",
+          "status": "passed",
+          "passed": 10,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-admin/src/lib/mediaOriginalFallback.test.js",
+          "status": "passed",
+          "passed": 5,
+          "failed": 0,
+          "pending": 0
+        }
+      ],
+      "vitest_total_suites": 10
+    },
+    {
+      "app": "web",
+      "success": true,
+      "test_files": 25,
+      "tests": 272,
+      "passed": 272,
+      "failed": 0,
+      "pending": 0,
+      "wall_seconds": 68.335,
+      "suites": [
+        {
+          "file": "bigbike-web/__tests__/catalog-price-filter.test.ts",
+          "status": "passed",
+          "passed": 10,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/analytics/AnalyticsRuntime.test.tsx",
+          "status": "passed",
+          "passed": 4,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/analytics/PurchaseEvent.test.tsx",
+          "status": "passed",
+          "passed": 1,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/analytics/analytics.test.ts",
+          "status": "passed",
+          "passed": 31,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/analytics/review-link.test.tsx",
+          "status": "passed",
+          "passed": 10,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/checkout/checkout-session.test.ts",
+          "status": "passed",
+          "passed": 5,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/checkout/order-confirm-view.test.tsx",
+          "status": "passed",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/checkout/use-checkout.test.tsx",
+          "status": "passed",
+          "passed": 6,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/merchant/catalog.test.ts",
+          "status": "passed",
+          "passed": 5,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/merchant/feed.test.ts",
+          "status": "passed",
+          "passed": 12,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/merchant/local-inventory.test.ts",
+          "status": "passed",
+          "passed": 7,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/merchant/local-route.test.ts",
+          "status": "passed",
+          "passed": 2,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/merchant/proxy.test.ts",
+          "status": "passed",
+          "passed": 2,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/merchant/route.test.ts",
+          "status": "passed",
+          "passed": 2,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/merchant/variant-link.test.ts",
+          "status": "passed",
+          "passed": 4,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/seo/homepage-business.test.ts",
+          "status": "passed",
+          "passed": 3,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/seo/json-ld.test.ts",
+          "status": "passed",
+          "passed": 23,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/seo/metadata-robots.test.ts",
+          "status": "passed",
+          "passed": 10,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/seo/render-boundaries.test.ts",
+          "status": "passed",
+          "passed": 21,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/seo/robots-noindex.test.ts",
+          "status": "passed",
+          "passed": 49,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/seo/robots.test.ts",
+          "status": "passed",
+          "passed": 3,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/seo/seo-terminal-routes.test.ts",
+          "status": "passed",
+          "passed": 7,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/seo/sitemap.test.ts",
+          "status": "passed",
+          "passed": 17,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/__tests__/utils/variant-match.test.ts",
+          "status": "passed",
+          "passed": 28,
+          "failed": 0,
+          "pending": 0
+        },
+        {
+          "file": "bigbike-web/components/catalog/ReadingProgressBar.perf.test.tsx",
+          "status": "passed",
+          "passed": 4,
+          "failed": 0,
+          "pending": 0
+        }
+      ],
+      "vitest_total_suites": 71
+    }
+  ],
+  "scope": "Focused unit/component tests only; no full browser or full-system performance acceptance."
+}

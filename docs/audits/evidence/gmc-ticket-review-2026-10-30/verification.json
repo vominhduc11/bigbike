@@ -1,0 +1,854 @@
+{
+  "reviewDate": "2026-10-30",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "scope": "Read-only production inspection and work-ticket review; no application or business-data changes",
+  "httpChecks": {
+    "time": "2026-10-30T08:06:47.854334+00:00",
+    "results": [
+      {
+        "name": "feed-public-curl",
+        "url": "https://bigbike.vn/google-merchant.xml",
+        "status": 503,
+        "elapsed": 5.838,
+        "bytes": 79,
+        "headers": {
+          "Date": "Fri, 30 Oct 2026 08:06:29 GMT",
+          "Content-Type": "text/plain; charset=utf-8",
+          "Server": "cloudflare",
+          "Cache-Control": "no-store",
+          "retry-after": "300",
+          "cf-cache-status": "DYNAMIC"
+        },
+        "body": "Nguồn sản phẩm tạm thời chưa sẵn sàng. Vui lòng thử lại sau."
+      },
+      {
+        "name": "feed-public-googlebot",
+        "url": "https://bigbike.vn/google-merchant.xml",
+        "status": 503,
+        "elapsed": 5.809,
+        "bytes": 79,
+        "headers": {
+          "Date": "Fri, 30 Oct 2026 08:06:29 GMT",
+          "Content-Type": "text/plain; charset=utf-8",
+          "Server": "cloudflare",
+          "Cache-Control": "no-store",
+          "retry-after": "300",
+          "cf-cache-status": "DYNAMIC"
+        },
+        "body": "Nguồn sản phẩm tạm thời chưa sẵn sàng. Vui lòng thử lại sau."
+      },
+      {
+        "name": "feed-origin",
+        "url": "http://127.0.0.1:3000/google-merchant.xml",
+        "status": 503,
+        "elapsed": 5.742,
+        "bytes": 79,
+        "headers": {
+          "cache-control": "no-store",
+          "content-type": "text/plain; charset=utf-8",
+          "retry-after": "300",
+          "Date": "Fri, 30 Oct 2026 08:06:43 GMT"
+        },
+        "body": "Nguồn sản phẩm tạm thời chưa sẵn sàng. Vui lòng thử lại sau."
+      },
+      {
+        "name": "robots",
+        "url": "https://bigbike.vn/robots.txt",
+        "status": 200,
+        "elapsed": 0.406,
+        "bytes": 120,
+        "headers": {
+          "Date": "Fri, 30 Oct 2026 08:06:30 GMT",
+          "Content-Type": "text/plain",
+          "Server": "cloudflare",
+          "Cache-Control": "public, max-age=14400, must-revalidate",
+          "cf-cache-status": "EXPIRED"
+        },
+        "body": ""
+      },
+      {
+        "name": "sitemap",
+        "url": "https://bigbike.vn/sitemap.xml",
+        "status": 200,
+        "elapsed": 4.189,
+        "bytes": 383771,
+        "headers": {
+          "Date": "Fri, 30 Oct 2026 08:06:32 GMT",
+          "Content-Type": "application/xml",
+          "Server": "cloudflare",
+          "Cache-Control": "public, max-age=0, must-revalidate",
+          "cf-cache-status": "DYNAMIC"
+        },
+        "body": ""
+      }
+    ]
+  },
+  "catalog": {
+    "catalogProducts": 214,
+    "detailErrors": [],
+    "eligibleProducts": 214,
+    "offerCandidates": 1188,
+    "uniqueSkus": 1187,
+    "duplicateSkus": {
+      "drhl-kewig-bd-1l": [
+        {
+          "sku": "DRHL-KEWIG-BD-1L",
+          "productId": "prod_c3340fe3669f40e38c9fca236653f07f",
+          "slug": "day-thun-rang-hang-kewig-bd-1l",
+          "variantId": null,
+          "price": {
+            "retailPrice": 145000.0,
+            "salePrice": null,
+            "currency": "VND"
+          },
+          "stock": "IN_STOCK"
+        },
+        {
+          "sku": "DRHL-KEWIG-BD-1L",
+          "productId": "prod_bd0f1b068f234567be9251e11fe647e2",
+          "slug": "day-thun-rang-non-bao-hiem-hanh-ly-kewig-bd-1s",
+          "variantId": "var_2a9de4e6a23c47e7b38f87c686875622",
+          "price": {
+            "retailPrice": 145000.0,
+            "salePrice": null,
+            "currency": "VND"
+          },
+          "stock": true
+        }
+      ]
+    },
+    "variantPrefixes": {
+      "wp-var-": 738,
+      "simple-or-other": 84,
+      "var_": 366
+    },
+    "elapsed": 3.2
+  },
+  "rootCause": {
+    "runtimeLog": "[google-merchant] GMC_SKU_DUPLICATE",
+    "duplicateSellingSku": "DRHL-KEWIG-BD-1L",
+    "source": "API catalog plus independent PostgreSQL READ ONLY query",
+    "webBackendOrigin": "http://bigbike-backend:8080"
+  },
+  "landingChecks": [
+    {
+      "name": "rsb286",
+      "path": "/product/tui-deo-cheo-rs-taichi-rsb286/?variant=wp-var-35817",
+      "status": 404,
+      "finalUrl": "https://bigbike.vn/product/tui-deo-cheo-rs-taichi-rsb286/?variant=wp-var-35817",
+      "redirects": [],
+      "seconds": 1.14,
+      "bytes": 244813
+    },
+    {
+      "name": "rsb279",
+      "path": "/product/tui-deo-hong-rs-taichi-rsb279-chong-nuoc/?variant=wp-var-28804",
+      "status": 404,
+      "finalUrl": "https://bigbike.vn/product/tui-deo-hong-rs-taichi-rsb279-chong-nuoc/?variant=wp-var-28804",
+      "redirects": [],
+      "seconds": 9.38,
+      "bytes": 245026
+    },
+    {
+      "name": "ls2ff901",
+      "path": "/product/mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon/?variant=var_97a13dab38974c5cbf99f2317528d107",
+      "status": 200,
+      "finalUrl": "https://bigbike.vn/product/mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon/?variant=var_97a13dab38974c5cbf99f2317528d107",
+      "redirects": [],
+      "seconds": 1.21,
+      "bytes": 504779
+    },
+    {
+      "name": "givi",
+      "path": "/product/tui-deo-hong-moto-givi-ea145/",
+      "status": 200,
+      "finalUrl": "https://bigbike.vn/product/tui-deo-hong-moto-givi-ea145/",
+      "redirects": [],
+      "seconds": 0.99,
+      "bytes": 487524
+    },
+    {
+      "name": "wpvariant",
+      "path": "/product/mu-bao-hiem-fullface-ls2-ff800-storm/?variant=wp-var-9102",
+      "status": 200,
+      "finalUrl": "https://bigbike.vn/product/mu-bao-hiem-fullface-ls2-ff800-storm/?variant=wp-var-9102",
+      "redirects": [],
+      "seconds": 2.63,
+      "bytes": 437749
+    },
+    {
+      "name": "spirit",
+      "path": "/product/quan-bao-ho-jean-spirit/?variant=wp-var-39315",
+      "status": 200,
+      "finalUrl": "https://bigbike.vn/product/quan-bao-ho-jean-spirit/?variant=wp-var-39315",
+      "redirects": [],
+      "seconds": 0.68,
+      "bytes": 429404
+    },
+    {
+      "name": "rsb286-history",
+      "path": "/sp/tui-deo-cheo-rs-taichi-rsb286.html",
+      "status": 404,
+      "finalUrl": "https://bigbike.vn/product/tui-deo-cheo-rs-taichi-rsb286/",
+      "redirects": [
+        {
+          "status": 301,
+          "location": "https://bigbike.vn/product/tui-deo-cheo-rs-taichi-rsb286/"
+        }
+      ],
+      "seconds": 1.03,
+      "bytes": 244689
+    },
+    {
+      "name": "rsb279-history",
+      "path": "/sp/tui-deo-hong-rs-taichi-rsb279-chong-nuoc.html",
+      "status": 404,
+      "finalUrl": "https://bigbike.vn/product/tui-deo-hong-rs-taichi-rsb279-chong-nuoc/",
+      "redirects": [
+        {
+          "status": 301,
+          "location": "https://bigbike.vn/product/tui-deo-hong-rs-taichi-rsb279-chong-nuoc/"
+        }
+      ],
+      "seconds": 1.06,
+      "bytes": 244901
+    }
+  ],
+  "currentAssignedImages": [
+    {
+      "url": "/media/migration/wordpress/62/626452159364241609886c02a5bc2c37657b7cb75f35e15999eabde929cc8bdd/MU-BAO-HIEM-LS2-FF800-XANH-LA-2-Custom.jpg",
+      "slug": "mu-bao-hiem-fullface-ls2-ff800-storm",
+      "metadata": [
+        50,
+        50
+      ],
+      "skus": [
+        "FF800OB-XANHLA-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        50
+      ],
+      "format": "JPEG",
+      "bytes": 3936
+    },
+    {
+      "url": "/media/migration/wordpress/04/0411f80fb835ff97c83ab423ab6c59e6bc43fccd780dc678d27c5a612d7c5bc4/Mu-bao-hiem-moto-ls2-copter-of600-01-150x150-1.jpg",
+      "slug": "mu-bao-hiem-3-4-ls2-of600-copter-ii",
+      "metadata": [
+        150,
+        150
+      ],
+      "skus": [
+        "LS2-OF600B-L",
+        "LS2-OF600B-M",
+        "LS2-OF600B-XL",
+        "LS2-OF600B-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        150,
+        150
+      ],
+      "format": "JPEG",
+      "bytes": 5214
+    },
+    {
+      "url": "/media/migration/wordpress/1f/1f6e88df5064b529c6c7f46edac5356233b11758a23f5e9172788f2fccc66add/Mu-bao-hiem-moto-ls2-copter-of600-07-06-150x150-1.jpg",
+      "slug": "mu-bao-hiem-3-4-ls2-of600-copter-ii",
+      "metadata": [
+        150,
+        150
+      ],
+      "skus": [
+        "LS2-OF600R-M",
+        "LS2-OF600R-L",
+        "LS2-OF600R-XL",
+        "LS2-OF600R-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        150,
+        150
+      ],
+      "format": "JPEG",
+      "bytes": 5456
+    },
+    {
+      "url": "/media/migration/wordpress/10/10d0a18acab56c1101ee72ec4e20a7963d9c2fccec7d6cab7c9e74a71d6b626e/Mu-bao-hiem-moto-ls2-copter-of600-05-150x150-1.jpg",
+      "slug": "mu-bao-hiem-3-4-ls2-of600-copter-ii",
+      "metadata": [
+        150,
+        150
+      ],
+      "skus": [
+        "LS2-OF600G-M",
+        "LS2-OF600G-L",
+        "LS2-OF600G-XL",
+        "LS2-OF600G-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        150,
+        150
+      ],
+      "format": "JPEG",
+      "bytes": 5380
+    },
+    {
+      "url": "/media/migration/wordpress/ef/ef6678ee6359afd531872ddd4e13bf1b6d24f0f74058a4f1cd310071f3f4195a/Mu-bao-hiem-moto-ls2-copter-of600-07-07-01-150x150-1.jpg",
+      "slug": "mu-bao-hiem-3-4-ls2-of600-copter-ii",
+      "metadata": [
+        150,
+        150
+      ],
+      "skus": [
+        "LS2-OF600GR-M",
+        "LS2-OF600GR-L",
+        "LS2-OF600GR-XL",
+        "LS2-OF600GR-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        150,
+        150
+      ],
+      "format": "JPEG",
+      "bytes": 5603
+    },
+    {
+      "url": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg",
+      "slug": "giay-moto-touring-komine-bk-088",
+      "metadata": [
+        50,
+        21
+      ],
+      "skus": [
+        "BK088-XAM2-38",
+        "BK088-XAM2-37",
+        "BK088-XAM2-36",
+        "BK088-DEN-39",
+        "BK088-DEN-38",
+        "BK088-DEN-37",
+        "BK088-DEN-36",
+        "BK088-XAM2-39",
+        "BK088-DEN-40",
+        "BK088-DEN-41",
+        "BK088-DEN-42",
+        "BK088-DEN-43",
+        "BK088-DEN-44",
+        "BK088-DEN-45",
+        "BK088-XAM2-40",
+        "BK088-XAM2-41",
+        "BK088-XAM2-42",
+        "BK088-XAM2-43",
+        "BK088-XAM2-44",
+        "BK088-XAM2-45"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        21
+      ],
+      "format": "JPEG",
+      "bytes": 704
+    },
+    {
+      "url": "/media/migration/wordpress/21/21ea839664041f91e573eae064884d9479113fcf8164f9ca91d5fa37e0475bdd/CABERG-AVALON-X-BLACK-09-1.jpg",
+      "slug": "mu-bao-hiem-caberg-avalon-x-italy",
+      "metadata": [
+        50,
+        50
+      ],
+      "skus": [
+        "CABERG-A-DEN-M"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        50
+      ],
+      "format": "JPEG",
+      "bytes": 1692
+    },
+    {
+      "url": "/media/migration/wordpress/fc/fc5afe505995d4ff028566c3ac297c8f1d09cc44b65bb435eb09ec2b4e534276/CABERG-AVALON-X-WHITE-01-1.jpg",
+      "slug": "mu-bao-hiem-caberg-avalon-x-italy",
+      "metadata": [
+        50,
+        50
+      ],
+      "skus": [
+        "CABERG-A-TRANG2-M"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        50
+      ],
+      "format": "JPEG",
+      "bytes": 1558
+    },
+    {
+      "url": "/media/migration/wordpress/5d/5d62fba059b7441502d9d4ac7d4eef946e5b048da3fe87c5751b27f746ca32d2/CABERG-AVALON-X-BLACK-RED-20-2-1.jpg",
+      "slug": "mu-bao-hiem-caberg-avalon-x-italy",
+      "metadata": [
+        50,
+        50
+      ],
+      "skus": [
+        "CABERG-A-DO-L"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        50
+      ],
+      "format": "JPEG",
+      "bytes": 1968
+    },
+    {
+      "url": "/media/migration/wordpress/cf/cf05e32a25c64158edf810d861a9d29ee6b20592eb1af9e514fb9bf638debca3/OF616-BRUSH-Gloss-Black-H-V-Yellow-400x400-1.jpg",
+      "slug": "mu-bao-hiem-3-4-ls2-of616-airflow-ii",
+      "metadata": [
+        400,
+        400
+      ],
+      "skus": [
+        "LS2-OF616-XANHLA-XL"
+      ],
+      "status": 200,
+      "actualSize": [
+        400,
+        400
+      ],
+      "format": "JPEG",
+      "bytes": 11765
+    },
+    {
+      "url": "/media/migration/wordpress/2e/2e7f8bb7da822618375f340a62efce2dc105f659b123002efa0b3cc4b0617a60/OF610-Gloss-Black-400x400-1.jpg",
+      "slug": "mu-bao-hiem-nua-dau-ls2-of610",
+      "metadata": [
+        400,
+        400
+      ],
+      "skus": [
+        "LS2-OF610-2-DEN-XSS",
+        "LS2-OF610-2-DEN-ML",
+        "LS2-OF610-2-DEN-XL2XL"
+      ],
+      "status": 200,
+      "actualSize": [
+        400,
+        400
+      ],
+      "format": "JPEG",
+      "bytes": 10969
+    },
+    {
+      "url": "/media/migration/wordpress/f8/f83c86de4285eaaf08c84db4a6916af680b55faf1a9d9c2215c65215ad4a047d/OF610-Gloss-White-400x400-1.jpg",
+      "slug": "mu-bao-hiem-nua-dau-ls2-of610",
+      "metadata": [
+        400,
+        400
+      ],
+      "skus": [
+        "LS2-OF610-2-TRANG2-XSS1590000",
+        "LS2-OF610-2-TRANG2-ML",
+        "LS2-OF610-2-TRANG2-XL2XL"
+      ],
+      "status": 200,
+      "actualSize": [
+        400,
+        400
+      ],
+      "format": "JPEG",
+      "bytes": 10659
+    },
+    {
+      "url": "/media/migration/wordpress/68/689d0bf1061554dc71a7b1820ff42ee5f024725a5965eb92719b1a7ea52b0c7f/OF610-Nardo-400x400-1.jpg",
+      "slug": "mu-bao-hiem-nua-dau-ls2-of610",
+      "metadata": [
+        400,
+        400
+      ],
+      "skus": [
+        "LS2-OF610-2-XAM2-XSS",
+        "LS2-OF610-2-XAM2-ML",
+        "LS2-OF610-2-XAM2-XL2XL"
+      ],
+      "status": 200,
+      "actualSize": [
+        400,
+        400
+      ],
+      "format": "JPEG",
+      "bytes": 11031
+    },
+    {
+      "url": "/media/migration/wordpress/2d/2d84c648199cb8d417b702a1a81b81af12d42efaef2bec49780c8d12c1b3d48d/MU-BAO-HIEM-ILM-Z302-03-1.jpg",
+      "slug": "mu-bao-hiem-thao-ham-ilm-z302",
+      "metadata": [
+        50,
+        50
+      ],
+      "skus": [
+        "ILM-Z302-TRANG-S",
+        "ILM-Z302-TRANG-M",
+        "ILM-Z302-TRANG-L",
+        "ILM-Z302-TRANG-XL",
+        "ILM-Z302-TRANG-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        50
+      ],
+      "format": "JPEG",
+      "bytes": 1680
+    },
+    {
+      "url": "/media/migration/wordpress/10/10b2e88da9ab28886e8329b2c101635bca57b5a8bdc15fbba69f976444349eac/MU-BAO-HIEM-ILM-Z302-05-1.jpg",
+      "slug": "mu-bao-hiem-thao-ham-ilm-z302",
+      "metadata": [
+        49,
+        49
+      ],
+      "skus": [
+        "ILM-Z302-DENTRANG-M",
+        "ILM-Z302-DENTRANG-L",
+        "ILM-Z302-DENTRANG-XL",
+        "ILM-Z302-DENTRANG-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        49,
+        49
+      ],
+      "format": "JPEG",
+      "bytes": 2034
+    },
+    {
+      "url": "/media/migration/wordpress/6a/6aa9813c65dc357594714d8c26248783bec45c5aee2a2cc56ac8e1bccdf323a5/MU-BAO-HIEM-ILM-Z302-02-1.jpg",
+      "slug": "mu-bao-hiem-thao-ham-ilm-z302",
+      "metadata": [
+        50,
+        50
+      ],
+      "skus": [
+        "ILM-Z302-DENNHAM3-S",
+        "ILM-Z302-DENNHAM3-M",
+        "ILM-Z302-DENNHAM3-L",
+        "ILM-Z302-DENNHAM3-XL",
+        "ILM-Z302-DENNHAM3-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        50
+      ],
+      "format": "JPEG",
+      "bytes": 1869
+    },
+    {
+      "url": "/media/migration/wordpress/db/db10659f6708ea35d91c885beffd4355819e9be3cccaa67a046b37dd3c2b8cae/MU-BAO-HIEM-ILM-Z302-04-1.jpg",
+      "slug": "mu-bao-hiem-thao-ham-ilm-z302",
+      "metadata": [
+        50,
+        50
+      ],
+      "skus": [
+        "ILM-Z302-DENTRANGDO-S",
+        "ILM-Z302-DENTRANGDO-M",
+        "ILM-Z302-DENTRANGDO-L",
+        "ILM-Z302-DENTRANGDO-XL",
+        "ILM-Z302-DENTRANGDO-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        50
+      ],
+      "format": "JPEG",
+      "bytes": 1731
+    },
+    {
+      "url": "/media/migration/wordpress/8b/8bc1740c7f1a9f5168838a77acc924527dad3e5a663131fc4d2c51e12875aca5/MU-BAO-HIEM-ILM-Z302-07-1.jpg",
+      "slug": "mu-bao-hiem-thao-ham-ilm-z302",
+      "metadata": [
+        50,
+        50
+      ],
+      "skus": [
+        "ILM-Z302-XANHARMY-S",
+        "ILM-Z302-XANHARMY-M",
+        "ILM-Z302-XANHARMY-L",
+        "ILM-Z302-XANHARMY-XL",
+        "ILM-Z302-XANHARMY-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        50
+      ],
+      "format": "JPEG",
+      "bytes": 2179
+    },
+    {
+      "url": "/media/migration/wordpress/5c/5c0b05f9cd41e359d54ef78c98a51ea190b00a7f5f36396fe10033ade47c262d/MU-BAO-HIEM-ILM-Z302-06-1.jpg",
+      "slug": "mu-bao-hiem-thao-ham-ilm-z302",
+      "metadata": [
+        50,
+        50
+      ],
+      "skus": [
+        "ILM-Z302-XANHMECHA-S",
+        "ILM-Z302-XANHMECHA-M",
+        "ILM-Z302-XANHMECHA-L",
+        "ILM-Z302-XANHMECHA-XL",
+        "ILM-Z302-XANHMECHA-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        50,
+        50
+      ],
+      "format": "JPEG",
+      "bytes": 2367
+    },
+    {
+      "url": "/media/migration/wordpress/09/0969b259da9afd18d503f01388f306bb0c85f8491466cf3e22e7d182becd79c9/z7100657511766_3f1d6c0632d5637931df4e8e3e1b0233.jpg",
+      "slug": "phu-kien-kinh-thay-cho-mu-bao-hiem-ls2-of610",
+      "metadata": [
+        600,
+        600
+      ],
+      "skus": [
+        "LS2-OF610-DEN"
+      ],
+      "status": 200,
+      "actualSize": [
+        600,
+        600
+      ],
+      "format": "JPEG",
+      "bytes": 12202
+    },
+    {
+      "url": "/media/migration/wordpress/34/3470d4a76e029823ac0c85746f75899dccb3e924ad04a2415bbb2726864cf201/z7100657613933_304d11f32355d028087846a56cc8daa5.jpg",
+      "slug": "phu-kien-kinh-thay-cho-mu-bao-hiem-ls2-of610",
+      "metadata": [
+        600,
+        600
+      ],
+      "skus": [
+        "LS2-OF610-GUONG"
+      ],
+      "status": 200,
+      "actualSize": [
+        600,
+        600
+      ],
+      "format": "JPEG",
+      "bytes": 21536
+    },
+    {
+      "url": "/media/migration/wordpress/7f/7f4ad9b489a6e1e045bf95788bad20a4ff3408798d77b8b8226505d879d43ad0/z7100657469630_32ecabac84d028a2baef841418412c31.jpg",
+      "slug": "phu-kien-kinh-thay-cho-mu-bao-hiem-ls2-of610",
+      "metadata": [
+        600,
+        600
+      ],
+      "skus": [
+        "LS2-OF610-TRANG2"
+      ],
+      "status": 200,
+      "actualSize": [
+        600,
+        600
+      ],
+      "format": "JPEG",
+      "bytes": 6301
+    },
+    {
+      "url": "/media/uploads/2ba44eab-63ad-4a66-8590-de577067c58d/images.jpg",
+      "slug": "gang-tay-moto-mua-he-komine-gk-257-vented-protective-leather",
+      "metadata": [
+        447,
+        447
+      ],
+      "skus": [
+        "GT-KOM-GK257-BK-M",
+        "GT-KOM-GK257-BK-L",
+        "GT-KOM-GK257-BK-XL",
+        "GT-KOM-GK257-BK-2XL",
+        "GT-KOM-GK257-BK-3XL"
+      ],
+      "status": 200,
+      "actualSize": [
+        447,
+        447
+      ],
+      "format": "JPEG",
+      "bytes": 17382
+    },
+    {
+      "url": "/media/uploads/efd5e4ea-7576-4dfc-a759-e55a441536aa/l.jpg",
+      "slug": "mu-bao-hiem-3-4-ls2-of626",
+      "metadata": [
+        447,
+        447
+      ],
+      "skus": [
+        "LS2 OF626-GLOSSBLACK-L",
+        "LS2 OF626-GLOSSBLACK-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        447,
+        447
+      ],
+      "format": "JPEG",
+      "bytes": 13875
+    },
+    {
+      "url": "/media/uploads/41ffe9b8-b3bb-45f5-a80f-b306c3be8d5e/30420.jpg",
+      "slug": "mu-bao-hiem-3-4-ls2-of626",
+      "metadata": [
+        1000,
+        1000
+      ],
+      "skus": [
+        "LS2 OF626-JUZHENBLACKRED-L",
+        "LS2 OF626-JUZHENBLACKRED-XXL"
+      ],
+      "status": 200,
+      "actualSize": [
+        1000,
+        1000
+      ],
+      "format": "JPEG",
+      "bytes": 406816
+    }
+  ],
+  "largerImageCandidates": [
+    {
+      "filename": "CABERG-AVALON-X-WHITE-01.jpg",
+      "url": "/media/migration/wordpress/96/96553a73d8c2919abadde741fac2e2b685150cb7c120f9ac433f8b397fbbc499/CABERG-AVALON-X-WHITE-01.jpg",
+      "width": 1176,
+      "height": 1176,
+      "status": 200,
+      "actualSize": [
+        1176,
+        1176
+      ]
+    },
+    {
+      "filename": "MU-BAO-HIEM-ILM-Z302-02.jpg",
+      "url": "/media/migration/wordpress/92/928ad79bff40fa43922bbbdf49681b3f1288877910320876f349f5398bf764fe/MU-BAO-HIEM-ILM-Z302-02.jpg",
+      "width": 1176,
+      "height": 1176,
+      "status": 200,
+      "actualSize": [
+        1176,
+        1176
+      ]
+    },
+    {
+      "filename": "GIAY-KOMINE-BK088-MAU-DEN-1.jpg",
+      "url": "/media/migration/wordpress/8f/8f9b8b6f2d9f3039d43f33ece2d6a2b3106a2198ba7ae3707433b68980334d3c/GIAY-KOMINE-BK088-MAU-DEN-1.jpg",
+      "width": 1500,
+      "height": 631,
+      "status": 200,
+      "actualSize": [
+        1500,
+        631
+      ]
+    },
+    {
+      "filename": "MU-BAO-HIEM-LS2-FF800-XANH-LA-2.jpg",
+      "url": "/media/migration/wordpress/ba/baf1dff44053ecbc3844513cbc99ced247a10acabfd09acb790b9435ba00b533/MU-BAO-HIEM-LS2-FF800-XANH-LA-2.jpg",
+      "width": 1080,
+      "height": 1080,
+      "status": 200,
+      "actualSize": [
+        1080,
+        1080
+      ]
+    }
+  ],
+  "missingBrandOffers": [
+    {
+      "sku": "ALTL-MAO",
+      "slug": "ao-lot-thun-lanh-mac-trong-giap-moto"
+    },
+    {
+      "sku": "ALTL-5FDUAL",
+      "slug": "ao-lot-thun-lanh-mac-trong-giap-moto"
+    },
+    {
+      "sku": "ALTL-QUAN",
+      "slug": "ao-lot-thun-lanh-mac-trong-giap-moto"
+    },
+    {
+      "sku": "D30VT-COMBO3",
+      "slug": "giap-bao-ho-tay-vai-lung-d30"
+    },
+    {
+      "sku": "D30VT-LUNG",
+      "slug": "giap-bao-ho-tay-vai-lung-d30"
+    },
+    {
+      "sku": "D30VT-TAY",
+      "slug": "giap-bao-ho-tay-vai-lung-d30"
+    },
+    {
+      "sku": "D30VT-VAI",
+      "slug": "giap-bao-ho-tay-vai-lung-d30"
+    }
+  ],
+  "additionalImages": {
+    "offersWithoutAdditionalImage": 348,
+    "note": "Count from existing feed selection rules and current data; feed itself is failing and GMC counts were not independently verified"
+  },
+  "priceSample": {
+    "sku": "SPIRIT-XANHOM-36",
+    "variantId": "wp-var-39315",
+    "retailPriceVnd": 2500000,
+    "salePriceVnd": 290000,
+    "initialHtmlOfferPriceVnd": 290000,
+    "available": true
+  },
+  "identifierChanges": {
+    "variantId": "var_97a13dab38974c5cbf99f2317528d107",
+    "skuInSuppliedTicket": "MLH-LS2-FF901X-SOLID-XS",
+    "publishedSku": "MLH-LS2-FF901X-SOLID-13990000XS"
+  },
+  "discontinuedProducts": [
+    {
+      "slug": "tui-deo-cheo-rs-taichi-rsb286",
+      "discontinued": true
+    },
+    {
+      "slug": "tui-deo-hong-rs-taichi-rsb279-chong-nuoc",
+      "discontinued": true
+    }
+  ],
+  "limitations": [
+    "No authenticated Merchant Center access or Merchant API execution",
+    "Googlebot User-Agent was simulated; no actual Google fetch initiated",
+    "No successful XML available for exhaustive landing-link verification",
+    "Image review is targeted, not a complete image library audit",
+    "No unit/E2E/build run; no application or configuration changes"
+  ],
+  "officialSources": [
+    "https://support.google.com/merchants/answer/6324350?hl=en",
+    "https://support.google.com/merchants/answer/6324478?hl=en",
+    "https://support.google.com/merchants/answer/6324436?hl=en",
+    "https://www.google.com/basepages/producttype/taxonomy-with-ids.en-US.txt",
+    "https://support.google.com/merchants/answer/12157888?hl=en",
+    "https://support.google.com/merchants/answer/6324499?hl=en",
+    "https://support.google.com/merchants/answer/15098801?hl=en"
+  ]
+}

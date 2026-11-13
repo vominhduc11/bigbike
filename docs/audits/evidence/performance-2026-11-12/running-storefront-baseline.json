@@ -1,0 +1,152 @@
+[
+  {
+    "viewport": 375,
+    "path": "/",
+    "status": 200,
+    "metrics": {
+      "lcp": 1768,
+      "cls": 0,
+      "ttfb": 38.89999961853027,
+      "fcp": 1768,
+      "load": 2070,
+      "resources": 61
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "viewport": 375,
+    "path": "/tim-kiem/?s=arai",
+    "status": 200,
+    "metrics": {
+      "lcp": 1100,
+      "cls": 0,
+      "ttfb": 226.80000019073486,
+      "fcp": 624,
+      "load": 1052.1999998092651,
+      "resources": 70
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "viewport": 375,
+    "path": "/gio-hang/",
+    "status": 200,
+    "metrics": {
+      "lcp": 396,
+      "cls": 0,
+      "ttfb": 197.10000038146973,
+      "fcp": 396,
+      "load": 948.5999994277954,
+      "resources": 55
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "viewport": 375,
+    "path": "/thanh-toan/",
+    "status": 200,
+    "metrics": {
+      "lcp": 400,
+      "cls": 0,
+      "ttfb": 85.90000057220459,
+      "fcp": 400,
+      "load": 613.8999996185303,
+      "resources": 58
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "viewport": 375,
+    "path": "/tai-khoan/",
+    "status": 200,
+    "metrics": {
+      "lcp": 256,
+      "cls": 0,
+      "ttfb": 16.09999942779541,
+      "fcp": 256,
+      "load": 359.30000019073486,
+      "resources": 75
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "viewport": 1440,
+    "path": "/",
+    "status": 200,
+    "metrics": {
+      "lcp": 1004,
+      "cls": 0,
+      "ttfb": 36.69999980926514,
+      "fcp": 508,
+      "load": 1807.5,
+      "resources": 86
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "viewport": 1440,
+    "path": "/tim-kiem/?s=arai",
+    "status": 200,
+    "metrics": {
+      "lcp": 1832,
+      "cls": 0.07353397205075446,
+      "ttfb": 473.1000003814697,
+      "fcp": 1528,
+      "load": 2140.6000003814697,
+      "resources": 82
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "viewport": 1440,
+    "path": "/gio-hang/",
+    "status": 200,
+    "metrics": {
+      "lcp": 780,
+      "cls": 0,
+      "ttfb": 225,
+      "fcp": 780,
+      "load": 1336.0999994277954,
+      "resources": 90
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "viewport": 1440,
+    "path": "/thanh-toan/",
+    "status": 200,
+    "metrics": {
+      "lcp": 476,
+      "cls": 0,
+      "ttfb": 75.89999961853027,
+      "fcp": 476,
+      "load": 888.3000001907349,
+      "resources": 97
+    },
+    "errors": [],
+    "failed": []
+  },
+  {
+    "viewport": 1440,
+    "path": "/tai-khoan/",
+    "status": 200,
+    "metrics": {
+      "lcp": 560,
+      "cls": 0,
+      "ttfb": 54.59999942779541,
+      "fcp": 352,
+      "load": 548.6000003814697,
+      "resources": 77
+    },
+    "errors": [],
+    "failed": []
+  }
+]

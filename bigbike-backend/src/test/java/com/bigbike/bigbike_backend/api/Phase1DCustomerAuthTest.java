@@ -12,6 +12,7 @@ import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerPriva
 import com.bigbike.bigbike_backend.persistence.repository.customer.CustomerSessionJpaRepository;
 import com.bigbike.bigbike_backend.service.customer.CustomerPrivacyConsentService;
 import jakarta.servlet.http.Cookie;
+import java.util.Locale;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -224,7 +225,7 @@ class Phase1DCustomerAuthTest {
 
     @Test
     void login_withPhone_succeeds() throws Exception {
-        String phone = "09" + (int)(Math.random() * 100000000);
+        String phone = "09" + String.format(Locale.ROOT, "%08d", (int) (Math.random() * 100000000));
         registerCustomer(null, phone, "pass1234");
 
         mockMvc.perform(post("/api/v1/customer/auth/login")

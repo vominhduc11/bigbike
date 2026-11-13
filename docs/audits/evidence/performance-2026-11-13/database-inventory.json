@@ -1,0 +1,2380 @@
+{
+  "scope": "Database source/schema inventory; enumeration is not audit completion",
+  "components": [
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/converter/DescriptionBlocksConverter.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/converter/ProductCommitmentsConverter.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/converter/ProductFaqsConverter.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/converter/ProductGalleryConverter.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/converter/ProductHighlightsConverter.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/converter/ProductVideosConverter.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/converter/SizeGuideSectionConverter.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/converter/SuitabilitySectionConverter.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/admin/AdminNotificationEntity.java",
+      "kind": "entity",
+      "tables": [
+        "admin_notifications"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/admin/AdminNotificationReadEntity.java",
+      "kind": "entity",
+      "tables": [
+        "admin_notification_reads"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/analytics/Ga4EventOutboxEntity.java",
+      "kind": "entity",
+      "tables": [
+        "ga4_event_outbox"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/audit/AuditLogEntity.java",
+      "kind": "entity",
+      "tables": [
+        "audit_logs"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/auth/AdminInviteTokenEntity.java",
+      "kind": "entity",
+      "tables": [
+        "admin_invite_tokens"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/auth/AdminRefreshTokenEntity.java",
+      "kind": "entity",
+      "tables": [
+        "admin_refresh_tokens"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/auth/AdminRoleEntity.java",
+      "kind": "entity",
+      "tables": [
+        "admin_roles"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/auth/AdminUserEntity.java",
+      "kind": "entity",
+      "tables": [
+        "admin_users"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/AttributeEntity.java",
+      "kind": "entity",
+      "tables": [
+        "attributes"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/AttributeValueEntity.java",
+      "kind": "entity",
+      "tables": [
+        "attribute_values"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/BrandEntity.java",
+      "kind": "entity",
+      "tables": [
+        "brands"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/CategoryEntity.java",
+      "kind": "entity",
+      "tables": [
+        "categories"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/LegacyDiscontinuedProductEntity.java",
+      "kind": "entity",
+      "tables": [
+        "legacy_discontinued_products"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ProductEntity.java",
+      "kind": "entity",
+      "tables": [
+        "products"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ProductVariantEntity.java",
+      "kind": "entity",
+      "tables": [
+        "product_variants"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ProductVariantGalleryImageEntity.java",
+      "kind": "entity",
+      "tables": [
+        "product_variant_gallery_images"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ProductVariantOptionEntity.java",
+      "kind": "entity",
+      "tables": [
+        "product_variant_options"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ReviewEntity.java",
+      "kind": "entity",
+      "tables": [
+        "reviews"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ReviewPhotoUploadEntity.java",
+      "kind": "entity",
+      "tables": [
+        "review_photo_uploads"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/SizeScaleEntity.java",
+      "kind": "entity",
+      "tables": [
+        "catalog_size_scales"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/SizeScaleGroupEntity.java",
+      "kind": "entity",
+      "tables": [
+        "catalog_size_groups"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/SizeScaleValueEntity.java",
+      "kind": "entity",
+      "tables": [
+        "catalog_size_values"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/StockMovementEntity.java",
+      "kind": "entity",
+      "tables": [
+        "stock_movements"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/cart/CartEntity.java",
+      "kind": "entity",
+      "tables": [
+        "carts"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/cart/CartItemEntity.java",
+      "kind": "entity",
+      "tables": [
+        "cart_items"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/CheckoutIdempotencyKeyEntity.java",
+      "kind": "entity",
+      "tables": [
+        "checkout_idempotency_keys"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderAddressEntity.java",
+      "kind": "entity",
+      "tables": [
+        "order_addresses"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderEntity.java",
+      "kind": "entity",
+      "tables": [
+        "orders"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderFeeItemEntity.java",
+      "kind": "entity",
+      "tables": [
+        "order_fee_items"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderHistoryBatchEntity.java",
+      "kind": "entity",
+      "tables": [
+        "order_history_batches"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderHistoryBatchOrderEntity.java",
+      "kind": "entity",
+      "tables": [
+        "order_history_batch_orders"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderLineItemEntity.java",
+      "kind": "entity",
+      "tables": [
+        "order_line_items"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderOverdueReminderOrderEntity.java",
+      "kind": "entity",
+      "tables": [
+        "order_overdue_reminder_orders"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderOverdueReminderRunEntity.java",
+      "kind": "entity",
+      "tables": [
+        "order_overdue_reminder_runs"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderShippingItemEntity.java",
+      "kind": "entity",
+      "tables": [
+        "order_shipping_items"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/payment/PaymentEntity.java",
+      "kind": "entity",
+      "tables": [
+        "payments"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/payment/PaymentEventEntity.java",
+      "kind": "entity",
+      "tables": [
+        "payment_events"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/content/ArticleEntity.java",
+      "kind": "entity",
+      "tables": [
+        "articles"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerAddressEntity.java",
+      "kind": "entity",
+      "tables": [
+        "customer_addresses"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerEmailVerificationTokenEntity.java",
+      "kind": "entity",
+      "tables": [
+        "customer_email_verification_tokens"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerEntity.java",
+      "kind": "entity",
+      "tables": [
+        "customers"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerOAuthLinkEntity.java",
+      "kind": "entity",
+      "tables": [
+        "customer_oauth_links"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerPasswordResetTokenEntity.java",
+      "kind": "entity",
+      "tables": [
+        "customer_password_reset_tokens"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerPrivacyConsentEntity.java",
+      "kind": "entity",
+      "tables": [
+        "customer_privacy_consents"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerSessionEntity.java",
+      "kind": "entity",
+      "tables": [
+        "customer_sessions"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/home/HomeHighlightEntity.java",
+      "kind": "entity",
+      "tables": [
+        "home_category_highlights"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/home/HomeHighlightsConfigEntity.java",
+      "kind": "entity",
+      "tables": [
+        "home_highlights_config"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/inventory/InventoryOutOfStockDigestRunEntity.java",
+      "kind": "entity",
+      "tables": [
+        "inventory_out_of_stock_digest_runs"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/media/MediaEntity.java",
+      "kind": "entity",
+      "tables": [
+        "media"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/media/MediaFolderEntity.java",
+      "kind": "entity",
+      "tables": [
+        "media_folders"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/menu/MenuEntity.java",
+      "kind": "entity",
+      "tables": [
+        "menus"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/menu/MenuItemEntity.java",
+      "kind": "entity",
+      "tables": [
+        "menu_items"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/redirect/RedirectEntity.java",
+      "kind": "entity",
+      "tables": [
+        "redirects"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationCampaignEntity.java",
+      "kind": "entity",
+      "tables": [
+        "review_invitation_campaigns"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationDailyQuotaEntity.java",
+      "kind": "entity",
+      "tables": [
+        "review_invitation_daily_quotas"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationDeliveryEntity.java",
+      "kind": "entity",
+      "tables": [
+        "review_invitation_deliveries"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationItemEntity.java",
+      "kind": "entity",
+      "tables": [
+        "review_invitation_items"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationOptOutEntity.java",
+      "kind": "entity",
+      "tables": [
+        "review_invitation_opt_outs"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/settings/SiteSettingEntity.java",
+      "kind": "entity",
+      "tables": [
+        "site_settings"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/slider/SliderEntity.java",
+      "kind": "entity",
+      "tables": [
+        "sliders"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/video/HomeVideoEntity.java",
+      "kind": "entity",
+      "tables": [
+        "home_videos"
+      ],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/admin/AdminNotificationJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/admin/AdminNotificationReadJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/analytics/Ga4EventOutboxJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/audit/AuditLogJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/auth/AdminInviteTokenJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/auth/AdminRefreshTokenJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/auth/AdminRoleJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/auth/AdminUserJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/AttributeJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/AttributeValueJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/BrandJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/CategoryJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/LegacyDiscontinuedProductJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/LegacyDiscontinuedProductSpecification.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductAnalyticsProjection.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductCsvExportRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductCsvExportRepositoryImpl.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Product queries, scoped read methods and batch pessimistic locks reviewed."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductVariantJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductVariantOptionJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ReviewJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ReviewPhotoUploadJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/SizeScaleGroupJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/SizeScaleJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/SizeScaleValueJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/StockMovementJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/cart/CartItemJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/cart/CartJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/CheckoutIdempotencyKeyJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderAddressJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderFeeItemJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderHistoryBatchJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderHistoryBatchOrderJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Paged customer orders and order lock read in source; not concurrency validated."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderLineItemJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderOverdueReminderOrderJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderOverdueReminderRunJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderShippingItemJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/payment/PaymentEventJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/payment/PaymentJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/content/ArticleJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerAddressJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerEmailVerificationTokenJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerOAuthLinkJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerPasswordResetTokenJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerPrivacyConsentJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerSessionJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/home/HomeHighlightJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/home/HomeHighlightsConfigJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/inventory/InventoryOutOfStockDigestRunJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/media/MediaFolderJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/media/MediaJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/media/MediaSpecifications.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/media/MediaTagJdbc.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/menu/MenuItemJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/menu/MenuJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/redirect/RedirectJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/redirect/RedirectSpecification.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationCampaignJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationDailyQuotaJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationDeliveryJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationItemJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationOptOutJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/settings/SiteSettingJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/slider/SliderJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/video/HomeVideoJpaRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": false,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Inventory only: per-query result correctness, latency, N+1 and plans not verified in this continuation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/CatalogReadRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Admin list interface remains unchanged; public paged interface is separate."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/JpaCatalogReadRepository.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Admin findProductsFiltered and list projection; public SQL pagination contrasted, no source change by database agent."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/ProductFilterSpecifications.java",
+      "kind": "repository",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Admin filters, status/trash semantics, literal-token SKU/text matching, category traversal."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": true,
+      "performance_measured": true,
+      "fixed_and_reverified": true,
+      "notes": "Admin list path: all filtered rows, homepage filter, Vietnamese name sorting and slicing; comparator changed, pending functional test.",
+      "test_scope": "Name sorting only: five unit tests; real repository/database/filter functionality is not thereby verified",
+      "measurement_scope": "Single-thread synthetic Java name-sort comparator only; no API/DB timing",
+      "evidence": [
+        "database-sort-test-summary.json",
+        "admin-name-sort-component.json"
+      ]
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Checkout transaction and syncPricesAndValidateStock batch locks read; only selected methods, no live checkout."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/common/PaginationService.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Java slicing and total count mechanics."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/common/SortParser.java",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Sort field validation and unchanged defaults."
+    },
+    {
+      "component": "bigbike-backend/src/main/resources/application.properties",
+      "kind": "service_or_config",
+      "tables": [],
+      "enumerated_from_source": true,
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "notes": "Hikari/batch/OSIV/compression/statistics opt-in values inspected; no tuning applied."
+    }
+  ],
+  "runtime_schema": [
+    {
+      "table": "admin_invite_tokens",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "admin_notification_reads",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "admin_notifications",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "admin_refresh_tokens",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "admin_roles",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "admin_user_roles",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "admin_users",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "article_tags",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "articles",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "attribute_values",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "attributes",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "audit_logs",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "brands",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "cart_items",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "carts",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "catalog_size_groups",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "catalog_size_scales",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "catalog_size_values",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "catalog_visual_alias_mappings",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "catalog_visual_display_terms",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "catalog_visual_facets",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "categories",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "category_intro_backup_20260910",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "category_intro_faq_markup_backup",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "chat_ai_daily_usage",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "chat_conversations",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "chat_image_daily_usage",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "chat_images",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "chat_messages",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "chat_product_image_fingerprints",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "chat_video_daily_usage",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "chat_videos",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "chat_visitors",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "checkout_idempotency_keys",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "customer_addresses",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "customer_email_verification_tokens",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "customer_oauth_links",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "customer_password_reset_tokens",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "customer_privacy_consents",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "customer_sessions",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "customers",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "flyway_schema_history",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "ga4_event_outbox",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "gsc_agg",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "gsc_check",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "gsc_check2",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "home_category_highlights",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "home_highlights_config",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "home_videos",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "inventory_out_of_stock_digest_runs",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "legacy_discontinued_products",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "live_migration_checkpoints",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "live_migration_runs",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "maintenance_cart_purge_backup_carts",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "maintenance_cart_purge_backup_items",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "maintenance_cart_purge_runs",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "media",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "media_folders",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "media_tags",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "menu_items",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "menus",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "order_addresses",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "order_fee_items",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "order_history_batch_orders",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "order_history_batches",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "order_line_items",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "order_notes",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "order_overdue_reminder_orders",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "order_overdue_reminder_runs",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "order_shipping_items",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "orders",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "payment_events",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "payments",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "product_accessory_product_map",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "product_category_map",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "product_related_product_map",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "product_tag_assignments_legacy",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "product_variant_gallery_images",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "product_variant_options",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "product_variants",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "products",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "redirects",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "review_invitation_campaigns",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "review_invitation_daily_quotas",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "review_invitation_deliveries",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "review_invitation_items",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "review_invitation_opt_outs",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "review_photo_uploads",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "reviews",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "role_permissions",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "site_settings",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "sliders",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "stock_movements",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    },
+    {
+      "table": "tmp_p",
+      "schema_enumerated": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "reason": "Name enumerated from live pg_tables only; isolated per-table workload/plan validation pending."
+    }
+  ],
+  "source_files": 144,
+  "source_reviewed_files": 10,
+  "runtime_tables": 94
+}

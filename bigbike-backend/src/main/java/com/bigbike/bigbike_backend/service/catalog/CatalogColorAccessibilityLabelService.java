@@ -1,6 +1,7 @@
 package com.bigbike.bigbike_backend.service.catalog;
 
 import java.util.List;
+import java.util.function.UnaryOperator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,9 +23,29 @@ public class CatalogColorAccessibilityLabelService {
 
     @Transactional(readOnly = true)
     public String localize(String value, String locale) {
-        if (value == null || !"en".equalsIgnoreCase(locale)) return null;
-        return CatalogVisualLabelLocalizer.localizeAccessibilityLabel(
-                value, visualFacetCatalogService.activeCatalog(), displayTerms());
+        return localizer(locale).apply(value);
+    }
+
+    /**
+     * One lazy vocabulary snapshot for a product mapping. Kept local to the caller,
+     * so later reads still see configuration changes without a shared cache TTL.
+     */
+    public UnaryOperator<String> localizer(String locale) {
+        if (!"en".equalsIgnoreCase(locale)) return value -> null;
+        return new UnaryOperator<>() {
+            private CatalogVisualFacetCatalog catalog;
+            private List<CatalogVisualLabelLocalizer.Replacement> terms;
+
+            @Override
+            public String apply(String value) {
+                if (value == null) return null;
+                if (catalog == null) {
+                    catalog = visualFacetCatalogService.activeCatalog();
+                    terms = displayTerms();
+                }
+                return CatalogVisualLabelLocalizer.localizeAccessibilityLabel(value, catalog, terms);
+            }
+        };
     }
 
     private List<CatalogVisualLabelLocalizer.Replacement> displayTerms() {

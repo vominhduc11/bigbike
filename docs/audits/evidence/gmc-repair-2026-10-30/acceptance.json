@@ -1,0 +1,133 @@
+{
+  "checkedAt": "2026-10-30T08:57:33.192798+00:00",
+  "scope": "All links and images of the restored public XML checked through production origin; HTML choices, prices and stock checked; image aliases normalized and initial DOM inspected. Not an actual Google fetch.",
+  "items": 1187,
+  "uniqueIds": 1187,
+  "products": 213,
+  "linkErrors": [],
+  "imageUrls": 912,
+  "imageErrors": [],
+  "seconds": 1090.85,
+  "imageNotes": [
+    {
+      "sku": "RBP02",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "TUIH-GIVI-RWB04",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "ALTL-MAO",
+      "note": "Expected image exists in initial HTML img; selected Product JSON-LD image missing/different"
+    },
+    {
+      "sku": "ALTL-5FDUAL",
+      "note": "Expected image exists in initial HTML img; selected Product JSON-LD image missing/different"
+    },
+    {
+      "sku": "ALTL-QUAN",
+      "note": "Expected image exists in initial HTML img; selected Product JSON-LD image missing/different"
+    },
+    {
+      "sku": "EA113B",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "GCRM103",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "GCRM104",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "TUIH-GIVI-EA125B",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "TUIH-GIVI-EA140B",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "TTSLA",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "TUIX-GIVI-EA138B",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "TRV086",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "TUIH-GIVI-PWB03",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "GT-TAICHI-RST129",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "ROK-NEW",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "QL-HBM",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "DOLOT-BIGBIKE-TRUMDAU",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "ILM-BL01",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "DOLOT-HEVIK-HVB210",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "TUIX-GIVI-GRT712C",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "BALO-GIVI-EA129B",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "HVK001",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "HVK002",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "HVK000",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "GIVI-EA148B",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "GIVI-EA132B",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "BALO-GIVI-PBP02",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "TUI-GIVI-EA115BK",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    },
+    {
+      "sku": "LS2-BACK-L2",
+      "note": "Same MinIO object via legacy/current URL aliases"
+    }
+  ]
+}

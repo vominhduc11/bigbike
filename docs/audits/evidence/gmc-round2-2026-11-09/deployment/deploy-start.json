@@ -1,0 +1,4 @@
+{
+  "at": "2026-11-09T15:15:19.752240+00:00",
+  "command": "docker compose --env-file .env.vps up -d --build"
+}

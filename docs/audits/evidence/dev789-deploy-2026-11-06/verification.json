@@ -1,0 +1,53 @@
+{
+  "checkedAt": "2026-11-06T07:14:20.186569+00:00",
+  "checks": [
+    {
+      "path": "/google-merchant.xml",
+      "status": 200,
+      "items": 1184,
+      "uniqueIds": true
+    },
+    {
+      "path": "/lien-he/",
+      "status": 200,
+      "oldHoursOccurrences": 0,
+      "hoursCorrect": true,
+      "standardPageViewWithEventId": true,
+      "clarityLoader": false
+    },
+    {
+      "path": "/en/",
+      "status": 200,
+      "oldHoursOccurrences": 0,
+      "hoursCorrect": true,
+      "standardPageViewWithEventId": true,
+      "clarityLoader": false
+    },
+    {
+      "path": "/product/mu-bao-hiem-fullface-ls2-ff800-storm/",
+      "status": 200,
+      "oldHoursOccurrences": 0,
+      "hoursCorrect": true,
+      "standardPageViewWithEventId": true,
+      "clarityLoader": false
+    },
+    {
+      "path": "/en/product/mu-bao-hiem-fullface-ls2-ff800-storm/",
+      "status": 200,
+      "oldHoursOccurrences": 0,
+      "hoursCorrect": true,
+      "standardPageViewWithEventId": true,
+      "clarityLoader": false
+    },
+    {
+      "path": "/google-local-inventory.tsv",
+      "status": 503,
+      "reason": "awaiting real store code",
+      "retryAfter": "300"
+    }
+  ],
+  "otherContainersUnchanged": true,
+  "envFilesUnchanged": true,
+  "deployedImage": "sha256:60f52931e0a398dca288131aa364bae87f64f87619f7b3a039f4818cb29e7644",
+  "rollbackTag": "bigbike-web:before-dev789-20261106-070402"
+}

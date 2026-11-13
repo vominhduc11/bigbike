@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /**
@@ -18,7 +18,7 @@ import { createPortal } from "react-dom";
  * Throttle bằng requestAnimationFrame; tôn trọng prefers-reduced-motion.
  */
 export function ReadingProgressBar() {
-  const [pct, setPct] = useState(0);
+  const indicatorRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -27,12 +27,18 @@ export function ReadingProgressBar() {
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     let raf = 0;
     const update = () => {
       raf = 0;
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
-      setPct(max > 0 ? Math.min(100, Math.max(0, (window.scrollY / max) * 100)) : 0);
+      const progress = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      // Thuần trang trí: cập nhật transform để không render React và tính lại
+      // layout của vạch trong từng khung hình khi khách cuộn trang.
+      if (indicatorRef.current) {
+        indicatorRef.current.style.transform = `scaleX(${progress})`;
+      }
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -45,7 +51,7 @@ export function ReadingProgressBar() {
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [mounted]);
 
   if (!mounted) return null;
 
@@ -57,8 +63,9 @@ export function ReadingProgressBar() {
       className="md:hidden fixed top-0 left-0 right-0 z-[210] h-[3px] bg-transparent pointer-events-none"
     >
       <div
-        className="h-full bg-brand transition-[width] duration-100 ease-linear motion-reduce:transition-none"
-        style={{ width: `${pct}%` }}
+        ref={indicatorRef}
+        className="h-full origin-left bg-brand transition-transform duration-100 ease-linear motion-reduce:transition-none"
+        style={{ transform: "scaleX(0)" }}
       />
     </div>,
     document.body,

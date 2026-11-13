@@ -1,0 +1,27 @@
+{
+  "web": {
+    "lint": "pass",
+    "tests": 800,
+    "failed": 0,
+    "files": 117
+  },
+  "admin": {
+    "lint": "pass",
+    "suiteTests": 1228,
+    "suiteFailedTimeouts": 2,
+    "suitePassed": 1226,
+    "isolatedRetryPassed": 16,
+    "isolatedRetryFiles": 2,
+    "retryTestTimeoutMs": 15000
+  },
+  "backend": {
+    "tests": 1543,
+    "failures": 1,
+    "skipped": 1,
+    "errors": 0,
+    "knownUnchangedFailure": "ArticleExcerptAuthorRemovalMigrationPostgresTest:54",
+    "changedFeatureTestsPassed": 13
+  },
+  "composeConfig": "valid",
+  "nginxBoundary": "pass"
+}

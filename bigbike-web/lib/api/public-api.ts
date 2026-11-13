@@ -1,3 +1,4 @@
+import { getStoreHours, resolveStoreHours } from "@/lib/content/store-hours";
 import type {
   ApiDataResponse,
   ApiErrorDetail,
@@ -338,6 +339,26 @@ export async function getProductBySlug(slug: string, lang?: string): Promise<Dat
   return result.data ? { ...result, data: withFlatHighlights(result.data) } : result;
 }
 
+/** Fresh PDP read with a bounded wait; fallback storage is server-only and separate. */
+export async function getFreshProductBySlug(
+  slug: string,
+  lang: string,
+): Promise<DataResult<Product>> {
+  try {
+    const response = await requestJson<ApiDataResponse<Product>>(
+      `/api/v1/products/${encodeURIComponent(slug)}`,
+      { lang },
+      0,
+      undefined,
+      AbortSignal.timeout(5000),
+    );
+    if (!response?.data?.id) throw new Error("PRODUCT_RESPONSE_INVALID");
+    return { data: withFlatHighlights(response.data), error: null };
+  } catch (error) {
+    return { data: null, error: toClientError(error, { lang }) };
+  }
+}
+
 /** GMC_RULE_005: preserve failures and pagination; a partial feed must never look successful. */
 export function getMerchantProductPage(
   page: number,
@@ -533,11 +554,30 @@ export function getPublicMenu(location: string, lang?: string): Promise<DataResu
   ]);
 }
 
-export function listPublicSettings(lang?: string): Promise<DataResult<PublicSiteSetting[]>> {
-  return loadArrayDataWithQuery("/api/v1/settings/public", { lang }, 3600, [
-    "settings",
-    `lang:${lang ?? "vi"}`,
-  ]);
+export async function listPublicSettings(lang?: string): Promise<DataResult<PublicSiteSetting[]>> {
+  const result = await loadArrayDataWithQuery<PublicSiteSetting>(
+    "/api/v1/settings/public",
+    { lang },
+    3600,
+    ["settings", `lang:${lang ?? "vi"}`],
+  );
+  const hours = getStoreHours(lang ?? "vi");
+  const replacements: Record<string, string> = {
+    opening_hours_weekday: hours.weekday,
+    opening_hours_weekend: hours.weekend,
+    opening_hours_holiday: hours.holiday,
+  };
+  return {
+    ...result,
+    data:
+      result.data?.map((row) =>
+        Object.hasOwn(replacements, row.settingKey)
+          ? { ...row, settingValue: replacements[row.settingKey] }
+          : row.settingKey === "home_content_bottom_html"
+            ? { ...row, settingValue: resolveStoreHours(row.settingValue ?? "", lang ?? "vi") }
+            : row,
+      ) ?? [],
+  };
 }
 
 export type PublicStorePolicy = {

@@ -15,10 +15,14 @@ describe("Merchant XML HTTP contract", () => {
     expect(response.headers.get("content-type")).toContain("application/xml");
     expect(response.headers.get("x-merchant-item-count")).toBe("1");
     expect(response.headers.get("cache-control")).toBe("no-store");
+    const generatedAt = Date.parse(response.headers.get("x-merchant-generated-at")!);
+    expect(Date.now() - generatedAt).toBeGreaterThanOrEqual(0);
+    expect(Date.now() - generatedAt).toBeLessThan(1000);
     expect(await response.text()).toContain("<rss");
     const head = await HEAD();
     expect(head.status).toBe(200);
     expect(head.headers.get("x-merchant-item-count")).toBe("1");
+    expect(head.headers.has("x-merchant-generated-at")).toBe(true);
     expect(await head.text()).toBe("");
   });
 
@@ -28,6 +32,7 @@ describe("Merchant XML HTTP contract", () => {
     const response = await GET();
     expect(response.status).toBe(503);
     expect(response.headers.get("retry-after")).toBe("300");
+    expect(response.headers.has("x-merchant-generated-at")).toBe(false);
     expect(await response.text()).not.toMatch(/internal|<rss/);
     expect(log).toHaveBeenCalledWith("[google-merchant]", "GMC_SOURCE_UNAVAILABLE");
   });

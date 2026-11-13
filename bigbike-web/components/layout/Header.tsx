@@ -33,11 +33,6 @@ export async function Header({
           pickSetting(settings, ["hotline_2"]),
           pickSetting(settings, ["hotline_3"]),
         ].filter(Boolean),
-        hours: {
-          weekday: pickSetting(settings, ["opening_hours_weekday"]),
-          weekend: pickSetting(settings, ["opening_hours_weekend"]),
-          holiday: pickSetting(settings, ["opening_hours_holiday"]),
-        },
         descriptionVi: pickSetting(settings, ["footer_description"]),
         descriptionEn: pickSetting(settings, ["footer_description"]),
       }}

@@ -394,10 +394,10 @@ function AdminApp() {
   useEffect(() => {
     if (authStatus !== 'authenticated') return
     const unsubscribeAccess = subscribeAdminWs('/user/queue/admin/access', (event) => {
-      queryClient.clear()
       if (event?.forceReauthentication) {
         invalidateSession({ broadcast: true })
       } else {
+        queryClient.clear()
         reconcileAccess()
       }
     })
@@ -545,6 +545,8 @@ function AdminApp() {
           tone="danger"
           title={t('app.initFailed')}
           description={authState.error || t('app.initFailedDesc')}
+          actionLabel={t('common.retry')}
+          onAction={authState.retrySession}
         />
       </div>
     )

@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface MediaJpaRepository extends JpaRepository<MediaEntity, UUID>,
         JpaSpecificationExecutor<MediaEntity> {
@@ -21,6 +23,18 @@ public interface MediaJpaRepository extends JpaRepository<MediaEntity, UUID>,
     Optional<MediaEntity> findByContentSha256(String contentSha256);
 
     List<MediaEntity> findByPublicUrlIn(java.util.Collection<String> publicUrls);
+
+    /** Scalar projection avoids loading filenames, metadata and responsive-size JSON on public reads. */
+    interface PublicImageDimensions {
+        String getPublicUrl();
+        Integer getWidth();
+        Integer getHeight();
+    }
+
+    @Query("select m.publicUrl as publicUrl, m.width as width, m.height as height "
+            + "from MediaEntity m where m.publicUrl in :publicUrls")
+    List<PublicImageDimensions> findImageDimensionsByPublicUrlIn(
+            @Param("publicUrls") java.util.Collection<String> publicUrls);
 
     List<MediaEntity> findByStorageProvider(String storageProvider);
 }

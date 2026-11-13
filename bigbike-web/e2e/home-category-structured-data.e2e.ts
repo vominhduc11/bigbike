@@ -12,6 +12,7 @@ const ROUTES = [
   { path: "/danh-muc/mu-bao-hiem-fullface/", locale: "vi" },
   { path: "/danh-muc/tai-nghe-bluetooth-mu-bao-hiem/", locale: "vi" },
   { path: "/en/categories/motorcycle-helmet-intercom/", locale: "en" },
+  { path: "/en/categories/full-face-helmets/", locale: "en" },
 ] as const;
 
 async function readMarkup(page: Page, html: string | null = null) {
@@ -96,6 +97,7 @@ test.describe("SEO trang chủ và danh mục — phiếu 2026-10-22", () => {
           "data-state",
           /collapsed|static/,
         );
+        await expect(page.locator(".bb-cat-intro")).toHaveCount(1);
         const markup = await readMarkup(page);
         expectCategoryMarkup(markup, route.locale);
         await test.info().attach(`load-${attempt + 1}`, {
@@ -157,6 +159,7 @@ test.describe("SEO trang chủ và danh mục — phiếu 2026-10-22", () => {
         await expect(page.locator("[data-collapsible-content]").first()).toHaveAttribute(
           "data-state",
           /collapsed|static/,
+          { timeout: 30000 },
         );
         expectCategoryMarkup(await readMarkup(page), "vi");
       }

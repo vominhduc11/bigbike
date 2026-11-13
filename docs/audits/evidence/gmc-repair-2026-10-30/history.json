@@ -1,0 +1,26 @@
+[
+  [
+    {
+      "path": "/sp/tui-deo-cheo-rs-taichi-rsb286.html",
+      "status": 301,
+      "location": "/product/tui-deo-cheo-rs-taichi-rsb286/"
+    },
+    {
+      "path": "/product/tui-deo-cheo-rs-taichi-rsb286/",
+      "status": 404,
+      "location": null
+    }
+  ],
+  [
+    {
+      "path": "/sp/tui-deo-hong-rs-taichi-rsb279-chong-nuoc.html",
+      "status": 301,
+      "location": "/product/tui-deo-hong-rs-taichi-rsb279-chong-nuoc/"
+    },
+    {
+      "path": "/product/tui-deo-hong-rs-taichi-rsb279-chong-nuoc/",
+      "status": 404,
+      "location": null
+    }
+  ]
+]

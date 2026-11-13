@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-11-06T08:57:06.210219+00:00",
+  "url": "https://bigbike.vn/google-local-inventory.tsv",
+  "status": 200,
+  "storeCode": "BIGBIKE-HCM-01",
+  "rows": 1184,
+  "xmlItems": 1184,
+  "allIdsPricesAvailabilityMatch": true,
+  "sampledIdsMatched": [
+    "LS2-OF610-2-TRANG2-ML",
+    "LS2-MUA-WS",
+    "ILM-MF510-TRANGXAM-S",
+    "TARSY270-DENL",
+    "LS2-OF600GR-XL",
+    "ILM-JRF4-M",
+    "GT-KOM-GK257-BK-L",
+    "KOM269-DENXXXL",
+    "TONALE-50",
+    "BK088-DEN-36"
+  ],
+  "utf8Tsv": true,
+  "headWithGooglebotUserAgent": 200,
+  "allContainerImagesUnchanged": true,
+  "otherContainersNotRecreated": true,
+  "rootEnvUnchanged": true,
+  "onlyStoreCodeChangedInVpsEnv": true
+}

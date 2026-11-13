@@ -1,0 +1,33 @@
+{
+  "at": "2026-11-10T00:43:12.914Z",
+  "sourceImage": "sha256:f8c00411746da82a697d434204c8447840fc3796ee3d53ff6bf4fc8310580196",
+  "isolated": true,
+  "productionInterrupted": false,
+  "tests": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "status": 200,
+      "fallbackBeforeSnapshotLocked": true,
+      "liveSnapshotUnlocks": true,
+      "snapshotFailureRelocks": true,
+      "pageErrors": []
+    },
+    {
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "status": 200,
+      "fallbackBeforeSnapshotLocked": true,
+      "liveSnapshotUnlocks": true,
+      "pageErrors": []
+    }
+  ],
+  "errors": [
+    "TypeError: response.status is not a function"
+  ],
+  "ok": false
+}

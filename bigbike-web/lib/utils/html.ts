@@ -1,4 +1,4 @@
-import DOMPurify from "isomorphic-dompurify";
+import DOMPurify, { clearWindow } from "isomorphic-dompurify";
 import { generate, parse, walk } from "css-tree";
 import type { Locale } from "@/i18n/locale";
 import { localizeStorefrontHref } from "@/lib/utils/routes";
@@ -25,6 +25,16 @@ export function sanitizeRichHtml(
     return "";
   }
 
+  // The server's shared jsdom window retains state across calls. Its documented
+  // reset also removes hooks, so renew them before processing the next batch.
+  if (typeof window === "undefined") {
+    if (serverSanitizations >= 100) {
+      clearWindow();
+      hooksRegistered = false;
+      serverSanitizations = 0;
+    }
+    serverSanitizations++;
+  }
   registerHooks();
   const normalizedHtml = options.rewriteMediaUrls ? rewriteLegacyMediaUrls(rawHtml) : rawHtml;
   const withoutShortcodes = stripWpShortcodes(normalizedHtml);
@@ -266,9 +276,10 @@ const ALLOWED_IFRAME_HOSTS = new Set([
 ]);
 
 let hooksRegistered = false;
+let serverSanitizations = 0;
 
 /**
- * One-time DOMPurify hook registration:
+ * Register hooks once for each DOMPurify window:
  *  - drop <iframe> whose src host is not in the embed allowlist;
  *  - force rel="noopener noreferrer" on target="_blank" links;
  *  - preserve permitted visual styles while removing typography overrides.

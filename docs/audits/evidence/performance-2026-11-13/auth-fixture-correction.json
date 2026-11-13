@@ -1,0 +1,24 @@
+{
+  "case": "Phase1DCustomerAuthTest.login_withPhone_succeeds",
+  "historical_full_gate": {
+    "tests": 1572,
+    "passed": 1571,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "failure_location": "Fixture registerCustomer status assertion, before phone login request executes",
+  "cause": "Old fixture concatenated09 with random integer0..99,999,999 without zero padding; integers below10,000,000 yield fewer than required10digits (approximately10percent of possible draws).",
+  "before_file_was_clean_and_matched_HEAD": true,
+  "before_sha256": "9c861c7b1df19fc5dcab6370edf01c3be5bf4a4a1a97a3fec444deb4f836b52e",
+  "after_sha256": "6b484a76930d1b3a4dc88aa68ba1cf9a9c3c99e8b5b16aa00c0a7d9f081ff015",
+  "change": "Only use Locale.ROOT and %08d to produce exactly8 ASCII suffix digits after09; retain all existing registration/login status and phone-value assertions.",
+  "canonical_evidence": [
+    "docs/business/BUSINESS_RULES.md CUSTOMER_RULE_012",
+    "docs/engineering/API_CONTRACT.md POST /api/v1/customer/auth/register",
+    "docs/engineering/DATA_CONTRACT.md Phone normalization"
+  ],
+  "business_or_validation_change": false,
+  "targeted_verification": "Pending serialized Maven slot after frontend checks",
+  "privacy": "No phone values, customer data, credentials, response bodies or XML properties published. Failure response body was not available in captured XML, so no claim about exact random draw."
+}

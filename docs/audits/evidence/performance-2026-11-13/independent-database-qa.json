@@ -1,0 +1,265 @@
+{
+  "reviewer": "/root/database_catalog",
+  "scope": "Independent source QA only for other agents changes; no shared writes/load, no tests/builds run concurrently with Lead full backend verify",
+  "reviewed_sources": [
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+      "sha256": "5ea5c52f3f83b4e7b46e1911d6acc7139eae8860b95e4e57dae307b403964596"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+      "sha256": "8220ab2731b6668123504ea7e9806162b6d3639e6bf3f5d11106892af0e2fd3d"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/media/ImageCompressionServiceTest.java",
+      "sha256": "22e7e19e113277a076cb62a85a9139a7e01fbf031a4b30f270865c68ac3dff9f"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/admin/ImageVariantServiceTest.java",
+      "sha256": "7b7240a3b5c62223add945ca23bf08e0f2d46fb1de1786a10ce8e8a9707532dd"
+    },
+    {
+      "path": "bigbike-backend/src/main/resources/db/migration/V1095__clean_nested_retired_article_audit_fields.sql",
+      "sha256": "beb387c50e495c112e3296b273ac424cbadf59576eaa171677b2410ec05aecea"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/migration/NestedArticleAuditCleanupMigrationPostgresTest.java",
+      "sha256": "62e95bc78c9d177ac2d718bdeea10e85f7bf5123453e4f172b65f36c52aa8ae1"
+    },
+    {
+      "path": "scripts/performance/run_ci.py",
+      "sha256": "023f501cac65dbc2329d0b3443f2bcd344f5508025b2ca1ffd974fd8d94cc1a5"
+    },
+    {
+      "path": "scripts/performance/browser.cjs",
+      "sha256": "dbd6c174f38e85266393206174c39c9f5480b1d9db6885c29b91a6d0165439fa"
+    },
+    {
+      "path": "scripts/performance/stack_checks.py",
+      "sha256": "aca8ab39906f90df918407d5051690aeb2a9483f883852e1bbf339a9205bf7e3"
+    },
+    {
+      "path": "scripts/performance/benchmark_api.py",
+      "sha256": "b2483f11f63af29e5d5debd3bd84540a63ff074a17b1dc52491bb5153bdc14c5"
+    },
+    {
+      "path": "scripts/performance/Dockerfile.web",
+      "sha256": "c383d2c4c748bb30b1908222a291e8fae7cef6b2befe2203ade515f9c2900fb0"
+    },
+    {
+      "path": "scripts/performance/launch-web.cjs",
+      "sha256": "a771a398c32e187e64bc888eb51fedbc2dd04bec09a35e1330ff24cb82f6f2ff"
+    },
+    {
+      "path": "scripts/performance/baseline-manifest.json",
+      "sha256": "05e469f8767be391b3f489e88bf9ce37fde89521909f03349333ffe365b250bd"
+    },
+    {
+      "path": "scripts/performance/prepare_baseline.py",
+      "sha256": "5342d7e22052ceb184fb13bb594ab9518cf87db814a0bcd5f7b31913d380caa3"
+    },
+    {
+      "path": "scripts/performance/compare_results.py",
+      "sha256": "cf6ea0ab02f18af22cda86673d5b1e43a7a174d03d0602ea81fd7bd1648cda96"
+    },
+    {
+      "path": "scripts/performance/test_compare_results.py",
+      "sha256": "95abcd075354f63f7f825fde2ac9c422493479e61a5d1614e85bf182e8475017"
+    },
+    {
+      "path": "scripts/performance/compose.ci.yml",
+      "sha256": "54d8137cbdb35b4767578a3c0980d6eb1f629c8f30e1bb41b8b35c26be095e2d"
+    },
+    {
+      "path": "scripts/performance/frozen_dataset.py",
+      "sha256": "676619b5ec3f24f1c8981dcdd74a569d6b2d4a16e55cf78315e1d6dc0a387317"
+    },
+    {
+      "path": "scripts/performance/test_frozen_dataset.py",
+      "sha256": "d80a6da14367b99a824b8c6f5913dbf5b329bf260b0a750ca660e66989c15196"
+    },
+    {
+      "path": "scripts/performance/admin_smoke.py",
+      "sha256": "d8469b7f179fb78dc9f5f3b099713f59c08ff4b3318fc78a3d15c98a6d75cbc8"
+    },
+    {
+      "path": ".github/workflows/performance-validation.yml",
+      "sha256": "b889447fa5b8bd7adf73a05fdce35f620715474b4e51395d87bfff78ea8766f4"
+    }
+  ],
+  "source_checks": [
+    {
+      "area": "media decoded reuse",
+      "status": "source review passed, focused integration execution pending Lead full suite",
+      "evidence": "Only ImageCompression new overload/delegation and ImageVariant4arg call differ from preserved pre-session dirty snapshots. No shared state; source image not mutated; original-reference skip/storage exception semantics preserved."
+    },
+    {
+      "area": "media test adequacy",
+      "status": "source review passed",
+      "evidence": "JPEG/opaque PNG/alpha PNG/WebP byte equivalence, pixel immutability, all3 variants same decoded instance, no3arg decoder calls, same-buffer skip, custom bucket/MIME/alpha, storage failure independence."
+    },
+    {
+      "area": "V1095 forward migration",
+      "status": "QA edge fixed in source; isolated full-suite execution pending",
+      "evidence": "QA found additional JSONB parse SQLSTATE22P05/22003; exact cast-only handlers and unchanged-byte/xmin fixtures now present. Historical V1091 unchanged."
+    },
+    {
+      "area": "CI safeguards/source identity",
+      "status": "source review partial; remote execution not performed",
+      "evidence": "Hosted-runner/owned-project/output-dir guards, serial arm builds, no inherited provider env, private credential files, no raw logs/artifact data inspected."
+    },
+    {
+      "area": "API measurement",
+      "status": "source review passed bounded design; not remotely measured",
+      "evidence": "2xx-only percentiles separated from errors/429/timeouts; no redirects/retries; stop on failure; source matched rate tiers and paced requests. Resource/SQL counters are aggregate, not exact SQL per request."
+    },
+    {
+      "area": "independence boundary",
+      "status": "explicit",
+      "evidence": "Reviewer did not implement media overload, V1095 or root CI scripts; reviewer did implement AdminCatalogReadService name-sort optimization, which requires a different reviewer for independent QA."
+    }
+  ],
+  "findings": [
+    {
+      "id": "QA-CI-01",
+      "finding": "Checked-in .env.vps.example rejected by tracked source guard",
+      "status": "source fixed"
+    },
+    {
+      "id": "QA-CI-02",
+      "finding": "Admin browser used /products etc instead of /admin/products and accepted HTTP200 shell",
+      "status": "source fixed with real endpoint readiness and screen assertions"
+    },
+    {
+      "id": "QA-CI-03",
+      "finding": "Rotated admin refresh cookie replayed across viewport contexts",
+      "status": "source fixed with latest-cookie transfer"
+    },
+    {
+      "id": "QA-CI-04",
+      "finding": "Original900s access token could expire before/during API stage",
+      "status": "source fixed with ordinary login immediately before API measurement"
+    },
+    {
+      "id": "QA-CI-05",
+      "finding": "Stopped containers absent from compose ps default monitoring",
+      "status": "source fixed; --all and expected7 services"
+    },
+    {
+      "id": "QA-CI-06",
+      "finding": "CLS session start initialized0 instead of first eligible shift",
+      "status": "source fixed"
+    },
+    {
+      "id": "QA-CI-07",
+      "finding": "Before production build compiles candidate-only4arg method tests under -DskipTests",
+      "status": "source fixed only image packaging -Dmaven.test.skip=true; candidate regression gate remains"
+    },
+    {
+      "id": "QA-CI-08",
+      "finding": "Ubuntu/glibc-built standalone copied into Alpine/musl runtime may lack native Sharp",
+      "status": "Source fixed with Node22-bookworm matching hosted build; explicit Node22/glibc versus shipping Node20-Alpine limit documented in TESTING_GUIDE and toolchain artifact."
+    },
+    {
+      "id": "QA-CI-09",
+      "finding": "Actual .next/standalone has nested bigbike-web/server.js, Docker CMD assumes root server.js",
+      "status": "source fixed: nested/root entrypoint launcher and matching public/static location while retaining ancestor traced dependencies"
+    },
+    {
+      "id": "QA-CI-10",
+      "finding": "Frozen baseline attribution still six historical optimizations, misses new comparator/decoder and candidate hash changed",
+      "status": "source fixed: only three continuation optimization files reconstructed; snapshot hashes reviewed, historical four optimizations retained in both arms"
+    },
+    {
+      "id": "QA-MIG-01",
+      "finding": "JSONB parse exceptions22P05/22003 were not preserved",
+      "status": "source fixed with exact additional exceptions and regression fixtures"
+    },
+    {
+      "id": "QA-CI-11",
+      "finding": "Database wait metric counted idle ClientRead as waiting",
+      "status": "source fixed: active_waiting excludes idle/Client, idle_sessions separate"
+    },
+    {
+      "id": "QA-CI-12",
+      "finding": "Final real-customer scenario expected403 at Admin boundary but CustomerSessionFilter deliberately suppresses customer auth there and produces401",
+      "status": "Source fixed expected401 only; application authentication unchanged."
+    },
+    {
+      "id": "QA-CI-13",
+      "finding": "Comparison silently skipped mandatory frozen-dataset equality when one/both identity files absent",
+      "status": "Source fixed requiring both identity files/equality; missing/mismatch tests added."
+    }
+  ],
+  "historical_v1091_matches_HEAD": true,
+  "acceptance": "Independent source QA complete for root CI integration and other-agent media/migration changes within documented scope; no currently identified deterministic source blocker. Whole-system performance acceptance remains unverified.",
+  "follow_ups": [
+    "Remote isolated stack has not been executed; all backend/PG/Redis/MinIO/browser/Lighthouse runtime claims require successful owned CI run.",
+    "Final source now asserts actual homepage hero and product image complete/naturalWidth, preserving real media in lab observations.",
+    "Node22/glibc versus shipping Node20/Alpine difference is explicit; no production capacity certification.",
+    "Lead owns current auth/cache targeted Maven and pending full backend rerun; reviewer started no heavy command in this final review.",
+    "This reviewer implemented AdminCatalogReadService comparator and PublishedProductListingCache correctness repair; independent review of those two implementations must come from Lead/another agent."
+  ],
+  "baseline_source_checks": [
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+      "candidate_hash_matches": true,
+      "before_hash_matches_reviewed_snapshot": true
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+      "candidate_hash_matches": true,
+      "before_hash_matches_reviewed_snapshot": true
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
+      "candidate_hash_matches": true,
+      "before_hash_matches_reviewed_snapshot": true
+    }
+  ],
+  "independent_report_verification": {
+    "method": "Reviewer parsed actual Surefire XML from Lead full backend run, not implementation agent statements. XML properties/output are not published. No repeated Maven run.",
+    "suites": [
+      {
+        "suite": "com.bigbike.bigbike_backend.service.admin.ImageVariantServiceTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": "0.97"
+      },
+      {
+        "suite": "com.bigbike.bigbike_backend.service.media.ImageCompressionServiceTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": "7.685"
+      },
+      {
+        "suite": "com.bigbike.bigbike_backend.migration.ArticleExcerptAuthorRemovalMigrationPostgresTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": "3.973"
+      },
+      {
+        "suite": "com.bigbike.bigbike_backend.migration.NestedArticleAuditCleanupMigrationPostgresTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": "4.154"
+      },
+      {
+        "suite": "com.bigbike.bigbike_backend.api.PublicReadApiTest",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "seconds": "2.955"
+      }
+    ]
+  }
+}

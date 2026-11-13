@@ -1,0 +1,11 @@
+{
+  "before": 1184,
+  "after": 1184,
+  "removed": [],
+  "added": [],
+  "changed": {
+    "image_link": 123,
+    "title": 5
+  },
+  "sameSnapshotLimit": "Catalog and public XML read at different instants; no runtime write."
+}

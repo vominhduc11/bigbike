@@ -101,10 +101,7 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
     }))
   }
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPage(1)
-  }, [debouncedSearch, folderFilter, tag])
+  const previousFilters = useRef({ debouncedSearch, folderFilter, tag })
 
   // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker). Dùng allSettled
   // để giữ phần tải được và HIỆN lỗi thay vì nuốt im lặng.
@@ -123,6 +120,17 @@ export function VideoPickerModal({ onSelect, onClose, recommend = IMAGE_RECO.vid
   }, [canRead])
 
   useEffect(() => {
+    const previous = previousFilters.current
+    const filtersChanged =
+      previous.debouncedSearch !== debouncedSearch ||
+      previous.folderFilter !== folderFilter ||
+      previous.tag !== tag
+    previousFilters.current = { debouncedSearch, folderFilter, tag }
+    // Đổi bộ lọc chỉ tải trang đầu; không gửi thêm yêu cầu ở trang cũ.
+    if (filtersChanged && page !== 1) {
+      setPage(1)
+      return undefined
+    }
     if (!canRead) return undefined
     let active = true
     // eslint-disable-next-line react-hooks/set-state-in-effect

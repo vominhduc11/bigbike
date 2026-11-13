@@ -1,0 +1,59 @@
+{
+  "node": "v22.22.1",
+  "dataset": "214 live public product details, captured 10/11/2026",
+  "htmlStringsPerRound": 2929,
+  "rounds": 3,
+  "before": [
+    {
+      "label": "afterImportAndRealCatalog",
+      "heapUsedMiB": 56.35,
+      "rssMiB": 205.14
+    },
+    {
+      "label": "afterRound1",
+      "heapUsedMiB": 113.19,
+      "rssMiB": 275.16
+    },
+    {
+      "label": "afterRound2",
+      "heapUsedMiB": 172.74,
+      "rssMiB": 338.04
+    },
+    {
+      "label": "afterRound3",
+      "heapUsedMiB": 232.89,
+      "rssMiB": 399.66
+    }
+  ],
+  "after": [
+    {
+      "label": "afterImportAndRealCatalog",
+      "heapUsedMiB": 55.98,
+      "rssMiB": 193.32
+    },
+    {
+      "label": "afterRound1",
+      "heapUsedMiB": 61.86,
+      "rssMiB": 230.93
+    },
+    {
+      "label": "afterRound2",
+      "heapUsedMiB": 63.37,
+      "rssMiB": 232.52
+    },
+    {
+      "label": "afterRound3",
+      "heapUsedMiB": 64.04,
+      "rssMiB": 233.19
+    }
+  ],
+  "afterBeforeFinalHeapRatio": 0.27498037770658496,
+  "method": "Same HTML strings, yield event loop after each call, forced GC in isolated process only. Production not profiled or interrupted.",
+  "identifiedSource": "isomorphic-dompurify shared jsdom window accumulates state; documented clearWindow + hooks reapplication, every 100 nonempty server calls.",
+  "upstreamReference": "https://github.com/kkomelin/isomorphic-dompurify#memory-management-server",
+  "deployed": false,
+  "limitations": [
+    "Host Node 22.22.1 vs production Node 20 Alpine; not proof of the unique cause of historical OOMs.",
+    "Earlier no-yield bulk loop hit 512 MiB OOM; that artificial loop is excluded from the controlled comparison."
+  ]
+}

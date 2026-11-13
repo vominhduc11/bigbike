@@ -1,0 +1,101 @@
+{
+  "scope": "Infrastructure checklist; source/config/runtime snapshots are distinct from load/functional acceptance",
+  "components": [
+    {
+      "component": "shop containers",
+      "source": "Docker six-service state",
+      "source_status": "read-only runtime inspected",
+      "functional_and_performance_status": "not candidate performance",
+      "reason_or_evidence": "No services changed; runtime-state.json",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "host disk/RAM",
+      "source": "df/free",
+      "source_status": "read-only snapshot",
+      "functional_and_performance_status": "not capacity measurement",
+      "reason_or_evidence": "Shared host; no deletion/tuning;11GiB free observed",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "CI stack",
+      "source": "scripts/performance/compose.ci.yml",
+      "source_status": "source reviewed + configuration parser passed",
+      "functional_and_performance_status": "not executed",
+      "reason_or_evidence": "Requires published clean source and included quota",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "CI ingress",
+      "source": "scripts/performance/api.ci.conf",
+      "source_status": "source reviewed + nginx -t passed",
+      "functional_and_performance_status": "not executed",
+      "reason_or_evidence": "API10rps;web/admin30rps;WS exemption; loopback HTTP differs TLS/CDN",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "public ingress/TLS/CDN",
+      "source": "deploy/nginx and live operator topology",
+      "source_status": "selected source context only",
+      "functional_and_performance_status": "not measured",
+      "reason_or_evidence": "No exhaustive live edge/HTTP2/HTTP3/DNS/cache audit",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "backend pooling/batching/compression",
+      "source": "bigbike-backend/src/main/resources/application.properties",
+      "source_status": "source reviewed",
+      "functional_and_performance_status": "not measured under candidate load",
+      "reason_or_evidence": "Pool20, batch25; no tuning justified",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "PostgreSQL",
+      "source": "postgres16 and public schema",
+      "source_status": "read-only aggregates/source inventory",
+      "functional_and_performance_status": "not isolated load measured",
+      "reason_or_evidence": "94tables/350indexes are inventory only",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "Redis limiter",
+      "source": "existing rate-limit config and CI dedicatedRedis",
+      "source_status": "source reviewed; regression tests",
+      "functional_and_performance_status": "not distributed capacity tested",
+      "reason_or_evidence": "No security tier disabled; no HA/TLS lab equivalence",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "MinIO",
+      "source": "same pinned image; private CI public-bucket fixture",
+      "source_status": "source reviewed; helper tests",
+      "functional_and_performance_status": "not real candidate transfer measured",
+      "reason_or_evidence": "No shop bucket writes; exact byte/MIME copy prepared",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "web production runtime",
+      "source": "scripts/performance/Dockerfile.web + launch-web.cjs",
+      "source_status": "source reviewed",
+      "functional_and_performance_status": "not container executed",
+      "reason_or_evidence": "Node22/glibc lab vs Node20/Alpine shipping; nested standalone supported",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "admin production runtime",
+      "source": "existing nginx.conf + CI artifact image",
+      "source_status": "source reviewed",
+      "functional_and_performance_status": "not authenticated runtime measured",
+      "reason_or_evidence": "Existing build/gzip behavior preserved",
+      "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "CI artifacts and resource stop",
+      "source": "run_ci/frozen_dataset/admin_smoke/guards",
+      "source_status": "source reviewed; mocked helper boundaries",
+      "functional_and_performance_status": "not actual remote run",
+      "reason_or_evidence": "Only sanitized JSON published; partial failures retained",
+      "fixed_and_runtime_reverified": false
+    }
+  ]
+}

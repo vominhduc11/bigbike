@@ -461,6 +461,8 @@ Không thêm bảng/cột hoặc thay đổi Product DTO. `/google-merchant.xml`
 
 Nguồn không xuất dữ liệu tài khoản, khách hàng, đơn hàng, cấu hình nội bộ hoặc bí mật. Quy tắc loại hàng, SKU và lỗi nguồn: `GMC_RULE_002`–`005`.
 
+Từ 09/11/2026 theo GMC_RULE_008, ưu tiên ảnh lớn nhất trong cover/gallery riêng biến thể, ưu tiên ảnh gốc không hậu tố thumbnail có hai cạnh ≥800; hàng không có ảnh riêng dùng ảnh/gallery sản phẩm. Không dùng gallery màu khác hoặc gallery sản phẩm chung để thay ảnh riêng màu. Nếu chưa có ảnh đạt ngưỡng, giữ SKU và dùng ảnh tốt nhất có thông tin; không gửi thumbnail bổ sung khi đã có ảnh chính gốc đạt ngưỡng. Metadata không chứng minh bytes hay nội dung đúng; danh sách cần bổ sung được kiểm riêng. Thay thế cách chọn ảnh đầu tiên ≥500 ngày 31/10.
+
 ## Inventory Model
 
 > **Serial-number tracking was REMOVED platform-wide (2026-06-23, V259).** `product_serials`, `order_line_item_serials`, `return_item_serials`, `stock_movement_serials`, the `track_serials` columns, the serial→quantity sync trigger (`fn_sync_qty_from_serial_lifecycle`), and the `serial_inventory_only` / `reservation_ttl_minutes` settings are all dropped.
@@ -1728,6 +1730,15 @@ Bản tiếng Anh lưu trên các cột `_en` nullable cùng dòng trong bảng 
 
 Fallback: giống `PRODUCT_RULE_002` — mỗi trường nội dung lùi về VI khi EN bị null/blank (`title`, `body`, `seo_title`, `seo_description`). Bài viết không còn cột tóm tắt hoặc tên tác giả; đoạn giới thiệu trên thẻ và mô tả SEO fallback được rút từ đầu `body` ở lớp đọc web theo `ARTICLE_RULE_010`–`011`. Xem `ARTICLE_RULE_001/002/007/010/011`.
 
+**Dọn lịch sử bài viết (forward V1095, chuẩn bị 13/11/2026, chưa áp dụng):**
+`V1091` giữ nguyên lịch sử; `V1095` hoàn tất việc gỡ `excerpt`, `excerpt_en`,
+`authorName`, `authorNameEn` trong JSON hợp lệ của `audit_logs.before_data` và
+`after_data`, ở mọi cấp object/array, chỉ cho `resource_type = CONTENT` và action
+`CONTENT_ARTICLE_*`. Giữ thứ tự mảng, giá trị khác, bản ghi module khác và JSON
+không hợp lệ hoặc không biểu diễn được bằng JSONB (NUL, số vượt miền). Không thay chuỗi văn bản chứa tên khóa. JSON không hợp lệ cần được
+đếm riêng trước triển khai để người vận hành đánh giá; không đoán/sửa bằng regex.
+Đây là hoàn tất quy tắc gỡ trường bài viết đã có, không phải đổi audit của module khác.
+
 **Slug tiếng Anh (`slug_en`, V216):** xem mục **"English URL slug"** bên trên — `slug` tiếng Việt là canonical, `slug_en` là URL tiếng Anh tùy chọn (không sinh redirect).
 
 Status: `CONFIRMED_FROM_CODE` — `ArticleEntity`, `ArticleTranslations` domain record, migration `V138`.
@@ -2738,3 +2749,17 @@ Hạn tệp video bảy ngày ghi đè hạn tệp ảnh 90 ngày; lịch sử c
 `analysis_json`; không tạo thông báo hoặc gọi API thanh toán. Với ảnh sản phẩm, nhóm và slug lưu
 đệm được đối chiếu catalog; tên hãng ngoài catalog chỉ là quan sát ngắn đã kiểm cấu trúc, không
 phải thông tin về đơn hàng hay cá nhân.
+
+### Local inventory projection — DEV-7 (06/11/2026)
+
+TSV dùng cùng projection item của XML: SKU nguyên vẹn, availability giống XML, price bằng sale_price hợp lệ nếu có, nếu không là price. store_code từ cấu hình server GMC_STORE_CODE. Không quantity theo mô hình boolean hiện hành. Giờ cửa hàng trên web chuyển sang nguồn `lib/content/store-hours.ts` theo STORE_HOURS_RULE_001; các hàng settings cũ giữ tương thích cho backend, không còn quyết định giờ hiển thị web.
+
+### Shop introduction and EN address correction — owner 07/11/2026 (V1094)
+
+`home_content_bottom_html` remains an editable localized HTML setting. `{{store_hours}}` is a supported text placeholder, resolved only for this setting by the web public-settings adapter using `lib/content/store-hours.ts`. The backend public endpoint returns the stored placeholder unchanged; no API field or schema changes. Editors retain the placeholder when editing surrounding prose to keep hours synchronized. V1094 replaces only the known VI/EN shop-hours clauses (including the already-corrected variants) in this key, preserving every other byte of prose. Custom/unrecognized schedules and other keys are untouched.
+
+V1094 updates `contact_address.setting_value_en` only when exactly equal to `79/30/52 Au Co, Ward 14, District 11, Ho Chi Minh City`, to `79/30/52 Au Co, Hoa Binh Ward, Ho Chi Minh City`. It never modifies the VI address or other contact data. No historical migration is changed. The clothing-size static source uses the same placeholder; `getStaticPage` resolves it for `cach-do-size-trang-phuc` only, so fallback/reuse cannot republish stale shop hours.
+
+## Bổ sung GMC đợt 2 (09/11/2026)
+
+GMC_RULE_007–009: bản lưu trang sản phẩm là dữ liệu nội bộ web `{ savedAt, product }`, không phải trường Product API. Tuổi theo lần đọc backend thành công, tách VI/EN, không giữ khi webhook products/product invalidates. Feed ưu tiên ảnh lớn nhất đúng phạm vi màu, ưu tiên hai cạnh ≥800 và URL không thumbnail; thiếu ảnh vẫn giữ SKU và cần báo cáo. Tên cha toàn HOA được chuẩn hóa riêng ở feed, giữ thương hiệu/model. Không có trường GTIN/MPN trong dữ liệu hiện tại; chưa được suy diễn `identifier_exists=no` hoặc brand BIGBIKE. Mapping taxonomy còn chờ duyệt. Admin media PNG opaque >1MB có thể lưu JPEG <500KB theo MEDIA_RULE_006 bổ sung; MIME/extension/checksum/metadata theo bytes đầu ra, không đổi hợp đồng upload nhận PNG hoặc alpha.

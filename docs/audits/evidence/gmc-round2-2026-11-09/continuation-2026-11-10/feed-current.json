@@ -1,0 +1,59 @@
+{
+  "at": "2026-11-10T00:34:36.153108+00:00",
+  "http": [
+    {
+      "name": "shopping",
+      "status": 200,
+      "bytes": 1719681,
+      "headers": {
+        "Content-Type": "application/xml; charset=utf-8",
+        "x-merchant-generated-at": "2026-11-10T00:34:31.893Z",
+        "x-merchant-item-count": "1184",
+        "x-merchant-product-count": "214"
+      }
+    },
+    {
+      "name": "inventory",
+      "status": 200,
+      "bytes": 64651,
+      "headers": {
+        "Content-Type": "text/tab-separated-values; charset=utf-8",
+        "x-merchant-generated-at": "2026-11-10T00:34:35.889Z",
+        "x-merchant-item-count": "1184",
+        "x-merchant-product-count": "214"
+      }
+    },
+    {
+      "name": "categories",
+      "status": 200,
+      "bytes": 158822,
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    }
+  ],
+  "items": 1184,
+  "localItems": 1184,
+  "localDifferences": [],
+  "localExtraIds": [],
+  "missingBrand": [
+    "ALTL-MAO",
+    "ALTL-5FDUAL",
+    "ALTL-QUAN",
+    "D30VT-COMBO3",
+    "D30VT-LUNG",
+    "D30VT-TAY",
+    "D30VT-VAI"
+  ],
+  "categoryPresent": 0,
+  "identifiers": {
+    "gtin": 0,
+    "mpn": 0,
+    "identifier_exists": 0
+  },
+  "links": {
+    "wp-var-": 720,
+    "var_": 381
+  },
+  "uniqueMainImages": 348
+}

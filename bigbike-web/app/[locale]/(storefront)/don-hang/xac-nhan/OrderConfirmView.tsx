@@ -1,5 +1,7 @@
 "use client";
 
+import { getStoreHours } from "@/lib/content/store-hours";
+
 import Link from "@/i18n/StorefrontLink";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -241,7 +243,7 @@ function ZaloSupportButton({ zalo }: { zalo: ZaloContact | null }) {
 }
 
 function StoreFooterNote({ address }: { address: string }) {
-  const t = useTranslations("OrderConfirm");
+  const hours = getStoreHours(useLocale());
 
   return (
     <p className="text-a5-meta text-muted-foreground text-center mt-6 leading-relaxed">
@@ -251,7 +253,7 @@ function StoreFooterNote({ address }: { address: string }) {
           <br />
         </>
       ) : null}
-      {t("footerHours")}
+      {Object.values(hours).join(" · ")}
     </p>
   );
 }

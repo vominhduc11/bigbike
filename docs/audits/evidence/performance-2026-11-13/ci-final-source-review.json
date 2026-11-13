@@ -1,0 +1,115 @@
+{
+  "reviewer": "backend_migrations agent",
+  "review_type": "Final source-only integration review; independent of Lead-owned runner/Compose/proxy implementation. frozen_dataset.py is self-review because this reviewer implemented it.",
+  "runtime_executed": false,
+  "heavy_commands_executed": false,
+  "result": "No new confirmed source-level startup blocker found in the hashed lifecycle/Compose/proxy integration. This is not runtime acceptance.",
+  "source_sha256": [
+    {
+      "path": "scripts/performance/run_ci.py",
+      "sha256": "221f6ec610115c22a71ed8756419593adbab58199a8cb54de5cb385d0468a151"
+    },
+    {
+      "path": "scripts/performance/compose.ci.yml",
+      "sha256": "d9b06c93e07a503f5306455c750800395f0fa2cd00190ea4adef1370fd643711"
+    },
+    {
+      "path": "scripts/performance/api.ci.conf",
+      "sha256": "ed704be5e1c7f1595d342105a73a550cdac707a29a08e415ccd38e2e88853c80"
+    },
+    {
+      "path": "scripts/performance/frozen_dataset.py",
+      "sha256": "676619b5ec3f24f1c8981dcdd74a569d6b2d4a16e55cf78315e1d6dc0a387317"
+    },
+    {
+      "path": "scripts/performance/s3_setup.py",
+      "sha256": "244dde9431d169101a95cdc2241b1e2760194e07c08954677020afbbdfe065c3"
+    },
+    {
+      "path": "scripts/performance/ci_guard.py",
+      "sha256": "39d5b0771d4c089aee395d43a737de95c52e8e739589efd3795147ab559ebee1"
+    },
+    {
+      "path": "scripts/performance/compare_results.py",
+      "sha256": "cf6ea0ab02f18af22cda86673d5b1e43a7a174d03d0602ea81fd7bd1648cda96"
+    },
+    {
+      "path": "scripts/performance/Dockerfile.web",
+      "sha256": "c383d2c4c748bb30b1908222a291e8fae7cef6b2befe2203ade515f9c2900fb0"
+    },
+    {
+      "path": "scripts/performance/Dockerfile.admin",
+      "sha256": "eec555c9f4021de0454d39b1fe243292a00f83aec03257bb475ef2b4fb9bed0e"
+    },
+    {
+      "path": "scripts/performance/launch-web.cjs",
+      "sha256": "a771a398c32e187e64bc888eb51fedbc2dd04bec09a35e1330ff24cb82f6f2ff"
+    },
+    {
+      "path": ".github/workflows/performance-validation.yml",
+      "sha256": "b889447fa5b8bd7adf73a05fdce35f620715474b4e51395d87bfff78ea8766f4"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java",
+      "sha256": "2d6c162f7bc18099a2c4f3d0a5293a65ddb15adf7c514ebc93ed99412501a418"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/JwtAuthFilter.java",
+      "sha256": "a460d356fdef4ffd9e382a2c1a7e10ab3438939e621fab7beaba99bcb5b625d5"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/IngressBoundaryFilter.java",
+      "sha256": "df15e57b6bf758af16a4c3930800f1cff127423d2442e55fe920373a937a3520"
+    }
+  ],
+  "reviewed_controls": [
+    {
+      "area": "Exact initial dataset",
+      "finding": "Before provisioner captures synthetic database+stored original/variant bytes privately; stops its backend/proxy/Redis; restores the same snapshot and recreates measured JVM/Redis. After restores that same snapshot before backend startup. Both use the same generated credentials."
+    },
+    {
+      "area": "Private restore",
+      "finding": "Hosted runner, owned project namespace, private temporary directory, expected filenames and checksums are checked before writes. Backend must be stopped. pg_restore uses clean/if-exists/exit-on-error; MinIO restores same keys, bytes and MIME then re-reads for verification. Archive/object copies are outside artifact output."
+    },
+    {
+      "area": "Comparison completeness",
+      "finding": "Comparison requires both initial dataset identities and equality, both complete arm statuses and non-stopped API results. It refuses missing/mismatched measured repeats or mixed-success latency claims."
+    },
+    {
+      "area": "Fresh checkout",
+      "finding": "Python bytecode emission is disabled before local imports; workflow also disables it. The clean revision guard is retained; tracked source hashes restrict Before differences to the attributed manifest."
+    },
+    {
+      "area": "Network and startup",
+      "finding": "Only ephemeral internal Docker network and loopback high ports are exposed. Proxy resolves variable upstreams through Docker DNS, so frontend hostnames need not exist when proxy first starts. Ingress host groups are disjoint and localhost is a shared lab host. Real public/backend readiness requires HTTP200."
+    },
+    {
+      "area": "Authentication and pool metrics",
+      "finding": "Normal JWT filter authenticates Bearer tokens on actuator paths; SecurityConfig requires authentication for metrics. API proxy sends localhost Host, accepted as shared lab host. Fresh normal login occurs just before the bounded API workload; no access TTL/permission relaxation is used."
+    },
+    {
+      "area": "Limits and resource accounting",
+      "finding": "10r/s API and30r/s ordinary web/admin coarse controls remain active with429 envelope/meta/Retry-After/no-store. Admin WebSocket upgrade is forwarded outside ordinary coarse limiter. Resource watcher requires all seven owned containers and records pool values before/after workload."
+    },
+    {
+      "area": "Failure and cleanup scope",
+      "finding": "Job refuses a pre-existing owned-project container set and only marks stack.started immediately before creating its services. Cleanup is gated on that flag and targets only its exact project. Status/partial sanitized API/media/browser evidence cannot be relabeled successful if required gates fail."
+    }
+  ],
+  "compose_dependency_source_check": {
+    "finding": "Compose2 source separates requested-service force recreation from dependency recreation; unchanged PostgreSQL/MinIO dependencies are not force-recreated by the listed Redis/backend/proxy reset. This is source reasoning, not verification of an installed runner.",
+    "primary_sources": [
+      "https://github.com/docker/compose/blob/v2.39.4/cmd/compose/create.go",
+      "https://github.com/docker/compose/blob/v2.39.4/pkg/compose/convergence.go"
+    ]
+  },
+  "remaining_evidence_limits": [
+    "No remote CI workflow, startup readiness, pg_dump/pg_restore+MinIO real roundtrip, proxy reload or180-second timeout behavior executed by this reviewer.",
+    "Frozen identity proves the initial restored dataset. Subsequent real test writes use normal current timestamps/new IDs; no claim that entire runtime databases remain byte-identical.",
+    "MinIO Last-Modified and host clocks differ. Internal cache state is not captured by pg_dump; use the same declared warm-up and avoid calling first navigation a server-cold run.",
+    "Aggregate SQL counters include collectors and background work; they are not exact query/request attribution.",
+    "This review covers lifecycle/configuration boundaries, not all controller permissions, every module workflow, production capacity or field Core Web Vitals.",
+    "frozen_dataset.py mocked tests are implementation verification, not an independent or real-service restore test."
+  ],
+  "regression_evidence": "backend-full-initial-summary.json retains1572 executions/one unrelated phone-login fixture failure; auth-cache-targeted-summary.json32pass. Required final full rerun remains Lead-owned."
+}

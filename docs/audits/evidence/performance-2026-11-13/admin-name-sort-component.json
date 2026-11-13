@@ -1,0 +1,167 @@
+{
+  "scope": "single-thread synthetic Java name sorting only; excludes DB, hydration and API",
+  "java": "17.0.18",
+  "samples": [
+    {
+      "rows": 235,
+      "exact_order_both_directions": true,
+      "before_ms": [
+        12.399019,
+        11.809115,
+        12.426759,
+        9.95836,
+        8.643356
+      ],
+      "after_ms": [
+        3.620745,
+        3.137536,
+        3.777129,
+        18.406046,
+        3.784888
+      ],
+      "before_allocated_bytes": [
+        1448504,
+        1448504,
+        1448504,
+        1448816,
+        1448504
+      ],
+      "after_allocated_bytes": [
+        298664,
+        298664,
+        298664,
+        298664,
+        298664
+      ],
+      "before_median_ms": 11.809115,
+      "before_median_allocated_bytes": 1448504,
+      "after_median_ms": 3.777129,
+      "after_median_allocated_bytes": 298664
+    },
+    {
+      "rows": 267,
+      "exact_order_both_directions": true,
+      "before_ms": [
+        12.037041,
+        10.687585,
+        10.227074,
+        10.77709,
+        9.964933
+      ],
+      "after_ms": [
+        5.263183,
+        3.715971,
+        4.201193,
+        24.51931,
+        3.095119
+      ],
+      "before_allocated_bytes": [
+        1773848,
+        1773848,
+        1773848,
+        1773848,
+        1773848
+      ],
+      "after_allocated_bytes": [
+        357016,
+        357016,
+        357016,
+        357016,
+        357016
+      ],
+      "before_median_ms": 10.687585,
+      "before_median_allocated_bytes": 1773848,
+      "after_median_ms": 4.201193,
+      "after_median_allocated_bytes": 357016
+    },
+    {
+      "rows": 1000,
+      "exact_order_both_directions": true,
+      "before_ms": [
+        63.525968,
+        44.373593,
+        54.947396,
+        72.632346,
+        72.891822
+      ],
+      "after_ms": [
+        9.500626,
+        29.44507,
+        11.100949,
+        10.487945,
+        10.372354
+      ],
+      "before_allocated_bytes": [
+        10043104,
+        10043104,
+        10043104,
+        10043104,
+        10043104
+      ],
+      "after_allocated_bytes": [
+        1429928,
+        1429928,
+        1429928,
+        1429928,
+        1429928
+      ],
+      "before_median_ms": 63.525968,
+      "before_median_allocated_bytes": 10043104,
+      "after_median_ms": 10.487945,
+      "after_median_allocated_bytes": 1429928
+    },
+    {
+      "rows": 10000,
+      "exact_order_both_directions": true,
+      "before_ms": [
+        939.391854,
+        941.232362,
+        950.381566,
+        895.469814,
+        929.860181
+      ],
+      "after_ms": [
+        120.01563,
+        145.73457,
+        145.686623,
+        145.650345,
+        121.730198
+      ],
+      "before_allocated_bytes": [
+        166876616,
+        166876616,
+        166876616,
+        166876616,
+        166876616
+      ],
+      "after_allocated_bytes": [
+        15900168,
+        15900168,
+        15900168,
+        15900168,
+        15900168
+      ],
+      "before_median_ms": 939.391854,
+      "before_median_allocated_bytes": 166876616,
+      "after_median_ms": 145.650345,
+      "after_median_allocated_bytes": 15900168
+    }
+  ],
+  "method": {
+    "fixture_seed": 20261113,
+    "warmups_per_path_per_size": 3,
+    "measured_runs_per_path_per_size": 5,
+    "order": "seeded randomized before/after, sequential paths",
+    "heap_cap_mb": 256,
+    "inputs": "Synthetic product-like names; no production names or records",
+    "identity": "Original comparator code and proposed comparator code execute in one JVM on identical immutable records",
+    "limitations": [
+      "Single shared-host JVM; not JMH or end-to-end latency. Timing has noise.",
+      "Thread allocated bytes are cumulative allocation, not peak heap or retained bytes.",
+      "Candidate retains one CollationKey per distinct name until sort ends (O(unique names) memory).",
+      "Both paths continue to sort all matches. Database/hydration/pool wait excluded."
+    ]
+  },
+  "source_sha256": "b5dc7662cb7a574fcef7828481de3bc67737298d3bf8dbd6be14d3a12fae1103",
+  "before_source_file_sha256": "5d55d35a2e7bd77b3fb615d8576ec8e57da76508133a149e0f3579d2c445e03a"
+}

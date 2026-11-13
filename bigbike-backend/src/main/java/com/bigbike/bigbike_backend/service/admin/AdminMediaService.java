@@ -127,6 +127,7 @@ public class AdminMediaService {
             UUID adminId
     ) {
         String mimeType = validateMimeContent(sourceBytes, declaredMimeType);
+        boolean sourcePng = "image/png".equals(mimeType);
         if (sourceBytes.length > MAX_UPLOAD_BYTES) {
             throw ValidationException.fromField("file", "FILE_TOO_LARGE",
                     "File exceeds 200 MB limit / tệp vượt quá giới hạn 200 MB.");
@@ -159,7 +160,9 @@ public class AdminMediaService {
         // Downscale the stored original (MEDIA_RULE_006) without upscaling. width/height are
         // re-measured below from what's actually written to MinIO, not from the uploaded bytes.
         if (mimeType.startsWith("image/")) {
-            bytes = imageCompressionService.compress(bytes, mimeType, ADMIN_ORIGINAL_PROFILE);
+            var compressed = imageCompressionService.compressAdminOriginal(bytes, mimeType, ADMIN_ORIGINAL_PROFILE);
+            bytes = compressed.bytes();
+            mimeType = compressed.mimeType();
             if (RASTER_IMAGE_TYPES.contains(mimeType)) {
                 try {
                     var dimensions = com.bigbike.bigbike_backend.service.media.ImageDimensions.read(bytes, mimeType);
@@ -205,6 +208,10 @@ public class AdminMediaService {
         }
 
         String safeFilename = sanitizeFilename(originalFilename);
+        if (sourcePng && "image/jpeg".equals(mimeType)) {
+            safeFilename = safeFilename.replaceFirst("(?i)\\.[^.]+$", "") + ".jpg";
+            safeOriginalFilename = safeOriginalFilename.replaceFirst("(?i)\\.[^.]+$", "") + ".jpg";
+        }
         String objectKey = "uploads/" + UUID.randomUUID() + "/" + safeFilename;
         String bucket = minioProperties.getBucket();
 

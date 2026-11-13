@@ -9,6 +9,7 @@ import {
   setAuthErrorListener,
 } from './adminApi'
 import { clearTokens } from './authStorage'
+import { SESSION_ENDING_EVENT } from './authSession'
 import { queryClient } from './queryClient'
 
 const AuthContext = createContext(null)
@@ -30,6 +31,7 @@ export function AuthProvider({ children }) {
   const reconcileInFlightRef = useRef(null)
   const channelRef = useRef(null)
   const stateRef = useRef(initialState)
+  const sessionVersionRef = useRef(0)
 
   useEffect(() => {
     stateRef.current = state
@@ -45,6 +47,9 @@ export function AuthProvider({ children }) {
 
   const invalidateSession = useCallback(
     ({ broadcast = false } = {}) => {
+      sessionVersionRef.current++
+      // Flush opted-in editors before the cache clear and login screen unmount them.
+      window.dispatchEvent(new Event(SESSION_ENDING_EVENT))
       clearTokens()
       queryClient.clear()
       setUnauthenticated()
@@ -57,11 +62,12 @@ export function AuthProvider({ children }) {
     async ({ broadcast = true } = {}) => {
       if (stateRef.current.status !== 'authenticated') return false
       if (reconcileInFlightRef.current) return reconcileInFlightRef.current
+      const version = sessionVersionRef.current
 
       reconcileInFlightRef.current = (async () => {
         try {
           const response = await fetchCurrentAdminUser()
-          if (!aliveRef.current) return false
+          if (!aliveRef.current || version !== sessionVersionRef.current) return false
           // Keep the React Query cache warm here.
           // This path runs on focus and on a 30s interval, so clearing the entire
           // cache would turn a harmless access refresh into visible full-screen flicker.
@@ -73,11 +79,9 @@ export function AuthProvider({ children }) {
           })
           if (broadcast) broadcastAccessSignal('PROFILE_REFRESH')
           return true
-        } catch (error) {
-          // Network failures must not incorrectly sign an operator out. Authentication failures do.
-          if (error?.status === 401 || error?.status === 403) {
-            invalidateSession({ broadcast })
-          }
+        } catch {
+          // Confirmed session rejection is handled by the API auth listener.
+          // Reinterpreting a delayed request's 401 here can erase newer tokens.
           return false
         } finally {
           reconcileInFlightRef.current = null
@@ -85,7 +89,7 @@ export function AuthProvider({ children }) {
       })()
       return reconcileInFlightRef.current
     },
-    [broadcastAccessSignal, invalidateSession],
+    [broadcastAccessSignal],
   )
 
   // Wired into the fetch interceptor: when refresh ultimately fails, kick the
@@ -116,30 +120,35 @@ export function AuthProvider({ children }) {
   // Bootstrap: on page load the in-memory access token is gone, so try a
   // silent refresh via the httpOnly cookie first. If that also fails, show login.
   const bootstrap = useCallback(async () => {
+    const version = ++sessionVersionRef.current
     setState((prev) => ({ ...prev, status: 'initializing' }))
 
-    if (!hasStoredAccessToken()) {
-      // Attempt silent refresh using the httpOnly refresh cookie.
-      const newToken = await refreshAccessToken()
-      if (!aliveRef.current) return
-      if (!newToken) {
-        setUnauthenticated()
-        return
-      }
-    }
-
     try {
+      if (!hasStoredAccessToken()) {
+        // Attempt silent refresh using the httpOnly refresh cookie.
+        const newToken = await refreshAccessToken()
+        if (!aliveRef.current || version !== sessionVersionRef.current) return
+        if (!newToken) {
+          setUnauthenticated()
+          return
+        }
+      }
+
       const response = await fetchCurrentAdminUser()
-      if (!aliveRef.current) return
+      if (!aliveRef.current || version !== sessionVersionRef.current) return
       setState({
         status: 'authenticated',
         user: response.user,
         mode: response.mode || 'live',
         error: '',
       })
-    } catch {
-      if (!aliveRef.current) return
-      setUnauthenticated()
+    } catch (error) {
+      if (!aliveRef.current || version !== sessionVersionRef.current) return
+      if (error?.status === 401) {
+        setUnauthenticated()
+      } else {
+        setState({ ...initialState, status: 'error', error: error?.message || '' })
+      }
     }
   }, [setUnauthenticated])
 
@@ -187,11 +196,13 @@ export function AuthProvider({ children }) {
   }, [state.status, reconcileAccess])
 
   const login = useCallback(async ({ email, password }) => {
+    const version = ++sessionVersionRef.current
     await loginAdmin({ email, password })
     // After tokens are stored, call /auth/me to fetch the canonical profile
     // (permissions list), since the login response uses a different summary
     // shape than fetchCurrentAdminUser expects.
     const response = await fetchCurrentAdminUser()
+    if (!aliveRef.current || version !== sessionVersionRef.current) return
     setState({
       status: 'authenticated',
       user: response.user,
@@ -206,8 +217,15 @@ export function AuthProvider({ children }) {
   }, [invalidateSession])
 
   const value = useMemo(
-    () => ({ ...state, login, logout, reconcileAccess, invalidateSession }),
-    [state, login, logout, reconcileAccess, invalidateSession],
+    () => ({
+      ...state,
+      login,
+      logout,
+      retrySession: bootstrap,
+      reconcileAccess,
+      invalidateSession,
+    }),
+    [state, login, logout, bootstrap, reconcileAccess, invalidateSession],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

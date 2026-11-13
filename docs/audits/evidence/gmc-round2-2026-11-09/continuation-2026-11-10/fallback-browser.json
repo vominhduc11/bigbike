@@ -1,0 +1,74 @@
+{
+  "at": "2026-11-10T00:43:12.914Z",
+  "sourceImage": "sha256:f8c00411746da82a697d434204c8447840fc3796ee3d53ff6bf4fc8310580196",
+  "isolated": true,
+  "productionInterrupted": false,
+  "tests": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "status": 200,
+      "fallbackBeforeSnapshotLocked": true,
+      "liveSnapshotUnlocks": true,
+      "snapshotFailureRelocks": true,
+      "pageErrors": []
+    },
+    {
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "status": 200,
+      "fallbackBeforeSnapshotLocked": true,
+      "liveSnapshotUnlocks": true,
+      "pageErrors": []
+    },
+    {
+      "upstreamStatus": 401,
+      "pageStatus": 404,
+      "notFallback": true,
+      "cacheExistsAfter": true
+    },
+    {
+      "upstreamStatus": 403,
+      "pageStatus": 404,
+      "notFallback": true,
+      "cacheExistsAfter": true
+    },
+    {
+      "upstreamStatus": 404,
+      "pageStatus": 404,
+      "notFallback": true,
+      "cacheExistsAfter": false
+    },
+    {
+      "upstreamStatus": 410,
+      "pageStatus": 404,
+      "notFallback": true,
+      "cacheExistsAfter": false
+    },
+    {
+      "upstreamStatus": 429,
+      "pageStatus": 404,
+      "notFallback": true,
+      "cacheExistsAfter": true
+    },
+    {
+      "expiredSnapshotUpstream503PageStatus": 500,
+      "expiredCacheDoesNotRenderProduct": true
+    },
+    {
+      "noSnapshotUpstream503PageStatus": 500,
+      "missingCacheDoesNotRenderProduct": true
+    }
+  ],
+  "errors": [],
+  "ok": true,
+  "limitations": [
+    "Bản sao artifact production chạy Node 22.22.1 trên host; production Node 20 Alpine.",
+    "Chỉ process cô lập và browser thử nghiệm nhận lỗi; không gây lỗi backend production.",
+    "Attempt 1 dùng sai đích phát visibilitychange; attempt 2 gọi nhầm response.status() của Fetch API; đã sửa harness, không sửa ứng dụng."
+  ]
+}

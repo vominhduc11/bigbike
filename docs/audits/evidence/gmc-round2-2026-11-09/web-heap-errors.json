@@ -1,0 +1,5 @@
+[
+  "2026-11-08T02:59:03.905910814Z FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory",
+  "2026-11-08T19:13:01.310132720Z FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory",
+  "2026-11-09T14:32:07.367741779Z FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory"
+]

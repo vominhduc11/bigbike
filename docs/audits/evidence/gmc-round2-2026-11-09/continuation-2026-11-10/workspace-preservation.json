@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-10T01:08:12.323513+00:00",
+  "previousTrackedDiffsChangedOnly": [
+    "docs/business/BUSINESS_RULES.md",
+    "docs/engineering/DEPLOYMENT_GUIDE.md",
+    "docs/engineering/GMC_SETUP.md",
+    "docs/engineering/TESTING_GUIDE.md"
+  ],
+  "otherPreexistingTrackedDiffsPreserved": true,
+  "newAppSource": "bigbike-web/lib/utils/html.ts",
+  "newAppTest": "bigbike-web/__tests__/utils/html-server-lifecycle.test.ts",
+  "noCommitOrPush": true,
+  "envFilesUnchanged": true
+}

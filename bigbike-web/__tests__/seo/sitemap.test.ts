@@ -42,6 +42,12 @@ function seedDefaults() {
 }
 
 describe("catalog sitemap canonical URLs", () => {
+  it("never includes Google invitation routes", async () => {
+    seedDefaults();
+    const paths = (await sitemap()).map((entry) => new URL(entry.url).pathname);
+    for (const path of ["/danh-gia/", "/review/", "/en/review/"]) expect(paths).not.toContain(path);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     seedDefaults();

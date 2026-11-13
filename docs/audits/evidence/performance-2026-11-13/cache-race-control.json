@@ -1,0 +1,13 @@
+{
+  "before": {
+    "arm": "before",
+    "stale_snapshot_republished_after_invalidation": true,
+    "source_sha256": "1b4b34fbc1cefe46deafcfe9aa863e69e13bce4de20596fb65d7bb3a1807cfc2"
+  },
+  "after": {
+    "arm": "after",
+    "stale_snapshot_republished_after_invalidation": false,
+    "source_sha256": "45914aa963e8ab8605a91654236843be5443403412f707355e4ab0c9c77ea095"
+  },
+  "scope": "Deterministic same latch schedule, real pre-fix/candidate cache sources in separate temp classpaths; no application containers, DB or performance claim."
+}

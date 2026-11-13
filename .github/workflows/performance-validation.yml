@@ -1,0 +1,165 @@
+name: Performance regression and isolated stack validation
+
+on:
+  push:
+    branches: ["ci/performance-validation-*"]
+  workflow_dispatch:
+    inputs:
+      full_stack:
+        description: Build and measure sequential Before/After stacks after regression gates
+        type: boolean
+        default: true
+      included_quota_confirmed:
+        description: Operator checked remaining included Actions quota (up to 180 runner-minutes); no paid capacity
+        type: boolean
+        default: false
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: performance-validation-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  boundary:
+    if: github.event.repository.private == false || (github.event_name == 'workflow_dispatch' && inputs.included_quota_confirmed)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require existing included quota for requested full-stack run
+        if: github.event.repository.private && !inputs.included_quota_confirmed
+        run: |
+          echo 'Full-stack run requires operator verification of available included Actions quota.'
+          exit 1
+      - name: Validate tooling and source attribution without touching running services
+        run: |
+          python3 -m unittest discover -s scripts/performance -p 'test_*.py'
+          python3 scripts/performance/prepare_baseline.py --root .
+          node --check scripts/performance/browser.cjs
+          bash deploy/nginx/tests/domain-boundary-config-test.sh --self-test
+
+  frontend:
+    needs: boundary
+    name: Frontend regression gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        app: [bigbike-admin, bigbike-web]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    env:
+      NODE_OPTIONS: --max-old-space-size=3072
+      NEXT_TELEMETRY_DISABLED: "1"
+      BIGBIKE_DISABLE_DEV_FALLBACK: "true"
+      BIGBIKE_API_BASE_URL: http://localhost:18080
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:18080
+      NEXT_PUBLIC_SITE_URL: http://localhost:13000
+      VITE_STOREFRONT_BASE_URL: http://localhost:13000
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci > "${{ runner.temp }}/npm-install-private.log" 2>&1
+      - run: npm run lint > "${{ runner.temp }}/lint-private.log" 2>&1
+      - name: Unit regressions
+        id: tests
+        run: npm run test -- --maxWorkers=1 --testTimeout=20000 --reporter=json --outputFile=${{ runner.temp }}/vitest-private.json > "${{ runner.temp }}/vitest-private.log" 2>&1
+      - name: Preserve only sanitized counts and enforce no skips
+        if: always() && steps.tests.outcome != 'skipped'
+        run: python3 ../scripts/performance/summarize_tests.py --format vitest --input '${{ runner.temp }}/vitest-private.json' --output '${{ runner.temp }}/perf-counts/${{ matrix.app }}.json'
+      - if: matrix.app == 'bigbike-web'
+        run: npm run build -- --webpack > "${{ runner.temp }}/build-private.log" 2>&1
+      - if: matrix.app == 'bigbike-admin'
+        run: npm run build > "${{ runner.temp }}/build-private.log" 2>&1
+      - name: Publish bounded sanitized results through job logs
+        if: always()
+        run: python3 -B ../scripts/performance/publish_results.py '${{ runner.temp }}/perf-counts'
+
+  backend:
+    needs: frontend
+    name: Backend and isolated PostgreSQL regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      MAVEN_OPTS: -Xmx768m
+      JAVA_TOOL_OPTIONS: -Xmx2048m
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+      - name: Clean build and regression tests
+        id: tests
+        working-directory: bigbike-backend
+        run: ./mvnw -B clean verify -DforkCount=1 > "${{ runner.temp }}/maven-private.log" 2>&1
+      - name: Preserve only sanitized counts and enforce no skips
+        if: always() && steps.tests.outcome != 'skipped'
+        run: python3 scripts/performance/summarize_tests.py --format junit --input bigbike-backend/target/surefire-reports --output '${{ runner.temp }}/perf-counts/backend.json'
+      - name: Require real PostgreSQL schema and color coverage
+        working-directory: bigbike-backend
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import xml.etree.ElementTree as E
+          for suffix, minimum in (('service.catalog.CatalogColorAccessibilityLabelServicePostgresTest', 4), ('migration.PerformanceCiSchemaMigrationPostgresTest', 1), ('migration.NestedArticleAuditCleanupMigrationPostgresTest', 2)):
+              path = pathlib.Path('target/surefire-reports/TEST-com.bigbike.bigbike_backend.' + suffix + '.xml')
+              result = E.parse(path).getroot()
+              assert int(result.attrib['tests']) >= minimum, 'Required PostgreSQL coverage absent'
+              assert all(int(result.attrib[key]) == 0 for key in ('errors', 'failures', 'skipped')), 'Required PostgreSQL regressions failed/skipped'
+          PY
+      - name: Publish bounded sanitized results through job logs
+        if: always()
+        run: python3 -B scripts/performance/publish_results.py '${{ runner.temp }}/perf-counts'
+
+  isolated_stack:
+    needs: backend
+    if: github.event_name == 'push' || (inputs.full_stack && (github.event.repository.private == false || inputs.included_quota_confirmed))
+    name: Real isolated stack sequential Before/After lab
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install bounded lab tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          npm ci --prefix bigbike-web --no-audit --no-fund > "${{ runner.temp }}/lab-install-private.log" 2>&1
+          npm install --prefix '${{ runner.temp }}/perf-tools' --no-audit --no-fund --save-exact lighthouse@12.8.2
+          cd bigbike-web
+          npx playwright install --with-deps chromium
+          node -e 'console.log("CHROME_PATH=" + require("@playwright/test").chromium.executablePath())' >> "$GITHUB_ENV"
+      - name: Freeze source, build sequential stacks, verify workflows and measure
+        run: python3 -B scripts/performance/run_ci.py --quota-approved --output '${{ runner.temp }}/perf-evidence'
+      - name: Publish bounded sanitized results through job logs
+        if: always()
+        run: python3 -B scripts/performance/publish_results.py '${{ runner.temp }}/perf-evidence'

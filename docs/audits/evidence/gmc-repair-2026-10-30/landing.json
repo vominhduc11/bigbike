@@ -1,0 +1,59 @@
+[
+  {
+    "sku": "SPIRIT-XANHOM-36",
+    "url": "https://bigbike.vn/product/quan-bao-ho-jean-spirit/?variant=wp-var-39315",
+    "status": 200,
+    "initialHtmlSelected": true,
+    "feedPrice": "2500000 VND",
+    "feedSalePrice": "290000 VND",
+    "feedAvailability": "in_stock",
+    "htmlOffers": {
+      "@type": "Offer",
+      "url": "https://bigbike.vn/product/quan-bao-ho-jean-spirit/?variant=wp-var-39315",
+      "priceCurrency": "VND",
+      "price": 290000,
+      "availability": "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    "priceMatches": true,
+    "stockMatches": true
+  },
+  {
+    "sku": "MLH-LS2-FF901X-SOLID-13990000XS",
+    "url": "https://bigbike.vn/product/mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon/?variant=var_97a13dab38974c5cbf99f2317528d107",
+    "status": 200,
+    "initialHtmlSelected": true,
+    "feedPrice": "13990000 VND",
+    "feedSalePrice": null,
+    "feedAvailability": "out_of_stock",
+    "htmlOffers": {
+      "@type": "Offer",
+      "url": "https://bigbike.vn/product/mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon/?variant=var_97a13dab38974c5cbf99f2317528d107",
+      "priceCurrency": "VND",
+      "price": 13990000,
+      "availability": "https://schema.org/OutOfStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    "priceMatches": true,
+    "stockMatches": true
+  },
+  {
+    "sku": "DRHL-KEWIG-BD-1L",
+    "url": "https://bigbike.vn/product/day-thun-rang-non-bao-hiem-hanh-ly-kewig-bd-1s/?variant=var_2a9de4e6a23c47e7b38f87c686875622",
+    "status": 200,
+    "initialHtmlSelected": true,
+    "feedPrice": "145000 VND",
+    "feedSalePrice": null,
+    "feedAvailability": "in_stock",
+    "htmlOffers": {
+      "@type": "Offer",
+      "url": "https://bigbike.vn/product/day-thun-rang-non-bao-hiem-hanh-ly-kewig-bd-1s/?variant=var_2a9de4e6a23c47e7b38f87c686875622",
+      "priceCurrency": "VND",
+      "price": 145000,
+      "availability": "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    "priceMatches": true,
+    "stockMatches": true
+  }
+]

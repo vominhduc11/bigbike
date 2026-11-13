@@ -1,0 +1,14 @@
+{
+  "lint": "pass",
+  "merchantTests": "21/21 pass",
+  "pythonProbeTests": "4/4 pass",
+  "domainBoundary": "pass",
+  "fullWebTests": "768/770 initially, 2 language audit timeouts; isolated retry 9/9 pass",
+  "build": "pass, exit 0",
+  "e2e": "3 in-stock responsive cases passed on localhost transport; out-of-stock passed with production browser origin, 28.1s",
+  "codeDeployed": false,
+  "productionDataChange": "Owner-approved DRAFT plus 301 via supported admin APIs",
+  "imageWrites": false,
+  "gmcAccess": false,
+  "checkedAt": "2026-10-30T08:58:52.994080+00:00"
+}

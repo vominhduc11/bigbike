@@ -1,0 +1,1 @@
+{"checkedAt": "2026-11-09T15:19:12.152355+00:00", "ok": true, "targets": [{"target": "home", "errors": [], "status": 200, "seconds": 0.581}, {"target": "product", "errors": [], "status": 200, "seconds": 0.832}, {"target": "feed", "errors": [], "status": 200, "seconds": 6.006}]}

@@ -29,6 +29,8 @@ import {
   trackSizeGuideUse,
   trackVideoOpen,
   trackViewCart,
+  preserveAnalyticsProductView,
+  observeAnalyticsPage,
   trackViewItem,
   trackViewItemList,
 } from "@/lib/analytics";
@@ -145,6 +147,7 @@ function order(overrides: Partial<OrderDetail> = {}): OrderDetail {
 }
 
 beforeEach(() => {
+  observeAnalyticsPage(`/reset-${crypto.randomUUID()}/`);
   window.gtag = vi.fn();
   window.fbq = vi.fn();
 });
@@ -404,8 +407,8 @@ describe("events", () => {
       ],
     ]);
     expect(sentMetaEvents()).toEqual([
-      ["Search", { search_string: "mũ bảo hiểm" }, undefined],
-      ["Search", { search_string: "mũ bảo hiểm" }, undefined],
+      ["Search", { search_string: "mũ bảo hiểm" }, { eventID: expect.any(String) }],
+      ["Search", { search_string: "mũ bảo hiểm" }, { eventID: expect.any(String) }],
     ]);
   });
 
@@ -424,7 +427,11 @@ describe("events", () => {
         search_surface: "header_quick",
       },
     ]);
-    expect(sentMetaEvents()[0]).toEqual(["Search", { search_string: "[redacted]" }, undefined]);
+    expect(sentMetaEvents()[0]).toEqual([
+      "Search",
+      { search_string: "[redacted]" },
+      { eventID: expect.any(String) },
+    ]);
   });
 
   it("attributes a click back to the list it came from", () => {
@@ -504,7 +511,9 @@ describe("events", () => {
       ],
     ]);
     expect(JSON.stringify(sentEvents())).not.toMatch(/090|tel:|zalo\.me|email/i);
-    expect(sentMetaEvents()).toEqual([["Contact", { content_name: "phone" }, undefined]]);
+    expect(sentMetaEvents()).toEqual([
+      ["Contact", { content_name: "phone" }, { eventID: expect.any(String) }],
+    ]);
   });
 
   it("uses recommended names where GA4 defines them and bounded custom parameters elsewhere", () => {
@@ -555,4 +564,32 @@ describe("events", () => {
     setAnalyticsUserId();
     expect(window.gtag).toHaveBeenLastCalledWith("set", { user_id: null });
   });
+});
+
+it("deduplicates locale-only product views, preserves distinct variants and new visits", () => {
+  const catalog = merchantVariants();
+  window.history.replaceState({}, "", "/product/test/");
+  trackViewItem(catalog, catalog.variants![0]);
+  window.history.replaceState({}, "", "/en/product/test/");
+  trackViewItem(catalog, catalog.variants![0]);
+  expect(sentMetaEvents()).toHaveLength(1);
+  trackViewItem(catalog, catalog.variants![1]);
+  expect(sentMetaEvents()).toHaveLength(2);
+  observeAnalyticsPage("/sp/");
+  trackViewItem(catalog, catalog.variants![0]);
+  expect(sentMetaEvents()).toHaveLength(3);
+  const ids = sentMetaEvents().map(([, , options]) => (options as { eventID: string }).eventID);
+  expect(new Set(ids).size).toBe(3);
+  window.history.replaceState({}, "", "/");
+});
+
+it("preserves the viewed SKU when English has a different product slug", () => {
+  const catalog = merchantVariants();
+  window.history.replaceState({}, "", "/product/ten-viet/");
+  trackViewItem(catalog, catalog.variants![0]);
+  preserveAnalyticsProductView("/en/product/english-name/");
+  window.history.replaceState({}, "", "/en/product/english-name/");
+  trackViewItem(catalog, catalog.variants![0]);
+  expect(sentMetaEvents()).toHaveLength(1);
+  window.history.replaceState({}, "", "/");
 });

@@ -1,0 +1,35 @@
+{
+  "note": "Only these six source files were clean at task start. Revert these alone in a duplicate candidate checkout; preserve every other file identically. Tests remain candidate tests and may intentionally fail on Before.",
+  "files": [
+    {
+      "path": "bigbike-admin/src/components/MediaPickerModal.jsx",
+      "before_blob": "dbcf60d4e7bba04a82ff35dd31767a804378b45b",
+      "candidate_sha256": "ec342accab8e468c5a92c5ee60a59b7e0a7fe71c72e012614993f2f4261c8d16"
+    },
+    {
+      "path": "bigbike-admin/src/components/VideoPickerModal.jsx",
+      "before_blob": "31bdf41958bddb5477a442878e7125be987b011a",
+      "candidate_sha256": "930f082b2c51067a16703e5ed7ebe8dc773d6d70c70bf3d3cf2097ac58d3d14b"
+    },
+    {
+      "path": "bigbike-web/components/catalog/ReadingProgressBar.tsx",
+      "before_blob": "c53212cde394b5dfd69ed4e36a9071060269ad30",
+      "candidate_sha256": "5a374a8142f908cd08631b0c9a0f13f71c9ca7017f157649eb109d0b8b3e2dfc"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+      "before_blob": "811a5f5a82f286b6355b83980b65cea8cb3209fe",
+      "candidate_sha256": "8a302930d5ac6f9281f0b1152e857cf74f3ac9940994e3af6b263006e9ca4e5a"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/catalog/CatalogColorAccessibilityLabelService.java",
+      "before_blob": "0d096aa5100c8d61874f650fd3109572fcc7dd5f",
+      "candidate_sha256": "26d2006ce92a46b792cd19f1bb4f8d2e39cd84ecc56676472a22a6e0445e8614"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/JpaCatalogReadRepository.java",
+      "before_blob": "baf80a66cba10d6d6087292cbc4a3777eb9ce3fd",
+      "candidate_sha256": "4ad9a95b184b22885ed4ce233c61a6ff7bf3442d06b277ef30f788ad8489d089"
+    }
+  ]
+}

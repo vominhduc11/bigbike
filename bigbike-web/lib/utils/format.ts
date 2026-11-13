@@ -15,8 +15,11 @@ export function safeArray<T>(value: T[] | null | undefined): T[] {
  * (e.g. 1000000 -> "1.000.000"). Use where the surrounding text supplies its
  * own unit — e.g. SEO titles that append a literal " dong".
  */
+// Cấu hình cố định: dùng lại formatter khi render nhiều giá trong cùng lưới.
+const vndNumberFormatter = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 });
+
 export function formatVndNumber(value: number): string {
-  return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value);
+  return vndNumberFormatter.format(value);
 }
 
 export function formatVnd(value: number | null | undefined): string {

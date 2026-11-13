@@ -1,3 +1,4 @@
+import { STORE_HOURS } from "@/lib/content/store-hours";
 /** Hồ sơ Google Business theo phiếu owner 2026-10-22, SEO_RULE_012. */
 export function buildHomepageBusinessJsonLd(): Record<string, unknown> {
   return {
@@ -54,14 +55,14 @@ export function buildHomepageBusinessJsonLd(): Record<string, unknown> {
           {
             "@type": "OpeningHoursSpecification",
             dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-            opens: "09:00",
-            closes: "21:00",
+            opens: STORE_HOURS.opens,
+            closes: STORE_HOURS.weekdayCloses,
           },
           {
             "@type": "OpeningHoursSpecification",
             dayOfWeek: "Sunday",
-            opens: "09:00",
-            closes: "17:00",
+            opens: STORE_HOURS.opens,
+            closes: STORE_HOURS.sundayCloses,
           },
         ],
         contactPoint: [

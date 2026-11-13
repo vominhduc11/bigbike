@@ -1,0 +1,135 @@
+{
+  "scope": "Offline decode/compression component only; no upload/network/storage time; no capacity or field-CWV claim",
+  "mode": "decode-one",
+  "java_version": "17.0.18",
+  "max_heap_bytes": 268435456,
+  "warmup_sets": 2,
+  "samples": 5,
+  "results": [
+    {
+      "fixture": "jpeg-noise-2000x1200",
+      "source_sha256": "7811d1bf1db66d23eb05eb63915c2a37a6686ecc5b674d34796012e0545c088d",
+      "source_bytes": 1443426,
+      "source_width": 2000,
+      "source_height": 1200,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        85091491,
+        97602113,
+        94786014,
+        98274806,
+        98237552
+      ],
+      "sample_allocated_bytes": [
+        15931064,
+        15936616,
+        15931136,
+        15931064,
+        15931280
+      ],
+      "median_millis": 97.602113,
+      "median_allocated_bytes": 15931136,
+      "outputs": []
+    },
+    {
+      "fixture": "png-opaque-noise-2000x1200",
+      "source_sha256": "772281aa2799c58af8bbc7d6d8fb5eb6d8804ec3d974292c4ce8c3ed3c818e1d",
+      "source_bytes": 7206091,
+      "source_width": 2000,
+      "source_height": 1200,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        117266852,
+        135392750,
+        113181160,
+        110960598,
+        105983357
+      ],
+      "sample_allocated_bytes": [
+        23665336,
+        23665376,
+        23665160,
+        23665624,
+        23665160
+      ],
+      "median_millis": 113.18116,
+      "median_allocated_bytes": 23665336,
+      "outputs": []
+    },
+    {
+      "fixture": "png-alpha-noise-2000x1200",
+      "source_sha256": "4da28ae67fea90e6df907de25436e30dc265cf9b4ab5d12190122bddbf8c74f9",
+      "source_bytes": 8238491,
+      "source_width": 2000,
+      "source_height": 1200,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        261619736,
+        218954590,
+        221725406,
+        202626416,
+        205531647
+      ],
+      "sample_allocated_bytes": [
+        29734488,
+        29734448,
+        29734448,
+        29734312,
+        29734448
+      ],
+      "median_millis": 218.95459,
+      "median_allocated_bytes": 29734448,
+      "outputs": []
+    },
+    {
+      "fixture": "customer-photo-wide.webp",
+      "source_sha256": "c0bb83cecdc47f0cdc952618347b50492cfbca33fb8b9041f6b079bc0acd4d7f",
+      "source_bytes": 10676,
+      "source_width": 1700,
+      "source_height": 8,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        25107969,
+        21804096,
+        22028293,
+        35423263,
+        18366791
+      ],
+      "sample_allocated_bytes": [
+        6818240,
+        6818376,
+        6818416,
+        6818200,
+        6818376
+      ],
+      "median_millis": 22.028293,
+      "median_allocated_bytes": 6818376,
+      "outputs": []
+    },
+    {
+      "fixture": "customer-photo-alpha.webp",
+      "source_sha256": "e043cfd1425e25d281bcdbaf5274856d2f815a095d857c49cce08ce71509dd39",
+      "source_bytes": 9362,
+      "source_width": 48,
+      "source_height": 48,
+      "decodes_per_set": 1,
+      "sample_nanos": [
+        5067585,
+        4933736,
+        25679748,
+        5428978,
+        5202764
+      ],
+      "sample_allocated_bytes": [
+        150320,
+        150144,
+        150360,
+        150144,
+        150360
+      ],
+      "median_millis": 5.202764,
+      "median_allocated_bytes": 150320,
+      "outputs": []
+    }
+  ]
+}

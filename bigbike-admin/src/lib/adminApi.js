@@ -14,7 +14,8 @@ import {
   normalizeMediaFolder,
   normalizeSetting,
 } from './contracts'
-import { clearTokens, hasAccessToken, readTokens, writeTokens } from './authStorage'
+import { clearTokens, hasAccessToken, readTokens, tokenRevision, writeTokens } from './authStorage'
+import { withAuthSessionLock } from './authSession'
 import { getContentLang } from './contentLang'
 
 const API_BASE = (import.meta.env.VITE_ADMIN_API_BASE || '/api/v1').replace(/\/$/, '')
@@ -51,8 +52,8 @@ function parseRetryAfter(headerValue) {
 
 // Auth interceptor state
 // We don't pull in axios just for an auth header. The same interceptor pattern
-// is implemented around fetch: every request reads the latest accessToken from
-// localStorage and, on 401, the request is retried once after a refresh.
+// is implemented around fetch: every request reads the latest in-memory token
+// and, on 401, is retried once after coordinated renewal.
 //
 // onAuthError is set by the AuthProvider so the UI can react (e.g. show login
 // screen) when refresh ultimately fails.
@@ -72,41 +73,82 @@ export function setAuthorizationErrorListener(listener) {
 
 let refreshInFlight = null
 
-async function performTokenRefresh() {
+function endSession(expectedToken) {
+  // A delayed rejection of an older request cannot erase a newer local session.
+  if (readTokens().accessToken !== expectedToken) return
+  clearTokens()
+  authErrorListener?.()
+}
+
+function temporaryRefreshError(
+  status = 503,
+  code = 'SESSION_REFRESH_UNAVAILABLE',
+  retryAfter = null,
+) {
+  return new ApiClientError(
+    'Chưa thể gia hạn đăng nhập. Vui lòng kiểm tra kết nối và thử lại; nội dung đang nhập vẫn được giữ trên trang.',
+    status,
+    code,
+    [],
+    retryAfter,
+  )
+}
+
+async function performTokenRefresh(rejectedToken = readTokens().accessToken) {
+  const currentToken = readTokens().accessToken
+  if (currentToken && currentToken !== rejectedToken) return currentToken
   if (refreshInFlight) return refreshInFlight
-  refreshInFlight = (async () => {
+  const startedRevision = tokenRevision()
+  refreshInFlight = withAuthSessionLock(async () => {
+    if (tokenRevision() !== startedRevision) {
+      const latest = readTokens().accessToken
+      if (latest) return latest
+      throw temporaryRefreshError(503, 'SESSION_CHANGED')
+    }
     try {
-      const { refreshToken } = readTokens()
       const response = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ refreshToken }),
+        body: '{}',
       })
-      if (!response.ok) return null
+      if (tokenRevision() !== startedRevision) throw temporaryRefreshError(503, 'SESSION_CHANGED')
+      if (response.status === 401) {
+        endSession(rejectedToken)
+        throw new ApiClientError('Phiên đăng nhập không còn hợp lệ.', 401, 'UNAUTHORIZED')
+      }
+      if (!response.ok) {
+        throw temporaryRefreshError(
+          response.status === 403 ? 503 : response.status,
+          'SESSION_REFRESH_UNAVAILABLE',
+          parseRetryAfter(response.headers.get('Retry-After')),
+        )
+      }
       const payload = await response.json().catch(() => null)
       const data = payload?.data
-      if (!data?.accessToken) return null
-      writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
+      if (tokenRevision() !== startedRevision) throw temporaryRefreshError(503, 'SESSION_CHANGED')
+      if (typeof data?.accessToken !== 'string' || !data.accessToken) throw temporaryRefreshError()
+      writeTokens({ accessToken: data.accessToken, refreshToken: null })
       return data.accessToken
-    } catch {
-      return null
-    } finally {
-      refreshInFlight = null
+    } catch (error) {
+      if (error instanceof ApiClientError) throw error
+      throw temporaryRefreshError()
     }
-  })()
+  })
+    .catch((error) => {
+      if (error instanceof ApiClientError) throw error
+      throw temporaryRefreshError(503, 'AUTH_COORDINATION_UNAVAILABLE')
+    })
+    .finally(() => {
+      refreshInFlight = null
+    })
   return refreshInFlight
 }
 
 // Attempt a silent refresh using the httpOnly cookie. Called on page load so
 // the user does not need to re-login after a hard refresh.
 export async function refreshAccessToken() {
-  const newAccess = await performTokenRefresh()
-  if (!newAccess) {
-    clearTokens()
-    if (authErrorListener) authErrorListener()
-  }
-  return newAccess
+  return performTokenRefresh()
 }
 
 function toQueryString(query) {
@@ -157,15 +199,12 @@ async function requestJson(endpoint, options = {}) {
   // 401 -> refresh once, retry once. The refresh endpoint itself is called with
   // skipAuth so we never recurse here.
   if (response.status === 401 && !skipAuth && accessToken) {
-    const newAccess = await performTokenRefresh()
-    if (newAccess) {
-      ;({ response, payload } = await dispatch(method, url, body, newAccess))
-    }
+    const newAccess = await performTokenRefresh(accessToken)
+    ;({ response, payload } = await dispatch(method, url, body, newAccess))
     if (response.status === 401) {
       // Refresh failed or replay still 401 — surface to AuthProvider so it can
       // clear state and show the login screen.
-      clearTokens()
-      if (authErrorListener) authErrorListener()
+      endSession(newAccess)
     }
   }
 
@@ -197,11 +236,10 @@ async function requestBlob(endpoint, fallbackFilename = 'download') {
 
   let response = await dispatchBlob(accessToken)
   if (response.status === 401 && accessToken) {
-    const newAccess = await performTokenRefresh()
-    if (newAccess) response = await dispatchBlob(newAccess)
+    const newAccess = await performTokenRefresh(accessToken)
+    response = await dispatchBlob(newAccess)
     if (response.status === 401) {
-      clearTokens()
-      if (authErrorListener) authErrorListener()
+      endSession(newAccess)
     }
   }
 
@@ -234,38 +272,44 @@ async function requestBlob(endpoint, fallbackFilename = 'download') {
 // Admin auth API
 
 export async function loginAdmin({ email, password }) {
-  // skipAuth: no access token exists yet, and we don't want the 401-refresh interceptor
-  // kicking in on a failed login attempt. API_BASE is always same-origin (dev proxy / prod
-  // nginx), so fetch's default same-origin credentials mode still lets the server set its
-  // httpOnly refresh cookie — no explicit credentials: 'include' needed here.
-  const payload = await requestJson('/auth/login', {
-    method: 'POST',
-    body: { email, password },
-    skipAuth: true,
+  return withAuthSessionLock(async () => {
+    // skipAuth: no access token exists yet, and we don't want the 401-refresh interceptor
+    // kicking in on a failed login attempt. API_BASE is always same-origin (dev proxy / prod
+    // nginx), so fetch's default same-origin credentials mode still lets the server set its
+    // httpOnly refresh cookie — no explicit credentials: 'include' needed here.
+    const payload = await requestJson('/auth/login', {
+      method: 'POST',
+      body: { email, password },
+      skipAuth: true,
+    })
+    const data = payload?.data
+    if (!data?.accessToken) {
+      throw new ApiClientError(
+        'Phản hồi đăng nhập từ máy chủ thiếu access token.',
+        500,
+        'INVALID_LOGIN_RESPONSE',
+      )
+    }
+    // Keep access only; the browser sends the shared httpOnly refresh cookie.
+    writeTokens({ accessToken: data.accessToken, refreshToken: null })
+    return { user: data.user }
   })
-  const data = payload?.data
-  if (!data?.accessToken) {
-    throw new ApiClientError(
-      'Phản hồi đăng nhập từ máy chủ thiếu access token.',
-      500,
-      'INVALID_LOGIN_RESPONSE',
-    )
-  }
-  // Store both tokens in memory; refresh token is also set as httpOnly cookie by the server.
-  writeTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken })
-  return { user: data.user }
 }
 
 export async function logoutAdmin() {
-  const { refreshToken } = readTokens()
-  try {
-    // Send refreshToken in body per spec (LogoutRequest); credentials also clears the httpOnly cookie.
-    await fetch(`${API_BASE}/auth/logout`, {
+  // Invalidate local in-flight results before waiting for another tab's renewal.
+  clearTokens()
+  const revoke = () =>
+    fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ refreshToken }),
+      body: '{}',
     })
+  try {
+    // Unsupported clients cannot renew, but must still be able to revoke a cookie.
+    if (globalThis.navigator?.locks?.request) await withAuthSessionLock(revoke)
+    else await revoke()
   } catch {
     // Ignore network errors — still clear local tokens below.
   }
@@ -1482,7 +1526,7 @@ export async function uploadMedia(
   } catch (err) {
     if (err?.status === 401) {
       if (accessToken) {
-        const refreshed = await performTokenRefresh()
+        const refreshed = await performTokenRefresh(accessToken)
         if (refreshed) {
           try {
             return await attempt(refreshed)
@@ -1490,15 +1534,13 @@ export async function uploadMedia(
             if (retryError?.status === 403 && authorizationErrorListener)
               authorizationErrorListener()
             if (retryError?.status === 401) {
-              clearTokens()
-              if (authErrorListener) authErrorListener()
+              endSession(refreshed)
             }
             throw retryError
           }
         }
       }
-      clearTokens()
-      if (authErrorListener) authErrorListener()
+      endSession(accessToken)
     }
     if (err?.status === 403 && authorizationErrorListener) {
       authorizationErrorListener()
@@ -2133,17 +2175,16 @@ async function fetchCsvBlob(path, params = {}, fallbackName = 'export.csv', acce
     return fetch(url, { headers })
   }
 
-  let { accessToken } = readTokens()
+  const { accessToken } = readTokens()
   let response = await doFetch(accessToken)
 
   if (response.status === 401 && accessToken) {
-    const newAccess = await performTokenRefresh()
+    const newAccess = await performTokenRefresh(accessToken)
     if (newAccess) {
       response = await doFetch(newAccess)
     }
     if (response.status === 401) {
-      clearTokens()
-      if (authErrorListener) authErrorListener()
+      endSession(newAccess)
     }
   }
 

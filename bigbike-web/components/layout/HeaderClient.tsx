@@ -1,5 +1,7 @@
 "use client";
 
+import { getStoreHours } from "@/lib/content/store-hours";
+
 import { Clock, MapPin, Menu, Phone, X } from "lucide-react";
 import Link from "@/i18n/StorefrontLink";
 import { useCallback, useEffect, useState } from "react";
@@ -60,7 +62,6 @@ function closeMobileMenuOnNavigation(
 export type HeaderContact = {
   address: string;
   phones: string[];
-  hours: { weekday: string; weekend: string; holiday: string };
   descriptionVi: string;
   descriptionEn: string;
 };
@@ -73,11 +74,7 @@ type HeaderClientProps = {
 
 function ContactDetails({ contact, dark = false }: { contact: HeaderContact; dark?: boolean }) {
   const t = useTranslations("Header");
-  const hours = [
-    contact.hours.weekday || t("wpHoursWeekday"),
-    contact.hours.weekend || t("wpHoursWeekend"),
-    contact.hours.holiday || t("wpHoursHoliday"),
-  ];
+  const hours = Object.values(getStoreHours(useLocale()));
 
   return (
     <section className={cn("mt-17.5", dark && "mt-0 border-t border-white/20 py-7.5")}>

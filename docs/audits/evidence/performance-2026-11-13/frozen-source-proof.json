@@ -1,0 +1,16 @@
+{
+  "scope": "Final source-only file reconstruction from two copies of the same current workspace incl prior changes, auth/cache/migration correctness repairs. Hosted env flags simulated ONLY for the file tool; no Docker/app/load run. Ignored env/build/Python caches excluded.",
+  "file_count": 3070,
+  "only_attributed_differences": [
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java"
+  ],
+  "candidate_unmodified": true,
+  "all_other_files_identical": true,
+  "correctness_repairs_kept_in_both_arms": [
+    "PublishedProductListingCache",
+    "PasswordService",
+    "V1095"
+  ]
+}

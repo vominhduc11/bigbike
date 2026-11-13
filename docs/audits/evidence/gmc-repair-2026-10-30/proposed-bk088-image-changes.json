@@ -1,0 +1,64 @@
+{
+  "status": "Awaiting explicit owner approval; no image writes",
+  "productId": "wp-prod-35222",
+  "target": {
+    "label": "GIAY-KOMINE-BK088-MAU-DEN-1.jpg",
+    "url": "/media/migration/wordpress/8f/8f9b8b6f2d9f3039d43f33ece2d6a2b3106a2198ba7ae3707433b68980334d3c/GIAY-KOMINE-BK088-MAU-DEN-1.jpg",
+    "actualSize": [
+      1500,
+      631
+    ]
+  },
+  "variants": [
+    {
+      "id": "wp-var-35722",
+      "sku": "BK088-DEN-39",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    },
+    {
+      "id": "wp-var-35723",
+      "sku": "BK088-DEN-38",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    },
+    {
+      "id": "wp-var-35724",
+      "sku": "BK088-DEN-37",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    },
+    {
+      "id": "wp-var-35725",
+      "sku": "BK088-DEN-36",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    },
+    {
+      "id": "wp-var-35233",
+      "sku": "BK088-DEN-40",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    },
+    {
+      "id": "wp-var-35234",
+      "sku": "BK088-DEN-41",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    },
+    {
+      "id": "wp-var-35235",
+      "sku": "BK088-DEN-42",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    },
+    {
+      "id": "wp-var-35236",
+      "sku": "BK088-DEN-43",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    },
+    {
+      "id": "wp-var-35237",
+      "sku": "BK088-DEN-44",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    },
+    {
+      "id": "wp-var-35238",
+      "sku": "BK088-DEN-45",
+      "currentImage": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg"
+    }
+  ]
+}

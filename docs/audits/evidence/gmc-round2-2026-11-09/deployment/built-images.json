@@ -1,0 +1,14 @@
+{
+  "bigbike-web": {
+    "id": "sha256:f8c00411746da82a697d434204c8447840fc3796ee3d53ff6bf4fc8310580196",
+    "size": 357611837
+  },
+  "bigbike-admin": {
+    "id": "sha256:8dea43a4e5ea559ba4ef283873c7531d184a7bba0845df9a6f42bf0086b0641f",
+    "size": 69012241
+  },
+  "bigbike-backend": {
+    "id": "sha256:3d7882bf052320fff42be456478d93ea8d0f147948767e72f7f1eb9d6a20de44",
+    "size": 295328636
+  }
+}

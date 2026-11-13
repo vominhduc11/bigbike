@@ -1,0 +1,48 @@
+{
+  "admin_full_suite": {
+    "files": 129,
+    "tests": 1240,
+    "passed": 1240,
+    "test_timeout_ms": 20000,
+    "workers": 1
+  },
+  "web_full_suite": {
+    "files": 119,
+    "tests": 805,
+    "passed": 805,
+    "test_timeout_ms": 20000,
+    "workers": 1
+  },
+  "backend_targeted": {
+    "tests": 35,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "measurements": [
+    {
+      "metric": "vocabulary SELECTs per20color options",
+      "before": 40,
+      "after": 2,
+      "method": "counted JdbcTemplate invocations and equal-output assertions on H2 and isolated PostgreSQL"
+    },
+    {
+      "metric": "picker list requests on search/folder/tag change from page2",
+      "before": 2,
+      "after": 1,
+      "method": "component regression test on image and video pickers"
+    },
+    {
+      "metric": "React commits in50scroll frames",
+      "before": 50,
+      "after": 0,
+      "method": "React Profiler component assertion; not a browser frame-time measurement"
+    },
+    {
+      "metric": "storage PUTs when compression returns original buffer,3eligible variants",
+      "before": 3,
+      "after": 0,
+      "method": "JPEG/PNG mocked-compression regression: old compiled class failed, clean candidate passed; not upload duration"
+    }
+  ]
+}

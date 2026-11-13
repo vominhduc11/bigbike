@@ -6,7 +6,13 @@ import { toCanonicalUrl, toProductPath } from "@/lib/utils/routes";
 import { withProductVariant } from "@/lib/utils/product-variant-link";
 import { isColorAttribute, normalizeValue } from "@/lib/utils/variant-match";
 
-export type MerchantFeed = { xml: string; productCount: number; itemCount: number };
+export type LocalInventoryItem = { id: string; availability: string; price: string };
+export type MerchantFeed = {
+  xml: string;
+  productCount: number;
+  itemCount: number;
+  inventory: LocalInventoryItem[];
+};
 const SIZE_ATTRIBUTES = new Set(["size", "kich co", "kich thuoc", "co", "pa size", "pa kich co"]);
 
 /** XML 1.0 permits tabs/newlines but forbids control characters and unpaired surrogates. */
@@ -63,17 +69,54 @@ function imageUrl(value?: string): string | undefined {
 }
 
 function images(product: Product, variant?: ProductVariant): string[] {
-  const gallery = variant?.gallery?.length ? variant.gallery : (product.gallery ?? []);
-  return [
-    ...new Set(
-      [
-        imageUrl(variant?.image?.url ?? product.image?.url),
-        ...gallery
-          .filter((media) => media.mediaType === "image")
-          .map((media) => imageUrl(media.image?.url)),
-      ].filter((url): url is string => Boolean(url)),
-    ),
-  ].slice(0, 11);
+  const ownGallery = (variant?.gallery ?? []).filter((media) => media.mediaType === "image");
+  const hasOwnImages = Boolean(variant?.image?.url) || ownGallery.some((media) => media.image?.url);
+  const gallery = hasOwnImages
+    ? ownGallery
+    : (product.gallery ?? []).filter((media) => media.mediaType === "image");
+  const cover = hasOwnImages ? variant?.image : product.image;
+  const candidates = [cover, ...gallery.map((media) => media.image)]
+    .filter((asset) => Boolean(asset?.url?.trim()))
+    .map((asset) => {
+      const width = asset?.width ?? 0;
+      const height = asset?.height ?? 0;
+      const url = imageUrl(asset?.url)!;
+      return {
+        url,
+        area: width > 0 && height > 0 ? width * height : 0,
+        preferred:
+          width >= 800 && height >= 800 && !/-\d+x\d+(?=[-.])/i.test(new URL(url).pathname),
+      };
+    });
+  // Never cross to another color or drop an SKU just because its best image is small.
+  candidates.sort((a, b) => Number(b.preferred) - Number(a.preferred) || b.area - a.area);
+  const primary = candidates[0];
+  const selected = candidates.filter(
+    (asset) =>
+      asset === primary ||
+      (!(primary?.preferred && /-\d+x\d+(?=[-.])/i.test(new URL(asset.url).pathname)) &&
+        !(primary && primary.area > asset.area && asset.area > 0 && asset.area < 500 * 500)),
+  );
+  return [...new Set(selected.map((asset) => asset.url))].slice(0, 11);
+}
+
+function merchantName(product: Product): string {
+  const name = text(product.name, 150).normalize("NFC");
+  if (name !== name.toLocaleUpperCase("vi") || name === name.toLocaleLowerCase("vi")) return name;
+  const brand = product.brand?.name?.normalize("NFC");
+  // Keep known brand spelling and alphanumeric manufacturer/model tokens intact.
+  const words = name
+    .split(/(\s+)/)
+    .map((word) => (/[\p{L}].*\d|\d.*[\p{L}]/u.test(word) ? word : word.toLocaleLowerCase("vi")));
+  let normalized = words.join("");
+  if (brand) {
+    const escaped = brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    normalized = normalized.replace(
+      new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "giu"),
+      () => brand,
+    );
+  }
+  return normalized.replace(/\p{L}/u, (letter) => letter.toLocaleUpperCase("vi"));
 }
 
 function description(product: Product): string {
@@ -111,9 +154,10 @@ export function buildMerchantFeed(products: Product[]): MerchantFeed {
   const ids = new Set<string>();
   const groups = new Set<string>();
   const items: string[] = [];
+  const inventory: LocalInventoryItem[] = [];
 
   for (const product of eligible) {
-    const parentName = text(product.name, 150);
+    const parentName = merchantName(product);
     const body = description(product);
     if (!parentName || !body || !product.slug) throw new Error("GMC_PRODUCT_CONTENT_INVALID");
     const variants = product.variants ?? [];
@@ -166,10 +210,15 @@ export function buildMerchantFeed(products: Product[]): MerchantFeed {
       )?.value;
       const inStock = variant ? variant.isAvailable : product.stockState === "IN_STOCK";
 
+      inventory.push({
+        id,
+        availability: inStock ? "in_stock" : "out_of_stock",
+        price: `${pricing.current} VND`,
+      });
       items.push(
         `<item>${[
           field("id", id),
-          field("title", text(variant ? `${product.name} - ${variant.name}` : product.name, 150)),
+          field("title", text(variant ? `${parentName} - ${variant.name}` : parentName, 150)),
           field("description", body),
           field("link", link),
           field("image_link", pictureUrls[0]),
@@ -198,5 +247,6 @@ export function buildMerchantFeed(products: Product[]): MerchantFeed {
     xml: `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0"><channel><title>BigBike</title><link>${xml(toCanonicalUrl("/"))}</link><description>Sản phẩm BigBike</description>${items.join("\n")}</channel></rss>`,
     productCount: eligible.length,
     itemCount: items.length,
+    inventory,
   };
 }

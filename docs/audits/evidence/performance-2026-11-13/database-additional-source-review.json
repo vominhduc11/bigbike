@@ -1,0 +1,154 @@
+{
+  "scope": "Additional selected source/method review only, not whole-system acceptance; no shop load or DB writes",
+  "components": [
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminMediaService.java",
+      "sha256": "b0ee27917c2f1d6f78dc2b5ff09e18dba1aa882cd761573601d94ea567165734",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Default media list uses SQL page + batch tags; usage filter/sort loads all candidates; stats loads all media. Usage branch calls used-ids then counts, each corpus scan.",
+      "status_reason": "Media usage/stats scale risk; not latency-confirmed."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/MediaReferenceService.java",
+      "sha256": "c8e8ed2c7bf7f18c6bdfa1613e86a3a87541366e39fde30084e9e26138de7020",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "getUsageCounts/getUsedMediaIds each execute13 full-table reference-column scans and materialize all nonempty strings across product, article, cart/order snapshots and other media-bearing tables. Default media page still pays corpus scan; no per-media N+1 in batch path.",
+      "status_reason": "Global corpus cost needs isolated query/allocation profile before refactoring."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminQuickSearchReader.java",
+      "sha256": "c133b632e24c1ddc836adccd19e926888713968d7d8aaf69affeaaeb59f02aef",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Orders/customers/products load all SQL matches then rank and cap preview5; categories/brands/articles/admin users load all rows then rank. Product variant fetch batched over candidate ids.",
+      "status_reason": "Broad short query may materialize large matches; exact totals/ranking constrain naive SQL LIMIT."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminQuickSearchService.java",
+      "sha256": "2367b310e74c9f00197ff73b39fc562fc6e786c47621ebc5633d73a3f7e9320b",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Only permitted groups searched; groups run sequentially through REQUIRES_NEW reader calls; per-group failure partial result, sanitized warning. No query/private row logged by error path.",
+      "status_reason": "No parallelism/pool change justified without profile."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminInventoryService.java",
+      "sha256": "f8b9ae2db2ec7f24f64a8255b34e64ac6fa446e2f99d54243610250ea9afff98",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "listStock combines all matching variant/product items then Java sort/slice despite DB-pagination comment. No active Admin list caller found; only Dashboard uses aggregate summary.",
+      "status_reason": "Live API remains; lower priority than active screens. Summary uses counts rather than all records."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/catalog/CatalogReadService.java",
+      "sha256": "07f700680430ec572223e748d891522408b4f96ea4e062714fcdd9e44e3c7d8b",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Simple public catalog paths use SQL paging; q/color/finish/size/multiple-brand/in-stock/popularity/homepageOrder contexts filter/sort cached full published projection. Categories/brands filter/sort/page in Java.",
+      "status_reason": "Cache miss graph hydration + filter scans need real mixed workload. Warm-cache CPU distinct from database query reduction."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCustomerService.java",
+      "sha256": "cdd7730fedac6a949ef0a1879c947b90964499d97992460ee9c341440c8f1545",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Customer list SQL pagination plus aggregate fetch for current-page ids.",
+      "status_reason": "Source batching confirmed; runtime N+1/query counts and large workloads not measured."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminOrderService.java",
+      "sha256": "9a4b7eaeec7939f61c51b8db2ab18eb750d022708b667bc20a86daec6f9edae6",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Order list SQL pagination plus batch item counts, shipping names and history classifications for page ids.",
+      "status_reason": "Source batching confirmed; runtime query plans and lock contention unmeasured."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminReportService.java",
+      "sha256": "8290f8f52e8c4c8da4faeab2588076f32764af64220735885e2de720c7afe838",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Analytics uses SQL sums/counts/date grouping; top products/customers each PageRequest10. No full entity graph loaded for these methods.",
+      "status_reason": "Date ranges/SQL grouping need isolated EXPLAIN and report-specific target; no invented300ms export SLO."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/FullProductCatalogCsvExportService.java",
+      "sha256": "2d736a719da39dd9cc2fd35c31b0440369c1ff4f2d9a73b4b71e64cd0626bad8",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "CSV uses keyset page100 and EntityManager.clear; streams Writer within read-only transaction.",
+      "status_reason": "Slow-client connection hold and long transaction impact need isolated export test; no arbitrary row cap added."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminSettingsService.java",
+      "sha256": "a3f1616afbcab5cfec034bd69fa1730820cf6a7008d81ccd8890fa2c9c386da0",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Settings list loads all settings then filters/sorts/maps; public settings query restricts public rows and additional exposable-key allowlist.",
+      "status_reason": "Configuration cardinality generally bounded by definitions but no workload timing; no tuning justified."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/PublicCacheHeaderFilter.java",
+      "sha256": "13b0c1c9880f032f5cc27164b78c4a6ec5134ae9dd0474f1b362f932546b113a",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "GET-only explicit public allowlist; admin/internal segments excluded; cart/customer/order/checkout absent and default no-store retained.",
+      "status_reason": "Source boundary checked; only actual two-session runtime checks can prove deployed isolation."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/CatalogReferenceCacheConfig.java",
+      "sha256": "da628bd617e4410ef39cd04a7ef4398b51fca83958c3a61a4fb7c6225678b2da",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Redis reference cache1h; errors fall back to DB; only immutable catalog/admin-reference domains allowed serializer types.",
+      "status_reason": "Eviction failure can retain reference data until expiry; not evidence of private data cross-user caching."
+    },
+    {
+      "component": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/PublishedProductListingCache.java",
+      "sha256": "45914aa963e8ab8605a91654236843be5443403412f707355e4ab0c9c77ea095",
+      "source_review": true,
+      "functional_test": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "source_evidence": "Race found: in-flight pre-invalidation loader could unconditionally republish after clear. Narrow generation/publication-lock correction implemented with four latch/unit cases. Cold-miss duplicate loaders remain.",
+      "status_reason": "Correctness fix pending targeted/full regression; no stampede or latency optimization claim."
+    }
+  ],
+  "known_live_cardinality_context": "Earlier SELECT count(*) measured267products/235non-trash. pg_stat_user_tables estimated n_live_tup:5082media and14040carts (estimates, not exact counts). Snapshot context only; may change. No row data/PII copied.",
+  "new_correctness_repair": {
+    "file": "PublishedProductListingCache.java",
+    "before_blob": "1ff6641f3c5c007d0e17bd243fceb3a9dd5b195a",
+    "before_sha256": "1b4b34fbc1cefe46deafcfe9aa863e69e13bce4de20596fb65d7bb3a1807cfc2",
+    "canonical_evidence": "INTEGRATION_GUIDE.md Web Revalidation after-commit snapshot invalidation before ISR refresh; API_CONTRACT.md HTTP Caching",
+    "A_B_scope": "Same correctness correction in both arms, excluded from measured optimization attribution",
+    "verification": "Targeted/cache race negative control pending serialized resource slot"
+  }
+}

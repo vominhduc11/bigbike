@@ -14,6 +14,7 @@ export async function GET(): Promise<Response> {
         "X-Robots-Tag": "noindex",
         "X-Merchant-Product-Count": String(feed.productCount),
         "X-Merchant-Item-Count": String(feed.itemCount),
+        "X-Merchant-Generated-At": new Date().toISOString(),
       },
     });
   } catch (error) {

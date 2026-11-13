@@ -1,0 +1,52 @@
+{
+  "reviewer": "/root/database_catalog",
+  "scope": "Official GitHub billing research and independent source conditions for authorized public-repository CI; no remote publication/workflow execution/container changes by reviewer.",
+  "sources": [
+    {
+      "url": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+      "finding": "The standard public-repository runner table includes ubuntu-24.04; public standard runner compute is described as free/unlimited. Current table lists4CPU/16GB RAM/14GB SSD for that x64 label."
+    },
+    {
+      "url": "https://docs.github.com/en/billing/concepts/product-billing/github-actions",
+      "finding": "Current product-billing documentation excludes public standard runner compute from metered included compute. It explicitly says workflow logs and job summaries do not count against artifact allowance. Artifacts and caches have storage allowances; cache overage can cost money if higher storage limits are configured."
+    },
+    {
+      "url": "https://github.blog/changelog/2026-08-27-actions-retention-will-cover-checks-workflow-runs-and-statuses/",
+      "finding": "Official August27,2026 changelog states logs and artifacts are billable storage, conflicting with current product-billing page. No authoritative reconciliation found. Do not promise absolute account billing outcome solely from a log-only workflow."
+    }
+  ],
+  "execution_conditions": [
+    "Only confirmed public repository vominhduc11/bigbike and literal standard ubuntu-24.04 label; gate every real job on public visibility. No larger runner/group/GPU/custom snapshot image.",
+    "Trigger only the specifically authorized isolated CI branch. Existing main push CI and PR-to-main CI must not be accidentally activated by this task; schedule/manual security scan does not respond to this branch push.",
+    "Remove artifact upload steps in every job for this mode; setup-node npm cache and setup-java Maven cache are post-job retained cache writes and also need removal/disablement. No registry/image push or cache-to upload.",
+    "Keep current zero-spend/stop-spend account controls unchanged; never raise spending/storage limits or payment plans. Canonical billing docs support free compute/log expectation, but official log-storage wording conflicts and actual account metering was not available to this reviewer.",
+    "Print only explicitly allowlisted sanitized evidence JSON from known evidence output directories. Raw Maven/application logs, XML environment properties, dumps, cookies, generated password/JWT and browser-session files must remain in private runner temp, including on failures.",
+    "Existing require_ci refuses local/self-hosted; owned bbperf project checks, loopback ports, internal Docker network, same private dataset and sequential frozen arms remain mandatory. No production/VPS writes/restarts/load.",
+    "Manual workflow mode retains explicit operator quota confirmation; dedicated public push path does not imply permission for private-repository or paid-runner execution."
+  ],
+  "current_related_triggers_review": {
+    "ci.yml": "pushmain and PRtargetmain only; opening such PR would trigger unrelated CI/cache actions.",
+    "secret-artifact-guard.yml": "Every push; standard hosted runner and no artifact upload observed.",
+    "security-scan.yml": "schedule/manual, not branchpush; no extra run expected from isolated branchpush."
+  },
+  "reviewed_source_hashes": [
+    {
+      "path": ".github/workflows/performance-validation.yml",
+      "sha256": "b889447fa5b8bd7adf73a05fdce35f620715474b4e51395d87bfff78ea8766f4"
+    },
+    {
+      "path": "scripts/performance/run_ci.py",
+      "sha256": "221f6ec610115c22a71ed8756419593adbab58199a8cb54de5cb385d0468a151"
+    },
+    {
+      "path": "scripts/performance/compose.ci.yml",
+      "sha256": "d9b06c93e07a503f5306455c750800395f0fa2cd00190ea4adef1370fd643711"
+    },
+    {
+      "path": "scripts/performance/ci_guard.py",
+      "sha256": "39d5b0771d4c089aee395d43a737de95c52e8e739589efd3795147ab559ebee1"
+    }
+  ],
+  "approval_scope": "Existing application stack scripts preserve prior safety boundaries in source. Dedicated push/public guard/log-only workflow edits were planned and require review once landed. Billing research is not a new purchase authorization.",
+  "runtime_limits": "No remote CI result, billed-account state or production performance acceptance established."
+}

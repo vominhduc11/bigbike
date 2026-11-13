@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 
+import { getResilientProductBySlug } from "@/lib/api/resilient-product";
+
 import { AltSlugRegistrar } from "@/components/i18n/AltSlugProvider";
 import { ProductView } from "@/components/catalog/ProductView";
-import { getProductBySlug, listCategories, listPublicSettings } from "@/lib/api/public-api";
+import { listCategories, listPublicSettings } from "@/lib/api/public-api";
 import {
   buildBreadcrumbJsonLd,
   buildFaqPageJsonLd,
@@ -41,7 +43,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   const { slug, locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   if (!isValidSlug(slug)) return {};
-  const result = await getProductBySlug(slug, locale);
+  const result = await getResilientProductBySlug(slug, locale);
   const product = result.data;
   if (!product) return {};
   if (product.discontinued) {
@@ -84,13 +86,17 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
   if (!isValidSlug(slug)) notFound();
 
   const [result, settingsResult, categoriesResult] = await Promise.all([
-    getProductBySlug(slug, locale),
+    getResilientProductBySlug(slug, locale),
     listPublicSettings(locale),
     listCategories({ page: 1, size: 100, sort: "sortOrder:asc", lang: locale }),
   ]);
 
   const product = result.data;
-  if (!product) notFound();
+  if (!product) {
+    if (result.error && result.error.status >= 500)
+      throw new Error("PRODUCT_TEMPORARILY_UNAVAILABLE");
+    notFound();
+  }
   if (product.discontinued) notFound();
   const preferredSlug = locale === "en" ? product.slugEn?.trim() || product.slug : product.slug;
   const canonicalPath = toProductPath(preferredSlug, locale);
@@ -137,6 +143,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
       <ProductView
         product={product}
         initialVariantId={selectedVariant?.id}
+        fallback={result.fallback}
         settings={settings}
         breadcrumbCategories={breadcrumbCategories}
       />

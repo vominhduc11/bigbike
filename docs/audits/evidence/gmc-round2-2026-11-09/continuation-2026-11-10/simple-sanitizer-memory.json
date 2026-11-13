@@ -1,0 +1,26 @@
+[
+  {
+    "calls": 0,
+    "rss": 206442496,
+    "heapTotal": 86896640,
+    "heapUsed": 49077936,
+    "external": 13693318,
+    "arrayBuffers": 535871
+  },
+  {
+    "calls": 500,
+    "rss": 210403328,
+    "heapTotal": 87945216,
+    "heapUsed": 50529384,
+    "external": 13823834,
+    "arrayBuffers": 535675
+  },
+  {
+    "calls": 1000,
+    "rss": 212762624,
+    "heapTotal": 88469504,
+    "heapUsed": 50871320,
+    "external": 13823834,
+    "arrayBuffers": 535675
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "suite_files": 204,
+  "tests": 1572,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "passed": 1571,
+  "nonpassing_cases": [
+    {
+      "class": "com.bigbike.bigbike_backend.api.Phase1DCustomerAuthTest",
+      "name": "login_withPhone_succeeds",
+      "status": [
+        "failure"
+      ]
+    }
+  ]
+}

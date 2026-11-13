@@ -1,0 +1,9 @@
+{
+  "totalFeedSkus": 1184,
+  "catalogProducts": 214,
+  "variantIdMismatches": [],
+  "wpVarCount": 720,
+  "varCount": 381,
+  "simpleCount": 83,
+  "ownerDecision": "Keep current stable IDs; remove prefix-renaming criterion; no new-ID migration or redirect period started."
+}

@@ -10,10 +10,36 @@ import java.util.Base64;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ImageCompressionServiceTest {
 
     private final ImageCompressionService service = new ImageCompressionService();
+
+    @Test
+    void convertsLargeOpaquePngWithoutShrinkingBelow800() throws IOException {
+        byte[] source = encode(noisyImage(1000, 1000, false), "png");
+        assertThat(source.length).isGreaterThan(1_000_000);
+        var result = service.compressAdminOriginal(source, "image/png", new CompressionProfile(2000, 2000, 0.85f, false));
+        assertThat(result.mimeType()).isEqualTo("image/jpeg");
+        assertThat(result.bytes().length).isLessThan(500_000);
+        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(result.bytes()));
+        assertThat(decoded.getWidth()).isEqualTo(1000);
+        assertThat(decoded.getHeight()).isEqualTo(1000);
+    }
+
+    @Test
+    void preservesTransparentLargePngAndLeavesSmallPngAlone() throws IOException {
+        byte[] transparent = encode(noisyImage(1000, 1000, true), "png");
+        var result = service.compressAdminOriginal(transparent, "image/png", new CompressionProfile(2000, 2000, 0.85f, false));
+        assertThat(result.mimeType()).isEqualTo("image/png");
+        assertThat(result.bytes()).isEqualTo(transparent);
+        byte[] small = encode(noisyImage(100, 100, false), "png");
+        var unchanged = service.compressAdminOriginal(small, "image/png", new CompressionProfile(2000, 2000, 0.85f, false));
+        assertThat(unchanged.mimeType()).isEqualTo("image/png");
+        assertThat(unchanged.bytes()).isEqualTo(small);
+    }
 
     @Test
     void doesNotUpscaleImagesSmallerThanTheTarget() {
@@ -64,6 +90,45 @@ class ImageCompressionServiceTest {
         byte[] garbage = "definitely not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         byte[] result = service.compress(garbage, "image/jpeg", new CompressionProfile(400, 400, 0.85f, false));
         assertThat(result).isSameAs(garbage);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"jpg,image/jpeg,false", "png,image/png,false", "png,image/png,true"})
+    void decodedSourceReusePreservesBytesAndDoesNotMutateSource(String format, String mime, boolean alpha)
+            throws IOException {
+        byte[] source = encode(noisyImage(1800, 300, alpha), format);
+        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(source));
+        int[] pixels = decoded.getRGB(0, 0, decoded.getWidth(), decoded.getHeight(), null, 0, decoded.getWidth());
+        for (int width : new int[]{300, 800, 1600, 2000}) {
+            var profile = new CompressionProfile(width, width, 0.85f, false);
+            byte[] oldPath = service.compress(source, mime, profile);
+            byte[] reused = service.compress(source, mime, profile, decoded);
+            assertThat(reused).isEqualTo(oldPath);
+            if (oldPath == source) assertThat(reused).isSameAs(source);
+        }
+        assertThat(decoded.getRGB(0, 0, decoded.getWidth(), decoded.getHeight(), null, 0, decoded.getWidth()))
+                .isEqualTo(pixels);
+    }
+
+    @Test
+    void decodedSourceReuseKeepsWebpFallbackAndRejectsMissingDecodedSource() throws IOException {
+        byte[] webp;
+        try (var input = getClass().getResourceAsStream("/chat/customer-photo-wide.webp")) {
+            assertThat(input).isNotNull();
+            webp = input.readAllBytes();
+        }
+        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(webp));
+        assertThat(decoded).isNotNull();
+        for (int width : new int[]{300, 800, 1600}) {
+            var profile = new CompressionProfile(width, width, 0.85f, false);
+            byte[] oldPath = service.compress(webp, "image/webp", profile);
+            byte[] reused = service.compress(webp, "image/webp", profile, decoded);
+            assertThat(reused).isEqualTo(oldPath);
+            if (oldPath == webp) assertThat(reused).isSameAs(webp);
+        }
+        var profile = new CompressionProfile(300, 300, 0.85f, false);
+        assertThat(service.compress(webp, "image/webp", profile, null)).isSameAs(webp);
+        assertThat(service.compress(webp, "video/mp4", profile, decoded)).isSameAs(webp);
     }
 
     /**

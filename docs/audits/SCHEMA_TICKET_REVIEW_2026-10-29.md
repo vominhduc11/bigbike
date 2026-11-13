@@ -1,5 +1,7 @@
 # Đối chiếu phiếu dev schema BigBike — 29/10/2026
 
+> Đây là mốc kiểm tra **trước triển khai**. Kết quả thực hiện DEV-5/DEV-6 và kiểm lại mới được ghi tại [SCHEMA_DEV5_DEV6_IMPLEMENTATION_2026-10-29.md](SCHEMA_DEV5_DEV6_IMPLEMENTATION_2026-10-29.md). Các số liệu bên dưới giữ nguyên làm bằng chứng lịch sử.
+
 ## Kết luận
 
 Phiếu xác định đúng **hai việc còn mở: DEV-5 và DEV-6**. Chưa thấy cần mở lại DEV-1–DEV-4 trong phạm vi kiểm tra. Cần bổ sung hướng triển khai và chỉnh một số tiêu chí nghiệm thu của DEV-5; DEV-6 cần cập nhật quy định CSP trong tài liệu chuẩn trước khi sửa mã.

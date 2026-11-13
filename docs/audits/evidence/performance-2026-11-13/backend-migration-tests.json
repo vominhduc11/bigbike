@@ -1,0 +1,99 @@
+{
+  "command": "MAVEN_OPTS=-Xmx512m JAVA_TOOL_OPTIONS=-Xmx768m ./mvnw -B clean test -DforkCount=1 -Dtest=PublicReadApiTest,ArticleExcerptAuthorRemovalMigrationPostgresTest,NestedArticleAuditCleanupMigrationPostgresTest,PerformanceCiSchemaMigrationPostgresTest",
+  "result": "PASS",
+  "scope": "Fresh clean targeted suite, not the full backend suite and not end-to-end performance acceptance.",
+  "suites": [
+    {
+      "name": "com.bigbike.bigbike_backend.api.PublicReadApiTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 48.823,
+      "cases": [
+        "publicProductList_singleGenderFilterTakesFirstLegacyValueAndSupportsBothFlags",
+        "shouldValidateUnsupportedSort",
+        "shouldReturnNotFoundForUnknownProductSlug",
+        "publicProductSnapshot_nonPublishedProduct_returns404",
+        "publicProductSnapshot_publishedProduct_returnsSnapshot",
+        "publicCategoryDetail_bySlug_returnsVisibleCategory",
+        "publicProductList_pagination_returnsMeta",
+        "catalogFacets_singleEffectivePrice_hidesPriceRange",
+        "publicProductList_omitsDetailOnlyFields_butKeepsVariantCount",
+        "publicBrandDetail_bySlug_returnsVisibleBrand",
+        "catalogFacets_returnsAllFacetGroups_andCategoryCountExcludesDraft",
+        "publicProductList_excludesNonPublished",
+        "publicCatalogDetailsReturnDesktopBannersWithoutMobileBanners",
+        "publicCategoryList_excludesHiddenCategories",
+        "publicProductSnapshot_byProductId_returns200",
+        "publicProductSnapshot_byProductId_unknownId_returns404",
+        "catalogFacets_priceRange_usesEffectiveSaleAndIgnoresActivePrice",
+        "shouldValidateInvalidLegacyPriceRange",
+        "shouldReturnCategoryAndBrandDetailBySlug",
+        "catalogFacets_invalidCategorySlug_returns400",
+        "shouldReturnArticleBySlug",
+        "catalogFilters_acceptAllDisplayedValuesWithoutFixedDimensionCap"
+      ]
+    },
+    {
+      "name": "com.bigbike.bigbike_backend.migration.ArticleExcerptAuthorRemovalMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 5.858,
+      "cases": [
+        "removesArticleColumnsAndOnlyArticleAuditKeys"
+      ]
+    },
+    {
+      "name": "com.bigbike.bigbike_backend.migration.NestedArticleAuditCleanupMigrationPostgresTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 4.423,
+      "cases": [
+        "cleansNestedObjectsAndArraysWhilePreservingUnrelatedAndMalformedSnapshots",
+        "databaseTransactionRollbackRestoresTheOriginalSnapshot"
+      ]
+    },
+    {
+      "name": "com.bigbike.bigbike_backend.migration.PerformanceCiSchemaMigrationPostgresTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 28.981,
+      "cases": [
+        "migratesAnEmptyDatabaseWithOnlySyntheticCatalogCompatibilityFixtures"
+      ]
+    }
+  ],
+  "totals": {
+    "tests": 26,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical_migration_unchanged": {
+    "file": "bigbike-backend/src/main/resources/db/migration/V1091__remove_article_excerpt_and_author_fields.sql",
+    "git_blob": "5df91cb25b7fb38b4e8cfdb5fa01f496b15c6358",
+    "head_blob": "5df91cb25b7fb38b4e8cfdb5fa01f496b15c6358"
+  },
+  "fresh_ci_schema": {
+    "engine": "postgres:16-alpine disposable Testcontainers",
+    "flyway_migrations_applied": 457,
+    "current_version": "1095",
+    "flyway_validation": "PASS",
+    "synthetic_fixture_files": [
+      "V26_5__seed_products_for_v27.sql",
+      "V1028_5__seed_size_products_for_v1029.sql"
+    ],
+    "copied_customers": 0,
+    "copied_orders": 0,
+    "copied_admin_users": 0,
+    "schema_execution_seconds_observation": 13.067,
+    "note": "Flyway execution observation includes fixtures and Java/SQL migrations on an isolated host; does not predict production duration. Hibernate runtime schema validation remains separate."
+  }
+}

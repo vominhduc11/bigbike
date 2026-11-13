@@ -1,0 +1,11 @@
+{
+  "images": 348,
+  "measured": 348,
+  "unverified": 0,
+  "under800Images": 53,
+  "under800Skus": 121,
+  "unverifiedSkus": 0,
+  "reviewSkus": 127,
+  "verifiedOriginalSkusPendingDataApproval": 20,
+  "under800SkusWithoutVerifiedOriginalInCheckedSources": 101
+}

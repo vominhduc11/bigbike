@@ -1,3 +1,4 @@
+import { getStoreHours } from "@/lib/content/store-hours";
 import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 import Link from "@/i18n/StorefrontLink";
 import { getTranslations } from "next-intl/server";
@@ -202,6 +203,13 @@ export async function Footer({ locale }: { locale: Locale }) {
                     </span>
                   </span>
                 </Link>
+                <p data-footer-hours className="mt-3 text-a4-content leading-body text-white">
+                  <LocalizedSetting
+                    vi={Object.values(getStoreHours("vi")).join(" · ")}
+                    en={Object.values(getStoreHours("en")).join(" · ")}
+                    fallback=""
+                  />
+                </p>
               </div>
             }
             sections={[

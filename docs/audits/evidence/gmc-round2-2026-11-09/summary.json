@@ -1,0 +1,29 @@
+{
+  "checkedDate": "2026-11-09",
+  "xmlItems": 1184,
+  "brandMissing": [
+    "ALTL-MAO",
+    "ALTL-5FDUAL",
+    "ALTL-QUAN",
+    "D30VT-COMBO3",
+    "D30VT-LUNG",
+    "D30VT-TAY",
+    "D30VT-VAI"
+  ],
+  "googleCategoryPresent": 0,
+  "identifierExistsPresent": 0,
+  "gtinPresent": 0,
+  "wpVariantLinks": 720,
+  "publicCategories": 30,
+  "publicProductsRead": 214,
+  "catalogVariantIdMismatches": 0,
+  "runtimeAtIncident": {
+    "webNextVersion": "16.2.10",
+    "containerMemoryMB": 512,
+    "nodeHeapLimitMB": 259,
+    "restartCount": 3,
+    "startedAtUTC": "2026-11-09T14:32:08.474405838Z",
+    "health": "unhealthy"
+  },
+  "googleApprovalVerified": false
+}

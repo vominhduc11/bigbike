@@ -1,0 +1,53 @@
+{
+  "database_collation": "en_US.utf8",
+  "default_sql_order": [
+    "Áo giáp",
+    "Balo",
+    "Dây đai",
+    "Mũ bảo hiểm",
+    "Trắng ngọc trai",
+    "Túi đeo hông",
+    "Xanh dương",
+    "ÁO GIÁP",
+    "Áo giáp",
+    "áo giáp",
+    "Đồ bảo hộ",
+    "Ốp pô",
+    "Ủng chống nước"
+  ],
+  "icu_vi_order": [
+    "áo giáp",
+    "Áo giáp",
+    "Áo giáp",
+    "ÁO GIÁP",
+    "Balo",
+    "Dây đai",
+    "Đồ bảo hộ",
+    "Mũ bảo hiểm",
+    "Ốp pô",
+    "Trắng ngọc trai",
+    "Túi đeo hông",
+    "Ủng chống nước",
+    "Xanh dương"
+  ],
+  "scope": "Synthetic strings only, read-only SQL versus Java17 locale comparator probe; not exhaustive equivalence proof",
+  "java_secondary_order": [
+    "Áo giáp",
+    "áo giáp",
+    "ÁO GIÁP",
+    "Áo giáp",
+    "Balo",
+    "Dây đai",
+    "Đồ bảo hộ",
+    "Mũ bảo hiểm",
+    "Ốp pô",
+    "Trắng ngọc trai",
+    "Túi đeo hông",
+    "Ủng chống nước",
+    "Xanh dương"
+  ],
+  "tie_break": "Ascending input ordinal as id; Java stable sort preserves that id order for collation-equal names",
+  "default_matches_java": false,
+  "icu_matches_java_on_sample": false,
+  "explanation": "Default database collation differs on Vietnamese accent order; ICU vi-VN default strength differs on case ties from Java SECONDARY."
+}

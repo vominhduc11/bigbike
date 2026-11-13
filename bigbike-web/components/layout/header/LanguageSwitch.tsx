@@ -1,5 +1,7 @@
 "use client";
 
+import { preserveAnalyticsProductView } from "@/lib/analytics";
+
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useState, useTransition } from "react";
@@ -55,6 +57,7 @@ export function LanguageSwitch() {
         targetPath = translatePath(pathname, next);
       }
       if (targetPath) {
+        if (altSlug?.kind === "product") preserveAnalyticsProductView(targetPath);
         const targetUrl = `${targetPath.split(/[?#]/)[0]}${suffix}`;
         // Điều hướng tài liệu giữ nguyên điểm neo khi đổi ngôn ngữ qua lại;
         // cache điều hướng có thể nối hash lần hai vào URL đã từng mở.

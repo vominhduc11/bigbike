@@ -1,0 +1,22 @@
+{
+  "note": "Continuation-only A/B. Both arms retain the four optimizations from 2026-11-12, all prior workspace edits, V1095 repair and tests. Only the new request-local name collation key cache and decoded-image reuse differ. Image source snapshots preserve previously dirty PNG compression code. Previous six-file manifest retained as historical baselines/performance-20261112-manifest.json; it is not this run baseline.",
+  "files": [
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+      "before_file": "scripts/performance/baselines/ImageCompressionService.java.before",
+      "before_sha256": "705410bad64e18d797f9cd50746e0824092efbbc5eedc83843f4ced9382a2dd9",
+      "candidate_sha256": "5ea5c52f3f83b4e7b46e1911d6acc7139eae8860b95e4e57dae307b403964596"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+      "before_file": "scripts/performance/baselines/ImageVariantService.java.before",
+      "before_sha256": "8a302930d5ac6f9281f0b1152e857cf74f3ac9940994e3af6b263006e9ca4e5a",
+      "candidate_sha256": "8220ab2731b6668123504ea7e9806162b6d3639e6bf3f5d11106892af0e2fd3d"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
+      "before_blob": "8853e3d9f41c761f93772d1d62b440e3c3f5a0c8",
+      "candidate_sha256": "19e53a69f99b74bda01dd6c08fe78517c5430b8f0af5324ac4882e1fc464bd79"
+    }
+  ]
+}

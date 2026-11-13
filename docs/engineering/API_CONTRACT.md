@@ -87,6 +87,30 @@ Status: `CONFIRMED_FROM_CODE` — `AdminAdminUsersController.java`, `AdminAdminU
 
 **`refresh` error contract:** a **missing, blank, invalid, revoked or expired** refresh token returns **`401 UNAUTHORIZED`** (the standard `ApiResponse` error envelope), not `500`. In particular, calling `/api/v1/auth/refresh` with no cookie and no body (e.g. before logging in, or after a reload dropped the in-memory access token) is an expected unauthenticated case and yields `401`. Status: `CONFIRMED_FROM_CODE` — `AdminAuthService.refresh` guards a null/blank token and throws `UnauthorizedException`; `UnauthorizedException → HttpStatus.UNAUTHORIZED`.
 
+**Admin browser session coordination (2026-11-03 bug fix):** all tabs on the same
+Admin origin serialize refresh, login and logout with the same exclusive Web Lock.
+Refresh and logout use only the current httpOnly cookie, with credentials included;
+the Admin browser never resends a tab's old in-memory refresh token as a body fallback.
+Access tokens remain in memory; tokens are never placed in browser storage, logs or
+cross-tab messages. Each waiting tab refreshes using the cookie left by the preceding
+tab; no replay allowance or token lifetime change is introduced on the server.
+Within a tab, concurrent 401s share one refresh, and delayed 401s reuse an access token
+that has already been renewed. A protected request is replayed at most once.
+
+A refresh `401`, or a `401` after replay with the current renewed access token, ends
+the session and propagates reauthentication. Network failures, timeout, malformed
+refresh responses, rate limits, server errors and lock unavailability preserve the
+current screen and return a retryable error instead. A plain permission `403` does
+not sign the operator out. Bootstrap failures of this temporary kind show a retry
+state rather than the login form. HTTPS (or localhost) and Web Locks support are
+required for silent renewal and login; without the lock, renewal fails safely without sending
+an uncoordinated refresh. Explicit logout still attempts server revocation when the
+browser has no Web Locks support (such clients cannot issue a competing refresh).
+Browser shutdown or loss of a refresh response after server
+commit may still require sign-in; no revoked refresh token is accepted to recover it.
+Account disable/suspension, password reset and access-version enforcement above and
+in `PERMISSION_MATRIX.md` remain authoritative.
+
 ## HTTP Caching
 
 By default every API response carries `Cache-Control: no-cache, no-store, max-age=0, must-revalidate` (Spring Security default) — correct for authenticated and personalised responses, which must never be stored by a browser or CDN.
@@ -831,6 +855,10 @@ every matching row across all pages without silent truncation. The response decl
 
 ## Admin Catalog Contract
 
+### Trang sản phẩm dự phòng khi backend lỗi (09/11/2026)
+
+Theo GMC_RULE_007: riêng page product VI/EN đọc chi tiết `no-store`, timeout 5 giây, memo trong request; lưu snapshot công khai thành công theo slug/locale tại `.next/cache/product-fallback/`. Khi lỗi mạng/5xx đọc lại snapshot tối đa 3.600s, không kéo dài tuổi. Không dùng fallback cho 4xx; 404/410 xóa snapshot; webhook revalidate products/product xóa cache dự phòng trước khi xác nhận thành công. Cache hỏng/không ghi được không làm hỏng lần đọc mới. Cache chưa có/quá hạn không trả trang cũ; lỗi tạm thời được đưa vào trạng thái error của trang, không biến thành 404. Truyền cờ fallback nội bộ xuống khu mua; nút mua bị khóa cho tới khi snapshot giá/Còn-Hết sau mount thành công, và khóa lại khi refetch lỗi. Không thay Product DTO hay cart/checkout.
+
 ### Google Merchant product feed — web-served XML (2026-09-07)
 
 Landing VI `/product/{slug}/` được rewrite nội bộ sang `/vi/internal/product/{slug}/` theo cùng cơ chế alias của homepage/catalog. Query `variant` giữ nguyên và chỉ có URL sản phẩm công khai trong canonical/link/schema. Alias phải khai `dynamic = "force-dynamic"` ngay tại module route, cùng chế độ với trang gốc; re-export hàm trang không tự kế thừa cấu hình này. Alias tránh vòng 301 về chính URL và lỗi static-to-dynamic khi đọc query theo request; không tạo URL bán hàng mới.
@@ -840,7 +868,9 @@ Landing VI `/product/{slug}/` được rewrite nội bộ sang `/vi/internal/pro
 - Nội dung VI, giá `VND`; điều kiện chọn sản phẩm và ánh xạ biến thể theo `GMC_RULE_001`–`005`. `Content-Type: application/xml; charset=utf-8`, `Cache-Control: no-store`, `X-Robots-Tag: noindex` (không chặn đường feed trong robots).
 - Đọc tất cả trang catalog công khai (mỗi trang tối đa 100), rồi đọc detail bằng slug để lấy mô tả, ảnh và thuộc tính biến thể. Các lần đọc cho feed dùng `cache: no-store`; giới hạn song song 8 và tối đa 50 trang. Vượt giới hạn là 503, không cắt danh mục. Kiểm tra tổng, ID trùng và trang thiếu trước khi xuất XML.
 - Mỗi item có SKU thật, tên, mô tả văn bản, link mua, ảnh, tình trạng hàng, giá niêm yết, `sale_price` khi sale hợp lệ, `condition=new` cùng quy ước schema hiện hữu, thương hiệu và nhóm hàng của shop khi có. Biến thể có `item_group_id`, `item_group_title`, các `variant_option` từ dữ liệu thật và trường `color`/`size` tương ứng nếu có. Không tự cấp mã GTIN/MPN hoặc khai báo thiếu định danh là sản phẩm không có định danh.
+- Ảnh theo `GMC_RULE_008` và `DATA_CONTRACT.md`: ảnh lớn nhất đúng phạm vi biến thể, ưu tiên bản gốc không hậu tố resize và hai cạnh ≥800. Thiếu ảnh đạt ngưỡng vẫn giữ SKU và lập danh sách bổ sung; không upscale, không dùng màu khác. Không gửi thumbnail bổ sung khi đã có bản gốc đủ ngưỡng; chưa bảo đảm metadata và nội dung ảnh đạt Google.
 - Lỗi backend, dữ liệu sai định dạng, phân trang không đầy đủ, SKU thiếu/dài hơn 50 ký tự/trùng không phân biệt hoa thường: HTTP 503, thông báo chung, `Retry-After: 300`, không trả feed thành công một phần. Feed hoàn chỉnh trả thêm `X-Merchant-Product-Count` và `X-Merchant-Item-Count`; số sản phẩm khác số dòng biến thể.
+- Feed hoàn chỉnh có thêm `X-Merchant-Generated-At` (UTC ISO 8601), ghi thời điểm dựng xong XML sau khi đọc nguồn không cache. Đây là tuổi bản XML, không phải thời điểm shop sửa từng sản phẩm và không chứng minh Google đã tiếp nhận. Không thêm header này cho 503. Chưa phục vụ bản dự phòng; vẫn áp dụng `GMC_RULE_005`.
 - `GET /product/{slug}/?variant={variantId}` và bản EN tương ứng chọn trước đúng biến thể thuộc sản phẩm trong lần render đầu. Query không hợp lệ/trùng nhiều lần/ID không tồn tại bỏ chọn trước; các luồng mua, bản nháp, trạng thái còn/hết và canonical không đổi. Query lựa chọn hợp lệ được giữ khi redirect slug chuẩn.
 
 Đăng ký lịch lấy và xác minh trạng thái tiếp nhận/duyệt nằm trong tài khoản GMC, theo `docs/engineering/GMC_SETUP.md`; endpoint không báo thay cho Google kết quả đồng bộ.
@@ -2156,7 +2186,7 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 - `CATEGORY` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, introContent, imageUrl, iconUrl, menuIconUrl, bannerUrl, parentId, sortOrder, showOnHomepage; before-snapshot bug fixed same as PRODUCT.
 - `BRAND` — create/update/soft-delete (AdminCatalogMutationService). Snapshot (fixed 2026-07-04) adds description, logoUrl, bannerUrl; before-snapshot bug fixed same as PRODUCT.
 - `INVENTORY` — manual availability changes (`AdminInventoryService`)
-- `CONTENT` — article create/update/soft-delete/restore/hard-delete (AdminContentMutationService). Snapshot gồm các trường quản trị còn hiệu lực như tiêu đề, slug, trạng thái và ảnh bìa; không ghi tóm tắt hoặc tên tác giả. `V1091` làm sạch các khóa cũ trong snapshot bài viết đã lưu; before-snapshot bug fixed on update/soft-delete/restore.
+- `CONTENT` — article create/update/soft-delete/restore/hard-delete (AdminContentMutationService). Snapshot gồm các trường quản trị còn hiệu lực như tiêu đề, slug, trạng thái và ảnh bìa; không ghi tóm tắt hoặc tên tác giả. `V1091` dọn khóa ngoài cùng; forward `V1095` hoàn tất gỡ các khóa đã nghỉ ở mọi cấp object/array của JSON hợp lệ, chỉ trong dòng CONTENT có action CONTENT_ARTICLE_* (chưa áp dụng; xem DATA_CONTRACT, mục Article bilingual content). Không sửa JSON lỗi hay nội dung module khác; before-snapshot bug fixed on update/soft-delete/restore.
 - `CUSTOMER` — `AdminCustomerService`: `CUSTOMER_UPDATED`, `CUSTOMER_STATUS_UPDATED`, and `CUSTOMER_AVATAR_REMOVED` (the avatar action is emitted only when a stored avatar is actually cleared).
 - `MEDIA` — AdminMediaService
 - `MENU` / `MENU_ITEM` — AdminMenuService
@@ -2579,3 +2609,7 @@ template/abbreviation editor, memory days, lịch trực, email handoff. Hạn m
 Không có loại thông báo biên lai chuyển khoản mới. GET notifications và POST mark-all-read chỉ lọc
 theo `orders.read` và `inventory.read`; `chat.read` vẫn bảo vệ màn Hội thoại riêng. Ảnh tài liệu
 thanh toán không gọi endpoint thanh toán và không tạo thông báo.
+
+### Local inventory feed — DEV-7 (06/11/2026)
+
+GET/HEAD `/google-local-inventory.tsv`: public, UTF-8 TSV, bốn cột `store_code`, `id`, `availability`, `price`. Dùng cùng projection và kiểm định với XML, giá hiện hành VND, không quantity. Content-Type `text/tab-separated-values; charset=utf-8`, no-store, noindex, cùng header đếm và thời điểm dựng như XML. Thiếu/sai GMC_STORE_CODE hoặc nguồn không đầy đủ: 503, Retry-After 300, không xuất một phần. Mã cửa hàng tối đa 64 ký tự, giữ nguyên hoa/thường, không tab/newline/ký tự điều khiển. Proxy bỏ qua TSV như XML.

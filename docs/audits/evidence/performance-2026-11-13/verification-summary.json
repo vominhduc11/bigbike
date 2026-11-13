@@ -1,0 +1,38 @@
+{
+  "web": {
+    "tests": 805,
+    "passed": 805,
+    "failures": 0,
+    "skipped": 0,
+    "lint": "passed",
+    "build": "passed"
+  },
+  "admin": {
+    "tests": 1245,
+    "passed": 1245,
+    "failures": 0,
+    "skipped": 0,
+    "lint": "passed",
+    "build": "passed"
+  },
+  "backend": {
+    "tests": 1580,
+    "passed": 1580,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "verify_package": "passed"
+  },
+  "helper_tests": {
+    "tests": 20,
+    "passed": 20
+  },
+  "boundary_positive_and_deliberate_negative": "passed",
+  "baseline_identity": "three attributed source files; all prior optimizations/correctness repairs identical",
+  "gitleaks_current_source": "0 findings; no ignore/rule changed; not history/PII audit",
+  "remote_CI": "not executed: source not published/dispatch unavailable; requires owner-reviewed publication and manual dispatch/quota verification",
+  "full_system_performance_acceptance": false,
+  "production_deployed": false,
+  "V1095_applied_to_shop": false,
+  "performance_claims": "Only synthetic computational sort and offline image-variant component medians/counts; no new API/CWV/INP/transfer/capacity claim"
+}

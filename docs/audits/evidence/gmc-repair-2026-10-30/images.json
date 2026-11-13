@@ -1,0 +1,4283 @@
+[
+  {
+    "url": "/media/migration/wordpress/62/626452159364241609886c02a5bc2c37657b7cb75f35e15999eabde929cc8bdd/MU-BAO-HIEM-LS2-FF800-XANH-LA-2-Custom.jpg",
+    "skus": [
+      "FF800OB-XANHLA-XXL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 3936,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/04/0411f80fb835ff97c83ab423ab6c59e6bc43fccd780dc678d27c5a612d7c5bc4/Mu-bao-hiem-moto-ls2-copter-of600-01-150x150-1.jpg",
+    "skus": [
+      "LS2-OF600B-L",
+      "LS2-OF600B-M",
+      "LS2-OF600B-XL",
+      "LS2-OF600B-XXL"
+    ],
+    "width": 150,
+    "height": 150,
+    "bytes": 5214,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/1f/1f6e88df5064b529c6c7f46edac5356233b11758a23f5e9172788f2fccc66add/Mu-bao-hiem-moto-ls2-copter-of600-07-06-150x150-1.jpg",
+    "skus": [
+      "LS2-OF600R-M",
+      "LS2-OF600R-L",
+      "LS2-OF600R-XL",
+      "LS2-OF600R-XXL"
+    ],
+    "width": 150,
+    "height": 150,
+    "bytes": 5456,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/10/10d0a18acab56c1101ee72ec4e20a7963d9c2fccec7d6cab7c9e74a71d6b626e/Mu-bao-hiem-moto-ls2-copter-of600-05-150x150-1.jpg",
+    "skus": [
+      "LS2-OF600G-M",
+      "LS2-OF600G-L",
+      "LS2-OF600G-XL",
+      "LS2-OF600G-XXL"
+    ],
+    "width": 150,
+    "height": 150,
+    "bytes": 5380,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/ef/ef6678ee6359afd531872ddd4e13bf1b6d24f0f74058a4f1cd310071f3f4195a/Mu-bao-hiem-moto-ls2-copter-of600-07-07-01-150x150-1.jpg",
+    "skus": [
+      "LS2-OF600GR-M",
+      "LS2-OF600GR-L",
+      "LS2-OF600GR-XL",
+      "LS2-OF600GR-XXL"
+    ],
+    "width": 150,
+    "height": 150,
+    "bytes": 5603,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/23/23a3b92665534324183f6cf88b4e55dc68959350ffd66ebb201b28da9b5c16b9/Mu-bao-hiem-LS2-Bob-carbon-OF601-01.jpg",
+    "skus": [
+      "OF601-M",
+      "OF601-XL",
+      "OF601-XXL",
+      "OF601-L"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 76135,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/b8/b8a5327e34c00c29c9170fd5e88ecdcb345c5cac2842f2b61130f1978efc7c83/ao-bao-ho-adv-toruing-dainese-Lady-tonale-06.jpg",
+    "skus": [
+      "TONALE-46",
+      "TONALE-48",
+      "TONALE-50"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 50105,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/9622b92b-f8aa-464a-b4ce-c70f4d59bda5/tai-nghe-bluetooth-bo-dam-intercom-scs-s13-gan-non-anh-studio.webp",
+    "skus": [
+      "SCS-S13"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 261188,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/migration/wordpress/d4/d40abbff9ec97b66903794565e91cee926f820cae37fbde1a4f36865ea51928f/TAICHI-RSJ335-QUICK-DRY-PARKA-01-1.jpg",
+    "skus": [
+      "RSJ335-DEN-S",
+      "RSJ335-DEN-M",
+      "RSJ335-DEN-L",
+      "RSJ335-DEN-XL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 3430,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/3d/3ddfd4039ce16a177a52148060967e18b7420b86060e6f1722445672fa1177b5/TAICHI-RSJ335-QUICK-DRY-PARKA-03-1.jpg",
+    "skus": [
+      "RSJ335-XANHREU-S",
+      "RSJ335-XANHREU-M",
+      "RSJ335-XANHREU-L",
+      "RSJ335-XANHREU-XL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 3322,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/0b/0b062c343fc0fbc5b43ce4ad2717062918cf232f734f012a4f8c4b28b36a9a50/ao-bao-ho-komine-jk157-07.jpg",
+    "skus": [
+      "JK157-DO-XXL",
+      "KKM-JK157-R-L",
+      "KKM-JK157-R-XL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 97032,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/c7/c79664f50c468a230be81f2a51b0411771ff6cd0e8a4ee9e6aeca03c552a6e11/z5748975844822_f49d80eb8d4522c6a54f4ccfe4da4731.jpg",
+    "skus": [
+      "JK157-DEN-M",
+      "KKM-JK157-BL-L",
+      "KKM-JK157-BL-XL"
+    ],
+    "width": 1290,
+    "height": 1290,
+    "bytes": 137662,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/10/106e9e4067e42bf63a003cd487303d3b6e3299eb92a74b97225636d84b884e66/36-scaled.jpg",
+    "skus": [
+      "SPIRIT-DEN-33",
+      "SPIRIT-DEN-28",
+      "SPIRIT-DEN-34",
+      "SPIRIT-DEN-36"
+    ],
+    "width": 1920,
+    "height": 2560,
+    "bytes": 535142,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/96/968ac221d81897accb9de1ea96a4e9692b0136a322aa9ca09a92ef5176028a3b/36.webp",
+    "skus": [
+      "SPIRIT-XANHDAMOM-33",
+      "SPIRIT-XANHDAMOM-28",
+      "SPIRIT-XANHDAMOM-34",
+      "SPIRIT-XANHDAMOM-36"
+    ],
+    "width": 1024,
+    "height": 1024,
+    "bytes": 80436,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/migration/wordpress/f9/f96d24b36f15c0328ec187dd46e3dd2f01957a889578616ec029ea97c1d81199/SPIRIT.jpg",
+    "skus": [
+      "SPIRIT-XANHDAMSUONG-33",
+      "SPIRIT-XANHDAMSUONG-28",
+      "SPIRIT-XANHDAMSUONG-34",
+      "SPIRIT-XANHDAMSUONG-36"
+    ],
+    "width": 846,
+    "height": 1280,
+    "bytes": 259832,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/58/584ac08234d148c281a893a8f38df5d572e92dca7e4b28ff91d417d976e0c34d/34-scaled.jpg",
+    "skus": [
+      "SPIRIT-XANHNHATOM-33",
+      "SPIRIT-XANHOM-33",
+      "SPIRIT-XANHNHATOM-28",
+      "SPIRIT-XANHOM-28",
+      "SPIRIT-XANHNHATOM-34",
+      "SPIRIT-XANHOM-34",
+      "SPIRIT-XANHNHATOM-36",
+      "SPIRIT-XANHOM-36"
+    ],
+    "width": 1920,
+    "height": 2560,
+    "bytes": 706008,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/58/58c5a1e7b011c55f022e6a4614ca1c43fdd3d42ba29beff660fe76e76496db35/z5906022743277_81d8e9825008c2afa2785f68738c88f5-scaled.jpg",
+    "skus": [
+      "SPIRIT-XANHNHATSUONG-33",
+      "SPIRIT-XANHNHATSUONG-28",
+      "SPIRIT-XANHNHATSUONG-34",
+      "SPIRIT-XANHNHATSUONG-36"
+    ],
+    "width": 1920,
+    "height": 2560,
+    "bytes": 720783,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/cb/cb9b48e90d6abba6309725cff0ba667e1ffc49ca6575317dfc47c793446f4d59/GIAY-KOMINE-BK088-MAU-DEN.jpg",
+    "skus": [
+      "BK088-XAM2-38",
+      "BK088-XAM2-37",
+      "BK088-XAM2-36",
+      "BK088-DEN-39",
+      "BK088-DEN-38",
+      "BK088-DEN-37",
+      "BK088-DEN-36",
+      "BK088-XAM2-39",
+      "BK088-DEN-40",
+      "BK088-DEN-41",
+      "BK088-DEN-42",
+      "BK088-DEN-43",
+      "BK088-DEN-44",
+      "BK088-DEN-45",
+      "BK088-XAM2-40",
+      "BK088-XAM2-41",
+      "BK088-XAM2-42",
+      "BK088-XAM2-43",
+      "BK088-XAM2-44",
+      "BK088-XAM2-45"
+    ],
+    "width": 50,
+    "height": 21,
+    "bytes": 704,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/21/21ea839664041f91e573eae064884d9479113fcf8164f9ca91d5fa37e0475bdd/CABERG-AVALON-X-BLACK-09-1.jpg",
+    "skus": [
+      "CABERG-A-DEN-M"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 1692,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/fc/fc5afe505995d4ff028566c3ac297c8f1d09cc44b65bb435eb09ec2b4e534276/CABERG-AVALON-X-WHITE-01-1.jpg",
+    "skus": [
+      "CABERG-A-TRANG2-M"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 1558,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/5d/5d62fba059b7441502d9d4ac7d4eef946e5b048da3fe87c5751b27f746ca32d2/CABERG-AVALON-X-BLACK-RED-20-2-1.jpg",
+    "skus": [
+      "CABERG-A-DO-L"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 1968,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/2d/2d2c5ee9632ccffa319857a5d24689e0ac53623c3d58a8d7431300bbda74a2f2/NIC-NO1-04-1.jpg",
+    "skus": [
+      "N01-CARBON3KBONG-M",
+      "N01-CARBON3KBONG-L",
+      "N01-CARBON3KBONG-XL",
+      "N01-CARBON3KBONG-XXL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 873,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/b1/b1db45287ab400bbf735fd824aac97886e76f69b67f703baeca8716b449a53d0/NIC-NO1-01-1.jpg",
+    "skus": [
+      "N01-CARBONFORGEDBONG-M",
+      "N01-CARBONFORGEDBONG-L",
+      "N01-CARBONFORGEDBONG-XL",
+      "N01-CARBONFORGEDBONG-XXL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 1590,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/99/9914964d33886394356be3f3d66ada957fd58ca61aaf881f0ed7452d60eb3889/NIC-N02-07.png",
+    "skus": [
+      "N02-CARBON3KBONG-S",
+      "N02-CARBON3KBONG-M",
+      "N02-CARBON3KBONG-L",
+      "N02-CARBON3KBONG-XL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 264909,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/migration/wordpress/d6/d62a59bebd1ae319774be1c569ad5f2f016807e97d4672658ffa7e1a380f942d/NIC-N02-04.png",
+    "skus": [
+      "N02-FORGEDCACBONNHAM-S",
+      "N02-FORGEDCACBONNHAM-M",
+      "N02-FORGEDCACBONNHAM-L",
+      "N02-FORGEDCACBONNHAM-XL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 313963,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/migration/wordpress/c8/c8c027bb6c9970156ef0f031f85184951252c29c2165658a871f40352fbdac87/NIC-NO1-F-03-3.png",
+    "skus": [
+      "N01FC3KM",
+      "N01FC3KS",
+      "N01FC3KL",
+      "N01FC3KXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 863989,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/migration/wordpress/41/41bc49b5b28b2b9dc530a951cacf59578f7a84485664857e3566e7f19eb633ca/NIC-NO1-F-02-NHAM.png",
+    "skus": [
+      "N01FNM",
+      "N01FNS",
+      "N01FNL",
+      "N01FNXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 776413,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/uploads/3e03bc0a-183c-4284-85d4-d657c1ebd9e0/tai-nghe-bluetooth-mu-bao-hiem-scs-s9x-gan-non-anh-studio.webp",
+    "skus": [
+      "TNB-SCS-S9X"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 220746,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/migration/wordpress/cf/cf05e32a25c64158edf810d861a9d29ee6b20592eb1af9e514fb9bf638debca3/OF616-BRUSH-Gloss-Black-H-V-Yellow-400x400-1.jpg",
+    "skus": [
+      "LS2-OF616-XANHLA-XL"
+    ],
+    "width": 400,
+    "height": 400,
+    "bytes": 11765,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/2e/2e7f8bb7da822618375f340a62efce2dc105f659b123002efa0b3cc4b0617a60/OF610-Gloss-Black-400x400-1.jpg",
+    "skus": [
+      "LS2-OF610-2-DEN-XSS",
+      "LS2-OF610-2-DEN-ML",
+      "LS2-OF610-2-DEN-XL2XL"
+    ],
+    "width": 400,
+    "height": 400,
+    "bytes": 10969,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/f8/f83c86de4285eaaf08c84db4a6916af680b55faf1a9d9c2215c65215ad4a047d/OF610-Gloss-White-400x400-1.jpg",
+    "skus": [
+      "LS2-OF610-2-TRANG2-XSS1590000",
+      "LS2-OF610-2-TRANG2-ML",
+      "LS2-OF610-2-TRANG2-XL2XL"
+    ],
+    "width": 400,
+    "height": 400,
+    "bytes": 10659,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/68/689d0bf1061554dc71a7b1820ff42ee5f024725a5965eb92719b1a7ea52b0c7f/OF610-Nardo-400x400-1.jpg",
+    "skus": [
+      "LS2-OF610-2-XAM2-XSS",
+      "LS2-OF610-2-XAM2-ML",
+      "LS2-OF610-2-XAM2-XL2XL"
+    ],
+    "width": 400,
+    "height": 400,
+    "bytes": 11031,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/96/9678f2a8ffa59dbb6411555ad9d33e304df451b1b34fbd20acc66d9138f3c65f/z7422260921720_a5d1334453f74390f638551104fd1cd2.jpg",
+    "skus": [
+      "ILM-509-CYBORGBLUE-S",
+      "ILM-509-CYBORGBLUE-M",
+      "ILM-509-CYBORGBLUE-L",
+      "ILM-509-CYBORGBLUE-XL",
+      "ILM-509-CYBORGBLUE-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 137752,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/4d/4d77708d6d125e1e302feafc9c12a13086b18ff9a605a1fee4cc9332cbbd2026/z7422423257615_0b88d945c9a7b75e3c66e47971e43e76.jpg",
+    "skus": [
+      "ILM-509-MYTHOLOGYRED-S",
+      "ILM-509-MYTHOLOGYRED-M",
+      "ILM-509-MYTHOLOGYRED-L",
+      "ILM-509-MYTHOLOGYRED-XL",
+      "ILM-509-MYTHOLOGYRED-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 212588,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/f6/f647f2fc268d8283010b4da1776b84a938b2b6b6538f25b501e27f938fda1c49/z7422248460494_47262598aef7e0ba0c4a1f7f725acc84.jpg",
+    "skus": [
+      "ILM-509-SUPERMECHAGOLD-S",
+      "ILM-509-SUPERMECHAGOLD-M",
+      "ILM-509-SUPERMECHAGOLD-L",
+      "ILM-509-SUPERMECHAGOLD-XL",
+      "ILM-509-SUPERMECHAGOLD-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 208558,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/01/z7422926843541_f7cf6e88df8c261fe1adeb216efdf004.jpg",
+    "skus": [
+      "ILM-509-SUPERMECHARED-S",
+      "ILM-509-SUPERMECHARED-M",
+      "ILM-509-SUPERMECHARED-L",
+      "ILM-509-SUPERMECHARED-XL",
+      "ILM-509-SUPERMECHARED-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 201632,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/91/9136b55708854b042a1fb014a887e6a0e555d652ac4cb184afb66019f46d4aa5/z7422238429656_3122a6ba7a250e247e4d7108802d1dfb.jpg",
+    "skus": [
+      "ILM-509-RONINRED-S",
+      "ILM-509-RONINRED-M",
+      "ILM-509-RONINRED-L",
+      "ILM-509-RONINRED-XL",
+      "ILM-509-RONINRED-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 201961,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/19/198c549ebcc262370a544e6d5ae8de5eec9fd956d8b5ac395d6dfeb47fe38d98/z7422490322581_ceb8f86357c8def20c8cb43dd40af3f5.jpg",
+    "skus": [
+      "ILM-509-TRANG2-S",
+      "ILM-509-TRANG2-M",
+      "ILM-509-TRANG2-L",
+      "ILM-509-TRANG2-XL",
+      "ILM-509-TRANG2-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 96080,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/cb/cb2a995dc6c989d5d89ac7abf9645a5eb398e40c60129f18f156a33d08903796/z7422418879048_01718b3bbf494faf039509aed09daef4.jpg",
+    "skus": [
+      "ILM-509-WARDAMAGEDGRAY-S",
+      "ILM-509-WARDAMAGEDGRAY-M",
+      "ILM-509-WARDAMAGEDGRAY-L",
+      "ILM-509-WARDAMAGEDGRAY-XL",
+      "ILM-509-WARDAMAGEDGRAY-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 173972,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/97/97e0c52b577b6b42f3e4cf508bfa7632be3dbf0a06bb9a666f18342652d1e347/z7422241917210_db35024f03646f7db92d0d10c4373fff.jpg",
+    "skus": [
+      "ILM-509-DENNHAM3-S",
+      "ILM-509-DENNHAM3-M",
+      "ILM-509-DENNHAM3-L",
+      "ILM-509-DENNHAM3-XL",
+      "ILM-509-DENNHAM3-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 119573,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/83/8396175be25a302690700b8cce7f709997361c8de296f6356801f400fc9f858b/z7422781966084_ecbec21ae574b24169187520d2ea87a1.jpg",
+    "skus": [
+      "ILM-509-DENBONG-S",
+      "ILM-509-DENBONG-M",
+      "ILM-509-DENBONG-L",
+      "ILM-509-DENBONG-XL",
+      "ILM-509-DENBONG-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 127236,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/d7/d712a12f6bf052a1b3b33bd2fefeb6bcae1698b792d179358272ddada7e6f20c/z7422416356875_647982165402037d74a8c2fb7f76ecc6.jpg",
+    "skus": [
+      "ILM-509-CYBORGGRAY-S",
+      "ILM-509-CYBORGGRAY-M",
+      "ILM-509-CYBORGGRAY-L",
+      "ILM-509-CYBORGGRAY-XL",
+      "ILM-509-CYBORGGRAY-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 177996,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/55/553fc086788056082c2b94570f5a9b07585676bc933e1c8c99281692ff5b6c67/z7422258051006_a1bc4d45fa4b5b2bfbb854c520046f86.jpg",
+    "skus": [
+      "ILM-509-DAY1GREEN-S",
+      "ILM-509-DAY1GREEN-M",
+      "ILM-509-DAY1GREEN-L",
+      "ILM-509-DAY1GREEN-XL",
+      "ILM-509-DAY1GREEN-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 207094,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/3a/3ae60545ab9dd223f248651850b7cc17e5741562b3b9a769940550272ee691a1/z7422425546995_e7294967cbf7d264b98adcab006708fc.jpg",
+    "skus": [
+      "ILM-509-DAY1ORANGE-S",
+      "ILM-509-DAY1ORANGE-M",
+      "ILM-509-DAY1ORANGE-L",
+      "ILM-509-DAY1ORANGE-XL",
+      "ILM-509-DAY1ORANGE-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 243917,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/5f/5f51e8f4ad60e907d0e72343b27ae358028d934fa015a17c58eae1380b128ad4/z7422100453118_7b87a9ac0f3d1d91cad03eb795e5179f.jpg",
+    "skus": [
+      "ILM-509-MYTHOLOGYGOLD-S",
+      "ILM-509-MYTHOLOGYGOLD-M",
+      "ILM-509-MYTHOLOGYGOLD-L",
+      "ILM-509-MYTHOLOGYGOLD-XL",
+      "ILM-509-MYTHOLOGYGOLD-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 218908,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/60/606e02a454733858056f48f582b595c062443a665ac46906c1e2619df7627fb1/z7422811234072_a9cc699a6e1e5c65bd71cd70fbcca747.jpg",
+    "skus": [
+      "ILM-509-MYTHOLOGYSILVER-S",
+      "ILM-509-MYTHOLOGYSILVER-M",
+      "ILM-509-MYTHOLOGYSILVER-L",
+      "ILM-509-MYTHOLOGYSILVER-XL",
+      "ILM-509-MYTHOLOGYSILVER-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 218661,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/b5/b5b0ae9688b21ca53eb0169007002cddf357550e0f9301457318c027d3dd9998/z7422245116136_1fe1fb384e69a5884acc62e5061f40c3.jpg",
+    "skus": [
+      "ILM-509-RONINBLUE-S",
+      "ILM-509-RONINBLUE-M",
+      "ILM-509-RONINBLUE-L",
+      "ILM-509-RONINBLUE-XL",
+      "ILM-509-RONINBLUE-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 192098,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/42/423323da6a6356c858ba363fb9752a2b069a7e27191ae4e1f9aeea6d0483794f/AO-GIAP-BAO-HO-MUA-HE-LS2-GARDA-AIR-CHO-NAM-VA-NU-01-1.jpg",
+    "skus": [
+      "LS2-MUA-WL",
+      "LS2-MUA-WM",
+      "LS2-MUA-WS",
+      "LS2-MUA-S",
+      "LS2-MUA-M",
+      "LS2-MUA-L",
+      "LS2-MUA-XL",
+      "LS2-MUA-XXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 96038,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/88/88401b7fd3385230daa08cde670eeb9ceec767c33ca252bc2f7cbfb25f3daca9/QUAN-BAO-HO-LS2-COMMO-AIR-CHO-NAM-VA-NU-01.jpg",
+    "skus": [
+      "LS2-COMMO-S",
+      "LS2-COMMO-M",
+      "LS2-COMMO-L"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 51391,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/2d/2d84c648199cb8d417b702a1a81b81af12d42efaef2bec49780c8d12c1b3d48d/MU-BAO-HIEM-ILM-Z302-03-1.jpg",
+    "skus": [
+      "ILM-Z302-TRANG-S",
+      "ILM-Z302-TRANG-M",
+      "ILM-Z302-TRANG-L",
+      "ILM-Z302-TRANG-XL",
+      "ILM-Z302-TRANG-XXL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 1680,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/10/10b2e88da9ab28886e8329b2c101635bca57b5a8bdc15fbba69f976444349eac/MU-BAO-HIEM-ILM-Z302-05-1.jpg",
+    "skus": [
+      "ILM-Z302-DENTRANG-M",
+      "ILM-Z302-DENTRANG-L",
+      "ILM-Z302-DENTRANG-XL",
+      "ILM-Z302-DENTRANG-XXL"
+    ],
+    "width": 49,
+    "height": 49,
+    "bytes": 2034,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/6a/6aa9813c65dc357594714d8c26248783bec45c5aee2a2cc56ac8e1bccdf323a5/MU-BAO-HIEM-ILM-Z302-02-1.jpg",
+    "skus": [
+      "ILM-Z302-DENNHAM3-S",
+      "ILM-Z302-DENNHAM3-M",
+      "ILM-Z302-DENNHAM3-L",
+      "ILM-Z302-DENNHAM3-XL",
+      "ILM-Z302-DENNHAM3-XXL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 1869,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/db/db10659f6708ea35d91c885beffd4355819e9be3cccaa67a046b37dd3c2b8cae/MU-BAO-HIEM-ILM-Z302-04-1.jpg",
+    "skus": [
+      "ILM-Z302-DENTRANGDO-S",
+      "ILM-Z302-DENTRANGDO-M",
+      "ILM-Z302-DENTRANGDO-L",
+      "ILM-Z302-DENTRANGDO-XL",
+      "ILM-Z302-DENTRANGDO-XXL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 1731,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/8b/8bc1740c7f1a9f5168838a77acc924527dad3e5a663131fc4d2c51e12875aca5/MU-BAO-HIEM-ILM-Z302-07-1.jpg",
+    "skus": [
+      "ILM-Z302-XANHARMY-S",
+      "ILM-Z302-XANHARMY-M",
+      "ILM-Z302-XANHARMY-L",
+      "ILM-Z302-XANHARMY-XL",
+      "ILM-Z302-XANHARMY-XXL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 2179,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/5c/5c0b05f9cd41e359d54ef78c98a51ea190b00a7f5f36396fe10033ade47c262d/MU-BAO-HIEM-ILM-Z302-06-1.jpg",
+    "skus": [
+      "ILM-Z302-XANHMECHA-S",
+      "ILM-Z302-XANHMECHA-M",
+      "ILM-Z302-XANHMECHA-L",
+      "ILM-Z302-XANHMECHA-XL",
+      "ILM-Z302-XANHMECHA-XXL"
+    ],
+    "width": 50,
+    "height": 50,
+    "bytes": 2367,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/09/0969b259da9afd18d503f01388f306bb0c85f8491466cf3e22e7d182becd79c9/z7100657511766_3f1d6c0632d5637931df4e8e3e1b0233.jpg",
+    "skus": [
+      "LS2-OF610-DEN"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 12202,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/34/3470d4a76e029823ac0c85746f75899dccb3e924ad04a2415bbb2726864cf201/z7100657613933_304d11f32355d028087846a56cc8daa5.jpg",
+    "skus": [
+      "LS2-OF610-GUONG"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 21536,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/7f/7f4ad9b489a6e1e045bf95788bad20a4ff3408798d77b8b8226505d879d43ad0/z7100657469630_32ecabac84d028a2baef841418412c31.jpg",
+    "skus": [
+      "LS2-OF610-TRANG2"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 6301,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/f4/f487bec98402c1f0b7eecb67e0edab807de36261f290885a587bff5c697faef7/GANG-TAY-CHONG-NUOC-LS2-THERMORAIN-PHU-NGOAI-GANG-TAY-BAO-HO-01.jpg",
+    "skus": [
+      "LS2-NEW-2-XSS",
+      "LS2-NEW-2-ML"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 63219,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/37/37261dfed04ec4e8364fa7229276b81031c639c337db1368352bbdbe73d93ecd/kiotviet_f23711a155319e977fbfad48447dc866-768x768-2.jpg",
+    "skus": [
+      "LS2-TREKKE-42",
+      "LS2-TREKKE-43",
+      "LS2-TREKKE-44",
+      "LS2-TREKKE-45"
+    ],
+    "width": 768,
+    "height": 768,
+    "bytes": 43722,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/41/413f80c13b71a6dbc25ccac8ba0d7585a810e6324f6bfcfc0ac3973553bac4d4/z7352385314075_c1eb54137a2c53d06847218bd2bf9e51.jpg",
+    "skus": [
+      "LS2-BOLTON-DEN-S",
+      "LS2-BOLTON-DEN-M",
+      "LS2-BOLTON-DEN-L",
+      "LS2-BOLTON-DEN-XL",
+      "LS2-BOLTON-DEN-XXL"
+    ],
+    "width": 1440,
+    "height": 1440,
+    "bytes": 111399,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/c1/c116d748987f2585a914e1db26a8607dc791ee5404f9da3a83091aa4af237d6d/z7352387794579_6db582686251e993d2c577ea5a1d2194.jpg",
+    "skus": [
+      "LS2-BOLTON-XANHLAXAM-S",
+      "LS2-BOLTON-XANHLAXAM-M",
+      "LS2-BOLTON-XANHLAXAM-L",
+      "LS2-BOLTON-XANHLAXAM-XL",
+      "LS2-BOLTON-XANHLAXAM-XXL"
+    ],
+    "width": 1440,
+    "height": 1440,
+    "bytes": 70416,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/migration/wordpress/74/74177d0618333da38fe15d1cfbab934da41825485dcc7a136b1d6b3821725c3d/z7380772728766_3a87667a99a8946e2df3669e3ba7cfd3.jpg",
+    "skus": [
+      "CB-IN1-CARBON-M",
+      "CB-IN1-CARBON-L",
+      "CB-IN1-CARBON-XL",
+      "CB-IN1-CARBON-XXL"
+    ],
+    "width": 1280,
+    "height": 1280,
+    "bytes": 102433,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/01/z7419363974201_6a3dce92e581ab572c519f92f7575d6e.jpg",
+    "skus": [
+      "ILM-Z503-DENBONG-S",
+      "ILM-Z503-DENBONG-M",
+      "ILM-Z503-DENBONG-L",
+      "ILM-Z503-DENBONG-XL",
+      "ILM-Z503-DENBONG-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 133565,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/01/z7419369392186_11b91e323337cf982f67770727f049eb.jpg",
+    "skus": [
+      "ILM-Z503-DENNHAM3-S",
+      "ILM-Z503-DENNHAM3-M",
+      "ILM-Z503-DENNHAM3-L",
+      "ILM-Z503-DENNHAM3-XL",
+      "ILM-Z503-DENNHAM3-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 143132,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/01/z7419374522180_826f55313c1db173e541c81391946552.jpg",
+    "skus": [
+      "ILM-Z503-TRANGBONG2-S",
+      "ILM-Z503-TRANGBONG2-M",
+      "ILM-Z503-TRANGBONG2-L",
+      "ILM-Z503-TRANGBONG2-XL",
+      "ILM-Z503-TRANGBONG2-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 116887,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/01/z7419921177125_48362bb9555f522ea5bfe1f9bba61517.jpg",
+    "skus": [
+      "LS2-ZOOM-S",
+      "LS2-ZOOM-M",
+      "LS2-ZOOM-L",
+      "LS2-ZOOM-XL",
+      "LS2-ZOOM-XXL"
+    ],
+    "width": 1440,
+    "height": 1440,
+    "bytes": 104912,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/02/z7536241842276_be190aad673def674fee41aee528b9b6.jpg",
+    "skus": [
+      "ILM-MF510-XAMVANG-S",
+      "ILM-MF510-XAMVANG-M",
+      "ILM-MF510-XAMVANG-L",
+      "ILM-MF510-XAMVANG-XL",
+      "ILM-MF510-XAMVANG-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 176700,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/02/z7536242392732_5ba910e56324a45f811ba235c07a2bc0.jpg",
+    "skus": [
+      "ILM-MF510-DENBONG-S",
+      "ILM-MF510-DENBONG-M",
+      "ILM-MF510-DENBONG-L",
+      "ILM-MF510-DENBONG-XL",
+      "ILM-MF510-DENBONG-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 195676,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/02/z7536241762981_a4d64b7228c93b703bcd593809d56483.jpg",
+    "skus": [
+      "ILM-MF510-DENXAM-S",
+      "ILM-MF510-DENXAM-M",
+      "ILM-MF510-DENXAM-L",
+      "ILM-MF510-DENXAM-XL",
+      "ILM-MF510-DENXAM-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 154010,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/02/z7536241725516_e0e95cbabb0449a83b6cf407f6328dc3.jpg",
+    "skus": [
+      "ILM-MF510-DENNHAM3-S",
+      "ILM-MF510-DENNHAM3-M",
+      "ILM-MF510-DENNHAM3-L",
+      "ILM-MF510-DENNHAM3-XL",
+      "ILM-MF510-DENNHAM3-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 80012,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/02/z7536242214800_cda9c7834f1dc162807036644808b158.jpg",
+    "skus": [
+      "ILM-MF510-TEMDO-S",
+      "ILM-MF510-TEMDO-M",
+      "ILM-MF510-TEMDO-L",
+      "ILM-MF510-TEMDO-XL",
+      "ILM-MF510-TEMDO-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 472661,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/02/z7536241849282_020b4a0900a283a850cf6282c0f9e535.jpg",
+    "skus": [
+      "ILM-MF510-TEMTRANG-S",
+      "ILM-MF510-TEMTRANG-M",
+      "ILM-MF510-TEMTRANG-L",
+      "ILM-MF510-TEMTRANG-XL",
+      "ILM-MF510-TEMTRANG-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 168346,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/02/z7536241990004_508ea19709582ef738b4d3eee8ecaa5f.jpg",
+    "skus": [
+      "ILM-MF510-TEMXAM-S",
+      "ILM-MF510-TEMXAM-M",
+      "ILM-MF510-TEMXAM-L",
+      "ILM-MF510-TEMXAM-XL",
+      "ILM-MF510-TEMXAM-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 361920,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/02/z7536241806244_055a1aeb0cf555e8d1bfb3d66bc3efa3.jpg",
+    "skus": [
+      "ILM-MF510-TRANGBONG2-S",
+      "ILM-MF510-TRANGBONG2-M",
+      "ILM-MF510-TRANGBONG2-L",
+      "ILM-MF510-TRANGBONG2-XL",
+      "ILM-MF510-TRANGBONG2-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 94214,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2026/02/z7536242295360_c95d1ce6b31da0797c2ce83bfb6f3ee8.jpg",
+    "skus": [
+      "ILM-MF510-TRANGXAM-S",
+      "ILM-MF510-TRANGXAM-M",
+      "ILM-MF510-TRANGXAM-L",
+      "ILM-MF510-TRANGXAM-XL",
+      "ILM-MF510-TRANGXAM-XXL"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 371464,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/21b71dc3-0edc-49e2-92da-cae1a74f0785/tai-nghe-bluetooth-intercom-2-nguoi-gan-mu-bao-hiem-scs-s10x-anh-hero.webp",
+    "skus": [
+      "SCS-S10X"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 110172,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/migration/wordpress/e4/e4411668c7ebcea10ceb36bf8c00e5d879394dab1d2605cab8d41bc16e26fc04/z7419939194410_dc2a50ae2390bac735771b9ecaa29c58.jpg",
+    "skus": [
+      "LS2-ZOOM-LADY-S"
+    ],
+    "width": 1440,
+    "height": 1440,
+    "bytes": 97643,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/03/RSB278-WP-04.jpg",
+    "skus": [
+      "RSB278-XANHLA"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 45819,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/12/RSB278-WP-Red-01.jpg",
+    "skus": [
+      "RSB278-DO"
+    ],
+    "width": 564,
+    "height": 564,
+    "bytes": 31561,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/03/z3945940614589_2e8f79712829f4d4c7290ef44a72a3f6.jpg",
+    "skus": [
+      "RSB278-DEN"
+    ],
+    "width": 565,
+    "height": 565,
+    "bytes": 32129,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/12/RSB278-WP-Red-02.jpg",
+    "skus": [
+      "RSB278-CAMO"
+    ],
+    "width": 564,
+    "height": 564,
+    "bytes": 32744,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2017/06/Balo-deo-lung-di-mo-to-phuot-GIVI-RBP02-chong-nuoc.jpg",
+    "skus": [
+      "RBP02"
+    ],
+    "width": 500,
+    "height": 500,
+    "bytes": 106142,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2017/06/Tui-deo-hong-deo-bao-tu-CHONG-NUOC-Givi-RWB04-4.png",
+    "skus": [
+      "TUIH-GIVI-RWB04"
+    ],
+    "width": 500,
+    "height": 500,
+    "bytes": 167569,
+    "format": "PNG"
+  },
+  {
+    "url": "/wp-content/uploads/2020/06/Alba-man-black-front.jpg",
+    "skus": [
+      "LS2ALBA-DENS",
+      "LS2ALBA-DENL",
+      "LS2ALBA-DENXL",
+      "LS2ALBA-DENXXL",
+      "LS2ALBA-DENM"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 381256,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2020/06/Alba-man-dark-grey-front.jpg",
+    "skus": [
+      "LS2ALBA-XAMM",
+      "LS2ALBA-XAMS",
+      "LS2ALBA-XAML",
+      "LS2ALBA-XAMXL",
+      "LS2ALBA-XAMXXL"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 413435,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2020/10/Pinlock-Fogcity-01-Custom.jpg",
+    "skus": [
+      "PKSCS-G7",
+      "PKSCS-S12",
+      "PKSCS-S11",
+      "PKSCS-S3",
+      "PKSCS-S8X",
+      "PKSCS-S9",
+      "PKSCS-S13"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 100313,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/03/gang-tay-cut-ngon-bao-ho-moto-xe-may-phuot-chinh-hang-Komine-GK-259-black.jpg",
+    "skus": [
+      "GK259-DENS",
+      "GK259-DENM",
+      "GK259-DENL",
+      "GK259-DENXL",
+      "GK259-DENXXL",
+      "GK259-DEN3XL"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 88691,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/03/gang-tay-cut-ngon-bao-ho-moto-xe-may-phuot-chinh-hang-Komine-GK-259-red-01-1.jpg",
+    "skus": [
+      "GK259-DOS",
+      "GK259-DOM",
+      "GK259-DOL",
+      "GK259-DOXL",
+      "GK259-DOXXL",
+      "GK259-DO3XL"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 88060,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/03/gang-tay-cut-ngon-bao-ho-moto-xe-may-phuot-chinh-hang-Komine-GK-259-white-01-1.jpg",
+    "skus": [
+      "GK259-XAMS",
+      "GK259-XAMM",
+      "GK259-XAML",
+      "GK259-XAMXL",
+      "GK259-XAMXXL",
+      "GK259-XAM3XL"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 85812,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/03/quan-giap-bao-ho-moto-xe-may-phuot-LS2-vento-pants-02-1.jpg",
+    "skus": [
+      "LS2VENTO-S",
+      "LS2VENTO-M",
+      "LS2VENTO-L",
+      "LS2VENTO-XL"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 35954,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/09/t_i_eo_i_givi_ea113b_easy-03.png",
+    "skus": [
+      "EA113B"
+    ],
+    "width": 500,
+    "height": 500,
+    "bytes": 53820,
+    "format": "PNG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/09/Tui-hit-binh-xang-Givi-Tanks-Bag-CRM103-04-1.jpg",
+    "skus": [
+      "GCRM103"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 59749,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/09/Tui-deo-dui-Givi-Retro-Style-Leg-Bag-CRM104-05.jpg",
+    "skus": [
+      "GCRM104"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 64749,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/09/Tui-deo-hong-deo-bao-tu-chong-nuoc-Givi-EA125-water-resistant-adjustable-waist-bag-03-1.jpg",
+    "skus": [
+      "TUIH-GIVI-EA125B"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 52250,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/10/Trum-dau-fullface-sixs-six2-DBX-02-1.jpg",
+    "skus": [
+      "DBXR"
+    ],
+    "width": 564,
+    "height": 564,
+    "bytes": 37563,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/10/z6926029324255_f1bb0c95d792f561104843e19fa8fc8a.jpg",
+    "skus": [
+      "DBXDG"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 82064,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/10/Trum-dau-fullface-sixs-six2-DBX-05-1.jpg",
+    "skus": [
+      "DBXDB"
+    ],
+    "width": 564,
+    "height": 564,
+    "bytes": 57113,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/10/z6925749840947_02bd477731ae91417b6e5aa2bd9f984c-1.jpg",
+    "skus": [
+      "DBXCB"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 90041,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/10/Trum-dau-fullface-sixs-six2-DBX-04-1.jpg",
+    "skus": [
+      "DBXAB"
+    ],
+    "width": 564,
+    "height": 564,
+    "bytes": 22977,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/12/AO-LS2-RIVA-MAN-yellow-01.png",
+    "skus": [
+      "RIVA-VANGXXL",
+      "RIVA-VANGXL",
+      "RIVA-VANGL",
+      "RIVA-VANGM",
+      "RIVA-VANGS"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 1266950,
+    "format": "PNG"
+  },
+  {
+    "url": "/wp-content/uploads/2022/12/10-06.png",
+    "skus": [
+      "RIVA-DOS",
+      "RIVA-DOXXL",
+      "RIVA-DOXL",
+      "RIVA-DOL",
+      "RIVA-DOM"
+    ],
+    "width": 627,
+    "height": 627,
+    "bytes": 168842,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/uploads/1438c3bf-1a49-4ad1-b045-9b2ea3646ea9/giay-giap-xe-may-rs-taichi-rss010-15.webp",
+    "skus": [
+      "RSS010",
+      "TARSS010B-DENBONG39",
+      "TARSS010B-DENBONG40",
+      "TARSS010B-DENBONG42",
+      "TARSS010B-DENBONG43",
+      "TARSS010B-DENBONG44"
+    ],
+    "width": 554,
+    "height": 554,
+    "bytes": 23208,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2024/06/z5553520295413_309bd8467182a8209fe273ad737e3230-2.jpg",
+    "skus": [
+      "TARSS013-DENDO40",
+      "TARSS013-DENDO41",
+      "TARSS013-DENDO42",
+      "TARSS013-DENDO43",
+      "TARSS013-DENDO44"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 60886,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/09/black-white.jpg",
+    "skus": [
+      "TARSS013-DENDOTRANG45"
+    ],
+    "width": 960,
+    "height": 960,
+    "bytes": 132348,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/04/AO-BAO-HO-TAICHI-RSJ342-QUICK-DRY-RACER-JACKET-01.jpg",
+    "skus": [
+      "TARSJ432-DENDOL",
+      "TC-RSJ342",
+      "TARSJ432-DENDOXL",
+      "TARSJ432-DENDOXXL",
+      "TARSJ432-DENDOS"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 49883,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2024/07/AO-bao-ho-di-mo-to-xe-may-phuot-RSJ-342-16.jpg",
+    "skus": [
+      "TARSJ432-DENL",
+      "TARSJ432-DENM",
+      "TARSJ432-DENS",
+      "TARSJ432-DENXXL",
+      "TARSJ432-DENXL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 29684,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/c795dbfa-3a18-4855-bfed-02b92edf713d/3_000000009157-800x800.jpg",
+    "skus": [
+      "KOMINE-JK1633-DEN-S"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 88581,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/d60ac627-bca2-44d1-93c9-d959355ace19/5_000000009157-800x800.jpg",
+    "skus": [
+      "KOMINE-JK1633-DO-M",
+      "KOMINE-JK1633-DO-XL",
+      "KOMINE-JK1633-DO-XXL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 85960,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/935b2377-e321-4b3b-b92e-a3a33d773655/camera-tai-nghe-bo-dam-scs-g7-plus-gan-non-anh-studio.webp",
+    "skus": [
+      "SCS-G7"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 274904,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/6d5da0ef-3630-4f2a-98b7-79068ff3abb9/tai-nghe-bo-dam-intercom-tich-hop-camera-2k-scs-s12.webp",
+    "skus": [
+      "TNB-SCS-S12"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 274602,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2023/06/quan-bao-ho-di-mo-to-xe-may-phuot-Taichi-RS-Taichi-RSY258-08-08.jpg",
+    "skus": [
+      "TC-RSY258-XS",
+      "TC-RSY258-S",
+      "TC-RSY258-XL",
+      "TC-RSY258-XXL",
+      "TC-RSY258-XXXL",
+      "TARSY258-CAMOWL",
+      "TARSY258-CAMOWM",
+      "TARSY258-CAMO2BL"
+    ],
+    "width": 1174,
+    "height": 1174,
+    "bytes": 32735,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/06/RSY258BK02.jpg",
+    "skus": [
+      "TC-RSY258-M",
+      "TC-RSY258-L",
+      "TARSY258-DENWL",
+      "TARSY258-DENWM",
+      "TARSY258-DEN2BL",
+      "TARSY258-DEN2BM",
+      "TARSY258-DENBL",
+      "TARSY258-DENBM"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 260273,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/06/Tui-balo-di-mo-to-phuot-GIVI-EA140-09.jpg",
+    "skus": [
+      "TUIH-GIVI-EA140B"
+    ],
+    "width": 1174,
+    "height": 1174,
+    "bytes": 59137,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/07/Ao-mua-bao-ho-di-mo-to-xe-may-phuot-taichi-RSRR08-03-1.jpg",
+    "skus": [
+      "TC-RSRR08-GR-M",
+      "TC-RSRR08-GR-L",
+      "TC-RSRR08-GR-XL",
+      "TC-RSRR08-GR-XXL"
+    ],
+    "width": 2350,
+    "height": 2350,
+    "bytes": 97648,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/07/Ao-mua-bao-ho-di-mo-to-xe-may-phuot-taichi-RSRR08-01-1.jpg",
+    "skus": [
+      "TC-RSRR08-YN-M",
+      "TC-RSRR08-YN-L",
+      "TC-RSRR08-YN-XL",
+      "TC-RSRR08-YN-XXL",
+      "TC-RSRR08-YN-3XL",
+      "TC-RSRR08-YN-4XL"
+    ],
+    "width": 2350,
+    "height": 2350,
+    "bytes": 96124,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/08/trum-dau-tlsa-camo-black.jpg",
+    "skus": [
+      "TTSLA"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 68825,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/08/GIAP-BAO-HO-D3O-12.jpg",
+    "skus": [
+      "D30VT-COMBO3",
+      "D30VT-LUNG",
+      "D30VT-TAY",
+      "D30VT-VAI"
+    ],
+    "width": 1174,
+    "height": 1174,
+    "bytes": 114370,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/09/GANG-TAY-BAO-HO-TAICHI-RST463-04.jpg",
+    "skus": [
+      "T463-DENM",
+      "T463-DENL",
+      "T463-DENXL",
+      "T463-DENXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 111638,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/09/GANG-TAY-BAO-HO-TAICHI-RST463-03.jpg",
+    "skus": [
+      "T463-DOM",
+      "T463-DOL",
+      "T463-DOXL",
+      "T463-DOXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 95542,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2023/09/GIVI-EA138-04.jpg",
+    "skus": [
+      "TUIX-GIVI-EA138B"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 72217,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/AIRY-LADY-mat-truoc-mau-xam.jpg",
+    "skus": [
+      "AIRYLADY-XAM2NUL",
+      "AIRYLADY-XAM2NUM",
+      "AIRYLADY-XAM2NUS",
+      "AIRYLADY-XAM2NUXS"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 68801,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/z5058271353192_b373dc56fb69b12756d74d08d7a41338.jpg",
+    "skus": [
+      "AIRYLADY-DENNUL",
+      "AIRYLADY-DENNUM",
+      "AIRYLADY-DENNUS",
+      "AIRYLADY-DENNUXS"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 64019,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/a8350e07-2ce6-4611-8213-71a658584eb0/riva_lady_black_dark_grey_pink.jpg",
+    "skus": [
+      "LS2-RIVA LADY-XS",
+      "LS2-RIVA LADY-S"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 169272,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/LS2-ALBA-LADY-mat-truoc.jpg",
+    "skus": [
+      "ALBALADY-XAM2NUXS",
+      "ALBALADY-XAM2NUS"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 150497,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/z5058372092988_526fa23b7fc27afb3999412f0b6d79a7.jpg",
+    "skus": [
+      "ALBALADY-XANHNUS"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 21873,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/z5058372079624_fcc709f17218743f742b43c1006ed328.jpg",
+    "skus": [
+      "ALBALADY-DENNUXS",
+      "ALBALADY-DENNUS"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 50101,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/LS2-VENTO-01-2.jpg",
+    "skus": [
+      "VENTOLADY-NUM",
+      "VENTOLADY-NUS",
+      "VENTOLADY-NUXS"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 43827,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/GANG-TAY-MOTO-PHUOT-LS2-RAY-LADY-02.jpg",
+    "skus": [
+      "RAYLADY-NUXS",
+      "RAYLADY-NUS",
+      "RAYLADY-NUM"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 63052,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/2c9acaca-a61f-4add-979d-4e9461a9e5d6/chatgpt_image_11_32_13_27_thg_7__2026.png",
+    "skus": [
+      "RSS011-41VAICODURA",
+      "RSS011-42VAICODURA",
+      "RSS011-44VAICODURA",
+      "RSS011-42DA",
+      "RSS011-43VAICODURA",
+      "RSS011-40DA",
+      "RSS011-41DA",
+      "RSS011-43DA",
+      "RSS011-44DA",
+      "RSS011-40VAICODURA"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1988242,
+    "format": "PNG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/GIAY-MOTO-PHUOT-CHONG-NUOC-TAICHI-RSS014-BREAK-KHAKI.jpg",
+    "skus": [
+      "RSS014KAKI-40",
+      "RSS014KAKI-41",
+      "RSS014KAKI-42",
+      "RSS014KAKI-43",
+      "RSS014KAKI-44"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 73536,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/Quan-bao-ho-di-mo-to-xe-may-phuot-RS-TAICHI-RSY270-DRYMASTER-KOMPASS-01.jpg",
+    "skus": [
+      "TARSY270-DENM",
+      "TARSY270-DENL",
+      "TARSY270-DENXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 33225,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/01/Quan-bao-ho-di-mo-to-xe-may-phuot-RS-TAICHI-RSY270-DRYMASTER-KOMPASS-03.jpg",
+    "skus": [
+      "TARSY270-KHAKI2M",
+      "TARSY270-KHAKI2L",
+      "TARSY270-KHAKI2XL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 40104,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/02/AO-NAM-NU-TAICHI-RSJ729-DRYMASTER-KOMPASS-ALL-SEASON-03.jpg",
+    "skus": [
+      "RSJ729-DEN"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 53648,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/02/AO-NAM-NU-TAICHI-RSJ729-DRYMASTER-KOMPASS-ALL-SEASON-07.jpg",
+    "skus": [
+      "RSJ729-DENDO"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 55722,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/02/AO-NAM-NU-TAICHI-RSJ729-DRYMASTER-KOMPASS-ALL-SEASON-05.jpg",
+    "skus": [
+      "RSJ729-KHAKI2"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 67328,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/02/AO-NAM-NU-TAICHI-RSJ729-DRYMASTER-KOMPASS-ALL-SEASON-01.jpg",
+    "skus": [
+      "RSJ729-XAM2"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 59371,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/03/Gang-tay-bao-ho-di-mo-to-xe-may-phuot-KOMINE-GK-242-7.jpg",
+    "skus": [
+      "KMGK242-DENXXL",
+      "KMGK242-DENXL",
+      "KMGK242-DENL",
+      "KMGK242-DENM",
+      "KMGK242-DENS"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 73566,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/03/Gang-tay-bao-ho-di-mo-to-xe-may-phuot-KOMINE-GK-242-8.jpg",
+    "skus": [
+      "KMGK242-DOXXL",
+      "KMGK242-DOXL",
+      "KMGK242-DOL",
+      "KMGK242-DOM",
+      "KMGK242-DOS"
+    ],
+    "width": 2350,
+    "height": 2350,
+    "bytes": 282111,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/08/z5753963641064_d563ff370edd376f4238253d205b00ec.jpg",
+    "skus": [
+      "TARSJ345-DENS",
+      "TARSJ345-DENM",
+      "TARSJ345-DENL",
+      "TARSJ345-DENXL",
+      "TARSJ345-DENXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 114600,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/03/TAICHI-RSJ345-TORQUE-AIR-JACKET-03.jpg",
+    "skus": [
+      "TARSJ345-DOXXL",
+      "TARSJ345-DOXL",
+      "TARSJ345-DOL",
+      "TARSJ345-DOM",
+      "TARSJ345-DOS"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 52961,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/03/KOMINE-PK-7443-03.jpg",
+    "skus": [
+      "PK7443-DENXL",
+      "PK7443-DENXXL",
+      "PK7443-DENL",
+      "PK7443-DENM",
+      "PK7443-DENWM",
+      "PK7443-DENWL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 45379,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/a3d5b636-5389-4a0a-8adf-520f105efece/ao-moto-phuot-adventure-spyke-compass-men-trang-do-bigbike-shop.webp",
+    "skus": [
+      "COMPASSM-M",
+      "COMPASSM-L",
+      "COMPASSM-XL",
+      "COMPASSM-XXL",
+      "COMPASSM-XXXL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 261756,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/9741746f-a173-4676-8c9b-1ad68728bd0c/tai-nghe-scs-bluetooth-scs-s7x-gan-non-anh-studio.webp",
+    "skus": [
+      "TNB-SCS-S7X"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 298938,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2024/04/KOMINE-PK-742R-KEVLAR-01.jpg",
+    "skus": [
+      "KOMKEVLAR-DENXL",
+      "KOMKEVLAR-DENL",
+      "KOMKEVLAR-DENM",
+      "KOMKEVLAR-DENXXXL",
+      "KOMKEVLAR-DENXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 62034,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/04/QUAN-GIAP-JEAN-BAO-HO-KOMINE-WJ-7543R-CMAX-PROTECT-COOL-DRY-01.jpg",
+    "skus": [
+      "PK7543-DENM"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 52168,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/04/TAICHI-RS-TRV086-04.jpg",
+    "skus": [
+      "TRV086"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 41176,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/05/GIVI-PRIME-PWB03-01.jpg",
+    "skus": [
+      "TUIH-GIVI-PWB03"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 45443,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/06/rst465bk71-1.jpg",
+    "skus": [
+      "TCRST465-XAM2XXL",
+      "TCRST465-XAM2XL",
+      "TCRST465-XAM2L",
+      "TCRST465-XAM2M"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 178293,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/06/rst465bk11-1.jpg",
+    "skus": [
+      "TCRST465-DOXXL",
+      "TCRST465-DOXL",
+      "TCRST465-DOL",
+      "TCRST465-DOM"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 200810,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/07/638116483746670000-2.jpeg",
+    "skus": [
+      "TCRSX158-DENCAMO"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 85700,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/07/TAICHI-RSX158-01.jpg",
+    "skus": [
+      "TCRSX158-DEN"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 33648,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/07/TAICHI-RST129-02.jpg",
+    "skus": [
+      "GT-TAICHI-RST129"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 70982,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/09/AO-GIAP-BAO-HO-KOMINE-JK1143-01.jpg",
+    "skus": [
+      "KOMJK1143-WL",
+      "KOMJK1143-WM",
+      "KOMJK1143-M",
+      "KOMJK1143-L",
+      "KOMJK1143-XL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 97961,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/10/3_000000000497.jpg",
+    "skus": [
+      "SA200D"
+    ],
+    "width": 1200,
+    "height": 1200,
+    "bytes": 158139,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/10/5_000000000497.jpg",
+    "skus": [
+      "SA200DPQ"
+    ],
+    "width": 1200,
+    "height": 1200,
+    "bytes": 149915,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/10/1_000000000497.jpg",
+    "skus": [
+      "SA200XL",
+      "SA200XL-1"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 341975,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/10/DAY-RANG-ROK-STRAPS-MEDIUM-DUTY-106CM-03.jpg",
+    "skus": [
+      "ROK-NEW"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 92439,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2024/10/BALO-MOTO-PHUOT-KOMINE-SA-200-03.jpg",
+    "skus": [
+      "SA200D-1"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 66952,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/11/AO-LOT-THUN-LANH-MAC-TRONG-AO-BAO-HO-TAICHI-RSU329-06.jpg",
+    "skus": [
+      "TCRSU329-M",
+      "TCRSU329-WL",
+      "TCRSU329-WM",
+      "TCRSU329-S",
+      "TCRSU329-L",
+      "TCRSU329-XL",
+      "TCRSU329-XXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 33648,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2024/11/QUAN-LOT-THUN-LANH-MAC-TRONG-AO-BAO-HO-TAICHI-RSU328-04.jpg",
+    "skus": [
+      "TCRSU328-XXL",
+      "TCRSU328-M",
+      "TCRSU328-S",
+      "TCRSU328-XL",
+      "TCRSU328-WM",
+      "TCRSU328-WL",
+      "TCRSU328-L"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 28952,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/03/Komine-GK-266-06.jpg",
+    "skus": [
+      "KOM269-DENM",
+      "KOM269-DENL",
+      "KOM269-DENXL",
+      "KOM269-DENXXL",
+      "KOM269-DENXXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 72562,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/03/Komine-GK-266-07.jpg",
+    "skus": [
+      "KOM269-DOM",
+      "KOM269-DOL",
+      "KOM269-DOXL",
+      "KOM269-DOXXL",
+      "KOM269-DOXXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 89229,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/40324717-c8ca-4399-9316-c2769a0d3648/_o_komine_jk177__1_.jpg",
+    "skus": [
+      "KOMINE-JK177-DEN-M",
+      "KOMINE-JK177-DEN-L"
+    ],
+    "width": 1200,
+    "height": 1200,
+    "bytes": 297185,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/ece24407-c137-4d10-ace5-ed1a4f5c3e64/_o_komine_jk177__3_.jpg",
+    "skus": [
+      "KOMINE-JK177-TRANG-XL"
+    ],
+    "width": 1200,
+    "height": 1200,
+    "bytes": 349509,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/04/11-01.jpg",
+    "skus": [
+      "KOM761-BL",
+      "KOM761-BM",
+      "KOM761-M",
+      "KOM761-L",
+      "KOM761-XL",
+      "KOM761-XXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 40875,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/04/z6571137799580_5029d15c33c5f1d46f5ac8372e8ca11d.jpg",
+    "skus": [
+      "QL-HBM"
+    ],
+    "width": 2398,
+    "height": 2398,
+    "bytes": 127660,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/06/WJ-7495R-01.jpg",
+    "skus": [
+      "KOMNEW-WL",
+      "KOMNEW-WM",
+      "KOMNEW-WS",
+      "KOMNEW-M",
+      "KOMNEW-L",
+      "KOMNEW-XL",
+      "KOMNEW-XXL",
+      "KOMNEW-XXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 48092,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/05/sg-11134201-22110-4nbusqpnywjv19.webp",
+    "skus": [
+      "HELTRUM-CAMO"
+    ],
+    "width": 652,
+    "height": 652,
+    "bytes": 77758,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2025/05/sg-11134201-22110-5jc1iqpnywjv2c.webp",
+    "skus": [
+      "HELTRUM-DEN"
+    ],
+    "width": 658,
+    "height": 658,
+    "bytes": 63408,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2025/05/sg-11134201-22110-69ormrpnywjv2c.webp",
+    "skus": [
+      "HELTRUM-XANHLA"
+    ],
+    "width": 631,
+    "height": 631,
+    "bytes": 62884,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2025/05/sg-11134201-22110-rw5u9ppnywjv8a.webp",
+    "skus": [
+      "HELTRUM-CAMONHAT"
+    ],
+    "width": 656,
+    "height": 656,
+    "bytes": 75958,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2025/05/sg-11134201-22110-6scv5opnywjvdd.webp",
+    "skus": [
+      "HELTRUM-DENXANHDUONG"
+    ],
+    "width": 657,
+    "height": 657,
+    "bytes": 55336,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2025/05/sg-11134201-22110-fdrw5opnywjve6.webp",
+    "skus": [
+      "HELTRUM-TRANG2"
+    ],
+    "width": 634,
+    "height": 634,
+    "bytes": 45960,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2025/05/AO-KHOAC-BAO-HO-PARKA-LUOI-NHE-KOMINE-JK-179-ENIGMA-01.jpg",
+    "skus": [
+      "KMJK179-DENXL",
+      "KMJK179-DENXXXL",
+      "KMJK179-DENM",
+      "KMJK179-DENL",
+      "KMJK179-DENXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 96167,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/05/AO-KHOAC-BAO-HO-PARKA-LUOI-NHE-KOMINE-JK-179-ENIGMA-07.jpg",
+    "skus": [
+      "KMJK179-DENTRANGM",
+      "KMJK179-DENTRANGL",
+      "KMJK179-DENTRANGXL",
+      "KMJK179-DENTRANGXXL",
+      "KMJK179-DENTRANGXXXL",
+      "AGH-KOMINE-JK179-DENTRANG-WM"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 81016,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/05/AO-KHOAC-BAO-HO-PARKA-LUOI-NHE-KOMINE-JK-179-ENIGMA-03.jpg",
+    "skus": [
+      "KMJK179-XANHL",
+      "KMJK179-XANHXL",
+      "KMJK179-XANHXXL",
+      "KMJK179-XANHXXXL",
+      "KMJK179-XANHM"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 94446,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/696e7a20-4620-4544-a059-fedd28856f50/27056.jpg",
+    "skus": [
+      "LS2MX702-DEN-XL",
+      "LS2MX702-DEN-XXL"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 417994,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/5ff8e302-0ab2-400a-a977-3b6678a8c14d/27071.jpg",
+    "skus": [
+      "LS2MX702-NAMIBDO-XL",
+      "LS2MX702-NAMIBDO-XXL"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 437492,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/cea229bb-3f34-4ae4-a527-a4eb77de2ac3/black.jpg",
+    "skus": [
+      "TAICHI-RSJ354-DEN-WM",
+      "TAICHI-RSJ354-DEN-WL",
+      "TAICHI-RSJ354-DEN-S",
+      "TAICHI-RSJ354-DEN-M",
+      "TAICHI-RSJ354-DEN-L",
+      "TAICHI-RSJ354-DEN-XL",
+      "TAICHI-RSJ354-DEN-XXL"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 229385,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/ddc79cbd-bf6d-4d25-ab93-5dd62b8043ac/black-khaki.jpg",
+    "skus": [
+      "TAICHI-RSJ354-DENKHAKI-WM",
+      "TAICHI-RSJ354-DENKHAKI-WL",
+      "TAICHI-RSJ354-DENKHAKI-S",
+      "TAICHI-RSJ354-DENKHAKI-M",
+      "TAICHI-RSJ354-DENKHAKI-L",
+      "TAICHI-RSJ354-DENKHAKI-XL",
+      "TAICHI-RSJ354-DENKHAKI-XXL"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 220755,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/80583f70-f735-4946-b37b-6135685c0e99/rsj354bk11.jpg",
+    "skus": [
+      "TAICHI-RSJ354-CAM-WM",
+      "TAICHI-RSJ354-CAM-WL",
+      "TAICHI-RSJ354-CAM-S",
+      "TAICHI-RSJ354-CAM-M",
+      "TAICHI-RSJ354-CAM-L",
+      "TAICHI-RSJ354-CAM-XL",
+      "TAICHI-RSJ354-CAM-XXL"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 212703,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/b6a2a2d5-7d6e-4b31-8f67-f8da9d84bc6d/gunmetal.jpg",
+    "skus": [
+      "TAICHI-RSJ354-GUNMETAL-WM",
+      "TAICHI-RSJ354-GUNMETAL-WL",
+      "TAICHI-RSJ354-GUNMETAL-S",
+      "TAICHI-RSJ354-GUNMETAL-M",
+      "TAICHI-RSJ354-GUNMETAL-L",
+      "TAICHI-RSJ354-GUNMETAL-XL",
+      "TAICHI-RSJ354-GUNMETAL-XXL"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 238916,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/07/AO-BAO-HO-MUA-HE-LUOI-TAICHI-RSJ351-AIR-03-2.jpg",
+    "skus": [
+      "TCRSJ351-XAM2NAMS"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 102495,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/08/AO-GIAP-BAO-HO-AIRY-MAN-CHO-MUA-HE-LY-TUONG-01-1.jpg",
+    "skus": [
+      "LS2AIRY-S",
+      "LS2AIRY-M",
+      "LS2AIRY-L",
+      "LS2AIRY-XL",
+      "LS2AIRY-XXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 99345,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/08/z6930903801242_9bb29e3243235588adf4dc43eda42990.jpg",
+    "skus": [
+      "DOLOT-BIGBIKE-TRUMDAU"
+    ],
+    "width": 1800,
+    "height": 2400,
+    "bytes": 141644,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/AO-MUA-BO-DGIVI-ARS03-01.jpg",
+    "skus": [
+      "GIVIARS03-XL",
+      "GIVIARS03-XXL",
+      "GIVIARS03-XXXL",
+      "GIVIARS03-S",
+      "GIVIARS03-M",
+      "GIVIARS03-L"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 68660,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/AO-MUA-ILM-RS03-05.jpg",
+    "skus": [
+      "ILMRS03-M",
+      "ILMRS03-L",
+      "ILMRS03-XL",
+      "ILMRS03-XXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 61528,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/AO-BAO-HO-ILM-JRF4-01.jpg",
+    "skus": [
+      "ILM-JRF4-M",
+      "ILM-JRF4-L",
+      "ILM-JRF4-XL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 65852,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/AO-BAO-HO-ILM-JAM1-01.jpg",
+    "skus": [
+      "ILMJAM1-DENS",
+      "ILMJAM1-DENM",
+      "ILMJAM1-DENL",
+      "ILMJAM1-DENXL",
+      "ILMJAM1-DENXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 52277,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/AO-BAO-HO-ILM-JAM1-02.jpg",
+    "skus": [
+      "ILMJAM1-XANHS",
+      "ILMJAM1-XANHM",
+      "ILMJAM1-XANHL",
+      "ILMJAM1-XANHXL",
+      "ILMJAM1-XANHXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 46029,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/AO-BAO-HO-ILM-JRC2-01.jpg",
+    "skus": [
+      "ILMJRC2-DENS",
+      "ILMJRC2-DENM",
+      "ILMJRC2-DENL",
+      "ILMJRC2-DENXL",
+      "ILMJRC2-DENXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 74153,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/AO-BAO-HO-ILM-JRC2-02.jpg",
+    "skus": [
+      "ILMJRC2-DENDOXXL",
+      "ILMJRC2-DENDOS",
+      "ILMJRC2-DENDOM",
+      "ILMJRC2-DENDOL",
+      "ILMJRC2-DENDOXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 73988,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/AO-BAO-HO-ILM-JRC2-03.jpg",
+    "skus": [
+      "ILMJRC2-DENTRANGS",
+      "ILMJRC2-DENTRANGM",
+      "ILMJRC2-DENTRANGL",
+      "ILMJRC2-DENTRANGXL",
+      "ILMJRC2-DENTRANGXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 75055,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/BALO-MOTO-PHUOT-ILM-BP01-02.jpg",
+    "skus": [
+      "ILMBP01-DEN"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 90458,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/BALO-MOTO-PHUOT-ILM-BP01-01.jpg",
+    "skus": [
+      "ILMBP01-XANHLA"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 87408,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/BALO-MOTO-PHUOT-ILM-BP01-03.jpg",
+    "skus": [
+      "ILMBP01-VANG2"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 77151,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/352a1103-d38d-4bbe-998c-e50f12621aa7/61lr8iblu3l._ac_sl1000.jpg",
+    "skus": [
+      "ILM-BJN01-S",
+      "ILM-BJN01-M"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 100698,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/QUAN-BAO-HO-ILM-PJN1-02.jpg",
+    "skus": [
+      "ILMPJN1-XANHDAM30",
+      "ILMPJN1-XANHDAM32",
+      "ILMPJN1-XANHDAM34",
+      "ILMPJN1-XANHDAM36",
+      "ILMPJN1-XANHDAM38",
+      "ILMPJN1-XANHDAM40",
+      "ILMPJN1-XANHDAM42"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 98000,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/QUAN-BAO-HO-ILM-PJN1-01.jpg",
+    "skus": [
+      "ILMPJN1-XANHNHAT30",
+      "ILMPJN1-XANHNHAT32",
+      "ILMPJN1-XANHNHAT34",
+      "ILMPJN1-XANHNHAT36",
+      "ILMPJN1-XANHNHAT38",
+      "ILMPJN1-XANHNHAT40",
+      "ILMPJN1-XANHNHAT42"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 95883,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/09/TUI-CHONG-NUOC-ILM-BL01-01.jpg",
+    "skus": [
+      "ILM-BL01"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 67578,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/10/GANG-TAY-TAICHI-RST468-STREET-CASUAL-AIR-THROUGH-MESH-01.jpg",
+    "skus": [
+      "TCRST468-DENS",
+      "TCRST468-DENM",
+      "TCRST468-DENL",
+      "TCRST468-DENXL",
+      "TCRST468-DENXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 75672,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/10/GANG-TAY-TAICHI-RST468-STREET-CASUAL-AIR-THROUGH-MESH-03.jpg",
+    "skus": [
+      "TCRST468-DENTRANGS",
+      "TCRST468-DENTRANGM",
+      "TCRST468-DENTRANGL",
+      "TCRST468-DENTRANGXL",
+      "TCRST468-DENTRANGXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 73703,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/10/GANG-TAY-TAICHI-RST468-STREET-CASUAL-AIR-THROUGH-MESH-06.jpg",
+    "skus": [
+      "TCRST468-DENDOS",
+      "TCRST468-DENDOM",
+      "TCRST468-DENDOL",
+      "TCRST468-DENDOXL",
+      "TCRST468-DENDOXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 73974,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/10/GANG-TAY-TAICHI-RST468-STREET-CASUAL-AIR-THROUGH-MESH-05.jpg",
+    "skus": [
+      "TCRST468-DENTRANGDOS",
+      "TCRST468-DENTRANGDOM",
+      "TCRST468-DENTRANGDOL",
+      "TCRST468-DENTRANGDOXL",
+      "TCRST468-DENTRANGDOXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 65015,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/10/GANG-TAY-TAICHI-RST468-STREET-CASUAL-AIR-THROUGH-MESH-04.jpg",
+    "skus": [
+      "TCRST468-DENXANHDUONGS",
+      "TCRST468-DENXANHDUONGM",
+      "TCRST468-DENXANHDUONGL",
+      "TCRST468-DENXANHDUONGXL",
+      "TCRST468-DENXANHDUONGXXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 87094,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/10/GANG-TAY-LS2-ALL-TERRAIN-II-MAN-01.jpg",
+    "skus": [
+      "LS2ALL2-M",
+      "LS2ALL2-L",
+      "LS2ALL2-XL",
+      "LS2ALL2-XXL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 82792,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/c33f157f-de2c-4f3d-b965-647399fff1a4/tai-nghe-bluetooth-bo-dam-intercom-gan-mu-bao-hiem-scs-t2-plus-gan-tren-non-fullface.webp",
+    "skus": [
+      "TNB-SCS-T2PLUS"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 281208,
+    "format": "WEBP"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7318742605105_d0d46b33b5796b84a64a862b0ff6da09.jpg",
+    "skus": [
+      "DOLOT-HEVIK-HVB210"
+    ],
+    "width": 500,
+    "height": 500,
+    "bytes": 13619,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7308693397434_f8c195a651362dca2d1dd44afebe0a39.jpg",
+    "skus": [
+      "HVKHVT409-DEN3044",
+      "HVKHVT409-DEN3146",
+      "HVKHVT409-DEN3248",
+      "HVKHVT409-DEN3450",
+      "HVKHVT409-DEN3652",
+      "HVKHVT409-DEN3854",
+      "HVKHVT409-DEN4056",
+      "QGH-HEVIK-HVT409-DEN-3044",
+      "QGH-HEVIK-HVT409-DEN-3146",
+      "QGH-HEVIK-HVT409-DEN-3248",
+      "QGH-HEVIK-HVT409-DEN-4056",
+      "QGH-HEVIK-HVT409-DEN-3450",
+      "QGH-HEVIK-HVT409-DEN-3652",
+      "QGH-HEVIK-HVT409-DEN-3854"
+    ],
+    "width": 828,
+    "height": 1200,
+    "bytes": 31857,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7308775288216_f658297c46fb47e27e3f4c41c7898106.jpg",
+    "skus": [
+      "HVKHVT409-XANHLA3044",
+      "HVKHVT409-XANHLA3146",
+      "HVKHVT409-XANHLA3248",
+      "HVKHVT409-XANHLA3450",
+      "HVKHVT409-XANHLA3652",
+      "HVKHVT409-XANHLA3854",
+      "HVKHVT409-XANHLA4056"
+    ],
+    "width": 756,
+    "height": 1008,
+    "bytes": 24810,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7283788235019_739f7ac9c0d4a581b9ca8590c96dcebb.jpg",
+    "skus": [
+      "TUIX-GIVI-GRT712C"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 22932,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/11/z7280627594399_e5d7514d6dcac124de637e6bf8d1769b.jpg",
+    "skus": [
+      "BALO-GIVI-EA129B"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 23704,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7281112935828_cefe2f513310af046f5be3b452a2eeae.jpg",
+    "skus": [
+      "HVK001"
+    ],
+    "width": 550,
+    "height": 550,
+    "bytes": 32801,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7281281291112_f44e361d800df36b08a4e34f0b6c4f8a.jpg",
+    "skus": [
+      "HVK002"
+    ],
+    "width": 550,
+    "height": 550,
+    "bytes": 25383,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7281232824542_958abbe93a1b285732995948ab7fc0b4.jpg",
+    "skus": [
+      "HVK000"
+    ],
+    "width": 550,
+    "height": 550,
+    "bytes": 24976,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7312069225946_5b8649d01b04fc6ecf2a48633eeaf3b2.jpg",
+    "skus": [
+      "GIVI-EA148B"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 27121,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7325451417773_0452882ab338f398fef3710c069de20d.jpg",
+    "skus": [
+      "GIVI-EA132B"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 27354,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7257042879664_b5ea1b5e9163e882e48cd8ebb58fa6b8.jpg",
+    "skus": [
+      "BALO-GIVI-PBP02"
+    ],
+    "width": 652,
+    "height": 778,
+    "bytes": 27775,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7335163474318_ba7c11dc90d206d3430e1fef9c33b69f.jpg",
+    "skus": [
+      "TUI-GIVI-EA115BK"
+    ],
+    "width": 500,
+    "height": 500,
+    "bytes": 16570,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7352674206476_eb1a4d745f81749bd47866f5ee5d8324.jpg",
+    "skus": [
+      "LS2BREEZE-DENXS",
+      "LS2BREEZE-DENS",
+      "LS2BREEZE-DENM",
+      "LS2BREEZE-DENL",
+      "LS2BREEZE-DENXL"
+    ],
+    "width": 1440,
+    "height": 1440,
+    "bytes": 131133,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7352694670531_df656467de9bd204e79d0306b981c911.jpg",
+    "skus": [
+      "LS2BREEZE-TRANG2XS",
+      "LS2BREEZE-TRANG2S",
+      "LS2BREEZE-TRANG2M",
+      "LS2BREEZE-TRANG2L",
+      "LS2BREEZE-TRANG2XL"
+    ],
+    "width": 1440,
+    "height": 1440,
+    "bytes": 132413,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2025/12/z7377585089258_ad7e9b85ef0d1040308b82ab1a3de9e5.jpg",
+    "skus": [
+      "LS2-BACK-L2"
+    ],
+    "width": 1280,
+    "height": 1077,
+    "bytes": 47144,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2026/03/z7676733320760_6166fe172280932fd0df95a5d146b623.jpg",
+    "skus": [
+      "TCRST469-DENL",
+      "TCRST469-DENM",
+      "TCRST469-DENXL",
+      "TCRST469-DENXXL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 96638,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2026/03/z7676733345065_35e0bd3421dad34becfe7c373333878a.jpg",
+    "skus": [
+      "TCRST469-DENCAMODOL",
+      "TCRST469-DENCAMODOM",
+      "TCRST469-DENCAMODOXL",
+      "TCRST469-DENCAMODOXXL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 120357,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2026/03/z7676733333718_51e8e059b45a5664388c4cbb64b91e96.jpg",
+    "skus": [
+      "TCRST469-DENCAMOTRANGL",
+      "TCRST469-DENCAMOTRANGM",
+      "TCRST469-DENCAMOTRANGXL",
+      "TCRST469-DENCAMOTRANGXXL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 106669,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2026/03/z7676733317104_5634b0a94e8203aea227162253c580b0-1.jpg",
+    "skus": [
+      "TCRST469-DENDOTRANGL",
+      "TCRST469-DENDOTRANGM",
+      "TCRST469-DENDOTRANGXL",
+      "TCRST469-DENDOTRANGXXL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 94075,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2026/03/z7676733304268_04573210c001240587413098dd0efddd.jpg",
+    "skus": [
+      "TCRST469-DENTRANGL",
+      "TCRST469-DENTRANGM",
+      "TCRST469-DENTRANGXL",
+      "TCRST469-DENTRANGXXL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 93396,
+    "format": "JPEG"
+  },
+  {
+    "url": "/wp-content/uploads/2026/04/z7695644742638_1e39b3c1d2dbbcd470e9bbe048d5f694.jpg",
+    "skus": [
+      "ILMJC44-DENXL",
+      "ILMJC44-DENXXL",
+      "ILMJC44-DENL",
+      "ILMJC44-DENM",
+      "ILMJC44-DENS"
+    ],
+    "width": 900,
+    "height": 1200,
+    "bytes": 123441,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/a65e5380-8bc3-4f4c-a0af-3bce9062ad25/mu-bao-hiem-fullface-agv-k1s-mau-den-nham-mat-nghieng.jpg",
+    "skus": [
+      "MFF-AGV-K1S-DENN-M",
+      "MFF-AGV-K1S-DENN-L",
+      "MFF-AGV-K1S-DENN-XL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 256282,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/9a986609-cd05-4a2e-92e4-1c7287b98dea/mu-bao-hiem-fullface-agv-k1s-mau-den-trang-mat-nghieng.jpg",
+    "skus": [
+      "MFF-AGV-K1S-TRANGB-M",
+      "MFF-AGV-K1S-TRANGB-L",
+      "MFF-AGV-K1S-TRANGB-XL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 255565,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/bf23e2bb-8bf0-4441-82a5-6d0363886a72/gia-do-dien-thoai-kep-ghidong-kewig-m36-c1s-mau-den-tai-bigbike-shop.webp",
+    "skus": [
+      "GDDT-KEWIG-M36-C1S"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 253048,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/87c869d5-6a90-46da-a4f0-6d012f0449b0/gia-do-dien-thoai-gan-chan-guong-kewig-m36-c2.webp",
+    "skus": [
+      "GDDT-KEWIG-M36-C2"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 306914,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/0fa1d33b-6006-412b-a706-4333875e8194/moc-treo-do-gan-ghi-dong-xe-kewig-cbk-2.webp",
+    "skus": [
+      "MTD-KEWIG-CBK-2"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 227132,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/migration/wordpress/d6/d6c08d3a2a82f0036c52c850f35191803f90999af67b713feff2e74d8fde72ed/garager30_rstaichi-nxt056_1_d_20230315155102.jpg",
+    "skus": [
+      "NXT056-DEN-L"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 49848,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/62de35d7-016c-4291-a4d5-f3f8a27f91fd/ngam-gan-camera-ngay-cam-mu-bao-hiem-fullface-thao-lap-nhanh-kewig-x3-gp.webp",
+    "skus": [
+      "DGMU-KEWIG-X3-GP"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 316632,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/1f9781d0-0223-4178-a560-c8d23c138003/rst451bk03-l.jpg",
+    "skus": [
+      "GTB-RST-451-DT-M",
+      "GTB-RST-451-DT-L",
+      "GTB-RST-451-DT-XL",
+      "GTB-RST-451-DT-XXL"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 99805,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/932e0f71-76b3-4e6a-8e26-d3ef23818e54/rst451bk02-l.jpg",
+    "skus": [
+      "GTB-RST-451-DD-M",
+      "GTB-RST-451-DD-L",
+      "GTB-RST-451-DD-XL",
+      "GTB-RST-451-DD-XXL"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 96743,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/39b9fda7-57e3-47e5-b988-883436c1a204/camera-giam-sat-hanh-trinh-scs-cam-s-.webp",
+    "skus": [
+      "SCS-CAMS"
+    ],
+    "width": 1430,
+    "height": 1430,
+    "bytes": 168394,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/2ba44eab-63ad-4a66-8590-de577067c58d/images.jpg",
+    "skus": [
+      "GT-KOM-GK257-BK-M",
+      "GT-KOM-GK257-BK-L",
+      "GT-KOM-GK257-BK-XL",
+      "GT-KOM-GK257-BK-2XL",
+      "GT-KOM-GK257-BK-3XL"
+    ],
+    "width": 447,
+    "height": 447,
+    "bytes": 17382,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/4b753101-3e07-4f63-a6d2-d0335f61416f/black.jpg",
+    "skus": [
+      "TAICHI-RST462"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 332783,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/97e4ce1b-2ac1-4710-8ec4-4c061df50630/z7628561223820_9b716c603c1eae3089f0e489990ec63e.jpg",
+    "skus": [
+      "KOMINE-BK300-36",
+      "KOMINE-BK300-37",
+      "KOMINE-BK300-38",
+      "KOMINE-BK300-39",
+      "KOMINE-BK300-40",
+      "KOMINE-BK300-41",
+      "KOMINE-BK300-42",
+      "KOMINE-BK300-43",
+      "KOMINE-BK300-44",
+      "KOMINE-BK300-45"
+    ],
+    "width": 1200,
+    "height": 1200,
+    "bytes": 109610,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/9562621d-a791-48a9-a330-0bfa473de831/giay-bao-ho-moto-komine-bk-101-anh-studioshop-bigbike-mau-den.webp",
+    "skus": [
+      "KOMINE-BK101-DEN-43"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 250100,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/0a01ccbb-25df-4240-ad2f-e604dbbb314f/giay-moto-adventure-ls2-adv-mau-nau-den-chup-tai-shop-bigbike.webp",
+    "skus": [
+      "GBH-LS2-ADVENTURE-MAN-WP-BK-42",
+      "GBH-LS2-ADVENTURE-MAN-WP-BK-43",
+      "GBH-LS2-ADVENTURE-MAN-WP-BK-44"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 160622,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/ab8b4ce8-f4a7-4e7c-bf44-e397cf8191ff/giay-ls2-adventure-1.webp",
+    "skus": [
+      "GBH-LS2-ADVENTURE-MAN-WP-BR-42",
+      "GBH-LS2-ADVENTURE-MAN-WP-BR-43",
+      "GBH-LS2-ADVENTURE-MAN-WP-BR-44"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 79246,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/ed64c837-3166-4aa7-b3a1-4a9daf65e6bc/giay-moto-phuot-ilm-1005-mau-den-da-lon-anh-studio-chup-tai-shop-bigbike.webp",
+    "skus": [
+      "ILM-ML1005-42"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 279346,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/e57cb010-eec7-4958-be8a-157589691e14/giay-moto-di-phuot-xe-may-ilm-m1006-mau-den-da-pu-anh-studio-tai-shop-bigbike.webp",
+    "skus": [
+      "ILM-ML1006-42",
+      "ILM-ML1006-45"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 240992,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/51a95407-e821-4e78-b94e-17edb4719dc9/giay-moto-giay-dua-ilm-brc1-den-do-cao-co-anh-chup-studio-shop-bigbike.webp",
+    "skus": [
+      "ILM-BRC1-DO-41",
+      "ILM-BRC1-DO-42",
+      "ILM-BRC1-TRANG-41",
+      "ILM-BRC1-TRANG-42",
+      "ILM-BRC1-DO-44",
+      "ILM-BRC1-TRANG-44"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 248562,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/c6441912-3aa3-4c61-a4a1-192ff2d8e677/1_550570b4-bf9a-463e-a2ea-196d08402a94.jpg",
+    "skus": [
+      "ILM-UB305-42"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 160229,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/28b5e7c9-d673-4d97-986e-f33d802e88d5/ao-bao-ho-moto-phuot-komine-jk185-mau-xanh-navy-chong-nuoc-nhe-chup-tai-bigbike-shop.webp",
+    "skus": [
+      "KOMINE-JK185-XANHNAVY-WM",
+      "KOMINE-JK185-XANHNAVY-M",
+      "KOMINE-JK185-XANHNAVY-L",
+      "KOMINE-JK185-XANHNAVY-XL",
+      "KOMINE-JK185-XANHNAVY-XXL",
+      "KOMINE-JK185-XANHNAVY-XXXL",
+      "AGT-KOMINE-JK185-NAVY-WL",
+      "AGT-KOMINE-JK185-NAVY-XXXL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 248142,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/a750f59a-ed8a-4986-a9c8-1168f59fd7cb/ao-bao-ho-moto-phuot-komine-jk185-mau-olive-chong-nuoc-nhe-chup-tai-bigbike-shop.webp",
+    "skus": [
+      "KOMINE-JK185-OLIVE-WM",
+      "KOMINE-JK185-OLIVE-M",
+      "KOMINE-JK185-OLIVE-L",
+      "KOMINE-JK185-OLIVE-XL",
+      "KOMINE-JK185-OLIVE-XXL",
+      "KOMINE-JK185-OLIVE-XXXL",
+      "AGT-KOMINE-JK185-OLIVE-WL",
+      "AGT-KOMINE-JK185-OLIVE-XXXL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 229394,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/add21972-4836-4bb7-8dea-5f274d218d39/_o_1734__5_.jpg",
+    "skus": [
+      "KOMINE-JK1734-DEN-WM",
+      "KOMINE-JK1734-DEN-WL"
+    ],
+    "width": 1200,
+    "height": 1200,
+    "bytes": 490904,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/7049bbec-3074-49f2-aa20-e8c09d58d180/_o_1734__3_.jpg",
+    "skus": [
+      "KOMINE-JK1734-DENDO-WM",
+      "KOMINE-JK1734-DENDO-WL"
+    ],
+    "width": 1200,
+    "height": 1200,
+    "bytes": 473578,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/19b07add-4345-4bff-ad8b-53d5a6b983a5/rsy271black_1024x1024_2x.webp",
+    "skus": [
+      "TAICHI-XL",
+      "TAICHI-BXL",
+      "TAICHI-XXL"
+    ],
+    "width": 1500,
+    "height": 1500,
+    "bytes": 26570,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/979dbbfc-1d6c-4d5f-8efe-c653a9f10baf/ao-giap-ls2-brezze-den-phoi-do-anh-studio.webp",
+    "skus": [
+      "AQMP-LS2-BREEZE-DEN-S",
+      "AQMP-LS2-BREEZE-DEN-M",
+      "AQMP-LS2-BREEZE-DEN-L",
+      "AQMP-LS2-BREEZE-DEN-XL",
+      "AQMP-LS2-BREEZE-DEN-2XL",
+      "AQMP-LS2-BREEZE-DEN-3XL",
+      "AQMP-LS2-BREEZE-DEN-4XL",
+      "AQMP-LS2-BREEZE-DEN-5XL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 289136,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/e18250f1-57fb-49ad-9881-b38a65442d3d/quan-moto-mua-he-ls2-como-air-mau-den-shop-bigbike.webp",
+    "skus": [
+      "AQMP-LS2-COMO-DEN-S",
+      "AQMP-LS2-COMO-DEN-M",
+      "AQMP-LS2-COMO-DEN-L",
+      "AQMP-LS2-COMO-DEN-XL"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 262750,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/3c5b8cb6-98ad-45dd-aca4-1904011ffaae/ao-bao-ho-mo-to-adventure-hevik-neptune-hvj409-chup-mat-truoc.webp",
+    "skus": [
+      "AQMP-HEVIK-HVJ409-DENOLIVE-XS",
+      "AQMP-HEVIK-HVJ409-DENOLIVE-S",
+      "AQMP-HEVIK-HVJ409-DENOLIVE-M",
+      "AQMP-HEVIK-HVJ409-DENOLIVE-L",
+      "AQMP-HEVIK-HVJ409-DENOLIVE-XL",
+      "AQMP-HEVIK-HVJ409-DENOLIVE-2XL",
+      "AQMP-HEVIK-HVJ409-DENOLIVE-3XL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 210424,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/290cb7ad-332d-4ce4-b91b-ae4fb4909436/mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon-chup-nghieng.webp",
+    "skus": [
+      "MLH-LS2-FF901X-SOLID-13990000XS",
+      "MLH-LS2-FF901X-SOLI11900000D-S",
+      "MLH-LS2-FF901X-SOLID-M",
+      "MLH-LS2-FF901X-SOLID-L",
+      "MLH-LS2-FF901X-SOLID-XL",
+      "MLH-LS2-FF901X-SOLID-XXL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 233556,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/be79095b-7f86-4859-88bd-7bafa6cdbe01/mu-bao-hiem-dual-sport-ilm-ws902.webp",
+    "skus": [
+      "MDS-ILM-WS902-BKMT-S",
+      "MDS-ILM-WS902-BKMT-M",
+      "MDS-ILM-WS902-BKMT-L",
+      "MDS-ILM-WS902-BKMT-XL",
+      "MDS-ILM-WS902-BKMT-XXL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 286830,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/migration/wordpress/94/94fe56bc917a196946c7dcaa03cf9a32cc3de556b923bcba8039a195b332bcf2/xpeed-2.png",
+    "skus": [
+      "MND-XPEED-BKMT-M",
+      "MND-XPEED-BKMT-L",
+      "MND-XPEED-BKMT-XL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 50174,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/uploads/9dd6b290-a7e4-4817-aa01-1ba813a88a33/m__b_o_hi_m_xpeed_m_u__en_b_ng__1_.png",
+    "skus": [
+      "MND-XPEED-BKGL-M",
+      "MND-XPEED-BKGL-L",
+      "MND-XPEED-BKGL-XL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 54905,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/uploads/275bd14b-9e51-4278-a552-8e45b371f0e2/mu-bao-hiem-1-2-xpeed-is-2v-mau-xam.webp",
+    "skus": [
+      "MND-XPEED-GRGL-M",
+      "MND-XPEED-GRGL-L",
+      "MND-XPEED-GRGL-XL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 200070,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/2a989e13-ac54-4459-beda-c0ff223218bd/op-lung-dien-thoai-kewig-iphone-case-m36.webp",
+    "skus": [
+      "OPL-KEWIG-M36CASE-IP15PRO",
+      "OPL-KEWIG-M36CASE-IP15PROMAX",
+      "OPL-KEWIG-M36CASE-IP16PRO",
+      "OPL-KEWIG-M36CASE-IP16PROMAX",
+      "OPL-KEWIG-M36CASE-IP17PRO",
+      "OPL-KEWIG-M36CASE-IP17PROMAX"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 331084,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/1c6814dd-37a9-4610-8a3e-ff7401009d03/ao-bao-ho-mo-to-adventure-hevik-scorpius-hvj307m-anh-chup-chinh-dien-anh-dai-dien.webp",
+    "skus": [
+      "AGA-HEVIK-HVJ307-DENCAM-XS",
+      "AGA-HEVIK-HVJ307-DENCAM-S",
+      "AGA-HEVIK-HVJ307-DENCAM-M",
+      "AGA-HEVIK-HVJ307-DENCAM-L",
+      "AGA-HEVIK-HVJ307-DENCAM-XL",
+      "AGA-HEVIK-HVJ307-DENCAM-2XL",
+      "AGA-HEVIK-HVJ307-DENCAM-3XL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 195604,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/5a3bcb5f-adff-4cc6-86cb-69e071e5b9d1/ao-giap-taichi-rsj340-mau-den-anh-studio.webp",
+    "skus": [
+      "AGA-TAICHI-RSJ340-DEN-M",
+      "AGA-TAICHI-RSJ340-DEN-L",
+      "AGA-TAICHI-RSJ340-DEN-XL",
+      "AGA-TAICHI-RSJ340-DEN-XXL",
+      "AGA-TAICHI-RSJ340-DEN-3XL",
+      "AGA-TAICHI-RSJ340-DEN-4XL",
+      "AGA-TAICHI-RSJ340-DEN-WM",
+      "AGA-TAICHI-RSJ340-DEN-WL"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 623414,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/77898f14-8818-4e19-bc76-67e396478858/ao-giap-taichi-rsj340-khaki-anh-studio.webp",
+    "skus": [
+      "AGA-TAICHI-RSJ340-KHAKI-M",
+      "AGA-TAICHI-RSJ340-KHAKI-L",
+      "AGA-TAICHI-RSJ340-KHAKI-XL",
+      "AGA-TAICHI-RSJ340-KHAKI-XXL",
+      "AGA-TAICHI-RSJ340-KHAKI-3XL",
+      "AGA-TAICHI-RSJ340-KHAKI-4XL",
+      "AGA-TAICHI-RSJ340-KHAKI-WM",
+      "AGA-TAICHI-RSJ340-KHAKI-WL"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 919826,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/cc48b3a4-45ad-486e-9a6f-7ee00b7a4019/ao-quan-moto-phuot-adventure-spyke-sahara-mau-den-bigbike-shop.webp",
+    "skus": [
+      "AGA-SPYKE-SAHARA-DEN-M",
+      "AGA-SPYKE-SAHARA-DEN-L",
+      "AGA-SPYKE-SAHARA-DEN-XL",
+      "AGA-SPYKE-SAHARA-DEN-2XL",
+      "AGA-SPYKE-SAHARA-DEN-3XL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 274508,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/588088a9-e388-4cd5-9776-ab8504484752/ao-moto-phuot-adventure-spyke-sahara-mau-den-xanh-la-bigbike-shop.webp",
+    "skus": [
+      "AGA-SPYKE-SAHARA-DENNEON-M",
+      "AGA-SPYKE-SAHARA-DENNEON-L",
+      "AGA-SPYKE-SAHARA-DENNEON-XL",
+      "AGA-SPYKE-SAHARA-DENNEON-2XL",
+      "AGA-SPYKE-SAHARA-DENNEON-3XL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 264688,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/badfe1c7-3d37-4e7d-bac4-fb48ab62cee2/ao-moto-phuot-adventure-spyke-sahara-mau-xam-toi-bigbike-shop.webp",
+    "skus": [
+      "AGA-SPYKE-SAHARA-XAM-M",
+      "AGA-SPYKE-SAHARA-XAM-L",
+      "AGA-SPYKE-SAHARA-XAM-XL",
+      "AGA-SPYKE-SAHARA-XAM-2XL",
+      "AGA-SPYKE-SAHARA-XAM-3XL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 238620,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/0344f78d-5c72-424f-b51c-a796f1dc31ab/ao-moto-phuot-adventure-spyke-sahara-mau-xam-xanh-duong-bigbike-shop.webp",
+    "skus": [
+      "AGA-SPYKE-SAHARA-XAMXANHDUONG-M",
+      "AGA-SPYKE-SAHARA-XAMXANHDUONG-L",
+      "AGA-SPYKE-SAHARA-XAMXANHDUONG-XL",
+      "AGA-SPYKE-SAHARA-XAMXANHDUONG-2XL",
+      "AGA-SPYKE-SAHARA-XAMXANHDUONG-3XL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 255398,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/4c65d080-60a3-4274-a9cd-c45d8ccd302f/ao-moto-phuot-adventure-spyke-compass-lady-trang-do-bigbike-shop.webp",
+    "skus": [
+      "AGA-SPYKE-COMPASS-LADY-XAMDENDO-XS",
+      "AGA-SPYKE-COMPASS-LADY-XAMDENDO-S",
+      "AGA-SPYKE-COMPASS-LADY-XAMDENDO-M"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 271352,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/46d4462e-a111-4436-8f08-0c02b6665f47/t_i_h_t_b_nh_x_ng_givi_easy06__3_.jpg",
+    "skus": [
+      "TUI-GIVI-EASY06"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 359286,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/4b2bd094-a955-4a58-a774-af38aab06d76/_o_176__1_.png",
+    "skus": [
+      "KOMINE-TRANG-WM"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 307481,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/uploads/b0736652-7cae-46e4-8335-76d0cc057e90/_o_176__7_.jpg",
+    "skus": [
+      "KOMINE-DEN-WL"
+    ],
+    "width": 1200,
+    "height": 1200,
+    "bytes": 275213,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/65249a12-de87-468e-9094-09d2468fa3b4/gang-tay-racing-moto-komine-gk265-mau-den.webp",
+    "skus": [
+      "KOMINE-GK265-DEN-XL",
+      "KOMINE-GK265-DEN-XXL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 268586,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/9c556e33-e1ca-4fea-bc9c-22691bd56aca/gang-tay-moto-phuot-komine-gk-270-mau-do-anh-studio-chup-tai-shop-bigbike.webp",
+    "skus": [
+      "KOMINE-GK270-DO-M",
+      "KOMINE-GK270-DO-L",
+      "KOMINE-GK270-DO-XL",
+      "KOMINE-GK270-DO-XXL",
+      "KOMINE-GK270-DO-XXXL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 292582,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/ba849a81-15d4-4a5f-b255-31294e4af49a/gang-tay-moto-phuot-komine-gk-270-mau-xanh-anh-studio-chup-tai-shop-bigbike.webp",
+    "skus": [
+      "KOMINE-GK270-OLIVE-M",
+      "KOMINE-GK270-OLIVE-L",
+      "KOMINE-GK270-OLIVE-XL",
+      "KOMINE-GK270-OLIVE-XXL",
+      "KOMINE-GK270-OLIVE-XXXL"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 280044,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/7acbcd02-d4ec-42db-a627-a1b030586617/giap-tay-chan-di-phuot-komine-gk684-anh-studio-bigbike.webp",
+    "skus": [
+      "GIAP-KOMINE-SK684"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 254290,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/21275c1e-b8b7-46a5-8f3b-3b56bdce264a/z7640368100006_9c3d54b2030569a7bb876205214a4c19.jpg",
+    "skus": [
+      "ILM-HS711-MATTBLACK-M",
+      "ILM-HS711-MATTBLACK-L",
+      "ILM-HS711-MATTBLACK-XL",
+      "ILM-HS711-MATTBLACK-XXL"
+    ],
+    "width": 679,
+    "height": 637,
+    "bytes": 56638,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/aa52e209-df2e-40f6-9042-a3026f1c3205/i.jpg",
+    "skus": [
+      "ILM-HS711-SILVERGRAY-M",
+      "ILM-HS711-SILVERGRAY-L",
+      "ILM-HS711-SILVERGRAY-XL",
+      "ILM-HS711-SILVERGRAY-XXL"
+    ],
+    "width": 679,
+    "height": 641,
+    "bytes": 69571,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/da03f30e-4120-435a-a445-748d45addc52/1773885615510_2795678014991319851_2795678014991319851_078bbab1ef153949d8c4d0a827f5acf8.jpg",
+    "skus": [
+      "ILM-HS711-BLACKGRAY-M",
+      "ILM-HS711-BLACKGRAY-L",
+      "ILM-HS711-BLACKGRAY-XL",
+      "ILM-HS711-BLACKGRAY-XXL"
+    ],
+    "width": 679,
+    "height": 632,
+    "bytes": 77119,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2022/05/QUAN-TAICHI-RSY269-EXPLORER-AIR-04.jpg",
+    "skus": [
+      "QGA-TAICHI-RSY269-DEN-M",
+      "QGA-TAICHI-RSY269-DEN-BM",
+      "QGA-TAICHI-RSY269-DEN-L",
+      "QGA-TAICHI-RSY269-DEN-BL",
+      "QGA-TAICHI-RSY269-DEN-XL",
+      "QGA-TAICHI-RSY269-DEN-XXL",
+      "QGA-TAICHI-RSY269-DEN-3XL",
+      "QGA-TAICHI-RSY269-DEN-WM",
+      "QGA-TAICHI-RSY269-DEN-WL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 43270,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/wp-uploads/2022/05/QUAN-TAICHI-RSY269-EXPLORER-AIR-01.png",
+    "skus": [
+      "QGA-TAICHI-RSY269-KHAKI-M",
+      "QGA-TAICHI-RSY269-KHAKI-BM",
+      "QGA-TAICHI-RSY269-KHAKI-L",
+      "QGA-TAICHI-RSY269-KHAKI-BL",
+      "QGA-TAICHI-RSY269-KHAKI-XL",
+      "QGA-TAICHI-RSY269-KHAKI-XXL",
+      "QGA-TAICHI-RSY269-KHAKI-3XL",
+      "QGA-TAICHI-RSY269-KHAKI-WM",
+      "QGA-TAICHI-RSY269-KHAKI-WL"
+    ],
+    "width": 1176,
+    "height": 1176,
+    "bytes": 467294,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/uploads/98f58075-a805-47ba-b2f4-0ada6ffb27a3/balo_givi_cit03__4_.jpg",
+    "skus": [
+      "BALO-GIVI-CIT03"
+    ],
+    "width": 1200,
+    "height": 1200,
+    "bytes": 158637,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/842919ef-317e-4341-bc1f-caa20533cd2e/balo-deo-lung-di-moto-phuot-givi-ea104c-anh-studio-tai-bigbike.webp",
+    "skus": [
+      "BALO-GIVI-EA104C"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 216228,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/e946cb2e-f665-409b-a626-4b18596f0504/rbp03-1.jpg",
+    "skus": [
+      "BALO-GIVI-RBP03"
+    ],
+    "width": 1920,
+    "height": 1920,
+    "bytes": 146042,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/05a1dfd6-94e4-4b11-ac55-f3e5bd411648/t_i__eo___i_givi_ea109b.jpg",
+    "skus": [
+      "TUI-GIVI-EA109B"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 142930,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/dd491572-3b98-4b97-88bd-35cafc0081f6/givi-ea108bv.jpg",
+    "skus": [
+      "TUIH-GIVI-EA145"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 45358,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/0f851d8d-1201-45e9-9bd1-2c80eb39e290/pwb05-5857.jpg",
+    "skus": [
+      "TUIH-GIVI-PWB05"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 110733,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/b3366b9b-f098-4630-adb4-800ae920f405/rwb05__5_.jpg",
+    "skus": [
+      "TUIH-GIVI-RWB05"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 203149,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/cfc282c0-161e-43f5-a013-1a358bd89087/grt729__1_.jpg",
+    "skus": [
+      "TUIX-GIVI-GRT729"
+    ],
+    "width": 400,
+    "height": 400,
+    "bytes": 13889,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/1d4a7d10-62a5-4dce-9595-bd1bc014a15e/ls2_dart_ii_lady_black.jpg",
+    "skus": [
+      "LS2-DART LADY-XS",
+      "LS2-DART LADY-S"
+    ],
+    "width": 600,
+    "height": 600,
+    "bytes": 143456,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/76649112-9f85-41fb-884d-ba3bf10cad94/quan-moto-phuot-adventure-spyke-sahara-mau-den-bigbike-shop.webp",
+    "skus": [
+      "QGA-SPYKE-SAHARA-DEN-50",
+      "QGA-SPYKE-SAHARA-DEN-52",
+      "QGA-SPYKE-SAHARA-DEN-54",
+      "QGA-SPYKE-SAHARA-DEN-56",
+      "QGA-SPYKE-SAHARA-DEN-58"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 176508,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/92181a07-6bed-47de-9fc3-b38779e9a23e/quan-moto-phuot-adventure-spyke-sahara-mau-den-xanh-la-bigbike-shop.webp",
+    "skus": [
+      "QGA-SPYKE-SAHARA-DENNEON-50",
+      "QGA-SPYKE-SAHARA-DENNEON-52",
+      "QGA-SPYKE-SAHARA-DENNEON-54",
+      "QGA-SPYKE-SAHARA-DENNEON-56",
+      "QGA-SPYKE-SAHARA-DENNEON-58"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 197592,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/47b79226-9e94-4270-aee6-e1636a59da18/quan-moto-phuot-adventure-spyke-sahara-mau-x_m-toi-bigbike-shop.webp",
+    "skus": [
+      "QGA-SPYKE-SAHARA-XAM-50",
+      "QGA-SPYKE-SAHARA-XAM-52",
+      "QGA-SPYKE-SAHARA-XAM-54",
+      "QGA-SPYKE-SAHARA-XAM-56",
+      "QGA-SPYKE-SAHARA-XAM-58"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 191560,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/59a8a8ab-4d72-4070-a9e1-218d7b256da6/quan-moto-phuot-adventure-spyke-sahara-mau-xam-xanh-duong-bigbike-shop.webp",
+    "skus": [
+      "QGA-SPYKE-SAHARA-XAMXANH-50",
+      "QGA-SPYKE-SAHARA-XAMXANH-52",
+      "QGA-SPYKE-SAHARA-XAMXANH-54",
+      "QGA-SPYKE-SAHARA-XAMXANH-56",
+      "QGA-SPYKE-SAHARA-XAMXANH-58"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 149852,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/129557df-3123-4f6b-a432-6336f53b895c/mu-bao-hiem-fullface-agv-k3-den-nham-asia-fit-chup-nghieng.webp",
+    "skus": [
+      "MFF-AGV-K3-DENN-M",
+      "MFF-AGV-K3-DENN-L",
+      "MFF-AGV-K3-DENN-XL"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 119988,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/d538c2d8-192e-45eb-acbe-00a21e4a4b25/mu-bao-hiem-fullface-caberg-drift-evo-ii-carbon.webp",
+    "skus": [
+      "MFF-CAB-DRIFT-EVO2-CARBON"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 200398,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/efd5e4ea-7576-4dfc-a759-e55a441536aa/l.jpg",
+    "skus": [
+      "LS2 OF626-GLOSSBLACK-L",
+      "LS2 OF626-GLOSSBLACK-XXL"
+    ],
+    "width": 447,
+    "height": 447,
+    "bytes": 13875,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/41ffe9b8-b3bb-45f5-a80f-b306c3be8d5e/30420.jpg",
+    "skus": [
+      "LS2 OF626-JUZHENBLACKRED-L",
+      "LS2 OF626-JUZHENBLACKRED-XXL"
+    ],
+    "width": 1000,
+    "height": 1000,
+    "bytes": 406816,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/d3bff546-00f0-429f-b3b2-6c39e665a121/mieng-de-dan-carbon-tu-tinh-m36-patch-cho-gia-do-m36-gan-mat-lung-iphone.webp",
+    "skus": [
+      "MD-KEWIG-M36-PATCH"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 428318,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/7090df6d-50ef-4104-a429-371648f13bd9/gia-do-kep-dien-thoai-tren-xe-may-xe-dien-xe-dap-kewig-m33-c1.webp",
+    "skus": [
+      "GDDT-KEWIG-M33-C1"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 207764,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/aaa1262d-2dd7-4bbf-833d-5e1ab88c1a7d/gay-ong-nhom-rut-gan-camera-hanh-trinh-cho-xe-may-kewig-qg-2.webp",
+    "skus": [
+      "OLN-KEWIG-QG-2"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 206592,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/c8adffc7-08dd-4afa-a4c4-8c1883037274/gay-nhom-ong-cot-co-va-gan-camera-goc-thu-3-cho-xe-may-xe-mo-to-kewig-qg-1-gan-xe-bmw-gs-r-1300.webp",
+    "skus": [
+      "OLN-KEWIG-QG-1"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 276374,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/180782c0-2bd5-45eb-955e-ce6710c2ca58/khoa-chong-trom-mu-bao-hiem-xe-may-kewig-cbk-4.webp",
+    "skus": [
+      "KCT-KEWIG-CBK-4"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 111366,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/b0d43e6a-6a37-4a51-a308-ec59d167cd51/ngam-kep-kinh-gio-xe-mo-to-adventure-gan-camera-gpro-dji-insta360-kewig-x2.webp",
+    "skus": [
+      "GCAM-KEWIG-X2"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 227060,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/7d9ef005-7b95-45d3-840a-8acb512547eb/thanh-giang-mo-rong-ghi-dong-gan-chan-guong-gan-gia-do-dien-thoai-camera-hanh-trinh-kewig-hb6.webp",
+    "skus": [
+      "TNCK-KEWIG-HB6"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 259048,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/820db8f6-1479-4485-b3ad-5128ab29b419/gia-do-dien-thoai-chong-rung-kewig-m26s-1.webp",
+    "skus": [
+      "GDDT-KEWIG-M26S-1"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 280578,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/cdd98162-0aa8-4d22-b695-d329888be068/gia-kep-binh-nuoc-cho-xe-adventure-xe-may-xe-dap-kewig-shj-6.webp",
+    "skus": [
+      "GBN-KEWIG-SHJ-6"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 335346,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/58bc190e-3e99-4864-beb5-144f5d7e0880/trum-dau-doi-fullface-mu-bao-hiem-kewig-den-studio.webp",
+    "skus": [
+      "PKMU-KEWIG-HD-1"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 80888,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/b2956050-4a06-4943-99e8-c1300980445f/bo-gia-do-camera-gopro-kewig-r14-set.webp",
+    "skus": [
+      "BGCAM-KEWIG-KWG-R14-SET"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 116642,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/3574c816-2dba-42a7-91bf-de6396e50cd1/tau-sac-chuan-lo-cam-din-cho-xe-bmw-triump-xe-chau-au-kewig-b8.webp",
+    "skus": [
+      "SAC-KEWIG-B8"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 266850,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/0cce1fe8-543f-4e13-aa1e-dadb30d6fc99/op-bao-ve-khung-chong-do-kewig-bht-1.webp",
+    "skus": [
+      "BVK-KEWIG-BHT-1"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 263866,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/272958da-17e8-46cf-8928-4812cccd54eb/bom-lop-dien-cam-tay-mini-kewig-mp1.webp",
+    "skus": [
+      "BOM-KEWIG-MP-1"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 234630,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/facb44b8-cf29-4410-816c-996e131c02de/thanh-giang-mo-rong-gan-ghi-dong-xe-may-xe-dien-kewig-hb4-l.webp",
+    "skus": [
+      "TNCK-KEWIG-HB4-L"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 223296,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/e9cb780c-d352-4bcc-a235-e430055770d5/tau-sac-usb-chuan-din-cho-bmw-triump-xe-chau-au-kem-tau-12v-kewig-b9.webp",
+    "skus": [
+      "SAC-KEWIG-B9"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 293074,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/9d847383-c75a-43af-8f4b-bf7c79fa68cd/moc-treo-do-ghi-dong-xe-may-bang-day-kewig-cbk-3s.webp",
+    "skus": [
+      "MTD-KEWIG-CBK-3S"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 197446,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/cec46b3a-1ca2-4f94-ac3b-0945cab0d649/thanh-giang-mo-rong-ghi-dong-gan-than-guong-chieu-hau-xe-may-xe-dien-kewig-hb5.webp",
+    "skus": [
+      "TNCK-KEWIG-HB5"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 297762,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/465d08f7-fdb8-4912-aea1-32a1aa56f42b/r22-c13.webp",
+    "skus": [
+      "BGCAM-KEWIG-R22B-C13"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 12962,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/2fda69f4-b84f-4517-98a3-cb4aa36b03e2/thanh_gia_h3l.webp",
+    "skus": [
+      "DGCK-KEWIG-H3L"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 8662,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/2e49a395-860d-4d51-bac1-6c48ca0268b7/thanh-giang-mo-rong-ghi-dong-kewig-hb3-h.webp",
+    "skus": [
+      "TNCK-KEWIG-HB3-H"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 292262,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/aade4ad4-2c1b-4707-a8c5-f705c295f438/ngam-nam-cham-khop-bi-1-inch-cho-camera-dji-osmo-action-kewig-x4-b3.webp",
+    "skus": [
+      "DGCAM-KEWIG-X4-B3"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 306794,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/d0b69577-a86a-4af8-823e-f491bb43e322/ngam-nam-cham-khop-bi-1-inch-cho-camera-dji-osmo-action-kewig-x4-b3.webp",
+    "skus": [
+      "DGCAM-KEWIG-X4-B6"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 245056,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/5aefede2-c9a6-45b1-b3cc-b4eb39f36097/mu-che-nang-cho-gia-do-dien-thoai-kewig-zym-2.webp",
+    "skus": [
+      "PKGD-KEWIG-ZYM-2"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 199302,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/fa27b7b0-462e-4bae-9de7-2986b13427f4/thanh-nhom-11-cm-mo-rong-ghi-dong-kewig-h4s.webp",
+    "skus": [
+      "TNCK-KEWIG-H4S"
+    ],
+    "width": 5335,
+    "height": 5299,
+    "bytes": 279060,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/2853cf95-cda9-41be-b718-00844febea62/tay-noi-nhom-kep-2-dau-khop-bi-1-inch-kewig-js1.webp",
+    "skus": [
+      "KHOPBI-KEWIG-J1S-6CM",
+      "KHOPBI-KEWIG-J1S-9CM"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 289176,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/d87f8184-edf5-4e5b-b333-a9f867576743/ngam-thao-nhanh-camera-insta360-kewig-r22a-thao-nhanh.webp",
+    "skus": [
+      "DGCAM-KEWIG-R22-A"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 225824,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/3c2d59e4-4b3c-4d7b-a78a-07d7d78d2b63/ngam-thao-nhanh-cho-camera-gopro-kewig-r22b-anh-gan-camera-gopro.webp",
+    "skus": [
+      "DGCAM-KEWIG-R22-B"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 180956,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/8edd67a1-ffe9-4ab3-b3dd-b9ab606250ef/bd-1__17_.png",
+    "skus": [
+      "DRHL-KEWIG-BD-1L"
+    ],
+    "width": 800,
+    "height": 800,
+    "bytes": 216599,
+    "format": "PNG"
+  },
+  {
+    "url": "/media/uploads/1e4e27f0-d4ae-42ba-b7f8-52e35183db85/r8a__1___large_.jpg",
+    "skus": [
+      "KHOPBI-KEWIG-R8A"
+    ],
+    "width": 1080,
+    "height": 1080,
+    "bytes": 54650,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/db764b3d-1f74-452f-a5fc-a532ac795d41/day-thun-rang-hanh-ly-non-bao-hiem-cao-cap-kewig-bd-1s.webp",
+    "skus": [
+      "DRHL-KEWIG-BD-1S",
+      "DRHL-KEWIG-BD-1L"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 247482,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/ed3de0c2-e6c4-475a-9b45-3c49f7f8e7c6/c2u2__4_.jpg",
+    "skus": [
+      "DEKEP-KEWIG-C2U2"
+    ],
+    "width": 1600,
+    "height": 1600,
+    "bytes": 103182,
+    "format": "JPEG"
+  },
+  {
+    "url": "/media/uploads/968c59b5-d223-4a7a-9f31-6d8aa5084dd0/de-kep-ong-da-nang-bi-1-inch-kewig-c9p.webp",
+    "skus": [
+      "DEKEP-KEWIG-C9P"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 259364,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/db57ecfb-b758-4a7c-aa96-16e1466fcc4b/day-chuyen-khop-bi-ra-ren-m8-kewig-r8c.webp",
+    "skus": [
+      "KHOPBI-KEWIG-R8C"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 65466,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/2a05613b-4694-48e3-b1e8-9a6bfdeade3c/dau-chuyen-khop-bi-ra-ren-6-li-r7-kewig.webp",
+    "skus": [
+      "KHOPBI-KEWIG-R7"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 88646,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/f800de80-3246-4e3a-89da-59af57042582/dau-ga-nam-cham-thao-nhanh-cho-dji-kewig-x1.webp",
+    "skus": [
+      "DGCAM-KEWIG-X1"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 261546,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/e1c64431-539b-453a-8f0c-195fcf4a1a75/oc-nang-chan-guong-kewig.webp",
+    "skus": [
+      "BULONG-KEWIG-M8-3+",
+      "BULONG-KEWIG-M8-3-",
+      "BULONG-KEWIG-M8-5+",
+      "BULONG-KEWIG-M8-5-",
+      "BULONG-KEWIG-M10-3+",
+      "BULONG-KEWIG-M10-3-",
+      "BULONG-KEWIG-M10-5+",
+      "BULONG-KEWIG-M10-5-"
+    ],
+    "width": 1800,
+    "height": 1800,
+    "bytes": 322182,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/0580aa32-21fe-4105-a6ad-8cf6a25ec568/giay-di-moto-xe-may-mua-he-bao-ve-chan-scoyco-mt106-mau-den.webp",
+    "skus": [
+      "SCOYCO-MT106-DEN-36",
+      "SCOYCO-MT106-DEN-37",
+      "SCOYCO-MT106-DEN-38",
+      "SCOYCO-MT106-DEN-39",
+      "SCOYCO-MT106-DEN-45",
+      "SCOYCO-MT106-DEN-44",
+      "SCOYCO-MT106-DEN-43",
+      "SCOYCO-MT106-DEN-42",
+      "SCOYCO-MT106-DEN-41",
+      "SCOYCO-MT106-DEN-40",
+      "SCOYCO-MT106-DEN-46"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 332628,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/ecf26ddd-9dab-4d59-b738-2cf70be37dad/giay-di-moto-xe-may-bao-ve-chan-scoyco-mt106-mau-xam-do.webp",
+    "skus": [
+      "SCOYCO-MT106-XAMDO-36",
+      "SCOYCO-MT106-XAMDO-37",
+      "SCOYCO-MT106-XAMDO-38",
+      "SCOYCO-MT106-XAMDO-39",
+      "SCOYCO-MT106-XAMDO-45",
+      "SCOYCO-MT106-XAMDO-44",
+      "SCOYCO-MT106-XAMDO-43",
+      "SCOYCO-MT106-XAMDO-42",
+      "SCOYCO-MT106-XAMDO-41",
+      "SCOYCO-MT106-XAMDO-40",
+      "SCOYCO-MT106-XAMDO-46"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 334060,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/d4783384-3e13-4150-90a4-1e0391269e21/giay-di-moto-xe-may-mua-he-bao-ve-chan-scoyco-mt106-den-do.webp",
+    "skus": [
+      "SCOYCO-MT106-DENDO-36",
+      "SCOYCO-MT106-DENDO-37",
+      "SCOYCO-MT106-DENDO-38",
+      "SCOYCO-MT106-DENDO-39",
+      "SCOYCO-MT106-DENDO-45",
+      "SCOYCO-MT106-DENDO-44",
+      "SCOYCO-MT106-DENDO-43",
+      "SCOYCO-MT106-DENDO-42",
+      "SCOYCO-MT106-DENDO-41",
+      "SCOYCO-MT106-DENDO-40",
+      "SCOYCO-MT106-DENDO-46"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 330476,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/1a4bb43c-1428-4756-8196-70c0528780c4/giay-di-moto-xe-may-mua-he-bao-ve-chan-scoyco-mt106-mau-nau.webp",
+    "skus": [
+      "SCOYCO-MT106-NAU-36",
+      "SCOYCO-MT106-NAU-37",
+      "SCOYCO-MT106-NAU-38",
+      "SCOYCO-MT106-NAU-39",
+      "SCOYCO-MT106-NAU-45",
+      "SCOYCO-MT106-NAU-44",
+      "SCOYCO-MT106-NAU-43",
+      "SCOYCO-MT106-NAU-42",
+      "SCOYCO-MT106-NAU-41",
+      "SCOYCO-MT106-NAU-40",
+      "SCOYCO-MT106-NAU-46"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 351090,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/d9757d36-0cf1-4b76-b37b-29e8093d47f9/giay-adventure-chong-nuoc-bao-ve-chan-di-mo-to-xe-may-scoyco-mt038wp-mau-den.webp",
+    "skus": [
+      "SCOYCO-MT038WP-DEN-41",
+      "SCOYCO-MT038WP-DEN-42",
+      "SCOYCO-MT038WP-DEN-43",
+      "SCOYCO-MT038WP-DEN-44",
+      "SCOYCO-MT038WP-DEN-46",
+      "SCOYCO-MT038WP-DEN-45"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 341116,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/c9643356-4c70-41ae-be71-6c8175cbfb65/giay-adventure-chong-nuoc-bao-ve-chan-di-mo-to-xe-may-scoyco-mt038wp.webp",
+    "skus": [
+      "SCOYCO-MT038WP-NAU-41",
+      "SCOYCO-MT038WP-NAU-42",
+      "SCOYCO-MT038WP-NAU-43",
+      "SCOYCO-MT038WP-NAU-44",
+      "SCOYCO-MT038WP-NAU-46",
+      "SCOYCO-MT038WP-NAU-45"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 353934,
+    "format": "WEBP"
+  },
+  {
+    "url": "/media/uploads/a5f01781-9c5f-4e70-ae6b-dd95cd6730b9/giay-di-moto-xe-may-bao-ve-chan-scoyco-mr002-2-mau-den.webp",
+    "skus": [
+      "SCOYCO-MR002-2-40",
+      "SCOYCO-MR002-2-41",
+      "SCOYCO-MR002-2-42",
+      "SCOYCO-MR002-2-43",
+      "SCOYCO-MR002-2-44",
+      "SCOYCO-MR002-2-45",
+      "SCOYCO-MR002-2-46"
+    ],
+    "width": 1254,
+    "height": 1254,
+    "bytes": 347314,
+    "format": "WEBP"
+  }
+]

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
+    GMC_STORE_CODE: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     BIGBIKE_API_BASE_URL: z.string().url().optional(),
     BIGBIKE_LEGACY_UPLOADS_BASE: z.string().url().optional(),
@@ -46,6 +47,7 @@ export const env = createEnv({
     NEXT_PUBLIC_ADMIN_ORIGIN: z.string().url().optional(),
   },
   runtimeEnv: {
+    GMC_STORE_CODE: process.env.GMC_STORE_CODE || undefined,
     NODE_ENV: process.env.NODE_ENV,
     // Optional URL vars: convert empty string → undefined so Zod url() validator doesn't reject ""
     BIGBIKE_API_BASE_URL: process.env.BIGBIKE_API_BASE_URL || undefined,

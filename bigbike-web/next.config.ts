@@ -520,7 +520,7 @@ const nextConfig: NextConfig = {
         // YouTube IFrame API (www.youtube.com/iframe_api + widget từ s.ytimg.com) để điều khiển
         // play/pause/ended của video sản phẩm — KHÔNG có 2 origin này thì script bị CSP chặn,
         // dải ảnh không biết video đang chạy nên vẫn tự nhảy slide. frame-src đã cho phép nhúng iframe.
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.clarity.ms https://connect.facebook.net https://www.youtube.com https://s.ytimg.com https://static.cloudflareinsights.com",
         "worker-src 'self' blob:",
         "style-src 'self' 'unsafe-inline'",
         `img-src 'self' data: blob: https: https://*.clarity.ms https://c.bing.com${MEDIA_ORIGIN ? " " + MEDIA_ORIGIN : ""}`,
@@ -530,7 +530,7 @@ const nextConfig: NextConfig = {
         "frame-src https://www.google.com https://maps.google.com https://www.youtube-nocookie.com https://www.youtube.com https://www.tiktok.com https://www.facebook.com",
         `frame-ancestors ${frameAncestors}`,
         "base-uri 'self'",
-        "form-action 'self'",
+        "form-action 'self' https://www.facebook.com",
       ].join("; ");
 
     // Chống clickjacking bằng CSP `frame-ancestors`. Đã bỏ X-Frame-Options vì nó
@@ -584,6 +584,11 @@ const nextConfig: NextConfig = {
         source: "/en/preview/:path*",
         headers: previewHeaders,
       },
+      // Google invitation aliases stay crawlable but must never be indexed (ANALYTICS_RULE_007).
+      ...["/danh-gia", "/review", "/en/review"].map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      })),
       // Noindex for specific legacy routes from CSV
       ...csvNoIndexHeaders,
     ];

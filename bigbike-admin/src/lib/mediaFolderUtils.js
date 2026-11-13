@@ -38,6 +38,11 @@ export function getSystemFolderDeleteWarning(folder, t) {
 export function getMediaFolderPath(folderId, folders, t) {
   if (!folderId) return ''
   const byId = new Map((folders || []).map((folder) => [folder.id, folder]))
+  return folderPathFromIndex(folderId, byId, t)
+}
+
+function folderPathFromIndex(folderId, byId, t) {
+  if (!folderId) return ''
   const parts = []
   const seen = new Set()
   let current = byId.get(folderId)
@@ -50,8 +55,11 @@ export function getMediaFolderPath(folderId, folders, t) {
 }
 
 export function getMediaFolderOptions(folders, t) {
+  // Image/video pickers build every option together. Share the lookup for this
+  // call instead of allocating the full folder index again for each option.
+  const byId = new Map((folders || []).map((folder) => [folder.id, folder]))
   return (folders || []).map((folder) => ({
     value: folder.id,
-    label: getMediaFolderPath(folder.id, folders, t) || getMediaFolderLabel(folder, t),
+    label: folderPathFromIndex(folder.id, byId, t) || getMediaFolderLabel(folder, t),
   }))
 }

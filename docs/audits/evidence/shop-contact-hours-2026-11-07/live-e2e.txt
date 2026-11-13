@@ -1,0 +1,16 @@
+
+Running 4 tests using 1 worker
+
+(node:4191169) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+(node:4191169) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/4] [chromium] › e2e/local-inventory-hours.e2e.ts:8:5 › local inventory matches the complete live main feed
+[2/4] [chromium] › e2e/local-inventory-hours.e2e.ts:33:5 › VI and EN shop hours are consistent in page HTML and visible footer
+[3/4] [chromium] › e2e/local-inventory-hours.e2e.ts:60:5 › locale changes preserve one Meta ViewContent observation
+[4/4] [chromium] › e2e/shop-contact-hours.e2e.ts:19:5 › shop hours, address, contact map and size guides stay consistent on deployed pages
+  4 passed (2.3m)

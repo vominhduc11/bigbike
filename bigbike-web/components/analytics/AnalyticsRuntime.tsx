@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-store";
 import {
+  observeAnalyticsPage,
   claimAnalyticsSessionEvent,
   consumePendingAuthentication,
   setAnalyticsUserId,
@@ -50,6 +51,10 @@ function inferContactChannel(element: Element): ContactChannel | null {
 export function AnalyticsRuntime() {
   const pathname = usePathname() || "/";
   const auth = useAuth();
+
+  useEffect(() => {
+    observeAnalyticsPage(pathname);
+  }, [pathname]);
 
   useEffect(() => {
     if (auth.status === "loading") return;

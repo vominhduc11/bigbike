@@ -198,6 +198,10 @@ cache entries immediately, instead of waiting for the page's time-based `revalid
   sách cũ rồi giữ tiếp trong cache 3.600 giây. Dùng cùng
   `CatalogReferenceCacheEvictor.evictAllAfterCommit()` như luồng sửa sản phẩm;
   giao dịch bị hoàn tác không xóa snapshot và không phát yêu cầu làm mới.
+- Nếu một lượt nạp snapshot đã bắt đầu trước commit nhưng hoàn tất sau lần xóa,
+  kết quả đó không được đưa trở lại cache. Kiểm tra thế hệ và publish/clear phải
+  nguyên tử; không khóa phần tải dữ liệu chậm. Giữ TTL 60 giây và cache theo locale.
+  Đây là bảo đảm làm mới đã có, được bổ sung kiểm thử race 13/11/2026.
 - The web side reads these same tags on its server `fetch` calls in
   `bigbike-web/lib/api/public-api.ts`.
 - Làm mới đường dẫn phải bao phủ cả route theo locale và alias mà proxy thực sự
@@ -307,6 +311,8 @@ Redis service. `OWNER_CONFIRMED_2026-08-20`
 - New Admin Media uploads accept only JPEG/PNG/WebP images and MP4 video. Apache Tika content detection must match the declared MIME exactly; filename extensions are not trusted, so GIF/SVG content and renamed GIF/SVG files are rejected. Customer review/avatar/chat upload paths retain their separate JPEG/PNG/WebP contracts. `OWNER_CONFIRMED_2026-08-28`
 - **Customer review photos** (`REVIEW_RULE_005`/`011`) are stored in MinIO under the `reviews/{uuid}/...` prefix (public URL `/media/reviews/...`) via a **public, no-auth** upload endpoint (`POST /api/v1/products/{id}/reviews/photos`). Stricter than the admin path: image only (`image/jpeg|png|webp`, declared Content-Type must exactly match Tika magic-byte detection; stored extension is canonicalized — no SVG/GIF/video), ≤ 8 MB, rate-limited per IP (`REVIEW_PHOTO` tier). They are **not** registered in the admin media library (`media` table). Every successful upload creates a durable `review_photo_uploads` ledger row and submit atomically claims it once for the same product. `ReviewPhotoOrphanCleanupService` removes unclaimed uploads older than 24 hours, cascade tombstones left when product deletion removes reviews, and old untracked MinIO objects from the narrow put-before-ledger crash window. Review deletion schedules reference-safe object cleanup only after commit. Photos show publicly only after the review is `APPROVED`. `CONFIRMED_FROM_CODE`
 - **Server-side compression before storage** (`MEDIA_RULE_006`): all 3 raster upload paths (admin media original, review photo, customer avatar) run through `ImageCompressionService` (Thumbnailator-backed) before the `putObject` call — admin media original capped at 2000px wide, review photo at 1600px wide, avatar center-cropped to 400×400, all at JPEG quality 0.85. Never upscales, preserves alpha and fails soft (returns the original bytes untouched) on a decode error — an upload is never blocked by a compression failure. JPEG/PNG are decoded and resized as required. **Known shared P2 gap (2026-07-28):** WebP is accepted by all three paths, but the current JDK ImageIO runtime has no WebP reader, so WebP reaches the documented fail-soft path and is stored without the required resize. Fixing this requires a shared Media compression change that preserves a correct output MIME/extension when alpha-bearing WebP is re-encoded; it is not a Review-only format-rule change. `CODE_GAP_WEBP_2026-07-28`
+- Image variants are stored only when compression produces new bytes. If compression returns the original buffer (size saving unavailable or fail-soft), omit that variant for JPEG/PNG as well as WebP; callers use the existing original-image fallback. Never create duplicate full-size objects under thumbnail keys. This does not rewrite existing objects or change original quality. `PERFORMANCE_OPTIMIZATION_2026-11-12`
+- Responsive variants reuse the source raster already decoded by `ImageVariantService` within the same synchronous request. `ImageCompressionService` keeps encoding, alpha/MIME and original-buffer fallback identical; no shared decoded cache, concurrency change or background-upload contract is introduced. This removes repeated full raster decoding per target size; it does not remove original compression/metadata validation. `PERFORMANCE_CONTINUATION_2026-11-13`
 - Admin Media Library download is an authenticated `media.read` stream from the MinIO object key recorded in the media row. The controller returns `Content-Disposition: attachment` with `originalFilename`, permits `DELETED` rows, and never redirects the browser to storage or serves a thumbnail/variant. URL-only external video rows have no downloadable object. The former replace-file endpoint and its write path were removed; existing MinIO objects are not changed. `OWNER_CONFIRMED_2026-08-20`
 
 Evidence:
@@ -539,6 +545,41 @@ verification must therefore cover both the actual outbound request body with a n
 test collector and the live property's DebugView/Realtime after production configuration. Never
 send a test order to the production property from local code.
 
+### Google review invitation bridge (DEV-5, 2026-10-29)
+
+Contract: `ANALYTICS_RULE_007`. `/danh-gia/`, English alias `/review/` and `/en/review/`
+are reserved before managed redirects, with slash normalization retaining UTM. They rewrite to
+one locale-aware, lightweight server page under `app/[locale]/(review)/internal/google-review/`,
+using the existing locale root analytics install. No product-review API or email changes.
+
+Destination and 800 ms budget live in `lib/review-link.ts`, not an environment variable or admin
+setting. The shared `lib/analytics.ts` helper waits for the existing `gtag` inside that budget,
+sends one `review_link_open` with original `page_location`, `send_to`, `transport_type: beacon`,
+`event_callback` and an `event_timeout` below the remaining budget. A deferred first attempt
+allows effect replay cleanup without duplicate sends. Callback/fallback share a completion guard;
+cleanup cancels initialization polling and the deadline. Each new page opening starts afresh,
+without a sessionStorage claim. No manual `page_view`.
+
+The server page includes the manual link and a two-second meta refresh **inside noscript**.
+Both meta and HTTP robots directives are `noindex, nofollow`; omit the routes from sitemap and
+keep them out of robots.txt Disallow. Missing/blocked analytics or disabled JavaScript still
+allow navigation; such visits need no GA4 event. 800 ms is the active bridge budget, not Maps
+load time; Google sign-in is a valid step. `review_link_open` does not mean a review was submitted.
+
+Validate the browser's actual collect request and UTM, not just mocked callbacks or requested
+transport. A callback means event processing completed, not confirmed account-side receipt
+([Google tag parameters](https://developers.google.com/tag-platform/gtagjs/reference/parameters)).
+Check processed session acquisition separately from Realtime; actual device and account tests
+must be reported separately.
+
+### Cloudflare Web Analytics CSP (DEV-6, 2026-10-29)
+
+Owner confirmed the shop uses Web Analytics and wants to retain its existing edge injection.
+Allow exactly `https://static.cloudflareinsights.com` in storefront `script-src`; existing
+`connect-src https:` already covers collection, so no connect change. Do not install another
+beacon or change admin CSP. Account-side configuration/receipt remains an account acceptance
+step ([Cloudflare CSP reference](https://developers.cloudflare.com/web-analytics/faq/)).
+
 ## Meta Pixel (storefront)
 
 The only approved browser Meta installation is the existing BigBike Pixel
@@ -551,10 +592,11 @@ Cloudflare/Zaraz or any screen/component. Conversions API is explicitly deferred
 
 Meta's library owns its browser-history PageView behavior. The storefront initializes it once and
 does **not** call a manual `PageView` on route changes; adding another page-view call would make a
-single navigation count twice. The only CSP addition is
-`https://connect.facebook.net` in `script-src` for the loader. Existing narrowly scoped `https:`
-image/connect allowances already cover Meta's event/image requests; do not broaden another CSP
-directive or add a wildcard.
+single navigation count twice. CSP allows `https://connect.facebook.net` in `script-src` for
+its loader. DEV-6 (2026-10-29, `ANALYTICS_RULE_008`) additionally permits exactly
+`https://www.facebook.com` alongside `'self'` in `form-action`, following a reproduced blocked
+Meta form submission to `/tr/`. Existing `https:` image/connect allowances cover other transports.
+Do not broaden another directive or add a wildcard.
 
 `bigbike-web/lib/analytics.ts` is the only event path. It maps the same successful boundaries and
 the same selling-variant SKU used by GA4 and the Merchant Center feed:
@@ -678,3 +720,13 @@ CHAT_RULE_057/067–069 thay giới hạn ảnh cũ: 3/lượt, 9/hội thoại,
 Công cụ owner chạy: Python chuẩn + `psql` đọc/lập manifest, tải ảnh công khai từ origin owner chỉ định (kiểm tra IP công khai, chặn đổi DNS/redirect nội bộ), gọi API upload media hiện có để chuẩn hóa/dedup, rồi cập nhật có điều kiện đúng các trường ảnh. Dùng `PATCH /admin/products/{id}` với payload rỗng sau mỗi sản phẩm để đi qua đường đồng bộ thư mục/cache/revalidation hiện có. Nếu bước này lỗi, manifest giữ `REFRESH_PENDING` để chạy lại; không báo sản phẩm đã hoàn tất. Chỉ đọc/ghi `products`, `product_variants`, `product_variant_gallery_images`, thư viện media và chỉ mục ảnh công khai; bỏ nguyên khối video. Main Java riêng chỉ dựng lại dấu vân tay bằng cùng thuật toán runtime, JDBC và MinIO; không khởi động Spring, Flyway hoặc scheduler. Manifest lưu ngoài Git, ghi bền trước thay đổi và có so sánh giá trị trước–sau khi resume/rollback; rollback giữ media mới để không làm hỏng tham chiếu dùng chung.
 
 Môi trường làm việc ngày 08/09/2026 là VPS chứa dữ liệu thật (owner xác nhận). Các lệnh kiểm thử phải dùng dữ liệu giả lập/cơ sở dữ liệu kiểm thử riêng, không đọc hội thoại riêng tư và không gọi AI thật. Công cụ chuyển kho và reindex trên dữ liệu vận hành do owner chủ động chạy sau bàn giao.
+
+### DEV-7/DEV-9 — 06/11/2026
+
+Local inventory: public `/google-local-inventory.tsv`, GMC_STORE_CODE server-only, chung projection XML và nguồn động no-store. Không số tồn. Lịch fetch được đặt trong GMC cùng giờ XML. Xem GMC_RULE_006. Meta: mọi sự kiện chủ động gửi có eventID; Purchase giữ ID hiện hữu; ViewContent chống lặp qua chuyển locale trong cùng trang. PageView khởi tạo dùng track chuẩn; không thêm listener PageView điều hướng. CAPI vẫn chưa triển khai.
+
+## Public shop content and Maps — owner 07/11/2026
+
+See `DATA_CONTRACT.md` “Shop introduction and EN address correction” and `BUSINESS_RULES.md` STORE_HOURS_RULE_001. Public settings retain the editable introduction and shared EN address. Web expands `{{store_hours}}` only in `home_content_bottom_html` before rendering/serializing settings, including settings passed to product pages. Migration V1094 repairs persisted content conditionally; deployment recreates backend (Flyway) and web (fresh settings cache). No environment change is required.
+
+The contact map uses the owner-confirmed CID embed and Directions place ID from STORE_HOURS_RULE_001, independent of localized address text. Keep CSP `frame-src https://www.google.com https://maps.google.com` permissions; no wildcard addition. Clarity remains disabled until its existing URL-masking prerequisite has been verified; this repair does not alter analytics or inventory feeds.

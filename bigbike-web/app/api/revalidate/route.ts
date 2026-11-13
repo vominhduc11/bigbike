@@ -1,5 +1,6 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+import { productFallbackStore } from "@/lib/api/product-fallback-store";
 import { env } from "@/env";
 import { toInternalPaths } from "@/lib/utils/revalidation";
 
@@ -8,7 +9,12 @@ export const runtime = "nodejs";
 const REVALIDATE_SECRET = env.REVALIDATE_SECRET ?? env.WEB_REVALIDATE_SECRET;
 
 function parseTags(body: unknown): string[] {
-  if (!body || typeof body !== "object" || !("tags" in body) || !Array.isArray((body as { tags: unknown }).tags)) {
+  if (
+    !body ||
+    typeof body !== "object" ||
+    !("tags" in body) ||
+    !Array.isArray((body as { tags: unknown }).tags)
+  ) {
     return [];
   }
 
@@ -59,6 +65,10 @@ export async function POST(request: NextRequest) {
   const tags = parseTags(body);
   if (tags.length === 0) {
     return NextResponse.json({ error: "No valid tags provided" }, { status: 400 });
+  }
+
+  if (tags.some((tag) => tag === "products" || tag.startsWith("product:"))) {
+    await productFallbackStore.invalidate();
   }
 
   const paths = new Set<string>();

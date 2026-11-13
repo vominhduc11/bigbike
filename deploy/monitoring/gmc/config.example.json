@@ -1,0 +1,10 @@
+{
+  "checks": {
+    "home": {"url": "https://bigbike.vn/", "marker": "Bigbike"},
+    "product": {
+      "url": "https://bigbike.vn/product/tai-nghe-bluetooth-intercom-scs-s13/",
+      "marker": "SCS-S13"
+    },
+    "feed": {"url": "https://bigbike.vn/google-merchant.xml"}
+  }
+}

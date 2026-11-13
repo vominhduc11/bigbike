@@ -23,6 +23,9 @@ function collectDisallow(): string[] {
  * test đọc-file bên dưới đỏ ngay.
  */
 const NOINDEX_ROUTES: ReadonlyArray<readonly [path: string, source: string]> = [
+  ["/danh-gia/", "app/[locale]/(review)/internal/google-review/page.tsx"],
+  ["/review/", "app/[locale]/(review)/internal/google-review/page.tsx"],
+  ["/en/review/", "app/[locale]/(review)/internal/google-review/page.tsx"],
   ["/gio-hang/", "app/[locale]/(storefront)/gio-hang/layout.tsx"],
   ["/en/cart/", "app/[locale]/(storefront)/gio-hang/layout.tsx"],
   ["/dat-hang/", "app/[locale]/(storefront)/dat-hang/layout.tsx"],

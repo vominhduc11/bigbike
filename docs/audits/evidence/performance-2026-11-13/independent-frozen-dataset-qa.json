@@ -1,0 +1,53 @@
+{
+  "reviewer": "/root/database_catalog",
+  "scope": "Independent source QA; no Docker/database/storage action or test execution during frontend regression resource slot",
+  "reviewed_sources": [
+    {
+      "path": "scripts/performance/frozen_dataset.py",
+      "sha256": "676619b5ec3f24f1c8981dcdd74a569d6b2d4a16e55cf78315e1d6dc0a387317"
+    },
+    {
+      "path": "scripts/performance/test_frozen_dataset.py",
+      "sha256": "d80a6da14367b99a824b8c6f5913dbf5b329bf260b0a750ca660e66989c15196"
+    },
+    {
+      "path": "scripts/performance/run_ci.py",
+      "sha256": "023f501cac65dbc2329d0b3443f2bcd344f5508025b2ca1ffd974fd8d94cc1a5"
+    },
+    {
+      "path": "scripts/performance/s3_setup.py",
+      "sha256": "244dde9431d169101a95cdc2241b1e2760194e07c08954677020afbbdfe065c3"
+    },
+    {
+      "path": "scripts/performance/stack_checks.py",
+      "sha256": "004808630f70ecb2ac0613bc8f08ed645e73cabad82d690e169c2fc1f77916c1"
+    },
+    {
+      "path": "scripts/performance/admin_smoke.py",
+      "sha256": "d8469b7f179fb78dc9f5f3b099713f59c08ff4b3318fc78a3d15c98a6d75cbc8"
+    }
+  ],
+  "source_checks": [
+    "Hosted-runner guard and exact owned Compose project target required; no inherited Docker/provider/PG environment forwarded.",
+    "pg_dump custom archive captures one consistent synthetic database snapshot; pg_restore uses exit-on-error on fresh owned database before backend startup.",
+    "Private directory0700 and archive/object files0600 outside artifacts; published identity contains only hashes/counts, not paths/object keys/accounts/sessions.",
+    "Archive and every object validated before restore writes; duplicate/unsafe keys, absolute/query variant paths, symlink files and changed checksums rejected.",
+    "Stored original and variants captured from API-returned filePath/sizes; object bytes/MIME verified after signed restore.",
+    "One first-arm seed and shared generated password/JWT, same frozen product/category/media UUIDs and creation timestamps at initial snapshot.",
+    "Existing Admin smoke cleanup markers do not match E2E_PERF names; fixture dataset survives that prefix cleanup.",
+    "No source blocker found in capture/restore boundary itself. Mocked process/storage unit coverage is not a real pg_dump/MinIO roundtrip.",
+    "run_ci refuses to adopt pre-existing project containers and only cleans up if its own startup was attempted; no reset occurs during measurement. PostgreSQL statistics reset only inside guarded CI DB before load, so setup totals are excluded; collector/background counts still prevent exact SQL/request claims."
+  ],
+  "integration_finding": {
+    "id": "QA-DATASET-01",
+    "status": "Source fixed and independently reread: only first newly created job-owned backend/proxy/Redis stop, restore same snapshot, recreate these job-owned services and perform ordinary login. Both measured JVMs/Redis start fresh. Remote behavior unverified.",
+    "problem": "Before keeps JVM warmed by first-arm seed40create+40publish; After starts a fresh backend from restored snapshot and performs one additional pre-build login. Initial authentication/session/audit row counts and JVM setup work differ.",
+    "recommended_correction": "After first capture, recreate only job-owned Before backend/api-proxy, wait readiness, and perform one ordinary post-snapshot login. Both arms then begin build/warm-up from fresh JVMs and same logical snapshot. Never perform this reset on shared/VPS services."
+  },
+  "limits": [
+    "No remote stack executed; transfer roundtrip, source images and schema restore require real CI run.",
+    "MinIO Last-Modified/wall clocks differ by design; recreated test writes naturally generate new request/session/operation IDs.",
+    "Aggregate database counters include setup/collector/background operations; compare stage deltas, not absolute counters as exact SQL/request.",
+    "Task does not authorize shop backup, raw production import or shared service restart."
+  ]
+}

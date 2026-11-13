@@ -1,0 +1,21 @@
+{
+  "webTests": {
+    "passed": 46,
+    "files": 10
+  },
+  "backendTargetedTests": {
+    "passed": 13
+  },
+  "pythonTests": {
+    "passed": 8
+  },
+  "tsc": "pass",
+  "eslintChangedSource": "pass",
+  "prettierChangedSource": "pass",
+  "runtimeBusinessDataGuard": "pass",
+  "nginxBoundarySelfTest": "pass",
+  "fullBuild": "Not run: shared VPS web unhealthy; avoid build load",
+  "productionFailureInjection": "Not run: no runtime state changes authorized",
+  "telegramDelivery": "Not run: prepare instructions/configuration only; no external monitor connected",
+  "gmcApproval": "Not verified"
+}

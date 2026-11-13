@@ -1,0 +1,14 @@
+{
+  "at": "2026-11-10T00:56:32.074504+00:00",
+  "service": "bigbike-backend",
+  "configuredKeys": {
+    "BIGBIKE_TELEGRAM_TIMEOUT_SECONDS": true,
+    "BIGBIKE_TELEGRAM_BOT_TOKEN": true,
+    "BIGBIKE_TELEGRAM_API_BASE_URL": false,
+    "BIGBIKE_TELEGRAM_CHAT_ID": true
+  },
+  "valuesNotRecorded": true,
+  "recipientMembershipVerified": false,
+  "messagesSent": false,
+  "externalRunnerInstalled": false
+}

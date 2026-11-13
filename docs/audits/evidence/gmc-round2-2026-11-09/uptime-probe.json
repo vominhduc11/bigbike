@@ -1,0 +1,1 @@
+{"checkedAt": "2026-11-09T14:41:09.104582+00:00", "ok": false, "targets": [{"target": "home", "errors": ["SOURCE_UNAVAILABLE", "RESPONSE_TOO_SLOW"], "seconds": 15.118}, {"target": "product", "errors": ["SOURCE_UNAVAILABLE", "RESPONSE_TOO_SLOW"], "seconds": 15.123}, {"target": "feed", "errors": [], "status": 200, "seconds": 5.361}]}

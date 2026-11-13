@@ -30,6 +30,7 @@ import {
 } from '../lib/adminApi'
 import { showConfirm } from '../lib/confirm'
 import { useUnsavedChanges } from '@/lib/useUnsavedChanges'
+import { useFormAutosave } from '@/lib/useFormAutosave'
 import { recordRecentItem } from '../lib/useRecentItems'
 import { formatDateTime, normalizeSeoText, stripHtml } from '../lib/formatters'
 import { setContentLang, useContentLang, overlayEnNames } from '../lib/contentLang'
@@ -490,11 +491,7 @@ export function ProductDetailScreen({
   }, [autosaveKey, isCreate])
 
   // Autosave when dirty
-  useEffect(() => {
-    if (!isDirty) return
-    const timer = setTimeout(() => saveFormToStorage(autosaveKey, form), 10_000)
-    return () => clearTimeout(timer)
-  }, [form, isDirty, autosaveKey])
+  useFormAutosave(autosaveKey, form, isDirty, saveFormToStorage)
 
   const state = {
     status: isCreate ? 'success' : isLoading ? 'loading' : isError ? 'error' : 'success',

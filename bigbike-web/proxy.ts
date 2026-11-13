@@ -9,6 +9,11 @@ import { routing } from "./i18n/routing";
 import { translatePath } from "./lib/utils/routes";
 
 const handleI18nRouting = createMiddleware(routing);
+const REVIEW_LINK_LOCALES: Record<string, "vi" | "en"> = {
+  "/danh-gia": "vi",
+  "/review": "en",
+  "/en/review": "en",
+};
 
 function handleI18nRequest(request: NextRequest): NextResponse {
   const response = handleI18nRouting(request);
@@ -519,6 +524,20 @@ function redirectResponse(
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
+  // Reserved Google invitation URLs must keep their public alias and UTM, even when a
+  // managed redirect exists. The internal locale route avoids next-intl alias normalization.
+  const reviewLocale = REVIEW_LINK_LOCALES[pathname.replace(/\/$/, "")];
+  if (reviewLocale) {
+    const destination = new URL(request.url);
+    if (!pathname.endsWith("/")) {
+      destination.pathname = `${pathname}/`;
+      return NextResponse.redirect(destination, 308);
+    }
+    destination.pathname = `/${reviewLocale}/internal/google-review/`;
+    return NextResponse.rewrite(destination, {
+      headers: { "X-Robots-Tag": "noindex, nofollow" },
+    });
+  }
   const legacyEnglishTarget = legacyEnglishCanonicalPath(pathname);
 
   if (pathname === REDIRECT_CACHE_CLEAR_PATH || pathname === `${REDIRECT_CACHE_CLEAR_PATH}/`) {
@@ -708,6 +727,6 @@ export const config = {
     // và `mp4|webm|mp3|wasm|mjs` là loại file tĩnh có thể thêm sau này (public/fonts
     // đã gỡ 2026-08-18 — toàn web dùng Arial hệ thống, không tự host font nào). Thiếu chúng thì next-intl viết lại đường dẫn xuống
     // /vi/... và file trả 404 (sitemap còn trả nhầm HTML) — đã đo 2026-08-06.
-    "/((?!api|_next|_vercel|.*\\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|mp4|otf|pdf|png|svg|ttf|txt|wasm|webm|webmanifest|webp|woff2?|xml)$).*)",
+    "/((?!api|_next|_vercel|.*\\.(?:avif|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|mp4|otf|pdf|png|svg|ttf|txt|wasm|webm|webmanifest|webp|woff2?|xml|tsv)$).*)",
   ],
 };

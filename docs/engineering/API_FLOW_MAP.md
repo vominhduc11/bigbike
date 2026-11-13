@@ -40,6 +40,28 @@
 
 ## Flow Highlights
 
+### Admin session renewal and unsaved product forms
+
+`bootstrap / protected request 401 -> same-tab shared promise -> exclusive origin Web Lock -> current httpOnly refresh cookie -> store new access token in memory -> replay once / load canonical profile`
+
+Login/logout take the same lock. Different tabs renew sequentially, using the rotated
+cookie, without exchanging tokens. A late 401 for an older access token uses the
+already renewed token. Only confirmed authentication rejection or the existing
+server access-change signal broadcasts forced reauthentication; network/5xx/429 and
+unsupported coordination preserve the mounted editor. Bootstrap offers retry for
+temporary failures. See `API_CONTRACT.md` §Admin auth endpoints.
+
+Before a confirmed session end clears the query cache or unmounts the editor, Admin
+emits a local session-ending event. The product editor flushes its current dirty form
+through its existing local autosave, also on `pagehide`, instead of relying solely on
+the ten-second debounce. After sign-in, the existing explicit draft-recovery prompt
+is used; nothing is submitted automatically. Existing limits remain: one-hour TTL,
+best-effort browser storage (quota/private mode can fail), JSON form data only,
+shared product keys across tabs/accounts, and recovery is skipped when the server
+record is newer. This is not universal draft protection: other editors, passwords,
+upload bytes and browser/process crashes are not covered by this product form hook.
+No new storage of credentials, customer or order forms is introduced.
+
 ### Google Merchant catalog sync
 
 `admin publishes/edits the existing product -> public catalog APIs -> GMC scheduled GET /google-merchant.xml -> complete uncached XML -> Google processing -> customer opens /product/{slug}/?variant={id}`
@@ -217,3 +239,7 @@ Checkout → revalidate cart → create COD order and payment snapshot → norma
 
 
 Website giữ một requestId cho mỗi upload và một requestId cho tin nhắn; truyền imageIds có thứ tự. Image analysis → verified image evidence → catalog filter/text advisor/response guard → conversation context. Stats thêm quota ảnh cho Settings và Hội thoại. Ảnh tài liệu không tạo thông báo hoặc gọi endpoint thanh toán; luồng ảnh sản phẩm vẫn giữ nguyên. CLI chuyển kho/dựng chỉ mục là luồng vận hành riêng, owner chạy sau triển khai.
+
+## GMC đợt 2 — dự phòng trang sản phẩm (09/11/2026)
+
+Trang product VI/EN → đọc chi tiết mới có timeout 5s → lưu snapshot công khai theo slug/locale. Chỉ mạng/5xx được dùng snapshot ≤1h; 4xx không fallback, 404/410 xóa bản lưu. Webhook product/products xóa snapshot. Trang fallback khóa mua tới khi kiểm giá/Còn-Hết sau mount thành công; kiểm lại lỗi thì khóa tiếp. Feed XML/TSV vẫn đọc mới hoàn toàn, trả 503 nếu thiếu nguồn; không dùng snapshot trang sản phẩm. Taxonomy chờ shop duyệt; identifier_exists/brand không suy diễn. Căn cứ GMC_RULE_007–009.

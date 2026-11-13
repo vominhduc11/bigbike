@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-10-30T09:00:32.165319+00:00",
+  "feed": {
+    "status": 200,
+    "contentType": "application/xml; charset=utf-8",
+    "seconds": 6.497993,
+    "products": 213,
+    "items": 1187,
+    "uniqueSkus": 1187
+  },
+  "robots": {
+    "status": 200
+  },
+  "sitemap": {
+    "status": 200,
+    "urls": 784,
+    "draftProductViUrlPresent": false
+  },
+  "gmcAcceptedOrApproved": "Not verified: no Merchant Center connection",
+  "monitorCodeDeployed": false,
+  "imageChanges": "Pending owner approval; none performed"
+}

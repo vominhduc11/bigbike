@@ -52,6 +52,33 @@ class AdminMediaServiceUploadTest {
     }
 
     @Test
+    void largeOpaquePngStoresJpegWithMatchingObjectNameMimeAndDimensions() throws Exception {
+        when(mediaRepo.findByContentSha256(anyString())).thenReturn(Optional.empty());
+        when(variants.generateAndUpload(any(), anyString(), anyString())).thenReturn(Map.of());
+        when(mediaRepo.save(any())).thenAnswer(call -> {
+            MediaEntity media = call.getArgument(0);
+            media.setId(UUID.randomUUID());
+            return media;
+        });
+        BufferedImage image = new BufferedImage(1000, 1000, BufferedImage.TYPE_INT_RGB);
+        java.util.Random random = new java.util.Random(9);
+        for (int y = 0; y < 1000; y++) for (int x = 0; x < 1000; x++) image.setRGB(x, y, random.nextInt(0x1000000));
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", png);
+        var result = service.storeMediaBytes(png.toByteArray(), "ảnh-gốc.png", "IMAGE/PNG",
+                "Ảnh sản phẩm", null, false, UUID.randomUUID());
+        assertThat(result.mimeType()).isEqualTo("image/jpeg");
+        assertThat(result.publicUrl()).endsWith(".jpg").doesNotContain(".png");
+        assertThat(result.fileSize()).isLessThan(500_000);
+        assertThat(result.width()).isEqualTo(1000);
+        assertThat(result.height()).isEqualTo(1000);
+        var put = org.mockito.ArgumentCaptor.forClass(PutObjectArgs.class);
+        verify(minio).putObject(put.capture());
+        assertThat(put.getValue().contentType()).isEqualTo("image/jpeg");
+        assertThat(put.getValue().object()).endsWith(".jpg");
+    }
+
+    @Test
     void newUploadReturnsAccurateEmptyUsageWithoutScanningExistingContent() throws Exception {
         when(mediaRepo.findByContentSha256(anyString())).thenReturn(Optional.empty());
         when(variants.generateAndUpload(any(), anyString(), anyString())).thenReturn(Map.of());

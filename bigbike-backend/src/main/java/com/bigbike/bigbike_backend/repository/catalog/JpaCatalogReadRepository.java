@@ -54,6 +54,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.cache.annotation.Cacheable;
@@ -436,14 +437,15 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         if (entity.getVariants() == null) {
             return List.of();
         }
+        UnaryOperator<String> colorLabel = colorAccessibilityLabelService.localizer(locale);
         return entity.getVariants().stream()
                 .sorted(VARIANT_ORDER)
-                .map(v -> toVariantForListing(v, entity, locale))
+                .map(v -> toVariantForListing(v, entity, locale, colorLabel))
                 .toList();
     }
 
     /** Same as {@link #toVariant} but skips gallery — list/facets never render variant media. */
-    private ProductVariant toVariantForListing(ProductVariantEntity entity, ProductEntity product, String locale) {
+    private ProductVariant toVariantForListing(ProductVariantEntity entity, ProductEntity product, String locale, UnaryOperator<String> colorLabel) {
         // PRODUCT_RULE_013: a variant without its own retailPrice falls back to the product's shared
         // retailPrice/salePrice (VariantPricing) — same rule used by cart/checkout pricing.
         BigDecimal effectiveRetail = VariantPricing.regularPrice(product, entity);
@@ -459,7 +461,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ? List.of()
                 : entity.getOptions().stream()
                         .sorted(VARIANT_OPTION_ORDER)
-                        .map(option -> toVariantOption(option, true, locale))
+                        .map(option -> toVariantOption(option, true, locale, colorLabel))
                         .toList();
 
         return new ProductVariant(
@@ -1070,14 +1072,15 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
         if (entity.getVariants() == null) {
             return List.of();
         }
+        UnaryOperator<String> colorLabel = colorAccessibilityLabelService.localizer(locale);
         List<ProductVariant> variants = entity.getVariants().stream()
                 .sorted(VARIANT_ORDER)
-                .map(v -> toVariant(v, entity, publicView, locale))
+                .map(v -> toVariant(v, entity, publicView, locale, colorLabel))
                 .toList();
         return withColorScopedVariantMedia(variants);
     }
 
-    private ProductVariant toVariant(ProductVariantEntity entity, ProductEntity product, boolean publicView, String locale) {
+    private ProductVariant toVariant(ProductVariantEntity entity, ProductEntity product, boolean publicView, String locale, UnaryOperator<String> colorLabel) {
         // PRODUCT_RULE_013: a variant without its own retailPrice falls back to the product's shared
         // retailPrice/salePrice (VariantPricing) — same rule used by cart/checkout pricing.
         BigDecimal effectiveRetail = VariantPricing.regularPrice(product, entity);
@@ -1100,7 +1103,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 ? List.of()
                 : entity.getOptions().stream()
                         .sorted(VARIANT_OPTION_ORDER)
-                        .map(option -> toVariantOption(option, publicView, locale))
+                        .map(option -> toVariantOption(option, publicView, locale, colorLabel))
                         .toList();
 
         List<GalleryMedia> gallery = entity.getGallery() == null
@@ -1149,7 +1152,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
      * variant's own gallery image (see {@code VariantSelector.tsx}), so no
      * per-term swatch or hex value is surfaced here.
      */
-    private ProductVariantOption toVariantOption(ProductVariantOptionEntity option, boolean publicView, String locale) {
+    private ProductVariantOption toVariantOption(ProductVariantOptionEntity option, boolean publicView, String locale, UnaryOperator<String> colorLabel) {
         AttributeEntity attribute = option.getAttribute();
         AttributeValueEntity value = option.getAttributeValue();
 
@@ -1175,7 +1178,7 @@ public class JpaCatalogReadRepository implements CatalogReadRepository {
                 && LOCALE_EN.equalsIgnoreCase(locale)
                 && attribute != null
                 && "color".equals(attribute.getCode())
-                ? colorAccessibilityLabelService.localize(rawColorValue, locale)
+                ? colorLabel.apply(rawColorValue)
                 : null;
 
         return new ProductVariantOption(

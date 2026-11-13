@@ -89,9 +89,15 @@ class ArticleExcerptAuthorRemovalMigrationPostgresTest {
     }
 
     private void executeMigration(Statement statement) throws Exception {
-        try (InputStream input = Objects.requireNonNull(getClass().getResourceAsStream(
-                "/db/migration/V1091__remove_article_excerpt_and_author_fields.sql"))) {
-            statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
+        // Applied migrations are immutable. Verify the complete forward repair chain.
+        for (String migration : new String[] {
+                "V1091__remove_article_excerpt_and_author_fields.sql",
+                "V1095__clean_nested_retired_article_audit_fields.sql"
+        }) {
+            try (InputStream input = Objects.requireNonNull(getClass().getResourceAsStream(
+                    "/db/migration/" + migration))) {
+                statement.execute(new String(input.readAllBytes(), StandardCharsets.UTF_8));
+            }
         }
     }
 

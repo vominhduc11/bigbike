@@ -48,6 +48,7 @@ type Props = {
   previewMode?: boolean;
   /** GMC deep link: render the selected variant's actual price, image and stock immediately. */
   initialVariantId?: string;
+  fallback?: boolean;
 };
 
 /** Shape trả về của /api/products/[slug]/snapshot — chỉ phần cần freshness (giá/tồn/variants). */
@@ -70,6 +71,7 @@ export function PurchaseSection({
   zaloUrl,
   previewMode = false,
   initialVariantId,
+  fallback = false,
 }: Props) {
   const tb = useTranslations("PdpBuyBox");
   const locale = useLocale();
@@ -79,7 +81,12 @@ export function PurchaseSection({
   // Trạng thái Còn/Hết được fetch lại ở CLIENT sau khi load để luôn tươi
   // → tồn đổi liên tục, không cần SEO). Props ISR là giá trị ban đầu hợp lệ nên cập nhật
   // liền mạch, KHÔNG layout-shift/skeleton; refetch khi quay lại tab.
-  const { data: snapshot } = useQuery<ProductSnapshot>({
+  const {
+    data: snapshot,
+    isError: snapshotError,
+    isFetchedAfterMount,
+    isFetching,
+  } = useQuery<ProductSnapshot>({
     // locale trong key → đổi ngôn ngữ refetch lại để tên màu/size đổi theo.
     queryKey: queryKeys.productSnapshot(product.slug, locale),
     queryFn: async () => {
@@ -89,6 +96,7 @@ export function PurchaseSection({
     },
     staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
+    refetchOnMount: fallback ? "always" : true,
     retry: 2,
     // Admin live preview renders an unsaved draft (slug may not exist yet) and gets
     // its price/stock from the postMessage payload — there's nothing to poll.
@@ -186,8 +194,11 @@ export function PurchaseSection({
   // Ở chế độ xem trước (admin) luôn KHÔNG cho mua: sản phẩm nháp chưa có trong kho,
   // mọi thao tác mua sẽ vô nghĩa/đổ lỗi. canBuy=false vô hiệu hoá cả nút thêm giỏ,
   // mua ngay (disabled) lẫn thanh mua cố định trên mobile (mirror trạng thái nút gốc).
+  const fallbackLocked =
+    fallback && (!snapshot || !isFetchedAfterMount || snapshotError || isFetching);
   const canBuy =
     !previewMode &&
+    !fallbackLocked &&
     !isOutOfStock &&
     (!hasVariants || (!!selectedVariant && selectedVariant.isAvailable));
 
@@ -421,6 +432,11 @@ export function PurchaseSection({
                     </div>
                   </div>
 
+                  {fallbackLocked ? (
+                    <p role="status" className="mb-3 text-sm text-muted-foreground">
+                      {tb("priceVerificationPending")}
+                    </p>
+                  ) : null}
                   <BuyButtons
                     canBuy={canBuy}
                     adding={adding}

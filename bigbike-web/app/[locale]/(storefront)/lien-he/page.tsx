@@ -1,8 +1,13 @@
+import { getStoreHours } from "@/lib/content/store-hours";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { StaticPageShell } from "@/components/layout/StaticPageShell";
 import { Container } from "@/components/layout/Container";
-import { ContactMap, ContactPageContent, type ContactInfo } from "@/components/contact/ContactPageContent";
+import {
+  ContactMap,
+  ContactPageContent,
+  type ContactInfo,
+} from "@/components/contact/ContactPageContent";
 import { listPublicSettings } from "@/lib/api/public-api";
 import { buildPublicMetadata } from "@/lib/seo/metadata";
 import { toPagePath } from "@/lib/utils/routes";
@@ -18,7 +23,7 @@ import type { Locale } from "@/i18n/locale";
 type ContactPageProps = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: ContactPageProps): Promise<Metadata> {
-  const { locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const { locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   const t = await getTranslations("StaticPage");
   return buildPublicMetadata({
@@ -32,21 +37,22 @@ export async function generateMetadata({ params }: ContactPageProps): Promise<Me
 }
 
 export default async function ContactPage({ params }: ContactPageProps) {
-  const { locale } = await params as Awaited<typeof params> & { locale: Locale };
+  const { locale } = (await params) as Awaited<typeof params> & { locale: Locale };
   setRequestLocale(locale);
   const t = await getTranslations("Contact");
   const settingsResult = await listPublicSettings(locale);
   const settings = settingsResult.data ?? [];
   const setting = (key: string) => pickSetting(settings, [key]);
 
+  const hours = getStoreHours(locale);
   const contact: ContactInfo = {
     hotline: setting("hotline"),
     hotline2: setting("hotline_2"),
     hotline3: setting("hotline_3"),
     address: setting("contact_address"),
-    hoursWeekday: setting("opening_hours_weekday"),
-    hoursWeekend: setting("opening_hours_weekend"),
-    hoursHoliday: setting("opening_hours_holiday"),
+    hoursWeekday: hours.weekday,
+    hoursWeekend: hours.weekend,
+    hoursHoliday: hours.holiday,
     zaloUrl: setting("zalo_url"),
     facebookUrl: setting("facebook_url"),
     youtubeUrl: setting("youtube_url"),
@@ -59,7 +65,12 @@ export default async function ContactPage({ params }: ContactPageProps) {
   const title = t("titleFallback");
 
   return (
-    <StaticPageShell title={title} breadcrumb={[]} showHero={false} mainClassName="pb-10 bb-contact-page">
+    <StaticPageShell
+      title={title}
+      breadcrumb={[]}
+      showHero={false}
+      mainClassName="pb-10 bb-contact-page"
+    >
       <ContactMap contact={contact} />
       <Container>
         <ContactPageContent contact={contact} />

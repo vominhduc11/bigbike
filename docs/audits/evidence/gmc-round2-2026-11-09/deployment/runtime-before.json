@@ -1,0 +1,65 @@
+{
+  "at": "2026-11-09T14:53:46.981594+00:00",
+  "containers": [
+    {
+      "name": "bigbike-web",
+      "id": "3b0fcb669911f1497da812f1ec7097ba3a31ae4e8f1526914eeb62780b9a365c",
+      "image": "sha256:47aecbc31efa2c7d56540834fd4312501353ab6b0ac3d8628dd003558e986a88",
+      "startedAt": "2026-11-09T14:32:08.474405838Z",
+      "health": "unhealthy",
+      "differentEnvironmentKeys": [],
+      "memory": 536870912,
+      "plannedMemory": "536870912"
+    },
+    {
+      "name": "bigbike-admin",
+      "id": "2a19a8b2c0bba17abf167884f01d9001245aa258187587b02d8b33fddc732877",
+      "image": "sha256:8dea43a4e5ea559ba4ef283873c7531d184a7bba0845df9a6f42bf0086b0641f",
+      "startedAt": "2026-11-07T03:41:18.049572738Z",
+      "health": "healthy",
+      "differentEnvironmentKeys": [],
+      "memory": 134217728,
+      "plannedMemory": "134217728"
+    },
+    {
+      "name": "bigbike-backend",
+      "id": "428ebf65d1c0bc2ace13409e2dfb2ea39767b6a52d67d1ccd379a5da164024c8",
+      "image": "sha256:dc23f8e64cc4dd484cb82dd8e9506e152b63c61bb21947aebedb2558aba9d72a",
+      "startedAt": "2026-11-07T03:45:19.482438267Z",
+      "health": "healthy",
+      "differentEnvironmentKeys": [],
+      "memory": 2147483648,
+      "plannedMemory": "2147483648"
+    },
+    {
+      "name": "bigbike-postgres",
+      "id": "517654330f544d050fbda248552154cc345750708dd777d522050facb1591808",
+      "image": "sha256:108b27c919e6e7bc124350fb265deea9adac58e118eade428c6d1ad44b90debe",
+      "startedAt": "2026-09-06T13:11:55.84558863Z",
+      "health": "healthy",
+      "differentEnvironmentKeys": [],
+      "memory": 536870912,
+      "plannedMemory": "536870912"
+    },
+    {
+      "name": "bigbike-redis",
+      "id": "290f9a4fc7aa5769ab4feb1110469667761bbe0487142f03e0fca33a089efecd",
+      "image": "sha256:2a51817f79255c8b69f86a974459c2e0359aff81417d80158f2b9e541e6f4b33",
+      "startedAt": "2026-09-06T13:11:55.829381147Z",
+      "health": "healthy",
+      "differentEnvironmentKeys": [],
+      "memory": 201326592,
+      "plannedMemory": "201326592"
+    },
+    {
+      "name": "bigbike-minio",
+      "id": "8b958d2ab8f44fefedfcac5974f5f1a6fdf9580801ae68a1e5462c3881bfbc0c",
+      "image": "sha256:9d668e47f1fc60ea49af4203deee87a657eb1aa0e2761fee2c7c2d1df282c880",
+      "startedAt": "2026-09-06T13:11:55.900833164Z",
+      "health": "healthy",
+      "differentEnvironmentKeys": [],
+      "memory": 805306368,
+      "plannedMemory": "805306368"
+    }
+  ]
+}

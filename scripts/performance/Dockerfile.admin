@@ -1,0 +1,4 @@
+FROM nginx:alpine
+COPY bigbike-admin/dist /usr/share/nginx/html
+COPY bigbike-admin/nginx.conf /etc/nginx/conf.d/default.conf.template
+RUN VITE_STOREFRONT_BASE_URL=http://localhost:13000 envsubst '${VITE_STOREFRONT_BASE_URL}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf

@@ -4,9 +4,9 @@ import com.bigbike.bigbike_backend.domain.catalog.DescriptionBlock;
 import com.bigbike.bigbike_backend.domain.catalog.Product;
 import com.bigbike.bigbike_backend.domain.catalog.SizeGuideSection;
 import com.bigbike.bigbike_backend.domain.catalog.SuitabilitySection;
-import com.bigbike.bigbike_backend.persistence.entity.media.MediaEntity;
 import com.bigbike.bigbike_backend.persistence.repository.media.MediaJpaRepository;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,27 +39,39 @@ public class ProductRichHtmlImageEnricher {
             product.descriptionBlocks().forEach(block -> fragments.add(htmlOf(block)));
         }
 
-        Map<String, Dimensions> dimensions = resolveDimensions(fragments);
+        // Keep parsed fragments only for this read. Source discovery and decoration previously
+        // parsed the same HTML twice; sharing the DOM preserves Jsoup normalization exactly.
+        Map<String, Document> documents = new HashMap<>();
+        for (String fragment : fragments) {
+            if (fragment == null || fragment.isBlank()) continue;
+            documents.computeIfAbsent(fragment, html -> {
+                Document document = Jsoup.parseBodyFragment(html);
+                document.outputSettings().prettyPrint(false);
+                return document;
+            });
+        }
+        Map<String, Dimensions> dimensions = resolveDimensions(documents.values());
+        Map<String, String> decorated = new HashMap<>();
+        documents.forEach((html, document) -> decorated.put(html, decorate(document, dimensions)));
         return product.withRichHtml(
-                decorate(product.description(), dimensions),
-                decorateBlocks(product.descriptionBlocks(), dimensions),
-                decorate(product.suitabilitySection(), dimensions),
-                decorate(product.sizeGuideSection(), dimensions)
+                decoratedHtml(product.description(), decorated),
+                decorateBlocks(product.descriptionBlocks(), decorated),
+                decorate(product.suitabilitySection(), decorated),
+                decorate(product.sizeGuideSection(), decorated)
         );
     }
 
-    private Map<String, Dimensions> resolveDimensions(List<String> fragments) {
+    private Map<String, Dimensions> resolveDimensions(Collection<Document> documents) {
         Set<String> sources = new HashSet<>();
-        for (String fragment : fragments) {
-            if (fragment == null || fragment.isBlank()) continue;
-            for (Element image : Jsoup.parseBodyFragment(fragment).select("img[src]")) {
+        for (Document document : documents) {
+            for (Element image : document.select("img[src]")) {
                 String src = image.attr("src").trim();
                 if (!src.isBlank()) sources.add(src);
             }
         }
         if (sources.isEmpty()) return Map.of();
         Map<String, Dimensions> result = new HashMap<>();
-        for (MediaEntity media : mediaJpaRepository.findByPublicUrlIn(sources)) {
+        for (MediaJpaRepository.PublicImageDimensions media : mediaJpaRepository.findImageDimensionsByPublicUrlIn(sources)) {
             if (media.getPublicUrl() != null && valid(media.getWidth()) && valid(media.getHeight())) {
                 result.put(media.getPublicUrl(), new Dimensions(media.getWidth(), media.getHeight()));
             }
@@ -71,10 +83,11 @@ public class ProductRichHtmlImageEnricher {
         return value != null && value > 0;
     }
 
-    private static String decorate(String html, Map<String, Dimensions> dimensions) {
-        if (html == null || html.isBlank()) return html;
-        Document document = Jsoup.parseBodyFragment(html);
-        document.outputSettings().prettyPrint(false);
+    private static String decoratedHtml(String html, Map<String, String> decorated) {
+        return html == null || html.isBlank() ? html : decorated.get(html);
+    }
+
+    private static String decorate(Document document, Map<String, Dimensions> dimensions) {
         for (Element image : document.select("img[src]")) {
             if (!image.hasAttr("loading")) image.attr("loading", "lazy");
             if (!image.hasAttr("decoding")) image.attr("decoding", "async");
@@ -88,39 +101,39 @@ public class ProductRichHtmlImageEnricher {
     }
 
     private static List<DescriptionBlock> decorateBlocks(
-            List<DescriptionBlock> blocks, Map<String, Dimensions> dimensions) {
+            List<DescriptionBlock> blocks, Map<String, String> decorated) {
         if (blocks == null) return null;
-        return blocks.stream().map(block -> decorateBlock(block, dimensions)).toList();
+        return blocks.stream().map(block -> decorateBlock(block, decorated)).toList();
     }
 
-    private static DescriptionBlock decorateBlock(DescriptionBlock block, Map<String, Dimensions> dimensions) {
+    private static DescriptionBlock decorateBlock(DescriptionBlock block, Map<String, String> decorated) {
         if (block instanceof DescriptionBlock.ParagraphBlock value) {
             return DescriptionBlock.ParagraphBlock.builder().type(value.getType())
-                    .html(decorate(value.getHtml(), dimensions)).build();
+                    .html(decoratedHtml(value.getHtml(), decorated)).build();
         }
         if (block instanceof DescriptionBlock.CalloutBlock value) {
             return DescriptionBlock.CalloutBlock.builder().type(value.getType()).variant(value.getVariant())
-                    .html(decorate(value.getHtml(), dimensions)).build();
+                    .html(decoratedHtml(value.getHtml(), decorated)).build();
         }
         if (block instanceof DescriptionBlock.FeatureBlock value) {
             return DescriptionBlock.FeatureBlock.builder()
                     .type(value.getType()).side(value.getSide()).url(value.getUrl()).alt(value.getAlt())
                     .caption(value.getCaption()).subheading(value.getSubheading()).heading(value.getHeading())
-                    .html(decorate(value.getHtml(), dimensions)).build();
+                    .html(decoratedHtml(value.getHtml(), decorated)).build();
         }
         return block;
     }
 
-    private static SuitabilitySection decorate(SuitabilitySection section, Map<String, Dimensions> dimensions) {
+    private static SuitabilitySection decorate(SuitabilitySection section, Map<String, String> decorated) {
         if (section == null) return null;
         return SuitabilitySection.builder().title(section.getTitle())
-                .html(decorate(section.getHtml(), dimensions)).build();
+                .html(decoratedHtml(section.getHtml(), decorated)).build();
     }
 
-    private static SizeGuideSection decorate(SizeGuideSection section, Map<String, Dimensions> dimensions) {
+    private static SizeGuideSection decorate(SizeGuideSection section, Map<String, String> decorated) {
         if (section == null) return null;
         return SizeGuideSection.builder().title(section.getTitle())
-                .html(decorate(section.getHtml(), dimensions)).build();
+                .html(decoratedHtml(section.getHtml(), decorated)).build();
     }
 
     private static String htmlOf(DescriptionBlock block) {

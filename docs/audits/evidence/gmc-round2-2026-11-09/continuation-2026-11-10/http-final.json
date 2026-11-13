@@ -1,0 +1,56 @@
+{
+  "at": "2026-11-10T01:06:34.746942+00:00",
+  "requests": [
+    {
+      "name": "home",
+      "status": 200,
+      "bytes": 527457,
+      "seconds": 0.686,
+      "generatedAt": null
+    },
+    {
+      "name": "homeEN",
+      "status": 200,
+      "bytes": 532635,
+      "seconds": 1.573,
+      "generatedAt": null
+    },
+    {
+      "name": "admin",
+      "status": 200,
+      "bytes": 3903,
+      "seconds": 0.41,
+      "generatedAt": null
+    },
+    {
+      "name": "shopping",
+      "status": 200,
+      "bytes": 1719681,
+      "seconds": 5.159,
+      "generatedAt": "2026-11-10T01:06:41.904Z"
+    },
+    {
+      "name": "inventory",
+      "status": 200,
+      "bytes": 64651,
+      "seconds": 3.717,
+      "generatedAt": "2026-11-10T01:06:46.160Z"
+    }
+  ],
+  "feed": {
+    "items": 1184,
+    "localItems": 1184,
+    "localDifferences": [],
+    "idsChangedSinceSessionStart": [],
+    "offerChangesSinceSessionStart": [],
+    "missingBrand": [
+      "ALTL-MAO",
+      "ALTL-5FDUAL",
+      "ALTL-QUAN",
+      "D30VT-COMBO3",
+      "D30VT-LUNG",
+      "D30VT-TAY",
+      "D30VT-VAI"
+    ]
+  }
+}

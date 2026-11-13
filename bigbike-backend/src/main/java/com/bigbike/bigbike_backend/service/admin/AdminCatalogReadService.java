@@ -11,10 +11,13 @@ import com.bigbike.bigbike_backend.service.common.SortDirection;
 import com.bigbike.bigbike_backend.service.common.SortParser;
 import com.bigbike.bigbike_backend.service.common.SortSpec;
 import com.bigbike.bigbike_backend.util.AdminSearchText;
+import java.text.CollationKey;
 import java.text.Collator;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -216,7 +219,13 @@ public class AdminCatalogReadService {
         }
 
         Comparator<Product> comparator = switch (sortSpec.field()) {
-            case "name" -> Comparator.comparing(Product::name, VI_NAME_COLLATOR::compare);
+            case "name" -> {
+                // Cache once per distinct name in this sort, retaining exactly the same Vietnamese
+                // collation. A request-local clone also avoids sharing Collator's mutable state.
+                Collator collator = (Collator) VI_NAME_COLLATOR.clone();
+                Map<String, CollationKey> keys = new HashMap<>();
+                yield Comparator.comparing(product -> keys.computeIfAbsent(product.name(), collator::getCollationKey));
+            }
             case "price" -> Comparator.comparing(product -> product.price().retailPrice());
             case "createdAt" -> Comparator.comparing(Product::createdAt);
             case "updatedAt" -> Comparator.comparing(Product::updatedAt);

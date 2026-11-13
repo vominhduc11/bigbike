@@ -1,0 +1,83 @@
+{
+  "scope": "Offline compression component; two serial JVM arms from preserved pre-change dirty source and candidate, same generated/committed files, JVM/heap/warmup/sample count; no network/MinIO/upload walltime, peak-RSS, concurrent-capacity or field-CWV claim. Five samples are descriptive lab data only.",
+  "command": "javac actual snapshot ImageCompressionService.java + CompressionProfile.java + scripts/performance/VariantDecodeProfile.java; java -Xms64m -Xmx256m -cp <isolated-classes-and-identical-local-dependency-jars> VariantDecodeProfile repeated|reuse 5 bigbike-backend/src/test/resources",
+  "rows": [
+    {
+      "fixture": "jpeg-noise-2000x1200",
+      "source_sha256": "7811d1bf1db66d23eb05eb63915c2a37a6686ecc5b674d34796012e0545c088d",
+      "before_decodes": 4,
+      "after_decodes": 1,
+      "before_median_ms": 799.100493,
+      "after_median_ms": 424.999947,
+      "median_time_change_percent": -46.82,
+      "before_median_allocated_bytes": 120224072,
+      "after_median_allocated_bytes": 72432800,
+      "allocation_change_percent": -39.75,
+      "all_output_bytes_dimensions_alpha_equal": true
+    },
+    {
+      "fixture": "png-opaque-noise-2000x1200",
+      "source_sha256": "772281aa2799c58af8bbc7d6d8fb5eb6d8804ec3d974292c4ce8c3ed3c818e1d",
+      "before_decodes": 4,
+      "after_decodes": 1,
+      "before_median_ms": 1366.055149,
+      "after_median_ms": 1051.568766,
+      "median_time_change_percent": -23.02,
+      "before_median_allocated_bytes": 144957272,
+      "after_median_allocated_bytes": 73961472,
+      "allocation_change_percent": -48.98,
+      "all_output_bytes_dimensions_alpha_equal": true
+    },
+    {
+      "fixture": "png-alpha-noise-2000x1200",
+      "source_sha256": "4da28ae67fea90e6df907de25436e30dc265cf9b4ab5d12190122bddbf8c74f9",
+      "before_decodes": 4,
+      "after_decodes": 1,
+      "before_median_ms": 2952.934052,
+      "after_median_ms": 2469.283996,
+      "median_time_change_percent": -16.38,
+      "before_median_allocated_bytes": 181920712,
+      "after_median_allocated_bytes": 92548736,
+      "allocation_change_percent": -49.13,
+      "all_output_bytes_dimensions_alpha_equal": true
+    },
+    {
+      "fixture": "customer-photo-wide.webp",
+      "source_sha256": "c0bb83cecdc47f0cdc952618347b50492cfbca33fb8b9041f6b079bc0acd4d7f",
+      "before_decodes": 4,
+      "after_decodes": 1,
+      "before_median_ms": 104.756703,
+      "after_median_ms": 27.067932,
+      "median_time_change_percent": -74.16,
+      "before_median_allocated_bytes": 27929496,
+      "after_median_allocated_bytes": 7474232,
+      "allocation_change_percent": -73.24,
+      "all_output_bytes_dimensions_alpha_equal": true
+    },
+    {
+      "fixture": "customer-photo-alpha.webp",
+      "source_sha256": "e043cfd1425e25d281bcdbaf5274856d2f815a095d857c49cce08ce71509dd39",
+      "before_decodes": 1,
+      "after_decodes": 1,
+      "before_median_ms": 5.211269,
+      "after_median_ms": 6.955879,
+      "median_time_change_percent": 33.48,
+      "before_median_allocated_bytes": 150688,
+      "after_median_allocated_bytes": 150824,
+      "allocation_change_percent": 0.09,
+      "all_output_bytes_dimensions_alpha_equal": true
+    }
+  ],
+  "source_files": [
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+      "before_sha256": "705410bad64e18d797f9cd50746e0824092efbbc5eedc83843f4ced9382a2dd9",
+      "after_sha256": "5ea5c52f3f83b4e7b46e1911d6acc7139eae8860b95e4e57dae307b403964596"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+      "before_sha256": "8a302930d5ac6f9281f0b1152e857cf74f3ac9940994e3af6b263006e9ca4e5a",
+      "after_sha256": "8220ab2731b6668123504ea7e9806162b6d3639e6bf3f5d11106892af0e2fd3d"
+    }
+  ]
+}

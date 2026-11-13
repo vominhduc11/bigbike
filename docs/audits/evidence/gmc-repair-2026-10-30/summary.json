@@ -1,0 +1,114 @@
+{
+  "checkedAt": "2026-10-30T08:27:16.636539+00:00",
+  "products": 214,
+  "offers": 1188,
+  "uniqueSkus": 1187,
+  "duplicates": [
+    [
+      {
+        "productId": "prod_c3340fe3669f40e38c9fca236653f07f",
+        "slug": "day-thun-rang-hang-kewig-bd-1l",
+        "variantId": null,
+        "sku": "DRHL-KEWIG-BD-1L",
+        "name": "Dây thun ràng hành lý bốn sợi co giãn móc thép Kewig BD-1L 90 cm",
+        "image": {
+          "id": null,
+          "url": "/media/uploads/8edd67a1-ffe9-4ab3-b3dd-b9ab606250ef/bd-1__17_.png",
+          "alt": "bd-1__17_.png",
+          "width": 800,
+          "height": 800,
+          "mimeType": "image/png"
+        },
+        "additionalImages": 1,
+        "brand": "KEWIG",
+        "price": {
+          "retailPrice": 145000.0,
+          "salePrice": null,
+          "currency": "VND"
+        },
+        "available": true
+      },
+      {
+        "productId": "prod_bd0f1b068f234567be9251e11fe647e2",
+        "slug": "day-thun-rang-non-bao-hiem-hanh-ly-kewig-bd-1s",
+        "variantId": "var_2a9de4e6a23c47e7b38f87c686875622",
+        "sku": "DRHL-KEWIG-BD-1L",
+        "name": "90cm",
+        "image": {
+          "id": null,
+          "url": "/media/uploads/db764b3d-1f74-452f-a5fc-a532ac795d41/day-thun-rang-hanh-ly-non-bao-hiem-cao-cap-kewig-bd-1s.webp",
+          "alt": "bd-1__17_.png",
+          "width": 1800,
+          "height": 1800,
+          "mimeType": "image/webp"
+        },
+        "additionalImages": 4,
+        "brand": "KEWIG",
+        "price": {
+          "retailPrice": 145000.0,
+          "salePrice": null,
+          "currency": "VND"
+        },
+        "available": true
+      }
+    ]
+  ],
+  "missingBrand": [
+    "ALTL-MAO",
+    "ALTL-5FDUAL",
+    "ALTL-QUAN",
+    "D30VT-COMBO3",
+    "D30VT-LUNG",
+    "D30VT-TAY",
+    "D30VT-VAI"
+  ],
+  "noAdditional": 348,
+  "priceAndSkuSamples": [
+    {
+      "productId": "wp-prod-32398",
+      "slug": "quan-bao-ho-jean-spirit",
+      "variantId": "wp-var-39315",
+      "sku": "SPIRIT-XANHOM-36",
+      "name": "xanh-om - 36",
+      "image": {
+        "id": null,
+        "url": "/media/migration/wordpress/58/584ac08234d148c281a893a8f38df5d572e92dca7e4b28ff91d417d976e0c34d/34-scaled.jpg",
+        "alt": "34",
+        "width": 1920,
+        "height": 2560,
+        "mimeType": "image/jpeg"
+      },
+      "additionalImages": 0,
+      "brand": "SPIRIT MOTO",
+      "price": {
+        "retailPrice": 2500000.0,
+        "salePrice": 290000.0,
+        "currency": "VND"
+      },
+      "available": true
+    },
+    {
+      "productId": "prod_b41f618ef7d44e2aba972a40fc97a19e",
+      "slug": "mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon",
+      "variantId": "var_97a13dab38974c5cbf99f2317528d107",
+      "sku": "MLH-LS2-FF901X-SOLID-13990000XS",
+      "name": "Nguyên Bản Carbon - XS",
+      "image": {
+        "id": null,
+        "url": "/media/uploads/290cb7ad-332d-4ce4-b91b-ae4fb4909436/mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon-chup-nghieng.webp",
+        "alt": "mu-bao-hiem-lat-ham-ls2-ff901-advant-x-carbon-chup-nghieng.webp",
+        "width": null,
+        "height": null,
+        "mimeType": "image/webp"
+      },
+      "additionalImages": 0,
+      "brand": "LS2",
+      "price": {
+        "retailPrice": 13990000.0,
+        "salePrice": null,
+        "currency": "VND"
+      },
+      "available": false
+    }
+  ]
+}

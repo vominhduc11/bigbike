@@ -1,0 +1,2035 @@
+{
+  "generated_from": "current workspace source 2026-11-13",
+  "warning": "Annotation inventory is not proof every composed endpoint is callable or fully reviewed; OpenApiContractDriftTest is the executable endpoint-set check. Statuses apply to this continuation only.",
+  "controller_count": 53,
+  "controller_mapping_annotation_count": 263,
+  "controllers": [
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminAdminUsersController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/admin-users\")",
+          "line": 32
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 41
+        },
+        {
+          "annotation": "@GetMapping(\"/{id}\")",
+          "line": 54
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 63
+        },
+        {
+          "annotation": "@PostMapping(\"/{id}/resend-invite\")",
+          "line": 86
+        },
+        {
+          "annotation": "@PatchMapping(\"/{id}\")",
+          "line": 100
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminAttributeController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin\")",
+          "line": 32
+        },
+        {
+          "annotation": "@GetMapping(\"/attributes\")",
+          "line": 42
+        },
+        {
+          "annotation": "@PostMapping(\"/attributes\")",
+          "line": 48
+        },
+        {
+          "annotation": "@DeleteMapping(\"/attributes/{id}\")",
+          "line": 56
+        },
+        {
+          "annotation": "@DeleteMapping(\"/attribute-values/{id}\")",
+          "line": 65
+        },
+        {
+          "annotation": "@GetMapping(\"/attributes/{attributeId}/values\")",
+          "line": 74
+        },
+        {
+          "annotation": "@PatchMapping(\"/attributes/{id}\")",
+          "line": 82
+        },
+        {
+          "annotation": "@PostMapping(\"/attributes/{attributeId}/values\")",
+          "line": 91
+        },
+        {
+          "annotation": "@PatchMapping(\"/attribute-values/{id}\")",
+          "line": 100
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminAuditLogController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/audit-logs\")",
+          "line": 20
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 28
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCatalogController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin\")",
+          "line": 51
+        },
+        {
+          "annotation": "@GetMapping(\"/products\")",
+          "line": 77
+        },
+        {
+          "annotation": "@GetMapping(\"/products/{id}\")",
+          "line": 117
+        },
+        {
+          "annotation": "@PostMapping(\"/products\")",
+          "line": 126
+        },
+        {
+          "annotation": "@PostMapping(\"/products/preview\")",
+          "line": 141
+        },
+        {
+          "annotation": "@PatchMapping(\"/products/{id}\")",
+          "line": 152
+        },
+        {
+          "annotation": "@PatchMapping(\"/products/{id}/publish\")",
+          "line": 162
+        },
+        {
+          "annotation": "@DeleteMapping(\"/products/{id}\")",
+          "line": 180
+        },
+        {
+          "annotation": "@PostMapping(\"/products/{id}/restore\")",
+          "line": 193
+        },
+        {
+          "annotation": "@DeleteMapping(\"/products/{id}/permanent\")",
+          "line": 202
+        },
+        {
+          "annotation": "@PostMapping(\"/products/homepage-blocks\")",
+          "line": 212
+        },
+        {
+          "annotation": "@GetMapping(\"/categories\")",
+          "line": 221
+        },
+        {
+          "annotation": "@GetMapping(\"/categories/tree\")",
+          "line": 258
+        },
+        {
+          "annotation": "@PostMapping(\"/categories/permanent-delete-impact\")",
+          "line": 267
+        },
+        {
+          "annotation": "@GetMapping(\"/categories/{id}\")",
+          "line": 276
+        },
+        {
+          "annotation": "@PostMapping(\"/categories\")",
+          "line": 285
+        },
+        {
+          "annotation": "@PatchMapping(\"/categories/{id}\")",
+          "line": 294
+        },
+        {
+          "annotation": "@DeleteMapping(\"/categories/{id}\")",
+          "line": 310
+        },
+        {
+          "annotation": "@PostMapping(\"/categories/{id}/restore\")",
+          "line": 319
+        },
+        {
+          "annotation": "@DeleteMapping(\"/categories/{id}/permanent\")",
+          "line": 328
+        },
+        {
+          "annotation": "@GetMapping(\"/brands\")",
+          "line": 338
+        },
+        {
+          "annotation": "@GetMapping(\"/brands/{id}\")",
+          "line": 366
+        },
+        {
+          "annotation": "@PostMapping(\"/brands\")",
+          "line": 375
+        },
+        {
+          "annotation": "@PostMapping(\"/brands/logo/import-url\")",
+          "line": 384
+        },
+        {
+          "annotation": "@PatchMapping(\"/brands/{id}\")",
+          "line": 398
+        },
+        {
+          "annotation": "@DeleteMapping(\"/brands/{id}\")",
+          "line": 408
+        },
+        {
+          "annotation": "@PostMapping(\"/brands/{id}/restore\")",
+          "line": 417
+        },
+        {
+          "annotation": "@DeleteMapping(\"/brands/{id}/permanent\")",
+          "line": 426
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminContentController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/content\")",
+          "line": 42
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 67
+        },
+        {
+          "annotation": "@GetMapping(\"/{type}/{id}\")",
+          "line": 97
+        },
+        {
+          "annotation": "@PostMapping(\"/articles\")",
+          "line": 107
+        },
+        {
+          "annotation": "@PostMapping(\"/articles/preview\")",
+          "line": 120
+        },
+        {
+          "annotation": "@PatchMapping(\"/articles/{id}\")",
+          "line": 130
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{type}/{id}\")",
+          "line": 140
+        },
+        {
+          "annotation": "@PostMapping(\"/articles/{id}/restore\")",
+          "line": 150
+        },
+        {
+          "annotation": "@DeleteMapping(\"/articles/{id}/permanent\")",
+          "line": 159
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCustomerController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/customers\")",
+          "line": 31
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 39
+        },
+        {
+          "annotation": "@GetMapping(\"/summary\")",
+          "line": 54
+        },
+        {
+          "annotation": "@GetMapping(\"/{customerId}\")",
+          "line": 60
+        },
+        {
+          "annotation": "@PatchMapping(\"/{customerId}\")",
+          "line": 69
+        },
+        {
+          "annotation": "@PatchMapping(\"/{customerId}/status\")",
+          "line": 80
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{customerId}/avatar\")",
+          "line": 91
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminDashboardController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/dashboard\")",
+          "line": 16
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 24
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminHomeHighlightsController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/home/category-highlights\")",
+          "line": 23
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 31
+        },
+        {
+          "annotation": "@PutMapping",
+          "line": 42
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminHomeVideoController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/home-videos\")",
+          "line": 29
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 37
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 43
+        },
+        {
+          "annotation": "@PatchMapping(\"/{id}\")",
+          "line": 53
+        },
+        {
+          "annotation": "@PostMapping(\"/reorder\")",
+          "line": 63
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{id}\")",
+          "line": 72
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminInventoryController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/inventory\")",
+          "line": 25
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 32
+        },
+        {
+          "annotation": "@GetMapping(\"/summary\")",
+          "line": 44
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminLegacyDiscontinuedProductController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/legacy-discontinued-products\")",
+          "line": 30
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 38
+        },
+        {
+          "annotation": "@GetMapping(\"/{id}\")",
+          "line": 50
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 59
+        },
+        {
+          "annotation": "@PatchMapping(\"/{id}\")",
+          "line": 68
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminMediaController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/media\")",
+          "line": 50
+        },
+        {
+          "annotation": "@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)",
+          "line": 61
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 78
+        },
+        {
+          "annotation": "@GetMapping(\"/stats\")",
+          "line": 109
+        },
+        {
+          "annotation": "@GetMapping(\"/tags\")",
+          "line": 135
+        },
+        {
+          "annotation": "@PostMapping(\"/bulk-move\")",
+          "line": 145
+        },
+        {
+          "annotation": "@PostMapping(\"/bulk-delete\")",
+          "line": 160
+        },
+        {
+          "annotation": "@PostMapping(\"/bulk-restore\")",
+          "line": 170
+        },
+        {
+          "annotation": "@PostMapping(\"/bulk-hard-delete\")",
+          "line": 180
+        },
+        {
+          "annotation": "@GetMapping(\"/{mediaId}/references\")",
+          "line": 209
+        },
+        {
+          "annotation": "@GetMapping(\"/{mediaId}\")",
+          "line": 218
+        },
+        {
+          "annotation": "@GetMapping(\"/{mediaId}/download\")",
+          "line": 227
+        },
+        {
+          "annotation": "@PatchMapping(\"/{mediaId}\")",
+          "line": 250
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{mediaId}\")",
+          "line": 261
+        },
+        {
+          "annotation": "@PostMapping(\"/{mediaId}/restore\")",
+          "line": 278
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminMediaFolderController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/media-folders\")",
+          "line": 28
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 36
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 44
+        },
+        {
+          "annotation": "@PatchMapping(\"/{id}\")",
+          "line": 54
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{id}\")",
+          "line": 64
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminMenuController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/menus\")",
+          "line": 36
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 46
+        },
+        {
+          "annotation": "@GetMapping(\"/{menuId}\")",
+          "line": 58
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 67
+        },
+        {
+          "annotation": "@PatchMapping(\"/{menuId}\")",
+          "line": 76
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{menuId}\")",
+          "line": 86
+        },
+        {
+          "annotation": "@PostMapping(\"/{menuId}/items\")",
+          "line": 98
+        },
+        {
+          "annotation": "@PatchMapping(\"/{menuId}/items/{itemId}\")",
+          "line": 109
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{menuId}/items/{itemId}\")",
+          "line": 121
+        },
+        {
+          "annotation": "@PostMapping(\"/{menuId}/items/reorder\")",
+          "line": 132
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminNotificationController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/notifications\")",
+          "line": 20
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 29
+        },
+        {
+          "annotation": "@PostMapping(\"/mark-all-read\")",
+          "line": 43
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminOrderController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/orders\")",
+          "line": 30
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 38
+        },
+        {
+          "annotation": "@GetMapping(\"/{orderId}\")",
+          "line": 59
+        },
+        {
+          "annotation": "@GetMapping(\"/{orderId}/allowed-transitions\")",
+          "line": 68
+        },
+        {
+          "annotation": "@PatchMapping(\"/{orderId}/status\")",
+          "line": 77
+        },
+        {
+          "annotation": "@GetMapping(\"/{orderId}/audit\")",
+          "line": 92
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminPermissionsController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/permissions\")",
+          "line": 19
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 26
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminPresenceController.java",
+      "mappings": [],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminProductAssignmentController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/product-assignment\")",
+          "line": 24
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 32
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminProductExportController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/products\")",
+          "line": 31
+        },
+        {
+          "annotation": "@GetMapping(value = \"/export.csv\", produces = \"text/csv\")",
+          "line": 43
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminProductImportController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/products/import\")",
+          "line": 32
+        },
+        {
+          "annotation": "@PostMapping(value = \"/validate\", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)",
+          "line": 41
+        },
+        {
+          "annotation": "@PostMapping(value = \"/commit\", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)",
+          "line": 52
+        },
+        {
+          "annotation": "@GetMapping(\"/export/{id}\")",
+          "line": 67
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminQuickSearchController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/quick-search\")",
+          "line": 20
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 28
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminRedirectController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/redirects\")",
+          "line": 33
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 41
+        },
+        {
+          "annotation": "@GetMapping(\"/{id}\")",
+          "line": 56
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 65
+        },
+        {
+          "annotation": "@PatchMapping(\"/{id}\")",
+          "line": 77
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{id}\")",
+          "line": 90
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminReportController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/reports\")",
+          "line": 39
+        },
+        {
+          "annotation": "@GetMapping(\"/analytics\")",
+          "line": 57
+        },
+        {
+          "annotation": "@GetMapping(\"/orders/export\")",
+          "line": 68
+        },
+        {
+          "annotation": "@GetMapping(\"/customers/export\")",
+          "line": 124
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminReviewController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/reviews\")",
+          "line": 43
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 52
+        },
+        {
+          "annotation": "@GetMapping(\"/summary\")",
+          "line": 66
+        },
+        {
+          "annotation": "@GetMapping(\"/{id}\")",
+          "line": 72
+        },
+        {
+          "annotation": "@PatchMapping(\"/{id}/status\")",
+          "line": 81
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{id}\")",
+          "line": 101
+        },
+        {
+          "annotation": "@PostMapping(\"/bulk-status\")",
+          "line": 122
+        },
+        {
+          "annotation": "@PostMapping(\"/bulk-delete\")",
+          "line": 144
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminRolesController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/roles\")",
+          "line": 28
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 37
+        },
+        {
+          "annotation": "@PutMapping(\"/{id}/permissions\")",
+          "line": 43
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 61
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{id}\")",
+          "line": 87
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminSettingsController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/settings\")",
+          "line": 28
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 36
+        },
+        {
+          "annotation": "@PatchMapping",
+          "line": 53
+        },
+        {
+          "annotation": "@PatchMapping(\"/{settingKey}\")",
+          "line": 64
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminSizeScaleController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin\")",
+          "line": 34
+        },
+        {
+          "annotation": "@GetMapping(\"/size-scale-groups\")",
+          "line": 44
+        },
+        {
+          "annotation": "@PostMapping(\"/size-scale-groups\")",
+          "line": 52
+        },
+        {
+          "annotation": "@PatchMapping(\"/size-scale-groups/{id}\")",
+          "line": 60
+        },
+        {
+          "annotation": "@DeleteMapping(\"/size-scale-groups/{id}\")",
+          "line": 70
+        },
+        {
+          "annotation": "@GetMapping(\"/size-scales\")",
+          "line": 79
+        },
+        {
+          "annotation": "@PostMapping(\"/size-scales\")",
+          "line": 85
+        },
+        {
+          "annotation": "@PatchMapping(\"/size-scales/{id}\")",
+          "line": 93
+        },
+        {
+          "annotation": "@DeleteMapping(\"/size-scales/{id}\")",
+          "line": 102
+        },
+        {
+          "annotation": "@PostMapping(\"/size-scales/{scaleId}/values\")",
+          "line": 111
+        },
+        {
+          "annotation": "@PatchMapping(\"/size-scale-values/{id}\")",
+          "line": 120
+        },
+        {
+          "annotation": "@DeleteMapping(\"/size-scale-values/{id}\")",
+          "line": 129
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminSliderController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/admin/sliders\")",
+          "line": 31
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 41
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 50
+        },
+        {
+          "annotation": "@PostMapping(\"/reorder\")",
+          "line": 63
+        },
+        {
+          "annotation": "@PatchMapping(\"/{id}\")",
+          "line": 73
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{id}\")",
+          "line": 88
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/auth/AuthController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/auth\")",
+          "line": 33
+        },
+        {
+          "annotation": "@PostMapping(\"/login\")",
+          "line": 48
+        },
+        {
+          "annotation": "@PostMapping(\"/refresh\")",
+          "line": 59
+        },
+        {
+          "annotation": "@PostMapping(\"/logout\")",
+          "line": 75
+        },
+        {
+          "annotation": "@GetMapping(\"/me\")",
+          "line": 91
+        },
+        {
+          "annotation": "@GetMapping(\"/admin/invite\")",
+          "line": 106
+        },
+        {
+          "annotation": "@PostMapping(\"/admin/accept-invite\")",
+          "line": 114
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/cart/CartController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/cart\")",
+          "line": 34
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 49
+        },
+        {
+          "annotation": "@PostMapping(\"/items\")",
+          "line": 57
+        },
+        {
+          "annotation": "@PatchMapping(\"/items/{itemId}\")",
+          "line": 70
+        },
+        {
+          "annotation": "@DeleteMapping(\"/items/{itemId}\")",
+          "line": 84
+        },
+        {
+          "annotation": "@DeleteMapping(path = {\"\", \"/clear\"})",
+          "line": 98
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/catalog/CatalogController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1\")",
+          "line": 35
+        },
+        {
+          "annotation": "@GetMapping(\"/products\")",
+          "line": 57
+        },
+        {
+          "annotation": "@GetMapping(\"/products/{slug}\")",
+          "line": 99
+        },
+        {
+          "annotation": "@GetMapping(\"/products/{idOrSlug}/snapshot\")",
+          "line": 112
+        },
+        {
+          "annotation": "@GetMapping(\"/categories\")",
+          "line": 162
+        },
+        {
+          "annotation": "@GetMapping(\"/categories/{slug}\")",
+          "line": 176
+        },
+        {
+          "annotation": "@GetMapping(\"/catalog/facets\")",
+          "line": 190
+        },
+        {
+          "annotation": "@GetMapping(\"/brands\")",
+          "line": 222
+        },
+        {
+          "annotation": "@GetMapping(\"/brands/{slug}\")",
+          "line": 234
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "22 PublicReadApiTest cases PASS, zero skipped; partial controller coverage, H2+Spring MockMvc (not real-network acceptance).",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run.",
+      "source_reviewed_sections": [
+        "Category/brand detail response and current PublicReadApiTest fixtures"
+      ],
+      "evidence": "backend-migration-tests.json"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/checkout/CheckoutController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1\")",
+          "line": 30
+        },
+        {
+          "annotation": "@PostMapping(\"/checkout\")",
+          "line": 42
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/content/ContentController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1\")",
+          "line": 25
+        },
+        {
+          "annotation": "@GetMapping(\"/articles\")",
+          "line": 35
+        },
+        {
+          "annotation": "@GetMapping(\"/articles/{slug}\")",
+          "line": 50
+        },
+        {
+          "annotation": "@GetMapping(\"/articles/{slug}/recommendations\")",
+          "line": 59
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/customer/CustomerAddressController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/customer/addresses\")",
+          "line": 29
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 36
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 42
+        },
+        {
+          "annotation": "@PatchMapping(\"/{id}\")",
+          "line": 49
+        },
+        {
+          "annotation": "@DeleteMapping(\"/{id}\")",
+          "line": 55
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/customer/CustomerAuthController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/customer/auth\")",
+          "line": 33
+        },
+        {
+          "annotation": "@PostMapping(\"/verify-email\")",
+          "line": 64
+        },
+        {
+          "annotation": "@PostMapping(\"/resend-verification\")",
+          "line": 74
+        },
+        {
+          "annotation": "@PostMapping(\"/register\")",
+          "line": 84
+        },
+        {
+          "annotation": "@PostMapping(\"/login\")",
+          "line": 95
+        },
+        {
+          "annotation": "@PostMapping(\"/password/forgot\")",
+          "line": 106
+        },
+        {
+          "annotation": "@PostMapping(\"/password/reset\")",
+          "line": 115
+        },
+        {
+          "annotation": "@PostMapping(\"/refresh\")",
+          "line": 124
+        },
+        {
+          "annotation": "@PostMapping(\"/logout\")",
+          "line": 136
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/customer/CustomerController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/customer\")",
+          "line": 26
+        },
+        {
+          "annotation": "@GetMapping(\"/me\")",
+          "line": 33
+        },
+        {
+          "annotation": "@PatchMapping(\"/me\")",
+          "line": 39
+        },
+        {
+          "annotation": "@PostMapping(path = \"/me/avatar\", consumes = \"multipart/form-data\")",
+          "line": 45
+        },
+        {
+          "annotation": "@DeleteMapping(\"/me/avatar\")",
+          "line": 52
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/customer/CustomerOAuthController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/customer/auth/oauth\")",
+          "line": 43
+        },
+        {
+          "annotation": "@GetMapping(\"/{provider}/authorize\")",
+          "line": 58
+        },
+        {
+          "annotation": "@GetMapping(\"/{provider}/callback\")",
+          "line": 94
+        },
+        {
+          "annotation": "@GetMapping(\"/links\")",
+          "line": 147
+        },
+        {
+          "annotation": "@DeleteMapping(\"/links/{provider}\")",
+          "line": 154
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/internal/InternalRedirectController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/internal\")",
+          "line": 40
+        },
+        {
+          "annotation": "@GetMapping(\"/redirect\")",
+          "line": 70
+        },
+        {
+          "annotation": "@GetMapping(\"/redirects/active\")",
+          "line": 87
+        },
+        {
+          "annotation": "@PostMapping(\"/redirects/hit/{redirectId}\")",
+          "line": 101
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/openapi/OpenApiStaticController.java",
+      "mappings": [
+        {
+          "annotation": "@GetMapping(value = \"/v3/api-docs\", produces = MediaType.APPLICATION_JSON_VALUE)",
+          "line": 16
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/order/CustomerOrderController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/customer/orders\")",
+          "line": 34
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 42
+        },
+        {
+          "annotation": "@GetMapping(\"/{orderId}\")",
+          "line": 56
+        },
+        {
+          "annotation": "@PatchMapping(\"/{orderId}/cancel\")",
+          "line": 68
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/order/OrderLookupController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/orders\")",
+          "line": 16
+        },
+        {
+          "annotation": "@GetMapping(\"/lookup\")",
+          "line": 23
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicHomeHighlightsController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1\")",
+          "line": 19
+        },
+        {
+          "annotation": "@GetMapping(\"/home/category-highlights\")",
+          "line": 30
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicHomeVideoController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1\")",
+          "line": 19
+        },
+        {
+          "annotation": "@GetMapping(\"/home-videos\")",
+          "line": 30
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicLegacyDiscontinuedProductController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/legacy-discontinued-products\")",
+          "line": 19
+        },
+        {
+          "annotation": "@GetMapping(\"/{slug}\")",
+          "line": 28
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicMenuController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/menus\")",
+          "line": 16
+        },
+        {
+          "annotation": "@GetMapping(\"/{location}\")",
+          "line": 23
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicReviewController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/products/{productId}/reviews\")",
+          "line": 39
+        },
+        {
+          "annotation": "@GetMapping",
+          "line": 50
+        },
+        {
+          "annotation": "@PostMapping",
+          "line": 63
+        },
+        {
+          "annotation": "@PostMapping(\"/photos\")",
+          "line": 83
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicSearchController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1\")",
+          "line": 24
+        },
+        {
+          "annotation": "@GetMapping(\"/search-suggest\")",
+          "line": 47
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicSettingsController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/settings\")",
+          "line": 16
+        },
+        {
+          "annotation": "@GetMapping(\"/public\")",
+          "line": 23
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicSliderController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1\")",
+          "line": 22
+        },
+        {
+          "annotation": "@GetMapping(\"/sliders\")",
+          "line": 34
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicStorePolicyController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/policies\")",
+          "line": 19
+        },
+        {
+          "annotation": "@GetMapping(\"/{topic}\")",
+          "line": 26
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/ReviewInvitationController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/api/v1/review-invitations\")",
+          "line": 19
+        },
+        {
+          "annotation": "@PostMapping(\"/unsubscribe\")",
+          "line": 26
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/controller/HealthController.java",
+      "mappings": [
+        {
+          "annotation": "@RequestMapping(\"/actuator\")",
+          "line": 12
+        },
+        {
+          "annotation": "@GetMapping(value = \"/health\", produces = MediaType.APPLICATION_JSON_VALUE)",
+          "line": 15
+        }
+      ],
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+    }
+  ],
+  "background_declaration_count": 20,
+  "background": [
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminNotificationRetentionCleanupService.java",
+      "line": 32,
+      "annotation": "@Scheduled(cron = \"0 50 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "purgeExpiredNotifications",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/OrderOverdueReminderScheduler.java",
+      "line": 15,
+      "annotation": "@Scheduled(cron = \"0 20 4 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "remindOverdueOrders",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/analytics/Ga4RefundDispatcher.java",
+      "line": 14,
+      "annotation": "@Scheduled(\n            fixedDelayString = \"${bigbike.analytics.ga4.dispatch-delay-ms:30000}\",\n            initialDelayString = \"${bigbike.analytics.ga4.dispatch-delay-ms:30000}\"\n    )",
+      "method": "dispatchDueEvents",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/audit/AuditLogRetentionCleanupService.java",
+      "line": 30,
+      "annotation": "@Scheduled(cron = \"0 40 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "purgeExpiredAuditLogs",
+      "source_inventoried": true,
+      "source_reviewed": true,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartRetentionCleanupService.java",
+      "line": 28,
+      "annotation": "@Scheduled(cron = \"0 45 2 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "purgeExpiredCarts",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartRetentionCleanupService.java",
+      "line": 37,
+      "annotation": "@Scheduled(cron = \"0 15 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "purgeExpiredBackups",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutIdempotencyKeyCleanupScheduler.java",
+      "line": 20,
+      "annotation": "@Scheduled(cron = \"0 30 2 * * *\")",
+      "method": "cleanup",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/OrderNotificationService.java",
+      "line": 44,
+      "annotation": "@Async",
+      "method": "sendOrderConfirmation",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/OrderNotificationService.java",
+      "line": 81,
+      "annotation": "@Async",
+      "method": "sendAdminNewOrderNotification",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/OrderNotificationService.java",
+      "line": 110,
+      "annotation": "@Async",
+      "method": "sendOrderStatusUpdate",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/TelegramOrderNotificationService.java",
+      "line": 80,
+      "annotation": "@Async",
+      "method": "sendNewOrderNotification",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/content/ArticleBodyBlockMaintenance.java",
+      "line": 17,
+      "annotation": "@Scheduled(fixedDelay = 60000, initialDelay = 60000)",
+      "method": "fillMissingBlocks",
+      "source_inventoried": true,
+      "source_reviewed": true,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/inventory/InventoryOutOfStockDigestScheduler.java",
+      "line": 26,
+      "annotation": "@Scheduled(cron = \"0 * * * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "runScheduled",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/public_/ReviewPhotoOrphanCleanupService.java",
+      "line": 32,
+      "annotation": "@Scheduled(cron = \"${bigbike.review-photo.cleanup-cron:0 30 3 * * *}\")",
+      "method": "cleanupOrphans",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionService.java",
+      "line": 33,
+      "annotation": "@Scheduled(cron = \"0 20 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "deleteExpiredHistory",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionService.java",
+      "line": 56,
+      "annotation": "@Scheduled(fixedDelay = 60_000, initialDelay = 60_000)",
+      "method": "deleteExpiredVideos",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewModerationService.java",
+      "line": 49,
+      "annotation": "@Async",
+      "method": "moderateAsync",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationScheduler.java",
+      "line": 17,
+      "annotation": "@Scheduled(cron = \"0 30 4 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "queueNightly",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationScheduler.java",
+      "line": 26,
+      "annotation": "@Scheduled(cron = \"0 */10 9-20 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "dispatchPaced",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/video/HomeVideoSyncScheduler.java",
+      "line": 16,
+      "annotation": "@Scheduled(cron = \"0 10 4 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "method": "syncOfficialYouTubeChannel",
+      "source_inventoried": true,
+      "source_reviewed": false,
+      "functional_test_status": "not individually verified this session",
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "gap": "No scheduler/async isolated runtime profile in this session."
+    }
+  ],
+  "entity_inventory": {
+    "files": [
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/admin/AdminNotificationEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/admin/AdminNotificationReadEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/analytics/Ga4EventOutboxEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/audit/AuditLogEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/auth/AdminInviteTokenEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/auth/AdminRefreshTokenEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/auth/AdminRoleEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/auth/AdminUserEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/AttributeEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/AttributeValueEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/BrandEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/CategoryEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/LegacyDiscontinuedProductEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ProductEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ProductVariantEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ProductVariantGalleryImageEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ProductVariantOptionEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ReviewEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/ReviewPhotoUploadEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/SizeScaleEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/SizeScaleGroupEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/SizeScaleValueEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/catalog/StockMovementEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/cart/CartEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/cart/CartItemEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/CheckoutIdempotencyKeyEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderAddressEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderFeeItemEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderHistoryBatchEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderHistoryBatchOrderEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderLineItemEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderOverdueReminderOrderEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderOverdueReminderRunEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/order/OrderShippingItemEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/payment/PaymentEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/commerce/payment/PaymentEventEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/content/ArticleEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerAddressEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerEmailVerificationTokenEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerOAuthLinkEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerPasswordResetTokenEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerPrivacyConsentEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/customer/CustomerSessionEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/home/HomeHighlightEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/home/HomeHighlightsConfigEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/inventory/InventoryOutOfStockDigestRunEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/media/MediaEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/media/MediaFolderEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/menu/MenuEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/menu/MenuItemEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/redirect/RedirectEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationCampaignEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationDailyQuotaEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationDeliveryEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationItemEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/review/ReviewInvitationOptOutEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/settings/SiteSettingEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/slider/SliderEntity.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/entity/video/HomeVideoEntity.java"
+    ],
+    "source_inventoried": true,
+    "full_schema_reviewed": false,
+    "performance_measured": false,
+    "gap": "Entity presence is not a query/index/locking audit."
+  },
+  "repository_inventory": {
+    "files": [
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/admin/AdminNotificationJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/admin/AdminNotificationReadJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/analytics/Ga4EventOutboxJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/audit/AuditLogJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/auth/AdminInviteTokenJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/auth/AdminRefreshTokenJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/auth/AdminRoleJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/auth/AdminUserJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/AttributeJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/AttributeValueJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/BrandJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/CategoryJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/LegacyDiscontinuedProductJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductCsvExportRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductVariantJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductVariantOptionJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ReviewJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ReviewPhotoUploadJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/SizeScaleGroupJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/SizeScaleJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/SizeScaleValueJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/StockMovementJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/cart/CartItemJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/cart/CartJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/CheckoutIdempotencyKeyJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderAddressJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderFeeItemJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderHistoryBatchJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderHistoryBatchOrderJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderLineItemJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderOverdueReminderOrderJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderOverdueReminderRunJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/OrderShippingItemJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/payment/PaymentEventJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/payment/PaymentJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/content/ArticleJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerAddressJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerEmailVerificationTokenJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerOAuthLinkJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerPasswordResetTokenJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerPrivacyConsentJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/customer/CustomerSessionJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/home/HomeHighlightJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/home/HomeHighlightsConfigJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/inventory/InventoryOutOfStockDigestRunJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/media/MediaFolderJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/media/MediaJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/menu/MenuItemJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/menu/MenuJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/redirect/RedirectJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationCampaignJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationDailyQuotaJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationDeliveryJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationItemJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationOptOutJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/settings/SiteSettingJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/slider/SliderJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/video/HomeVideoJpaRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/CatalogReadRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/InMemoryCatalogReadRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/JpaCatalogReadRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/content/ContentReadRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/content/InMemoryContentReadRepository.java",
+      "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/content/JpaContentReadRepository.java"
+    ],
+    "source_inventoried": true,
+    "full_query_reviewed": false,
+    "performance_measured": false,
+    "gap": "Catalog/database specialist owns focused query assessment; remaining repositories need isolated plans and request attribution."
+  },
+  "http_method_mapping_annotation_count": 212,
+  "controller_count_note": "53 includes HealthController; the previous 52 count covered only /api controllers. 212 HTTP method annotations includes health; no route added by this task."
+}

@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-11-10T00:34:28.929565+00:00",
+  "since": "2026-11-09T15:16:27Z",
+  "patterns": {
+    "heap out of memory": 0,
+    "NoFallbackError": 145,
+    "out of memory": 0,
+    "TypeError": 0,
+    "ECONNRESET": 0,
+    "ETIMEDOUT": 0,
+    "fetch failed": 0
+  },
+  "logLines": 473,
+  "startupRevalidation200": true
+}

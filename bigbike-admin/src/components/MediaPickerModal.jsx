@@ -135,10 +135,7 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   // manual crop, so the generic URL ratio validator must not block selection.
   const validation = useMediaValidation(kind, selectedUrl, isBrandLogo ? null : recommend)
 
-  // Reset page on new search / filter.
-  useEffect(() => {
-    setPage(1)
-  }, [querySearch, folderFilter, tag])
+  const previousFilters = useRef({ querySearch, folderFilter, tag })
 
   // Nạp danh sách thư mục + tag để lọc (chỉ 1 lần khi mở picker). Dùng allSettled
   // để giữ phần tải được và HIỆN lỗi thay vì nuốt im lặng.
@@ -157,6 +154,17 @@ export function MediaPickerModal({ onSelect, onClose, recommend, kind = 'image' 
   }, [canRead])
 
   useEffect(() => {
+    const previous = previousFilters.current
+    const filtersChanged =
+      previous.querySearch !== querySearch ||
+      previous.folderFilter !== folderFilter ||
+      previous.tag !== tag
+    previousFilters.current = { querySearch, folderFilter, tag }
+    // Đổi bộ lọc chỉ tải trang đầu; không gửi thêm yêu cầu ở trang cũ.
+    if (filtersChanged && page !== 1) {
+      setPage(1)
+      return undefined
+    }
     if (!canRead) return undefined
     let active = true
     setState((p) => ({

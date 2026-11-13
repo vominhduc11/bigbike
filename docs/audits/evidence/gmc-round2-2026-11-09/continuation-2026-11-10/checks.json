@@ -1,0 +1,62 @@
+{
+  "checkedAt": "2026-11-10T01:09:49.119858+00:00",
+  "python": {
+    "command": "python3 -m unittest discover -s scripts/tests -v",
+    "passed": 16,
+    "failures": 0,
+    "coverage": [
+      "800-pixel image review threshold",
+      "real probe HTTP/body/redirect failures",
+      "per-target state transitions and recovery",
+      "delivery retry and secret-safe errors",
+      "dry-run and simulated test notification boundaries"
+    ]
+  },
+  "nginxBoundarySelfTest": "PASS: positive and two negative controls",
+  "systemdVerify": "exit 0; unrelated installed snapd unit warns about RestartMode",
+  "timerCalendar": "next predicted three ticks exactly 60 seconds apart; no timer installed",
+  "gitDiffCheck": "PASS",
+  "monitorPackage": {
+    "path": "/tmp/bigbike-gmc-monitor.tar.gz",
+    "sha256": "98cc44ce1d6caeb73a481970af3b510b6cfce4adbd3922406fcd167cd10695b5",
+    "installed": false,
+    "telegramSent": false
+  },
+  "envFilesUnchanged": true,
+  "web": {
+    "lint": "PASS: guard, ESLint, changed-format check",
+    "targetedHtmlTests": {
+      "files": 2,
+      "passed": 16
+    },
+    "fullTests": {
+      "files": 118,
+      "passed": 801,
+      "failures": 0,
+      "command": "npm run test -- --maxWorkers=1"
+    },
+    "build": {
+      "status": "PASS",
+      "attempt1": "Node heap limit 1024 MiB: build compiler OOM, exit 134; no production process failed",
+      "attempt2Command": "CIRCLE_NODE_TOTAL=2 NODE_OPTIONS=--max-old-space-size=2048 npm run build -- --webpack",
+      "compiled": true,
+      "typeCheck": true,
+      "staticPages": 97,
+      "exitCode": 0,
+      "buildId": "JPVOZtBzJXfNM6cJ_4Veg",
+      "productionImageBuilt": false,
+      "deployed": false,
+      "existingWarnings": "Sentry deprecations/global-error guidance; inferred workspace root from multiple lockfiles. No unrelated fix."
+    }
+  },
+  "admin": "Not run this session: no admin source changes; retain prior lint and test results including two timeouts that passed on focused rerun.",
+  "backend": "Not run this session: no backend source changes; retain prior 1543 tests/1 old V1091 failure/1 skip/0 error and 13/13 image tests.",
+  "hygiene": "No UI/CSS changes; UTF-8 text reviewed, web runtime business-data guard passed.",
+  "linkChecks": {
+    "total": 1184,
+    "checked": 1184,
+    "allHttps200NoRedirect": true,
+    "failed": 0
+  },
+  "fallbackBrowser": "PASS: isolated copy of deployed artifact, desktop/mobile locks and real snapshot unlock, desktop re-lock, 4xx/expired/missing snapshot checks; no production fault injection."
+}

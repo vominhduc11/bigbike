@@ -1,0 +1,16 @@
+# npm/Next production build runs on Ubuntu with Node22. Match native module ABI/libc.
+FROM node:22-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
+RUN groupadd --system bigbike && useradd --system --gid bigbike bigbike
+COPY --chown=bigbike:bigbike bigbike-web/.next/standalone ./
+COPY --chown=bigbike:bigbike bigbike-web/.next/static /perf-static
+COPY --chown=bigbike:bigbike bigbike-web/public /perf-public
+RUN if [ -f /app/server.js ]; then dest=/app; elif [ -f /app/bigbike-web/server.js ]; then dest=/app/bigbike-web; else exit 1; fi; \
+    mkdir -p "$dest/.next" "$dest/public"; \
+    mv /perf-static "$dest/.next/static"; \
+    cp -a /perf-public/. "$dest/public/"; \
+    chown -R bigbike:bigbike /app
+COPY scripts/performance/launch-web.cjs /app/launch-web.cjs
+USER bigbike
+CMD ["node", "launch-web.cjs"]

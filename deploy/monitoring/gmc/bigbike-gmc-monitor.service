@@ -1,0 +1,22 @@
+[Unit]
+Description=BigBike three URL monitor (external host only)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=bigbike-monitor
+Group=bigbike-monitor
+WorkingDirectory=/opt/bigbike-gmc-monitor
+ExecStart=/usr/bin/python3 scripts/run-storefront-monitor.py --config /etc/bigbike-gmc-monitor/config.json
+TimeoutStartSec=50
+SuccessExitStatus=1
+StateDirectory=bigbike-gmc-monitor
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=192M
+

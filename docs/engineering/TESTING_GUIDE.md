@@ -1,5 +1,27 @@
 # Testing Guide
 
+## Admin session renewal regressions
+
+Run `npm test -- --maxWorkers=2` in `bigbike-admin` for the unit/component suite.
+The focused files are `src/lib/adminApi.session.test.js`, `src/lib/auth.test.jsx`
+and `src/lib/useFormAutosave.test.jsx`: independent token stores sharing one lock,
+same-tab concurrent/delayed 401s, temporary refresh errors, confirmed rejection,
+late response invalidation, bootstrap retry and draft flush before unmount.
+
+Run `npx playwright test session-renewal.spec.ts --retries=0` against the managed
+source production preview, with `E2E_BACKEND_ORIGIN` matching the backend's configured
+Admin origin. The test uses `testAnon` and `apiLoginSession`, never the store cleanup
+fixture. Two real tabs share an isolated cookie jar and call real login/refresh/me.
+Only this test session is logged out. Product data is never submitted; other
+non-auth writes are intercepted. Controlled 401/network/503 responses exercise
+recovery; final logout really revokes the test browser's session, and the test retains
+that revoked cookie to verify an actual refresh 401 rather than only a missing cookie.
+Traces, video and
+screenshots are disabled so auth response bodies cannot enter saved artifacts.
+The test also checks the last product name is flushed before both tabs show login.
+This desktop Chromium test does not establish coverage for other browsers or every
+editor, and does not test a dropped refresh response after a server-side commit.
+
 ## Read-only settings/banner regressions
 
 Run `npx playwright test banners-settings.spec.ts` against the source production
@@ -324,3 +346,134 @@ JAVA_TOOL_OPTIONS='-XX:ActiveProcessorCount=2 -Xmx1100m' GEMINI_API_KEY= \
 ```
 
 Kiểm giao diện khung chọn ảnh mà không ghi dữ liệu khách/tiêu AI: `PW_BASE_URL=https://bigbike.vn npx playwright test assistant-images.e2e.ts --workers=1` từ `bigbike-web`. Ca này đọc availability thật, chặn và trả phiên giả chỉ trong trình duyệt, không gửi ảnh/tin nhắn; kiểm Việt–Anh ở 375/768/1440 và lưu ảnh chụp trong artifact Playwright. Đây là kiểm composer, không thay phép kiểm nhận diện bằng AI hoặc kiểm quyền server.
+
+### DEV-7–DEV-9 (06/11/2026)
+
+- `__tests__/merchant/local-inventory.test.ts`, `local-route.test.ts`: toàn bộ ID/giá hiện hành/Còn-Hết khớp XML; loại hàng đúng; lỗi nguồn/cấu hình trả 503; HEAD và UTF-8 TSV.
+- `__tests__/analytics/analytics.test.ts`: chống lặp VI/EN, khác slug, biến thể khác và lượt quay lại; eventID duy nhất, Purchase giữ ID ổn định.
+- `e2e/local-inventory-hours.e2e.ts`: đọc danh mục thật, đối chiếu toàn bộ TSV/XML và HTML giờ VI/EN, footer thực tế. Chỉ chạy trên bản web mới đã có GMC_STORE_CODE; không tạo/sửa hàng, không gửi đo lường thật. Ví dụ `PW_BASE_URL=http://localhost:3002 npx playwright test e2e/local-inventory-hours.e2e.ts --workers=1`.
+
+### GMC tiếp nối 10/11/2026 — kiểm an toàn
+
+- `python3 -m unittest discover -s scripts/tests -v`: gồm ngưỡng ảnh hai cạnh 800 của shop; probe HTTP/nội dung; monitor lần đầu khỏe không spam, từng URL độc lập, lỗi/khôi phục, gửi lỗi không mất trạng thái và thử lại, dry-run không gửi/ghi state, không log secret. Không gửi Telegram thật bằng test.
+- `systemd-analyze verify deploy/monitoring/gmc/bigbike-gmc-monitor.service deploy/monitoring/gmc/bigbike-gmc-monitor.timer` và `systemd-analyze calendar --iterations=3 '*-*-* *:*:00'`: chỉ kiểm cú pháp/lịch dự kiến, không phải bằng chứng cài lịch.
+- E2E sự cố: sao chép đúng artifact web đang chạy vào thư mục tạm trên host; khởi chạy process riêng chỉ nghe loopback, API proxy riêng chỉ GET tới dữ liệu thật. Chỉ proxy thử nghiệm trả 503/4xx và chỉ browser thử nghiệm chặn snapshot/analytics; không tắt/restart production hoặc ghi dữ liệu shop. Kiểm nút mua khóa trước snapshot → mở sau snapshot thật → khóa sau lỗi; kiểm desktop/mobile, 4xx không dùng fallback và 404/410 xóa cache. Runtime trên host có thể khác Node trong container, cần ghi giới hạn này. Không tuyên bố đã gây lỗi backend production để thử.
+- Kiểm toàn bộ link HTTPS: tuần tự, không follow redirect, xác nhận SKU trong JSON-LD và HTML đủ; lưu từng kết quả, giới hạn bộ nhớ/sức khỏe/độ trễ để dừng chính tiến trình kiểm. Không thay kết quả từng URL bằng ba mẫu.
+
+Kiểm phần sửa bộ nhớ: `html-server-lifecycle.test.ts` chạy môi trường Node, lặp nội dung qua hơn hai lần làm mới window, xác nhận output, lọc script/iframe ngoài, typography và rel link vẫn đúng. Đo cùng HTML catalog thật ba lượt có nhường event loop và thu gom chỉ trong process cô lập; đối chiếu hash output VI/EN trước/sau. Không gọi forced-GC hoặc tạo heap snapshot trên production.
+
+
+## Performance validation — 2026-11-12 / continuation 2026-11-13
+
+`performance-validation.yml` runs only on standard GitHub-hosted ubuntu-24.04 runners,
+with read-only repository permission, no shop/environment secrets and bounded timeouts.
+On 14/11 the owner authorized continuing the previously described publication and CI
+step. A separate `ci/performance-validation-*` branch may trigger sequential regression
+and full-stack jobs by push, only while repository visibility is public. Main and the
+original dirty workspace stay untouched; production deployment is a separate approval.
+Manual dispatch remains available; private repositories require operator confirmation
+of remaining included quota before running. No larger runner, paid service, production
+copy or extra capacity is authorized. Public standard runners are free independently
+of included compute per [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions)
+(checked 14/11/2026). This workflow disables dependency caches and artifact uploads;
+only bounded, compressed allowlisted sanitized JSON is written to job logs for retrieval.
+GitHub documents job logs/summaries outside artifact storage allowance. No account
+spending controls or storage quotas are changed. This does not establish an account
+billing audit. Unpublished local work cannot be measured by remote CI. No green unit
+gate certifies full-system latency.
+
+Regression gates and full-stack arms run sequentially. The opt-in full-stack job uses
+`scripts/performance/run_ci.py` and `compose.ci.yml`: real PostgreSQL 16, Redis 7.4,
+MinIO (same image as root Compose), Java 17 backend, production Next.js and built
+Admin behind nginx. It refuses local/self-hosted execution. Its internal Docker
+network has no external route; only loopback ports >=10000 are published. No root
+`.env`, production volumes, credentials, data or cloud integrations are mounted.
+Only this ephemeral CI project may be started/removed by the runner. This does not
+permit any Docker service change on shared local/VPS machines.
+
+Fresh schema uses canonical migrations plus exactly the two existing synthetic
+precondition fixtures V26_5 and V1028_5 (from test resources). These satisfy legacy
+V27 FK references and V1029's 109-row mapping preconditions without a legacy dump.
+Do not include other test/dev migrations. Schema validation and normal login,
+CSRF, permissions and rate limits stay enabled. The non-prod initializer creates
+an isolated admin; measured catalog fixtures are created through real admin APIs
+with `E2E_PERF_` names. IDs in the two historical migration precondition fixtures
+are fixed only to satisfy immutable migrations. They contain no customer data.
+SMTP/Telegram/analytics/OAuth/AI credentials are absent. The network additionally
+blocks outbound delivery; browser navigation permits loopback only. Tracking tests
+without real provider credentials establish local event logic only.
+
+Freeze one complete candidate workspace/revision, including earlier user changes.
+Create two copies and change only hash-bound, attributed optimization files in
+Before via `prepare_baseline.py`. Never use Git HEAD as a general baseline for a
+dirty candidate. A full-tree comparison must show exactly those source differences.
+Run arms sequentially, with fresh identical database/buckets, generated fixture bytes,
+config, resources, warm-up, tool versions and workloads. Keep functional migration
+repairs and all unrelated changes identical in both arms. Record source, fixture and
+runtime identities, tool versions and timings. Distinguish existing four optimizations
+from any new changes in the continuation report; combined A/B is not attribution to
+one individual change.
+
+Bounded API workload starts at concurrency 1, then 2 and 4. Report successful-only
+P50/P95/P99/throughput alongside all statuses, errors, timeouts and 429; do not follow
+redirects, retry failed samples, relax security or count fast errors toward SLOs.
+Stop progression on non-success, timeout, container OOM/restart, memory >=85% of its
+limit or host available memory <512MiB. Component query counts and aggregate database
+SQL counters have separate scope; aggregate statements are not exact queries/request.
+Collect CPU/RAM, connections/waits/locks and normalized pg_stat_statements summaries
+without raw SQL parameters. Diagnostics may add overhead and must match both arms.
+The fixed low-load CI run is a lab observation, not production capacity certification.
+
+Browser checks use production builds in mobile/desktop Chromium. Record navigation
+TTFB, FCP, LCP and CLS, observed interaction event durations separately (lab evidence,
+not field INP), JS/CSS bytes and duplicate request URLs without query/PII. Lighthouse
+runs serially with the same pinned version/settings; never relabel TBT as INP. Check
+catalog/search/PDP/cart/checkout and authenticated admin surfaces with real fixtures;
+mark unexecuted CRUD/report/bulk paths explicitly. Uploaded media cases share deterministic
+JPEG, opaque/transparent PNG, WebP and valid MP4 bytes; check original hashes, dimensions,
+transparency, Range/download/cache and authorization. Request-wall duration, transport
+and backend processing duration must be labeled separately: no server-only timing may
+be inferred from upload wall time. Long uploads/video and report SLOs remain open until
+measured on representative data; do not force the ordinary 300ms API target on them.
+
+Publish only allowlisted sanitized JSON summaries. Never publish raw test XML,
+application/access logs, environment files, passwords/tokens/cookies, audit snapshots,
+request payloads or browser storage/traces. Preserve errors as counts/case names.
+The job must fail on missing required cases/skips and retain partial sanitized evidence
+when a gate fails; cleanup cannot turn an incomplete run into acceptance.
+
+Continuation baseline (13/11): `baseline-manifest.json` now attributes exactly three
+backend files for the two new optimizations. Hash-bound Before snapshots of image
+services retain pre-existing PNG conversion and the earlier unchanged-variant skip.
+The former six-file manifest is retained under `scripts/performance/baselines/` as
+historical evidence; it is not used as this run's Before.
+
+For identical fixture IDs/timestamps, capture the first arm's entirely synthetic CI
+database with pg_dump after API seeding, plus the exact public-bucket objects/variant
+keys and MIME types. Keep dump, credential hashes, sessions and object copies private
+in the job temporary directory (0600), outside artifacts. Restore into the second
+arm's fresh owned database/bucket before starting its backend; same generated CI
+credentials/config and logical data. Publish only fixture hashes/counts. This is
+never a production backup/import path. MinIO Last-Modified and wall clock naturally
+differ; do not claim those headers identical. New test writes then run in each arm
+in the same order. Redis starts fresh per arm with normal limits enabled.
+
+The lab web standalone is built by Node22 on the hosted Ubuntu runner and runs on
+Node22/glibc to preserve native Sharp compatibility. Shipping images currently use
+Node20/Alpine; the lab therefore establishes a reproducible comparison, not exact
+production runtime parity. Detect both root and monorepo-nested standalone entrypoints.
+Assert real image delivery before accepting browser/Lighthouse measurements.
+
+After first-arm fixture capture, stop only that job's new provisioner backend/proxy/
+Redis, restore the frozen synthetic snapshot and recreate those three owned CI
+processes. This removes the seeding JVM/limiter warm state. Both measured arms
+then boot fresh and perform the same normal login/build/warm-up sequence. Redis
+limits remain enabled during measurement; no bucket reset occurs while measuring.
+Refuse to adopt a pre-existing project. This exception is confined to unique
+GitHub-run-owned ephemeral services and grants no permission over shared services.
+
+All three lab browser/API origins enter the ephemeral nginx edge. Preserve the
+documented coarse budgets: API10 requests/sec burst20; web/admin30 requests/sec
+burst30, with WebSocket exempt from the HTTP coarse limit. Backend tiers remain
+unchanged. Proxy emits429 JSON/no-store/Retry-After; resource/API/network429 stops
+acceptance. Local syntax checks do not start a server and do not prove runtime.

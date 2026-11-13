@@ -1,0 +1,22 @@
+{
+  "before": {
+    "source": "before",
+    "htmls": 2929,
+    "locales": [
+      "vi",
+      "en"
+    ],
+    "sha256": "487aa500deed9b96b0306ed8f54bb6c5911507f07d707a6a2bc92ad0f0e512a0"
+  },
+  "after": {
+    "source": "after",
+    "htmls": 2929,
+    "locales": [
+      "vi",
+      "en"
+    ],
+    "sha256": "487aa500deed9b96b0306ed8f54bb6c5911507f07d707a6a2bc92ad0f0e512a0"
+  },
+  "sameOutput": true,
+  "outputsCompared": 5858
+}

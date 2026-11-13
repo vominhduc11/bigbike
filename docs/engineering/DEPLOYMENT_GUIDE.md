@@ -481,10 +481,15 @@ so an explicit `false` overrides the profile's dev setting and prevents `V368+` 
 - `BIGBIKE_REVIEW_INVITATION_ENABLED` is the only emergency switch for automatic post-purchase review invitations and defaults to `true`. The workflow always waits 7 days after completion and allows 20 send attempts per Vietnam calendar day. Set it to `false` in the backend deployment environment and restart/redeploy the backend; the next scheduler callback closes the active campaign and skips pending deliveries. Setting it back to `true` starts a new campaign cutoff without backfill. There is no admin Settings control or reporting screen. `OWNER_CONFIRMED_2026-09-01`
 - `EmailDispatchService` logs a successful SMTP handoff as provider acceptance only. It does not claim final delivery, because SMTP acceptance cannot confirm that the recipient mailbox accepted the message later. `CONFIRMED_FROM_CODE`
 - `NEXT_PUBLIC_GA4_MEASUREMENT_ID` enables storefront analytics and is baked into the browser bundle at build time, so changing it requires `docker compose --env-file <file> up -d --build bigbike-web`; a plain restart keeps the previous value. It is declared in `build.args:`, `environment:` and `bigbike-web/Dockerfile`. Leave it blank on local/staging. `CONFIRMED_FROM_CONFIG`
-- **Backend memory and garbage collection** — the backend container remains capped at `1g`; Java
-  uses G1GC with `MaxRAMPercentage=50.0`, so the JVM heap stays within that existing container
-  limit. Do not raise the backend to 4 GB on the shared 8 GB server.
-  **Lowered from 75.0 to 50.0 on 2026-08-21**: at 75.0 the heap ceiling alone was 768 MB, and the
+- **Backend memory and garbage collection** — from 2026-11-07 the backend container is capped at
+  `2g`, retaining G1GC and `MaxRAMPercentage=50.0` (approximately 1 GiB heap plus native headroom).
+  This is required for deployed acceptance of the shop-content repair: after a fresh deployment,
+  the former 512 MiB heap retained 481–485 MiB and collected roughly every 40–60 ms; the 20 database
+  connections were checked out and settings reads timed out with HTTP 500. The 8 GiB VPS had about
+  3.9 GiB available before this controlled increase. Do not raise the backend to 4 GB on the shared
+  server. Verify public reads, collection frequency and container usage after deployment; do not
+  change feed, analytics, pool sizing or env files as a substitute.
+  **Historical 1g limit, lowered heap percentage from 75.0 to 50.0 on 2026-08-21**: at 75.0 the heap ceiling alone was 768 MB, and the
   JVM's non-heap footprint (metaspace, code cache, ~69 thread stacks, direct buffers) added roughly
   400 MB, so the container sat at 982 MB / 1024 MB (91.5%) with no headroom — a traffic spike that
   let G1 grow the heap toward its ceiling would have been OOM-killed. Measured over 3 h of live
@@ -599,8 +604,56 @@ Set `NEXT_PUBLIC_META_PIXEL_ID=460465848002810` only in the production deploymen
 to collect Meta measurement; leave it blank elsewhere. This is BigBike's existing Pixel and must
 never be replaced with a newly created Pixel because its historical audiences belong to this id. A
 blank value renders no Meta loader, image fallback or browser event. It is a direct installation,
-not a Google Tag Manager, Cloudflare/Zaraz or Conversions API integration. The only Meta CSP change
-is `https://connect.facebook.net` in `script-src`; do not widen another source list.
+not a Google Tag Manager, Cloudflare/Zaraz or Conversions API integration. Meta CSP permits
+`https://connect.facebook.net` in `script-src` and, as the DEV-6 exception approved 2026-10-29,
+exactly `https://www.facebook.com` alongside `'self'` in `form-action` for the reproduced `/tr/`
+form transport (`ANALYTICS_RULE_008`). Do not widen any other source list.
+
+#### Google review link and CSP delivery — DEV-5/DEV-6 (2026-10-29)
+
+- Shared destination: edit `GOOGLE_REVIEW_URL` in `bigbike-web/lib/review-link.ts`, then rebuild
+  and release **web only** through the normal approved deployment. No new environment variable,
+  Compose setting, migration or QR change is needed. Existing GA4 property remains
+  `G-REZM4NT0CS` through its existing build configuration. Do not install another tag.
+- QR URL: `https://bigbike.vn/danh-gia/?utm_source=qr&utm_medium=offline&utm_campaign=qr-danh-gia`.
+  English alias `https://bigbike.vn/review/` stays at that path until browser navigation;
+  `/en/review/` also works. Check HTML 200, manual link, noindex/nofollow meta and HTTP header,
+  slashless normalization retaining UTM, no sitemap entry and no robots Disallow.
+- Browser: callback or 800 ms fallback uses `location.replace` once; verify slow/missing/blocked
+  GA4 and JavaScript-off two-second noscript refresh. The 800 ms budget starts with client logic,
+  not network delivery, Maps loading or Google login. A signed-out visitor may need to sign in.
+- Check actual outgoing `review_link_open`, UTM in `page_location`, and transport after requesting
+  beacon. Do not interpret this event as a completed review. Blocked statistics/JavaScript-off
+  visits need no GA4 event. Realtime `qr/offline` alone is insufficient; verify processed session
+  attribution and account receipt. Record Safari/Android/Zalo/Messenger, Meta Test Events and
+  Clarity only after real checks.
+- Owner chose to **retain Cloudflare Web Analytics**. Add exactly
+  `https://static.cloudflareinsights.com` to web `script-src`, keeping `connect-src` unchanged;
+  use existing edge injection. Meta's form-action exception is described above. No wildcards,
+  duplicate Pixel/PageView or admin CSP changes. Verify resulting CSP after an approved release.
+- The initial implementation request excluded production deployment, restart, commit and push.
+  Owner subsequently requested **“đưa lên production”** on 2026-10-29. This authorizes building
+  and recreating **web only** using `.env.vps`, preserving the currently running image for
+  rollback, then checking health, aliases/UTM/noindex, analytics configuration and storefront
+  regression. Use `docker compose --env-file .env.vps build bigbike-web`, followed by
+  `docker compose --env-file .env.vps up -d --no-deps --no-build --wait --wait-timeout 180 bigbike-web`
+  after candidate verification. Preserve existing env files, resource limits, backend/admin and
+  data services. A task-owned temporary loopback candidate may be used for verification and
+  removed afterwards. No commit/push is authorized. Record actual rollout results separately.
+  `OWNER_APPROVED_DEV5_DEV6_DEPLOY_2026-10-29`
+
+Kết quả DEV-5/DEV-6 ngày 29/10/2026: build/nạp riêng web bằng `.env.vps` đã hoàn tất.
+Image `sha256:784537ca43a9bbcdf2229385dba312994eaa89ab98abf92fdac86fe28d469e01`, tag `bigbike-web:dev56-20261029-083348`, healthy; startup revalidation trả 200.
+Image trước giữ tại `bigbike-web:before-dev56-20261029-083348` để hoàn tác. Kiểm HTTP và Chromium qua
+Cloudflare trên tên miền thật đạt: các alias/UTM/noindex, sitemap/robots, điều hướng trình duyệt
+và nhánh JavaScript tắt, một sự kiện mỗi lượt mở; GA4/Pixel giữ đúng cấu hình cũ, beacon
+Cloudflare tải 200 và không còn lỗi CSP đã nêu. Trang chủ VI/EN và năm danh mục mẫu giữ
+đúng schema/intro/lang/mô tả. Backend/admin/data services và env không đổi. Bản ứng viên
+loopback đã dọn. Chưa nghiệm thu tài khoản thống kê hoặc thiết bị thật, không commit/push.
+Xem [biên bản](../audits/SCHEMA_DEV5_DEV6_IMPLEMENTATION_2026-10-29.md) và
+[bằng chứng nạp](../audits/evidence/schema-dev5-dev6-2026-10-29/deployment.json).
+`DEPLOYED_DEV5_DEV6_2026-10-29`
+
 
 Cancellation revenue correction runs from the backend. Set the same
 `NEXT_PUBLIC_GA4_MEASUREMENT_ID` on the backend service and set the server-only
@@ -901,3 +954,132 @@ For this release the owner explicitly authorized the complete rebuild and rollou
     docker compose --env-file .env.vps up -d --build
 
 Afterward, check `docker compose ps`, backend health and Flyway history (`V1089` succeeded), confirm the four target codes are absent and the eight retained types/268 values remain, and compare the protected product/variant/option baseline. Run the admin product-choice smoke test at desktop, tablet and mobile widths. If the guarded migration stops, keep the previous application image running and restore from the external backup only after confirming the reason; never edit or delete a successful Flyway row to force a rerun.
+
+### DEV-7–DEV-9 (06/11/2026)
+
+Web nhận biến server runtime `GMC_STORE_CODE` từ Compose, không cần public build arg. Để trống đến khi shop cung cấp mã Google Business Profile thật; lúc đó local feed trả 503. Sau release và cấu hình, kiểm 200 TSV, đếm toàn bộ dòng và đối chiếu ID/giá/Còn-Hết XML, rồi thêm scheduled fetch hằng ngày cùng giờ nguồn chính trong tài khoản 124097107. Không tự bật/restart container hoặc sửa .env. Clarity hiện để trống ở container đã kiểm; chỉ bật sau xác minh che URL theo ANALYTICS_RULE_006.
+
+### Triển khai DEV-7–DEV-9 — owner duyệt 06/11/2026
+
+Owner yêu cầu đưa bản đã kiểm lên web thật. Phạm vi: build riêng web bằng `docker compose --env-file .env.vps build bigbike-web`, giữ image đang chạy bằng tag hoàn tác, rồi nạp riêng `bigbike-web` với `up -d --no-deps --no-build --wait --wait-timeout 180`. Không thay file env, không nạp admin/backend/dịch vụ dữ liệu. Đã đối chiếu cấu hình runtime hiện hữu: không đổi giá trị chung; GA4/Meta giữ nguyên và Clarity vẫn trống. GMC_STORE_CODE chưa được owner cung cấp, do đó local inventory trả 503 cho đến khi mã thật được cấu hình; không dùng mã thử trên web thật. Căn cứ GMC_RULE_006, STORE_HOURS_RULE_001 và ANALYTICS_RULE_009. Kết quả triển khai và nghiệm thu ghi trong `docs/audits/DEV7_DEV8_DEV9_IMPLEMENTATION_2026-11-06.md`.
+
+Kết quả triển khai DEV-7–DEV-9: đã nạp riêng web, healthy, image `sha256:60f52931e0a398dca288131aa364bae87f64f87619f7b3a039f4818cb29e7644`; giữ tag hoàn tác `bigbike-web:before-dev789-20261106-070402`. HTTPS thật xác nhận feed chính 200/1.184 SKU, giờ VI/EN đúng và 2/2 bài trình duyệt đạt. Local inventory hiện 503 có Retry-After do thiếu store code, chờ owner cung cấp. Các container khác và hai file env không đổi. Báo cáo/bằng chứng: `docs/audits/DEV7_DEV8_DEV9_IMPLEMENTATION_2026-11-06.md`.
+
+### Bật nguồn tồn kho cửa hàng — owner cung cấp mã 06/11/2026
+
+Owner xác nhận mã Google Business Profile thật là `BIGBIKE-HCM-01` và yêu cầu tiếp tục kích hoạt nguồn sau triển khai DEV-7. Đặt duy nhất `GMC_STORE_CODE=BIGBIKE-HCM-01` trong `.env.vps` của web đang chạy; sao lưu bảo mật trước khi sửa, không đưa file env vào Git. Nạp lại riêng web bằng `docker compose --env-file .env.vps up -d --no-deps --no-build --wait --wait-timeout 180 bigbike-web`, giữ nguyên image đã nghiệm thu. Kiểm TSV HTTPS 200, toàn bộ dòng có mã cửa hàng đúng, đối chiếu ID/Còn-Hết/giá đang bán với XML; xác nhận các container khác và cấu hình đo lường không đổi. Owner còn thiết lập scheduled fetch hằng ngày cùng giờ XML trong GMC 124097107. Căn cứ `GMC_RULE_006`; kết quả ghi trong báo cáo DEV7_DEV8_DEV9.
+
+Kết quả kích hoạt với `BIGBIKE-HCM-01`: web healthy, giữ nguyên image; TSV công khai trả 200 UTF-8 với 1.184 dòng, toàn bộ ID/Còn-Hết/giá khớp XML. HEAD với User-Agent Googlebot 200; Playwright đối chiếu toàn bộ feed thật đạt 1/1. Chỉ GMC_STORE_CODE trong .env.vps thay đổi, các container khác và .env gốc giữ nguyên. Mốc này thay thế trạng thái chờ mã/503 trước đó; shop còn đăng nguồn/lịch fetch trong GMC. Bằng chứng: `docs/audits/evidence/dev789-deploy-2026-11-06/store-code-verification.json`.
+
+## Shop hours, EN address and contact Maps repair — owner 07/11/2026
+
+Owner authorizes the full-stack deployment command, after verification:
+
+```bash
+docker compose --env-file .env.vps up -d --build
+```
+
+V1094 conditionally converts known shop-hours clauses in the editable introduction to
+`{{store_hours}}` and corrects only the old EN contact address. Backend startup applies Flyway;
+web startup expires the settings cache through the existing entrypoint. Verify the new
+migration in `flyway_schema_history`, public settings VI/EN, homepage EN, product VI/EN,
+clothing-size guide VI/EN and contact VI/EN on the deployed version. Check exact Maps CID/place
+ID, no duplicate labels, healthy services, XML/TSV parity and existing Meta tests. Preserve
+env files, inventory feed, Meta and disabled Clarity configuration. Current-run evidence
+belongs in `docs/audits/SHOP_CONTACT_HOURS_FIX_2026-11-07.md`; historical checks are not acceptance.
+
+### Acceptance blocker: backend heap pressure (07/11/2026)
+
+The first required full-stack command exited 0 and applied V1094, but the deployed settings read
+returned HTTP 500. Read-only Docker stats/logs showed backend at about 911 MiB / 1 GiB, G1 retaining
+481–485 MiB in its 512 MiB heap with repeated collections, and connection acquisition timeouts.
+The backend Compose memory limit is therefore increased from 1g to 2g; Java's 50% heap policy and
+all env/feed/Meta/Clarity configuration remain unchanged. Run the same full-stack command again
+and repeat deployed acceptance. This supersedes the earlier historical 1g deployment notes.
+
+## GMC đợt 2 — vận hành (09/11/2026)
+
+Ở lượt audit ban đầu chưa triển khai; kết quả nạp sau khi owner yêu cầu ghi ở cuối mục. Hiện một web container + một Nginx upstream nên thay container có thể gián đoạn; healthcheck Docker không chứng minh người ngoài truy cập được và không tự gửi cảnh báo. Trong khi chưa có blue/green đã thử, các lần triển khai có phê duyệt thực hiện **02:00–04:00 Asia/Ho_Chi_Minh**: build/test trước, giữ image hoàn tác, kiểm 3 URL trước/sau. Đây là giảm rủi ro, không phải zero downtime, không trao quyền tự restart.
+
+Theo dõi trang chủ, một link sản phẩm thật và `/google-merchant.xml` từ một máy/dịch vụ **ngoài VPS** mỗi 60 giây. Dùng `scripts/check-storefront-uptime.py` và cấu hình mẫu `deploy/monitoring/README-GMC.md`. Telegram do shop chọn: cần nhóm dev + anh Trí, bot và chat ID cấu hình riêng; chưa có lịch chạy ngoài VPS hoặc chưa nhận tin thử thì chưa nghiệm thu. Không đặt token trong Git/log. Snapshot sản phẩm ở `.next/cache/product-fallback/` là cache mỗi container, chỉ dùng tối đa 1h, mất khi thay container; không mount/sửa stack trong phiên audit. Xem GMC_RULE_007.
+
+### Chủ shop yêu cầu triển khai GMC đợt 2 (09/11/2026)
+
+Sau báo cáo audit, chủ shop yêu cầu chạy `docker compose --env-file .env.vps up -d --build`. Đây là phê duyệt build/nạp trong phiên này, thay cho chờ khung 02–04h. Giữ tag image hoàn tác cho cả ba app; kiểm tra cấu hình Compose từ `.env.vps` khớp env và giới hạn bộ nhớ đang chạy, không sửa `.env`/`.env.vps`. Không xóa volume/dữ liệu. Chạy preflight trước; build lần lượt để giảm tải VPS rồi chạy lệnh đầy đủ trên, kiểm health, migration, ba URL và XML/TSV sau nạp. Không tự áp category mapping, đổi brand/ID hoặc ghi đè ảnh. Không xác nhận đã sửa triệt để lỗi giữ bộ nhớ chỉ từ việc container khởi động khỏe. Bằng chứng và kết quả ghi trong báo cáo `FEATURE_GMC_ROUND2_2026-11-09.md`.
+
+### Giảm lỗi hết heap web khi triển khai đợt 2 (09/11/2026)
+
+Runtime web Next 16.2.10 trong giới hạn 512MiB có heap Node tự động 259MiB; đã ghi nhận ba lần `JavaScript heap out of memory`, tự khởi động lại và healthcheck timeout; trong preflight tiếp tục thấy web tự khởi động lại. Vì đây là trở ngại nghiệm thu vận hành, tăng riêng `bigbike-web.deploy.resources.limits.memory` từ **512m lên 1g** trước lần nạp đã được owner yêu cầu. Host có 8GiB; trước preflight còn khoảng 3GiB available, các kiểm thử chạy với giới hạn tài nguyên và kết thúc trước nạp, không build nhiều app đồng thời. Không đổi các dịch vụ khác hoặc env-file, không thêm NODE_OPTIONS; Node tiếp tục tự tính heap theo cgroup. Kiểm giới hạn/heap thật và RSS/health sau nạp. Đây là tăng headroom để giảm áp lực đã quan sát, **không chứng minh đã xử lý nguồn giữ bộ nhớ**, cần theo dõi theo thời gian và profiling nếu tiếp tục tăng. Bản hoàn tác giữ giới hạn 512MiB cũ cho web trong override khi cần phục hồi đầy đủ cấu hình trước.
+
+Preflight đợt 2: web lint + 800/800 bài đạt; admin lint đạt, bộ đầy đủ 1.226 đạt/2 timeout, hai file timeout chạy lại riêng đạt 16/16 với maxWorkers=1 và timeout=15s. Backend chạy đủ 1.543 bài: 1 failure cũ `ArticleExcerptAuthorRemovalMigrationPostgresTest:54`, 1 skip, không error. V1091 và test không có diff; failure này đã ghi ở FEATURE_MEDIA_UPLOAD_PERFORMANCE_2026-10-13 và DEPLOYMENT_GUIDE các đợt trước, V1091 đã áp dụng trước đợt này. Không sửa/ẩn failure hoặc đổi migration lịch sử; phần xử lý ảnh mới đạt 13/13. Tiếp tục nạp bản được owner yêu cầu, ghi kết quả đầy đủ thay vì gọi toàn bộ backend xanh.
+
+### Kết quả nạp GMC đợt 2 — 09/11/2026, khoảng 22:16–22:19 GMT+7
+
+Đã thực chạy `docker compose --env-file .env.vps up -d --build`, exit 0, sau khi build lần lượt ba app. Web dùng image `sha256:f8c00411746da82a697d434204c8447840fc3796ee3d53ff6bf4fc8310580196`, backend `sha256:3d7882bf052320fff42be456478d93ea8d0f147948767e72f7f1eb9d6a20de44`; admin build ra đúng image đang chạy nên Compose giữ container admin. Cả sáu dịch vụ healthy. Web có giới hạn 1GiB, heap Node đo được 524MiB; không restart tự phát trong lượt kiểm sau nạp. Snapshot dự phòng đã lưu được 4 entry, startup revalidation trả 200; chưa gây lỗi backend thật để thử fallback.
+
+HTTPS trang chủ VI/EN, admin, ba mẫu link product (wp-var/var_/không query), XML và TSV đều 200 không redirect trong lượt GET. XML/TSV cùng 1.184 mã, khớp ID/giá/Còn–Hết. So feed trước audit: 123 ảnh chính, 5 tên đổi; không thêm/mất SKU hoặc đổi giá/Còn–Hết/brand/link. Probe ba URL chạy một lần đạt (home 0,581s, product 0,832s, feed 6,006s); chưa cài lịch ngoài VPS hoặc gửi Telegram. Chưa nghiệm thu toàn bộ 1.184 landing URL hoặc Google duyệt lại.
+
+Hai env-file giữ nguyên SHA-256; Postgres/Redis/MinIO giữ nguyên container, image và thời điểm khởi động. Flyway V1094 vẫn thành công, không có migration mới của đợt GMC. Giữ tag hoàn tác ba app theo rollback-tags.json; runtime rollback override tại `/tmp/bigbike-gmc-deploy-20261109/rollback-compose.json` giữ cả bộ nhớ web cũ 512MiB, chưa dùng. Không thay ảnh/brand/category/ID trong dữ liệu thật, không áp mapping đang chờ shop. Bằng chứng: `docs/audits/evidence/gmc-round2-2026-11-09/deployment/`. Kết quả này chứng minh bản nạp phản hồi tại thời điểm kiểm, không chứng minh đã loại bỏ nguồn giữ bộ nhớ lâu dài.
+
+### Gói giám sát ngoài VPS — chuẩn bị 10/11/2026, chưa cài
+
+Owner chọn chỉ chuẩn bị gói; chưa có máy ngoài VPS hoặc nhóm Telegram được xác nhận. `scripts/run-storefront-monitor.py` chạy probe ba URL một lần, lưu trạng thái riêng từng URL, gửi Telegram khi chuyển sang lỗi/khôi phục và không lặp lỗi không đổi. Nếu gửi thất bại thì không ghi nhận đã thông báo, thử lại lượt sau. Lần đầu khỏe không tự gửi tin. Khóa chạy chồng và ghi trạng thái nguyên tử; lỗi cấu hình/gửi tin chỉ ghi mã lỗi chung, không log bí mật. Không thay nơi nhận đơn hàng/sao lưu.
+
+Gói `deploy/monitoring/gmc/` có cấu hình ba URL thật và systemd oneshot + timer theo phút đồng hồ (60s, AccuracySec=1s, không trễ ngẫu nhiên); giới hạn mỗi lần chạy 50s. Chỉ cài trên máy độc lập sau khi operator xác nhận nơi nhận đủ dev/anh Trí và nhập bot/token riêng vào file bí mật ngoài Git (0600). Bộ hẹn giờ và dịch vụ chưa được bật trong phiên này. Chế độ `--dry-run` không gửi tin/không thay trạng thái; `--test-event outage|recovery` gửi tin ghi rõ THỬ NGHIỆM, không làm production lỗi và không thay trạng thái theo dõi. Chỉ operator chạy gửi thử sau xác nhận nhóm nhận. Bằng chứng nghiệm thu vẫn phải có vị trí ngoài VPS, lịch ba URL mỗi phút, đúng người nhận và cả hai tin thử/khôi phục.
+
+### Runbook cửa sổ 02–04h (Asia/Ho_Chi_Minh), chưa thực thi
+
+1. Trước cửa sổ: chốt phạm vi/ảnh build, đọc diff và contract liên quan; hoàn tất kiểm thử/build, giữ image đang chạy bằng tag hoàn tác, lưu compose override hoàn tác ngoài Git. Không chạy `up --build` rồi chờ build trong cửa sổ. Kiểm dung lượng host, health và bộ nhớ; nếu lỗi đang diễn ra, xử lý riêng thay vì gộp deploy không rõ nguyên nhân.
+2. Owner xác nhận lần nạp và thời gian; `docker ps` rồi ghi container/image/restart count của sáu service, kiểm HTTPS ba URL + XML/TSV và tuổi feed. Lưu hash hai env-file để xác nhận không đổi, không lưu nội dung bí mật. Không thực hiện khi chưa có người theo dõi/khả năng hoàn tác.
+3. Trong 02–04h: chỉ nạp app được duyệt bằng image đã build, `--no-deps --no-build --wait --wait-timeout 180`; chỉ operator thực thi. Không nạp lại DB/Redis/MinIO. Thay một container vẫn có thể gián đoạn; trang 503 không phải zero downtime.
+4. Sau nạp: cả health Docker và HTTPS home/product/XML phải đạt, đúng SKU/biến thể/giá/Còn–Hết, không redirect; đối chiếu XML/TSV, kiểm 404, log/bộ nhớ/restart count; đối chiếu env-file và dịch vụ dữ liệu. Feed thành công cần header thời gian/count hợp lệ. Snapshot fallback có thể trống sau thay container; không coi nó là cơ chế deploy liên tục.
+5. Nếu quá health timeout 180s, bất kỳ URL bắt buộc lỗi hoặc feed sai: dừng nghiệm thu; operator dùng đúng image/tag/giới hạn bộ nhớ đã lưu để hoàn tác app đã thay (trong phạm vi phê duyệt lần nạp), rồi kiểm lại đầy đủ. Không rollback dữ liệu/migration tự động. Ghi thời gian gián đoạn thực tế và kết quả, kể cả sau hoàn tác.
+6. Theo dõi tiếp 30 phút và bàn giao người trực. Nếu chưa có runner ngoài VPS, ghi rõ thiếu cảnh báo độc lập. Blue/green chỉ được gọi zero downtime sau thiết kế và kiểm thử chuyển upstream riêng, không thuộc kết quả hiện tại.
+
+### Giới hạn trạng thái xử lý nội dung — sửa source 10/11/2026, chưa nạp
+
+Phép thử tách biệt với HTML thật cho thấy heap sau thu gom vẫn tăng qua các lượt xử lý nội dung bằng `sanitizeRichHtml`. Thư viện hiện cài `isomorphic-dompurify` 3.11.0, README mục **Memory Management (Server)** xác nhận window jsdom dùng lâu có thể tích lũy trạng thái và cung cấp `clearWindow()` để giải phóng; phải gắn lại hooks sau khi clear. Nguồn: `bigbike-web/node_modules/isomorphic-dompurify/README.md`, cùng [tài liệu tác giả](https://github.com/kkomelin/isomorphic-dompurify#memory-management-server).
+
+Web làm mới window xử lý nội dung sau mỗi 100 lần sanitize không rỗng trên server, trước lần kế tiếp; đặt lại đăng ký hooks và gắn lại toàn bộ kiểm iframe/style/link như cũ. Hàm đồng bộ, không đóng window khi một lần sanitize đang chạy. Browser giữ nguyên window/hook; không đổi danh sách HTML/CSS cho phép hoặc đầu ra. Không thêm env/dependency, không ép GC hoặc mở cổng profiling trên production. Đối chiếu output/cơ chế lọc nguy hiểm qua nhiều lần reset; đo lại cùng HTML và có nhường event loop giữa lượt. Đây là xử lý một nguồn tăng bộ nhớ được tái hiện, chưa chứng minh là nguyên nhân duy nhất của ba sự cố lịch sử. Giữ giới hạn web 1GiB; chưa hạ lại 512MiB, chưa triển khai lại nếu chưa có phê duyệt riêng.
+
+Kiểm source sửa bộ nhớ 10/11: web lint + 118 tệp/801 bài đạt; hash 5.858 đầu ra VI/EN trùng, heap cô lập sau ba lượt 232,89MiB trước sửa/64,04MiB sau sửa. Build compiler giới hạn 1.024MiB thất bại vì heap; chạy lại 2.048MiB và một worker đạt cả TypeScript/97 trang/đóng gói. Đây là giới hạn process build trên host, không thay bộ nhớ runtime 1GiB hay env-file. Chưa build/nạp image production, chờ owner chốt lần nạp riêng web. Bằng chứng: continuation-2026-11-10/checks.json và memory-comparison.json trong báo cáo GMC đợt 2.
+
+
+### Forward repair lịch sử bài viết V1095 — chuẩn bị 13/11/2026, chưa áp dụng
+
+Theo ARTICLE_RULE_001/007/010/011, hoàn tất dọn trường tóm tắt/tác giả đã gỡ trong
+audit snapshot bài viết ở mọi cấp JSON. Giữ nguyên V1091 đã áp dụng; chỉ bổ sung
+V1095. Trước triển khai, kiểm lịch sử Flyway/số migration và đếm riêng JSON không
+hợp lệ; sao lưu riêng các dòng resource_type=CONTENT/action=CONTENT_ARTICLE_* có thể đổi vào nơi
+riêng có kiểm soát truy cập, ngoài Git và CI artifact. Thử restore trên database
+tách biệt; lưu ID, before_data, after_data và dấu kiểm trước/sau.
+
+Chưa cho phép áp dụng vào database thật trong phiên performance. Khi owner duyệt
+triển khai, chạy trong cửa sổ có người theo dõi, kiểm lock/thời gian và kết quả
+đúng phạm vi. Hoàn tác image không khôi phục audit đã dọn. Nếu cần khôi phục dữ
+liệu, chỉ operator dùng bản sao riêng và so sánh giá trị hiện tại với giá trị sau
+migration trước khi ghi, tránh ghi đè thay đổi mới; không xóa/sửa Flyway history
+hoặc sửa migration lịch sử. Không đưa snapshot audit/PII vào báo cáo công khai.
+
+
+### Môi trường nghiệm thu CI tách biệt — chuẩn bị 13/11/2026, chưa chạy từ xa
+
+Cấu hình `scripts/performance/compose.ci.yml` chỉ dành cho GitHub-hosted runner;
+không kế thừa root Compose hay `.env`. Mạng nội bộ, PostgreSQL/bucket/account riêng,
+không credentials tích hợp thật, workload giới hạn và dừng khi lỗi/tài nguyên thấp.
+Dùng profile không production chỉ để seed tài khoản qua initializer hiện hữu, nhưng
+chỉ nạp canonical migrations và hai fixture tiền điều kiện tổng hợp đã có trong test;
+không nạp migration-dev chứa dữ liệu legacy. Frontend là bản build production.
+Xác thực/quyền/CSRF/rate-limit không bị tắt. Đây không mô phỏng CDN/TLS hay Redis HA.
+
+Trước chạy: reviewer kiểm source đóng băng, hash baseline, diff chính xác và gói
+không có secret/PII. Ngày 14/11 owner yêu cầu tiếp tục bước GitHub/CI đã nêu: tạo
+snapshot đầy đủ trên nhánh `ci/performance-validation-*` riêng, không đổi main/index
+của workspace đang làm. Push nhánh này chỉ tự chạy khi repo public, dùng runner
+ubuntu-24.04 tiêu chuẩn miễn phí theo tài liệu GitHub; không upload artifact/cache.
+Chỉ xuất JSON đã lọc, nén, giới hạn dung lượng qua job log để tải về kiểm chứng.
+Không đổi hạn mức/thiết lập chi tiêu. Với manual trên repo private, operator vẫn
+phải kiểm hạn mức còn đủ. Đọc từng gate và kết quả, không chỉ màu workflow.
+Chỉ dự án Docker tạm do chính job tạo mới được cleanup. Không tác động container
+đang bán hàng. Deploy production vẫn cần lần duyệt riêng cùng backup V1095, image
+rollback, health/giá/hàng/checkout/media/feed checks và người theo dõi sau nạp.
