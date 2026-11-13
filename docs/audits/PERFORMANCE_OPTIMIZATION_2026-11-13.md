@@ -124,7 +124,7 @@ Kết quả cuối đã có sau tích hợp; giữ cả bằng chứng các lư�
 - Backend đầy đủ cuối: **206 suite, 1.580/1.580 đạt**, 0 failure/error/skip; `./mvnw -B verify -DforkCount=1` exit0, gồm cả bản sửa dummy password. [backend-full-summary.json](evidence/performance-2026-11-13/backend-full-summary.json). Lượt trước sửa dummy cũng đạt1.576/1.576 và được giữ riêng, không thay kết quả cuối.
 - Backend đầy đủ lượt đầu: **1.572 ca, 1.571 đạt, 1 fail, 0 skip/error**; lỗi fixture phone ở trên. Giữ [backend-full-initial-summary.json](evidence/performance-2026-11-13/backend-full-initial-summary.json), không che thành xanh. Các ca V1095 JSONB/rollback, migration cũ, catalog và media đều đạt trong lượt này.
 - Backend sạch tập trung đầu:26/26; sort5/5; media26/26. Không cộng các nhóm trùng để gọi là số ca duy nhất.
-- Tooling helper **24/24**; parser YAML, Node syntax, cấu hình Compose và kiểm Git diff. Actual stack/pg_restore+MinIO/Lighthouse/load **chưa chạy**, helper test dùng mock ở ranh giới công cụ không đưa mock vào ứng dụng.
+- Tooling helper **25/25 Python + 4/4 Node**; parser YAML, Node syntax, cấu hình Compose và kiểm Git diff. Actual stack/pg_restore+MinIO/Lighthouse/load **chưa chạy**, helper test dùng mock ở ranh giới công cụ không đưa mock vào ứng dụng.
 - QA nguồn độc lập: [ci-independent-review.json](evidence/performance-2026-11-13/ci-independent-review.json), [independent-database-qa.json](evidence/performance-2026-11-13/independent-database-qa.json), [independent-frozen-dataset-qa.json](evidence/performance-2026-11-13/independent-frozen-dataset-qa.json), [frontend-media-ci-qa.md](evidence/performance-2026-11-13/frontend-media-ci-qa.md). Những finding được sửa source không được gọi là đã chạy runtime.
 
 ## 7. Luồng kinh doanh, SEO, tracking và bảo mật
@@ -179,3 +179,18 @@ QA source độc lập 14/11 xác nhận ranh giới dữ liệu/dịch vụ; ch
 Đã thêm mã phân loại lỗi cố định và mốc tiến trình; không xuất stderr/log ứng dụng.
 Đã sửa bộ nhận diện source để giữ OID gitlink công cụ editor có trước mà không đọc
 hay khởi tạo thư mục đó; bài kiểm nguồn Git tách biệt chứng minh phạm vi này.
+
+Lần CI đầu [43521704761](https://github.com/vominhduc11/bigbike/actions/runs/43521704761)
+đã chạy thật tại snapshot `92164a62`: boundary/secret-artifact guard đạt, Admin
+1.242/1.245 đạt và 3 thất bại. Không nhận màu xanh từ local thay remote. Tái hiện
+cùng số lỗi khi đưa VITE_STOREFRONT_BASE_URL của build CI vào 3 tệp unit (60/63);
+unset biến riêng trong lệnh unit được 63/63, không sửa source app/assertion.
+Bản build và browser vẫn dùng localhost riêng. Lưu hai báo cáo sanitized
+ci-unit-env-reproduction.json / ci-unit-env-corrected.json. Reporter bổ sung tên
+ca/vị trí source và mã lỗi cố định; không xuất giá trị matcher/log thô.
+
+Bổ sung official web-vitals@5.1.0 chỉ trong công cụ lab, không dependency ứng dụng.
+4 kiểm integrity đạt; Chromium trang HTML tách biệt đã có callback click thật.
+Headless có thể không phát native hidden khi điều hướng: số đo là interim lab,
+ghi actual hidden count/finalized flag; có thể thiếu click cuối checkout. Không
+giả visibility event và không gọi kết quả là field INP/INP hoàn chỉnh của phiên.

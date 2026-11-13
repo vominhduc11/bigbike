@@ -425,8 +425,13 @@ without raw SQL parameters. Diagnostics may add overhead and must match both arm
 The fixed low-load CI run is a lab observation, not production capacity certification.
 
 Browser checks use production builds in mobile/desktop Chromium. Record navigation
-TTFB, FCP, LCP and CLS, observed interaction event durations separately (lab evidence,
-not field INP), JS/CSS bytes and duplicate request URLs without query/PII. Lighthouse
+TTFB, FCP, LCP and CLS, observed interaction event durations separately. A lab INP
+observation may use the pinned official web-vitals collector injected into browser
+contexts before navigation. Publish interim reportAllChanges observations and actual
+hidden-flush counts. The library flushes if a native hidden transition arrives, but
+headless navigation may omit that event/final click; do not synthesize visibility
+events or claim finalization when absent. Record support/missing interactions explicitly. This is scripted lab evidence, never field INP.
+Also record JS/CSS bytes and duplicate request URLs without query/PII. Lighthouse
 runs serially with the same pinned version/settings; never relabel TBT as INP. Check
 catalog/search/PDP/cart/checkout and authenticated admin surfaces with real fixtures;
 mark unexecuted CRUD/report/bulk paths explicitly. Uploaded media cases share deterministic
@@ -477,3 +482,11 @@ documented coarse budgets: API10 requests/sec burst20; web/admin30 requests/sec
 burst30, with WebSocket exempt from the HTTP coarse limit. Backend tiers remain
 unchanged. Proxy emits429 JSON/no-store/Retry-After; resource/API/network429 stops
 acceptance. Local syntax checks do not start a server and do not prove runtime.
+
+CI unit fixtures retain their documented default public origins: unset only build-specific
+`VITE_STOREFRONT_BASE_URL` and `VITE_ADMIN_API_BASE` for the unit-test command. These
+are restored for the actual localhost production builds and runtime/browser workloads.
+Evidence: overriding VITE_STOREFRONT_BASE_URL reproduces three unrelated URL-policy/
+English-link assertion failures (60/63); do not change assertions or business URL rules
+merely to accommodate the lab build environment. Sanitized Vitest failure output
+includes static case names/source locations and fixed categories, never matcher values.

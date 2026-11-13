@@ -1,0 +1,43 @@
+{
+  "status": "initial_run_regression_failed; corrected_snapshot_preparing",
+  "repository_visibility": "public",
+  "branch": "ci/performance-validation-20261114",
+  "candidate_commit": "92164a621573859a09ccd2da7f88b7e6c7039a18",
+  "run_id": 43521704761,
+  "run_url": "https://github.com/vominhduc11/bigbike/actions/runs/43521704761",
+  "secret_artifact_guard": {
+    "run_id": 43521704645,
+    "conclusion": "success"
+  },
+  "source_publication_scan": {
+    "findings": 0,
+    "scope": "offline Gitleaks8.24.2 directory scan of complete isolated publication worktree; not account/PII/history audit"
+  },
+  "source_helper_tests": 24,
+  "publication_worktree": "/tmp/bigbike-perf-ci-20261114",
+  "original_workspace_branch": "main",
+  "original_workspace_head": "4c4499ca8ed432f8e7ca7c8e95122b8a747c1c1d",
+  "original_index_untouched": true,
+  "compute_boundary": "public repository, standard ubuntu-24.04 only; no artifact/cache uploads, no budget changes",
+  "production_deployed": false,
+  "scope": "No remote latency result yet. Source and local component results are not whole-system acceptance.",
+  "initial_admin_counts": {
+    "file_reports": 130,
+    "numFailedTestSuites": 4,
+    "numFailedTests": 3,
+    "numPassedTestSuites": 352,
+    "numPassedTests": 1242,
+    "numPendingTests": 0,
+    "numTodoTests": 0,
+    "numTotalTestSuites": 356,
+    "numTotalTests": 1245,
+    "success": false
+  },
+  "unit_environment_reproduction": {
+    "tests": 63,
+    "passed_with_build_origin": 60,
+    "failed_with_build_origin": 3,
+    "passed_with_unit_default_origin": 63,
+    "app_source_or_assertion_changed": false
+  }
+}

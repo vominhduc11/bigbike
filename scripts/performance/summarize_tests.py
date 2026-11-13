@@ -3,6 +3,7 @@
 import argparse
 import json
 from pathlib import Path
+import re
 import xml.etree.ElementTree as ET
 
 
@@ -28,7 +29,26 @@ def vitest(file):
     report = json.loads(Path(file).read_text())
     keys = ('numTotalTests', 'numPassedTests', 'numFailedTests', 'numPendingTests', 'numTodoTests',
             'numTotalTestSuites', 'numPassedTestSuites', 'numFailedTestSuites', 'success')
-    return {**{key: report.get(key) for key in keys}, 'file_reports': len(report.get('testResults', []))}
+    nonpassing = []
+    for suite in report.get('testResults', []):
+        for case in suite.get('assertionResults', []):
+            if case.get('status') == 'passed':
+                continue
+            messages = '\n'.join(case.get('failureMessages', []))
+            # Static source case names and fixed diagnostic categories only.
+            # Never publish matcher expected/actual values or captured stdout.
+            categories = [name for name, pattern in (
+                ('timeout', r'timed out|TimeoutError'),
+                ('assertion', r'AssertionError|expected|toHave|toBe'),
+                ('runtime', r'TypeError|ReferenceError|SyntaxError'),
+                ('missing_element', r'Unable to find|Found multiple elements'),
+            ) if re.search(pattern, messages, re.I)]
+            locations = sorted(set(re.findall(r'(src/[\w/.-]+\.(?:test|spec)\.[jt]sx?:\d+:\d+)', messages)))
+            nonpassing.append({'file': Path(suite.get('name', '')).name,
+                'name': case.get('fullName') or case.get('title'),
+                'status': case.get('status'), 'categories': categories, 'source_locations': locations})
+    return {**{key: report.get(key) for key in keys},
+            'file_reports': len(report.get('testResults', [])), 'nonpassing_cases': nonpassing}
 
 
 def main():

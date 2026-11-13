@@ -317,6 +317,8 @@ def main():
             'docker': run(['docker', '--version']).strip(), 'compose': run(['docker', 'compose', 'version']).strip(),
             'ffmpeg': run(['ffmpeg', '-version']).splitlines()[0],
             'lighthouse_version': '12.8.2',
+            'web_vitals_version': '5.1.0',
+            'web_vitals_bundle_sha256': hashlib.sha256((Path(os.environ['RUNNER_TEMP']) / 'perf-tools/node_modules/web-vitals/dist/web-vitals.iife.js').read_bytes()).hexdigest(),
             'lighthouse_dependency_lock_sha256': hashlib.sha256((Path(os.environ['RUNNER_TEMP']) / 'perf-tools/package-lock.json').read_bytes()).hexdigest(),
             'chromium': run([os.environ['CHROME_PATH'], '--version']).strip(),
             'node_build_and_lab_runtime': '22/glibc',

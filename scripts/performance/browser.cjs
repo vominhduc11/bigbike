@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const { createRequire } = require('node:module');
 const path = require('node:path');
+const { installCollector } = require('./lab-inp.cjs');
 
 async function main() {
   if (process.env.GITHUB_ACTIONS !== 'true' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted') {
@@ -11,13 +12,17 @@ async function main() {
   const { chromium } = createRequire(path.resolve(root, 'bigbike-web/package.json'))('@playwright/test');
   const fixture = JSON.parse(fs.readFileSync(fixtureFile));
   const session = JSON.parse(fs.readFileSync(sessionFile));
+  const collectorDirectory = path.join(process.env.RUNNER_TEMP, 'perf-tools/node_modules/web-vitals');
   const browser = await chromium.launch({ headless: true });
   const results = [];
   const progress = { surface: 'launch', step: 'starting' };
+  let inpCollectorIdentity = null;
   const product = fixture.products[0];
   try {
     for (const viewport of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
       const context = await browser.newContext({ viewport, locale: 'vi-VN', timezoneId: 'Asia/Ho_Chi_Minh' });
+      const inp = await installCollector(context, collectorDirectory);
+      inpCollectorIdentity = inp.identity;
       let blockedExternal = 0;
       await context.route('**/*', route => {
         const url = new URL(route.request().url());
@@ -135,21 +140,25 @@ async function main() {
               h1_count: document.querySelectorAll('h1').length,
               json_ld_blocks: document.querySelectorAll('script[type="application/ld+json"]').length };
           });
-          results.push({ surface: name, viewport, cache_state: cacheState, metrics });
+          results.push({ surface: name, viewport, cache_state: cacheState, metrics,
+            inp: await inp.record(page) });
         }
       }
       await page.goto('http://localhost:13000/tim-kiem/?s=E2E_PERF', { waitUntil: 'load' });
       progress.surface = 'search-interaction';
       progress.step = 'submit';
+      const searchInp = await inp.record(page);
       const search = page.locator('[data-search-page-form] input');
       await search.fill('E2E_PERF_Áo');
       await page.locator('[data-search-page-form] button[type=submit]').click();
       await page.waitForURL(url => url.searchParams.get('s') === 'E2E_PERF_Áo');
-      results.push({ surface: 'search-interaction', viewport, url_state_updated: true });
+      await inp.record(page, true);
+      results.push({ surface: 'search-interaction', viewport, url_state_updated: true, inp: searchInp });
       // A real add-to-cart interaction. Seeded simple product deliberately has no variant.
       progress.surface = 'cart-to-checkout';
       progress.step = 'add-and-order';
       await page.goto('http://localhost:13000/product/' + product.slug + '/', { waitUntil: 'load' });
+      const productInp = await inp.record(page);
       const add = page.locator('[data-purchase-add]').first();
       await add.waitFor({ state: 'visible' });
       if (!await add.isEnabled()) throw Error('Seeded available product cannot be added');
@@ -158,7 +167,9 @@ async function main() {
       if (!(await addResponse).ok()) throw Error('Real cart mutation failed');
       await page.waitForTimeout(400);
       const interactions = await page.evaluate(() => window.__perf.interactions);
+      await inp.record(page, true);
       await page.goto('http://localhost:13000/dat-hang/', { waitUntil: 'load' });
+      const checkoutInp = await inp.record(page);
       const form = page.locator('[data-checkout-form]');
       await form.waitFor({ state: 'visible' });
       await form.locator('#billing_full_name').fill('E2E_PERF_Khách trình duyệt');
@@ -170,13 +181,16 @@ async function main() {
       await form.getByRole('combobox').nth(1).click();
       await page.getByRole('option').first().click();
       await form.getByRole('checkbox').last().check();
+      await inp.record(page, true); // Snapshot completed form interactions before navigation.
       const checkout = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/checkout' && r.request().method() === 'POST');
       await form.locator('button[type=submit]').click();
       if (!(await checkout).ok()) throw Error('Browser checkout failed');
       await page.waitForURL(url => url.pathname === '/don-hang/xac-nhan/');
+      await page.waitForTimeout(300); // Allow the actual page-hidden callback to cross the binding.
       results.push({ surface: 'cart-to-checkout', viewport, real_add_to_cart: true,
         checkout_form_present: true, order_confirmation_reached: true, interaction_event_durations: interactions,
-        inp_field_ms: null, note: 'Observed lab events only; field INP and variant interaction unmeasured' });
+        inp: { product_document: productInp, checkout_document: checkoutInp },
+        inp_field_ms: null, note: 'Official web-vitals interim scripted lab INP; hidden finalization only when observed, full navigation may omit final click; field INP and variant interaction unmeasured' });
 
       // Use the real refresh cookie from the standard login already performed by API setup.
       await context.addCookies([{ name: 'bb_admin_refresh', value: session.refreshCookie,
@@ -201,7 +215,7 @@ async function main() {
           screen_content_visible: !!document.querySelector('.bb-page-content .screen'),
         }));
         if (!metrics.screen_content_visible) throw Error('Authenticated admin screen missing');
-        results.push({ surface: 'admin' + route, viewport, metrics });
+        results.push({ surface: 'admin' + route, viewport, metrics, inp: await inp.record(page) });
       }
       results.push({ viewport, page_errors: pageErrors, api_errors: apiErrors, resource_errors: resourceErrors,
         local_network_errors: localNetworkErrors, canceled_requests: canceledRequests, console_errors: consoleErrors,
@@ -215,7 +229,9 @@ async function main() {
     progress.step = 'complete';
   } finally {
     await browser.close();
-    fs.writeFileSync(output, JSON.stringify({ results, progress, method: 'Chromium unthrottled lab; fixed 2s observation, no field INP; first navigation is not server cold cache' }, null, 2));
+    fs.writeFileSync(output, JSON.stringify({ results, progress,
+      inp_collector: inpCollectorIdentity,
+      method: 'Chromium unthrottled lab; fixed 2s navigation observation, scripted lab INP only; first navigation is not server cold cache' }, null, 2));
   }
 }
 main().catch(() => { console.error('Browser validation failed; sanitized partial metrics retained'); process.exitCode = 1; });
