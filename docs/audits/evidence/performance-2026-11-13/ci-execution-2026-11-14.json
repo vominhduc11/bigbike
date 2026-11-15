@@ -93,5 +93,16 @@
       "conclusion": "success"
     },
     "no_current_full_stack_latency_result": true
+  },
+  "current_run": {
+    "id": 43677437126,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43677437126",
+    "commit": "7ee514281ffb7f19825f6fe0dbc481cce2c29eb5",
+    "frontend": "verified reuse f85 source-identical; not newly executed",
+    "backend": "fresh1588/1588;0fail/error/skip; verify/package passed",
+    "isolated_stack_job_id": 132701770410,
+    "isolated_stack_status": "failed at first infrastructure startup; no API/browser/media latency collected",
+    "full_system_acceptance": false,
+    "next_fix": "Pinned official MinIO binary image; fixed-category startup diagnostics"
   }
 }

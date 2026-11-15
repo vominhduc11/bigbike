@@ -1,0 +1,65 @@
+{
+  "run": 43677437126,
+  "job": 132701770410,
+  "commit": "7ee514281ffb7f19825f6fe0dbc481cce2c29eb5",
+  "backend": {
+    "passed": 1588,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "native_browser_cache_egress": "passed",
+  "failure": {
+    "operation": "docker compose up -d --wait postgres redis minio",
+    "original_diagnostic_categories": [],
+    "exact_runner_stderr": "not published; no unsupported claim that local registry response is captured CI stderr"
+  },
+  "public_registry_checks": {
+    "docker_hub_postgres_16_alpine": 200,
+    "docker_hub_redis_7_4_alpine": 200,
+    "docker_hub_minio_manifest": 401,
+    "docker_hub_minio_anonymous_pull_access": [],
+    "docker_hub_minio_repository": 404,
+    "quay_minio_after_normal_token_challenge": 401
+  },
+  "official_release": {
+    "url": "https://github.com/minio/minio/releases/tag/RELEASE.2025-04-22T22-12-26Z",
+    "binary_url": "https://github.com/minio/minio/releases/download/RELEASE.2025-04-22T22-12-26Z/minio.linux-amd64.RELEASE.2025-04-22T22-12-26Z",
+    "size_bytes": 118849720,
+    "sha256": "53e2a2cb16c5366ea6fbbc479c19ddb4c6a0948273e752f740fb1fbf27bb817c",
+    "checksum_sources": [
+      "GitHub release asset digest",
+      "official release .sha256sum"
+    ]
+  },
+  "fix": {
+    "same_release": true,
+    "ci_runtime_base": "debian:bookworm-slim",
+    "shop_runtime_base": "ubi9/ubi-micro",
+    "shared_image_for_both_arms": true,
+    "production_configuration_changed": false,
+    "failure_categories_only_no_raw_stderr": true
+  },
+  "checks": {
+    "python_helpers": 46,
+    "node_helpers": 6,
+    "ingress_self_test": "pass",
+    "baseline_attribution_files": 3
+  },
+  "full_system_acceptance": false,
+  "independent_qa": {
+    "review": "no blocking findings in startup, image reuse, diagnostics, docs",
+    "downloaded_binary_bytes": 118849720,
+    "downloaded_binary_sha256_matches": true,
+    "validated_then_executed_version": "RELEASE.2025-04-22T22-12-26Z commit 0d7408fc9969caf07de6a8c3a84f9fbb10a6739e go1.24.2 linux/amd64",
+    "shop_binary_sha256_matches_official_asset": true,
+    "read_only_shop_commands": [
+      "docker ps",
+      "docker image inspect minio/minio:RELEASE.2025-04-22T22-12-26Z",
+      "docker exec bigbike-minio minio --version",
+      "docker exec bigbike-minio sha256sum /usr/bin/minio"
+    ],
+    "shop_image_digest": "minio/minio@sha256:a1ea29fa28355559ef137d71fc570e508a214ec84ff8083e39bc5428980b015e",
+    "no_service_or_data_changes": true
+  }
+}

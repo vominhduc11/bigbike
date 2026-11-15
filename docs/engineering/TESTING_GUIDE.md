@@ -384,7 +384,8 @@ gate certifies full-system latency.
 
 Regression gates and full-stack arms run sequentially. The opt-in full-stack job uses
 `scripts/performance/run_ci.py` and `compose.ci.yml`: real PostgreSQL 16, Redis 7.4,
-MinIO (same image as root Compose), Java 17 backend, production Next.js and built
+MinIO (same release as root Compose; see the pinned official-binary CI image in
+DEPLOYMENT_GUIDE), Java 17 backend, production Next.js and built
 Admin behind nginx. It refuses local/self-hosted execution. Its internal Docker
 network has no external route; only loopback ports >=10000 are published. No root
 `.env`, production volumes, credentials, data or cloud integrations are mounted.
@@ -581,3 +582,11 @@ The isolated-stack job must explicitly use always() AND needs.backend.result=='s
 AND the authorized push/full-stack condition. This overrides skip propagation only;
 a failed/missing backend gate still prohibits the stack. Run43676719268 passed backend
 but never executed its stack; overall green is not performance acceptance.
+
+CI startup diagnostics (15/11): record a separate infrastructure-start phase before
+Compose starts PostgreSQL/Redis/MinIO. Failed commands expose only fixed categories
+(registry authentication/manifest/rate-limit/transport, network overlap, invalid
+Compose config, health/resource errors); never publish captured stderr, command
+arguments, generated credentials or environment. Preserve those categories in the
+sanitized arm status. A registry error is an environment dependency failure, not
+an API performance result. Do not substitute a different storage release silently.

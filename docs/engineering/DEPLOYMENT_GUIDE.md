@@ -1096,3 +1096,15 @@ bật cùngURL/expectedReplicas1; Next nhận cùng khóa. Không dùng biến/s
 Công cụ trìnhduyệt dùng proxyloopback chỉ từ chối egress, giữ HTTPcache và kiểm native
 trước chạy. Xem TESTING_GUIDE về source-bound reuse frontend gates; không reuse
 backend đang sửa fixture. Không có thay đổi deployment production trong bước này.
+
+Nguồn MinIO cho lab15/11: DockerHub không còn cho tải công khai image đã cấu hình
+(anonymous token không có quyền pull; manifest401, repository404), Quay cũng401
+sau challenge/auth thông thường. Không đổi root Compose hay phiên bản shop. Lab
+tự đóng gói binary linux-amd64 chính thức RELEASE.2025-04-22T22-12-26Z từ GitHub
+release của minio/minio, kiểm SHA256 cố định
+`53e2a2cb16c5366ea6fbbc479c19ddb4c6a0948273e752f740fb1fbf27bb817c`
+(khớp cả asset.digest và tệp checksum phát hành). Chỉ build một image rồi dùng đúng
+image đó ở cả hai bản đo; kiểm binary --version. Runtime Debian bookworm-slim với
+curl/CA thay UBI-micro của image shop: ghi rõ giới hạn đại diện, không gọi đây là
+benchmark image production. Không tải mirror không rõ nguồn hoặc đổi sang release
+mới để vượt lỗi. Binary/license vẫn từ release chính thức; không công bố image CI.

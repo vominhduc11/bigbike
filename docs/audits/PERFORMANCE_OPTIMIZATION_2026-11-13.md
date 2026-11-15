@@ -272,3 +272,21 @@ trênGitHub đạt. Stack vẫn bịskip bởi implicit success củaGitHub qua 
 Không nhận workflowgreen là nghiệmthu tải. Sửa jobstack sang always() kèm điều kiện
 backend.result==success vàpush/full-stack đãduyệt, không bỏ gateBackend. Chưa có
 Before/Afterhệthống từrun này.
+
+### CI15/11: đã chạy tới bước dựng hệ thống, chưa đo được
+
+Run43677437126/7ee51428: backend1588/1588,0fail/error/skip; frontend reuse có
+proof; native browser cache/egress đạt. Build backend đạt, Compose khởi động
+PostgreSQL/Redis/MinIO thất bại; không có Before/After/API/browser/media latency.
+Lỗi cũ chưa lưu đủ mã phân loại nên không gọi kiểm registry trên host là stderr CI.
+Kiểm riêng endpoint công khai: Postgres/Redis manifest200; MinIO DockerHub401
+(token không có quyền pull), repository404; Quay401 sau authchallenge thường.
+Release chính thức GitHub còn binary đúng phiên bản, digest/checksum trùng nhau.
+Thay nguồn image chỉ trong lab bằng binary đã pinSHA256, build một lần dùng cả hai
+bản; Debian runtime khác UBI shop nên ghi rõ giới hạn. Không đổi rootCompose,
+không nâng phiên bản, không dùng mirror vô danh. Bổ sung phase infrastructure-start
+và mã lỗi registry/network/config cố định, không xuất log/credential.46Python+6Node
+và ingress/baseline đạt; chờ chạy thật để xác minh. Bằng chứng ci-stack-startup-2026-11-15.json.
+QA độc lập tải/kiểm118849720byte và --version đạt; SHA256 binary phát hành còn
+trùng hoàn toàn /usr/bin/minio trong container shop (chỉ đọc sau dockerps). Vì vậy
+server executable không đổi byte; runtimebase vẫn là khác biệt cần ghi nhận.

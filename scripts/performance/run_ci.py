@@ -55,6 +55,12 @@ def clean_environment():
     return {key: os.environ[key] for key in names if key in os.environ}
 
 
+class CommandFailure(RuntimeError):
+    def __init__(self, executable, exit_code, categories):
+        self.categories = categories
+        super().__init__(f'Command failed: {executable}; exit={exit_code}; categories={",".join(categories)}')
+
+
 def run(command, *, cwd=None, env=None, timeout=1200):
     process = subprocess.run(command, cwd=cwd, env=env or clean_environment(),
                              capture_output=True, text=True, timeout=timeout)
@@ -69,12 +75,18 @@ def run(command, *, cwd=None, env=None, timeout=1200):
             ('out_of_memory', r'OutOfMemoryError|heap out of memory|Killed'),
             ('disk_full', r'No space left on device|ENOSPC'),
             ('docker_health', r'unhealthy|failed to reach running'),
+            ('registry_authentication', r'pull access denied|requested access.*denied|authentication required|unauthorized|insufficient_scope'),
+            ('registry_manifest', r'manifest unknown|no matching manifest|manifest.*not found'),
+            ('registry_rate_limit', r'toomanyrequests|pull rate limit'),
+            ('registry_transport', r'TLS handshake timeout|i/o timeout|connection refused|temporary failure in name resolution|failed to resolve source metadata'),
+            ('docker_network_overlap', r'pool overlaps|address space.*overlap'),
+            ('compose_config', r'invalid compose|validating.*compose|invalid interpolation|must be a mapping|service.*refers to undefined'),
             ('port_conflict', r'address already in use|port is already allocated'),
             ('frontend_build', r'Failed to compile|Type error:|Build error occurred'),
             ('api_http_error', r'HTTPError|Unexpected HTTP status'),
             ('assertion', r'AssertionError'),
         ) if re.search(pattern, combined, re.I)]
-        raise RuntimeError(f'Command failed: {Path(command[0]).name}; exit={process.returncode}; categories={",".join(categories)}')
+        raise CommandFailure(Path(command[0]).name, process.returncode, categories)
     return process.stdout
 
 
@@ -132,6 +144,7 @@ class Stack:
             shutil.copy2(files[0], self.migrations / files[0].name)
         self.env_file = directory / 'ci.env'
         self.values = {'PERF_PASSWORD': self.password, 'PERF_JWT': self.jwt, 'PERF_TAG': self.project,
+                  'PERF_MINIO_IMAGE': project_name(f'bbperf-{os.environ["GITHUB_RUN_ID"]}-{os.environ["GITHUB_RUN_ATTEMPT"]}-before') + '-minio',
                   'PERF_FIXTURE_DIR': str(self.migrations), 'PERF_SCRIPT_DIR': str(root / 'scripts/performance')}
         self.write_env()
         self.fixture_dir = fixtures_dir
@@ -156,6 +169,11 @@ class Stack:
     def sql(self, sql):
         # This database belongs to the guarded CI project, never a shared shop DB.
         return self.compose('exec', '-T', 'postgres', 'psql', '-U', 'perf', '-d', 'bigbike_perf', '-Atc', sql)
+
+    def build_storage(self):
+        # One image reused by BOTH arms, without exporting it or using shop images.
+        run(['docker', 'build', '-f', str(self.root / 'scripts/performance/Dockerfile.minio'),
+             '-t', self.values['PERF_MINIO_IMAGE'], str(self.root / 'scripts/performance')], timeout=600)
 
     def build(self, app, environment):
         if shutil.disk_usage(self.directory).free < 2 * 1024 ** 3:
@@ -391,6 +409,10 @@ def main():
                 write_json(arm_output / 'status.json', status)
                 print('BBPERF-PHASE', arm, name, flush=True)
             try:
+                if arm == 'before':
+                    phase('official-storage-image')
+                    stack.build_storage()
+                phase('build-backend')
                 env = {**clean_environment(), 'NODE_OPTIONS': '--max-old-space-size=3072', 'NEXT_TELEMETRY_DISABLED': '1',
                        'BIGBIKE_DISABLE_DEV_FALLBACK': 'true', 'INTERNAL_API_TOKEN': stack.jwt,
                        'BIGBIKE_API_BASE_URL': 'http://localhost:18080', 'NEXT_PUBLIC_API_BASE_URL': 'http://localhost:18080',
@@ -405,6 +427,7 @@ def main():
                 if stack.compose('ps', '--all', '-q').strip():
                     raise RuntimeError('Refusing to adopt a pre-existing Docker project')
                 stack.started = True
+                phase('infrastructure-start')
                 stack.compose('up', '-d', '--wait', 'postgres', 'redis', 'minio')
                 setup_bucket(stack.password)
                 if dataset is not None:
@@ -512,6 +535,8 @@ def main():
                 status.update(phase='complete', complete=True)
             except Exception as error:
                 status.update(failure_type=type(error).__name__)
+                if isinstance(error, CommandFailure):
+                    status['command_failure_categories'] = error.categories
                 raise
             finally:
                 write_json(arm_output / 'status.json', status)
