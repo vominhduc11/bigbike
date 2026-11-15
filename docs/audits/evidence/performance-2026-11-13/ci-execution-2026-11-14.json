@@ -68,5 +68,30 @@
     "backend_latest_local": "1588/1588 verify in UTC; no failures/errors/skips",
     "status": "in_progress; no new full-stack measurements yet",
     "unanswered_business_rule": "require selected variant when product has variants; async owner question pending"
+  },
+  "latest_run_2026_11_15": {
+    "id": 43676719268,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43676719268",
+    "candidate_commit": "c889edc8a52fc28dd9f42291ffce8b87b88692ea",
+    "status": "backend_gate_running",
+    "frontend_gates": "source-bound proven reuse of run43670539154; not newly executed",
+    "source_proof": "ci-source-bound-frontend-proof.json",
+    "helper_tests": {
+      "python": 44,
+      "node": 6,
+      "native_cache_egress": "passed owned static servers"
+    },
+    "local_backend_full_utc": {
+      "tests": 1588,
+      "passed": 1588,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    "secret_artifact_guard": {
+      "id": 43676719351,
+      "conclusion": "success"
+    },
+    "no_current_full_stack_latency_result": true
   }
 }

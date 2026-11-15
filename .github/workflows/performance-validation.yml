@@ -141,7 +141,7 @@ jobs:
 
   isolated_stack:
     needs: backend
-    if: github.event_name == 'push' || (inputs.full_stack && (github.event.repository.private == false || inputs.included_quota_confirmed))
+    if: always() && needs.backend.result == 'success' && (github.event_name == 'push' || (inputs.full_stack && (github.event.repository.private == false || inputs.included_quota_confirmed)))
     name: Real isolated stack sequential Before/After lab
     runs-on: ubuntu-24.04
     timeout-minutes: 90

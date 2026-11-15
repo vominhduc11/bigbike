@@ -266,3 +266,9 @@ Cơchế resume frontend chỉ reusef85 khiGitchứngminhhaiapp+reporter+lệnhg
 vàGitHub xác nhận cảhaijob+lint/test/count/buildthànhcông; mọi thiếu/chệch chạy lại.
 Backend luôn kiểm mới. Helper44Python+6Node đạt vànativecacheproofđạt; stackthật
 vẫn chưa hoàn tất. Bằng chứngHomepage/cache/CIintegrationtách riêng trongevidence.
+
+Run43676719268/c889edc8: boundary đạt, frontend reuse có proof thật từf85, backend
+trênGitHub đạt. Stack vẫn bịskip bởi implicit success củaGitHub qua ancestor đãreuse.
+Không nhận workflowgreen là nghiệmthu tải. Sửa jobstack sang always() kèm điều kiện
+backend.result==success vàpush/full-stack đãduyệt, không bỏ gateBackend. Chưa có
+Before/Afterhệthống từrun này.

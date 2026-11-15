@@ -574,3 +574,10 @@ normal Admin API, poll rendered H1 for committed change and restore via the same
 Retain functional delay/counts and fail on missing refresh; no manual privileged
 revalidation call may fake the backend-to-web integration. This is separate from
 latency measurements and preserves the primary PDP price/source fixtures.
+
+Workflow descendant condition correction (15/11): GitHub's implicit success() can
+skip a descendant of a verified-reused frontend job even after the backend succeeds.
+The isolated-stack job must explicitly use always() AND needs.backend.result=='success'
+AND the authorized push/full-stack condition. This overrides skip propagation only;
+a failed/missing backend gate still prohibits the stack. Run43676719268 passed backend
+but never executed its stack; overall green is not performance acceptance.

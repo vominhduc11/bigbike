@@ -1,0 +1,9 @@
+{
+  "reused-frontend.json": {
+    "anchor_commit": "f85d92a682238f3af17361b608219be995ca1257",
+    "anchor_run_id": 43670539154,
+    "anchor_url": "https://github.com/vominhduc11/bigbike/actions/runs/43670539154",
+    "reason": "same_source_same_gates_both_remote_jobs_passed",
+    "reuse_frontend": true
+  }
+}
