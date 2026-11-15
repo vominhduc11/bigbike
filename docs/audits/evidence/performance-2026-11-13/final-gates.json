@@ -50,5 +50,15 @@
     "failures": 0,
     "errors": 0,
     "skipped": 0
+  },
+  "backend_homepage_isolated_utc_verify": {
+    "status": "passed",
+    "exit_code": 0,
+    "elapsed_seconds": 785,
+    "command": "MAVEN_OPTS=-Xmx512m JAVA_TOOL_OPTIONS=\"-Xmx1024m -Duser.timezone=UTC\" ./mvnw -B verify -DforkCount=1 -Duser.timezone=UTC",
+    "tests": 1588,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
   }
 }

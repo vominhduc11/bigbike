@@ -143,7 +143,7 @@ Chưa có bằng chứng mới cho mọi tổ hợp khuyến mãi/biến thể/n
 
 ## 9. Gói bàn giao, triển khai và hoàn tác để review
 
-Đối chiếu [workspace-preservation.json](evidence/performance-2026-11-13/workspace-preservation.json): ngoài 25 tệp được sửa có chủ đích trong task, tất cả tệp nguồn có trước còn nguyên dấu kiểm; không có tệp ban đầu bị mất. [frozen-source-proof.json](evidence/performance-2026-11-13/frozen-source-proof.json) thực hành trên hai bản sao tất cả tệp trong snapshot nguồn cuối của cùng workspace: chỉ đúng ba file tối ưu khác nhau, mọi tệp khác trùng; chỉ mô phỏng biến môi trường để kiểm công cụ file, không chạy stack/load local.
+Đối chiếu [workspace-preservation.json](evidence/performance-2026-11-13/workspace-preservation.json): ngoài 26 tệp được sửa có chủ đích trong task, tất cả tệp nguồn có trước còn nguyên dấu kiểm; không có tệp ban đầu bị mất. [frozen-source-proof.json](evidence/performance-2026-11-13/frozen-source-proof.json) thực hành trên hai bản sao tất cả tệp trong snapshot nguồn cuối của cùng workspace: chỉ đúng ba file tối ưu khác nhau, mọi tệp khác trùng; chỉ mô phỏng biến môi trường để kiểm công cụ file, không chạy stack/load local.
 
 Source mới thuộc backend comparator, decoded-image reuse, cache publication, dummy password, V1095 và các test; tooling thuộc `scripts/performance/` và workflow. Canonical cập nhật DATA/API/INTEGRATION/TESTING/DEPLOYMENT; không đổi API shape, quyền, trạng thái hay production dependency/index/env.
 
@@ -241,3 +241,28 @@ phát hiện một publicIdempotency-Key thử bị nhận nhầm credential; ch
 từ ID fixture/ngữ cảnh (cùng giá trị hai bản), không đổi rule/ignore. Lượt quét lại0.
 Chưa có đo toàn stack thành công; hai lượtCI trước dừng đúng tại regression, lỗi
 đã có bằng chứng/sửa/verify. Bản tích hợp mới đang được công bố lên cùng nhánhCI.
+
+### Kiểm tiếp15/11: lỗi dữ liệu thử và công cụ cache
+
+CI43670539154 tại f85d92: hai frontend đều lint/unit/build đạt; backend1586/1588,
+0skip/error, hai lỗiHomepage nên stack chưa chạy. Tái hiện bằng chính AdminMutation
+chạy trướcHomepage:56ca/2fail. Suite trước đổi danh sách nổi bật và thêm danh mục
+đầu trang; seedINSERT-WHERE-NOT-EXISTS không hoàn nguyên dữ liệu. Featured dùngSQL
+pagination, không quy lỗi này cho cache sản phẩm production. Tách H2/context riêng
+choHomepage, giữ cache thật/TTL và mọiassertion.56/56 tập trung và206suite/1588/1588
+verifyUTC sau sửa đều đạt (13phút05giây). Không tắt test để xanh.
+
+QA phát hiện context.route tắt HTTPcache: nhãn warm của công cụf85 không hợp lệ;
+chưa có browser measurement từf85 vì gate đã dừng. Thay bằng proxyloopback chỉtừchối,
+khôngresolve/forward upstream; cachevẫn bật, xóa HTTPcache trước lượt đầu rồi đọc lại
+và ghi cachehit. BàiChrome thật với worker/serviceworker/OOPIF/HTTP/HTTPS/WS chứng
+minh đích cấm0TCPconnection, asset1→1 khi lặp,1→2 khi clear, private no-store khônghit.
+Đây là kiểm giao thức công cụ, chưa phải latency BigBike; không chứng nhậnUDPtoàn diện.
+
+Bổ sung internalWEB_REVALIDATE bằng secretCI sinhriêng, bật trên cả hai backend đo
+saurestore; chỉ bỏ URL lúc provisionchưa cóweb. DùngAdminPATCH→H1thật thay đổi/khôi
+phục, không gọi tắt endpointđặcquyền. So sánh từchối config/resourcekhácgiữa hai bản.
+Cơchế resume frontend chỉ reusef85 khiGitchứngminhhaiapp+reporter+lệnhgate nguyên
+vàGitHub xác nhận cảhaijob+lint/test/count/buildthànhcông; mọi thiếu/chệch chạy lại.
+Backend luôn kiểm mới. Helper44Python+6Node đạt vànativecacheproofđạt; stackthật
+vẫn chưa hoàn tất. Bằng chứngHomepage/cache/CIintegrationtách riêng trongevidence.

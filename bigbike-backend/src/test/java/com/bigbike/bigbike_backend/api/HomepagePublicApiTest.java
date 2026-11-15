@@ -19,7 +19,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-@SpringBootTest
+// Other API suites intentionally replace homepage placement and mutate shared
+// seed rows. The idempotent SQL seed does not undo those edits. Keep this fixture
+// and its real reference/listing caches in their own context and database.
+@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:homepage-api-${random.uuid};MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;NON_KEYWORDS=VALUE")
 @Sql(scripts = "/db/test-seed.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class HomepagePublicApiTest {
 

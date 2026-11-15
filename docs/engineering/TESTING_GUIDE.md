@@ -519,3 +519,58 @@ and a90-minute stack-job ceiling; total configured ceilings200 standard runner-m
 Public standard compute remains free per the billing boundary above. Private manual runs
 must confirm the corresponding available quota; no spending control is raised. These are
 CI resource limits, not shop tuning. No parallel builds/arms; all other lab limits remain.
+
+Browser HTTP-cache correction (15/11 QA): Playwright context.route disables HTTP cache.
+Candidate f85d92 contained the warm_browser_cache label bug, but its browser step
+never ran because the backend gate failed. No warm-cache result was produced. Any
+future use of that old routing tool denotes HTTP-cache-disabled repeated navigation;
+never claim warm-cache acceptance from it. A future cache-preserving browser egress proxy may replace routing
+ONLY after native tests prove cache hits and no denied-origin requests from main page,
+WebSocket, worker and cross-site frame targets. The proxy is a CI measurement tool,
+forwards only owned loopback origins without changing bodies/auth/headers, adds a
+recorded extra local hop equally to both arms, and never emits raw URLs/cookies/logs.
+Do not use page-only CDP blocking: native tests show workers/OOPIF/WebSocket escape it.
+If complete egress protection/cache proof is absent, keep routing and mark warm HTTP
+cache unverified. No security/provider restriction is relaxed for nicer scores.
+
+Homepage test-fixture isolation (15/11): shared Spring contexts/cache and idempotent
+SQL seed are not a clean fixture after other API tests mutate homepage flags/seed
+rows. Reproduce the failure before changes, then use a dedicated H2 database/context
+for HomepagePublicApiTest and invalidate only test-owned reference/listing caches
+when directly resetting repository fixtures. Keep actual caches enabled and all
+original homepage filter/order/rating assertions. Do not lower TTL or disable caches
+in the application just to make tests pass; production API invalidation is a separate
+invariant already covered by dedicated tests.
+
+Cache-preserving collector protocol: reject-only loopback HTTP proxy with Chrome
+explicit loopback-bypass list (remove implicit bypass first), no DIRECT fallback,
+no upstream resolving/forwarding. Retain native main/worker/OOPIF/HTTP/HTTPS/WS cache
+and deny proofs. Actual first page measurement clears browser HTTPcache before
+navigation (cookies retained), second navigation uses enabled cache with observed
+cache-hit counts; this never denotes cold server/DBcache. Preserve normal app behavior
+and no-store private responses. Record transport limits and block non-proxied UDP/
+QUIC in the lab; do not infer a blanket network audit from HTTP-only tests.
+
+Resuming unchanged frontend gates (15/11): a later CI snapshot may reuse the two
+successful frontend jobs of immutable run43670539154/f85d92a682238f3af17361b608219be995ca1257.
+Before skipping duplicate frontend work, boundary must verify through public GitHub
+run/job metadata the exact SHA/workflow and both success conclusions with lint/unit/
+sanitized-count/build steps passed. Git must prove identical web/admin trees and
+summarize_tests.py; compare the exact frontend workflow block excluding only the
+reuse condition itself. Publish reuse proof and source reference. Any missing/changed/
+failed/unreadable proof falls back to full frontend gates. Backend remains mandatory
+for its fixture changes; never bypass a failed or unverified gate. This avoids repeating
+already-passed builds when only backend test fixtures or lab tooling/docs change.
+
+Internal web revalidation in the measured stack (15/11): configure the existing real
+backend WEB_REVALIDATE_URL/SECRET and Next REVALIDATE_SECRET with one generated CI
+secret and the single owned web replica. This is internal business behavior, not an
+external provider to omit. Provisioning runs before a web process exists; leave its
+URL blank only in that unmeasured initial seeding phase. After frozen restore, recreate
+the measured backend with the real internal URL and expected replica count1 in BOTH
+arms; Next receives the same generated secret. Never change shared-shop env.
+Verify unauthorized revalidate401, prime a dedicated fixture PDP, patch its name via
+normal Admin API, poll rendered H1 for committed change and restore via the same API.
+Retain functional delay/counts and fail on missing refresh; no manual privileged
+revalidation call may fake the backend-to-web integration. This is separate from
+latency measurements and preserves the primary PDP price/source fixtures.

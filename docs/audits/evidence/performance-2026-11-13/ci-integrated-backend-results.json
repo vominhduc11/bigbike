@@ -1,0 +1,26 @@
+{
+  "backend.json": {
+    "errors": 0,
+    "failures": 2,
+    "nonpassing_cases": [
+      {
+        "class": "com.bigbike.bigbike_backend.api.HomepagePublicApiTest",
+        "name": "listHomepageCategories_returnsShowOnHomepageTrueInDescSortOrder",
+        "status": [
+          "failure"
+        ]
+      },
+      {
+        "class": "com.bigbike.bigbike_backend.api.HomepagePublicApiTest",
+        "name": "listFeaturedProducts_returnsOnlyFeaturedPublishedProducts",
+        "status": [
+          "failure"
+        ]
+      }
+    ],
+    "passed": 1586,
+    "skipped": 0,
+    "suite_files": 206,
+    "tests": 1588
+  }
+}

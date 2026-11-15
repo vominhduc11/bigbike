@@ -1,0 +1,34 @@
+{
+  "root_cause": "AdminMutationApiTest replaces homepage placement/creates a higher-sort homepage category; idempotent test-seed inserts do not restore existing rows. Shared Spring context reuses these data/reference-cache snapshots for HomepagePublicApiTest. Featured route uses SQL pagination, not PublishedProductListingCache; no production cache defect inferred.",
+  "before": {
+    "command": "-Dtest=AdminMutationApiTest,HomepagePublicApiTest -Dsurefire.runOrder=alphabetical -DforkCount=1 test",
+    "tests": 56,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "homepage_tests": 10,
+    "homepage_failures": 2,
+    "build_failure": true
+  },
+  "repair": "Class-specific random-UUID H2 database and corresponding real Spring/cache context. No cache/TTL disabled; no assertions changed.",
+  "after": {
+    "same_predecessor_and_order": true,
+    "tests": 56,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "build_success": true
+  },
+  "canonical_basis": "TESTING_GUIDE test context isolation and Homepage test-fixture isolation; existing homepage contract assertions retained",
+  "full_backend_utc": {
+    "exit_code": 0,
+    "tests": 1588,
+    "passed": 1588,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "verify_and_package": "passed",
+    "elapsed_seconds": 785
+  },
+  "production_changed": false
+}

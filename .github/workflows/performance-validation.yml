@@ -26,6 +26,8 @@ concurrency:
 
 jobs:
   boundary:
+    outputs:
+      reuse_frontend: ${{ steps.reuse.outputs.reuse_frontend }}
     if: github.event.repository.private == false || (github.event_name == 'workflow_dispatch' && inputs.included_quota_confirmed)
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -43,10 +45,17 @@ jobs:
           python3 -m unittest discover -s scripts/performance -p 'test_*.py'
           python3 scripts/performance/prepare_baseline.py --root .
           node --check scripts/performance/browser.cjs
-          node --test scripts/performance/lab-inp.test.cjs
+          node --test scripts/performance/lab-inp.test.cjs scripts/performance/browser-egress.test.cjs
           bash deploy/nginx/tests/domain-boundary-config-test.sh --self-test
+      - name: Verify immutable successful frontend gates when source is unchanged
+        id: reuse
+        run: python3 -B scripts/performance/reuse_frontend_gates.py --output '${{ runner.temp }}/perf-counts/reused-frontend.json'
+      - name: Publish source-bound reuse proof
+        if: always()
+        run: python3 -B scripts/performance/publish_results.py '${{ runner.temp }}/perf-counts'
 
   frontend:
+    if: needs.boundary.outputs.reuse_frontend != 'true'
     needs: boundary
     name: Frontend regression gates
     runs-on: ubuntu-24.04
@@ -91,7 +100,8 @@ jobs:
         run: python3 -B ../scripts/performance/publish_results.py '${{ runner.temp }}/perf-counts'
 
   backend:
-    needs: frontend
+    needs: [boundary, frontend]
+    if: always() && needs.boundary.result == 'success' && (needs.frontend.result == 'success' || (needs.frontend.result == 'skipped' && needs.boundary.outputs.reuse_frontend == 'true'))
     name: Backend and isolated PostgreSQL regressions
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -159,6 +169,8 @@ jobs:
           cd bigbike-web
           npx playwright install --with-deps chromium
           node -e 'console.log("CHROME_PATH=" + require("@playwright/test").chromium.executablePath())' >> "$GITHUB_ENV"
+      - name: Prove native cache and browser-wide HTTP egress boundaries
+        run: node scripts/performance/browser-egress.test.cjs --native > '${{ runner.temp }}/browser-egress-native.json'
       - name: Freeze source, build sequential stacks, verify workflows and measure
         run: python3 -B scripts/performance/run_ci.py --quota-approved --output '${{ runner.temp }}/perf-evidence'
       - name: Publish bounded sanitized results through job logs

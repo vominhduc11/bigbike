@@ -1089,3 +1089,10 @@ CI14/11 mở rộng dữ liệu Admin qua API import hiện hữu:10.000 sản p
 web1GiB; trần job stack90phút (tổng200phút runner). Không tăng tài nguyên shop hoặc
 chi tiêu; public standard runner theo ranh giới TESTING_GUIDE. Hai bản dùng cùng snapshot,
 không đổi trạng thái nhập thành public để giả nghiệm thu storefront10k.
+
+CI15/11: hai backend trong phép đo có internal web-revalidation thật tới một replica
+với khóa sinh riêng. URL chỉ trống trong provision trước khi web tồn tại, sau restore
+bật cùngURL/expectedReplicas1; Next nhận cùng khóa. Không dùng biến/shopsecret thật.
+Công cụ trìnhduyệt dùng proxyloopback chỉ từ chối egress, giữ HTTPcache và kiểm native
+trước chạy. Xem TESTING_GUIDE về source-bound reuse frontend gates; không reuse
+backend đang sửa fixture. Không có thay đổi deployment production trong bước này.

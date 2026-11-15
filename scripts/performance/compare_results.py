@@ -11,6 +11,18 @@ def compare(directory):
         raise ValueError('Both frozen dataset identities are required')
     if json.loads(identities[0].read_text()) != json.loads(identities[1].read_text()):
         raise ValueError('Frozen datasets differ between arms')
+    runtime = []
+    for arm in ('before', 'after'):
+        path = directory / arm / 'runtime-identity.json'
+        if not path.exists():
+            raise ValueError('Runtime configuration/resource proof missing')
+        value = json.loads(path.read_text())
+        if not value.get('configuration_sha256') or not value.get('limits'):
+            raise ValueError('Runtime configuration/resource proof incomplete')
+        runtime.append(value)
+    if (runtime[0]['configuration_sha256'] != runtime[1]['configuration_sha256']
+            or runtime[0]['limits'] != runtime[1]['limits']):
+        raise ValueError('Configuration/resources differ between measured arms')
     large_count = json.loads(identities[0].read_text()).get('large_catalog_count', 0)
     large_pages = []
     if large_count:

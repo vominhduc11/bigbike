@@ -16,6 +16,9 @@ class ComparisonIntegrityTest(unittest.TestCase):
             path.mkdir()
             (path / 'dataset-identity.json').write_text(json.dumps({'database_archive_sha256': 'fixture-hash', 'media_manifest_sha256': 'media-hash'}))
             (path / 'status.json').write_text(json.dumps({'complete': True}))
+            (path / 'runtime-identity.json').write_text(json.dumps({
+                'configuration_sha256': 'same-generated-fixture-configuration',
+                'limits': {'backend': {'memory_bytes': 2147483648, 'nano_cpus': 0}}}))
             row = {'phase': 'measurement', 'path': '/api/v1/settings/public', 'concurrency': 1,
                    'requests': 100, 'non_2xx_or_network_error_rate': 0,
                    'latency_ms_2xx_only': {'p95': 10}, 'successful_requests_per_second': 2}
@@ -65,6 +68,7 @@ class ComparisonIntegrityTest(unittest.TestCase):
             path.write_text(json.dumps(value))
         with self.assertRaises(ValueError):
             compare(self.root)
+
         proof = {'complete': True, 'count': 10000,
                  'page_identities': [{'page': 1, 'direction': 'asc', 'sha256': 'same-rows'}]}
         for arm in ('before', 'after'):
@@ -72,5 +76,17 @@ class ComparisonIntegrityTest(unittest.TestCase):
         self.assertTrue(compare(self.root)['sampled_large_pages_equivalent'])
         proof['page_identities'][0]['sha256'] = 'different-order'
         (self.root / 'after/large-catalog-pages.json').write_text(json.dumps(proof))
+        with self.assertRaises(ValueError):
+            compare(self.root)
+
+    def test_refuses_missing_or_mismatched_runtime_configuration(self):
+        path = self.root / 'after/runtime-identity.json'
+        original = path.read_text()
+        path.unlink()
+        with self.assertRaises(ValueError):
+            compare(self.root)
+        value = json.loads(original)
+        value['limits']['backend']['memory_bytes'] = 1073741824
+        path.write_text(json.dumps(value))
         with self.assertRaises(ValueError):
             compare(self.root)

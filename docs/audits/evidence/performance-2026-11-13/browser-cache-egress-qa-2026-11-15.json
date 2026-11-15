@@ -1,0 +1,49 @@
+{
+  "complete": true,
+  "phase": "complete",
+  "scope": "Owned loopback static transport/cache proof; main/worker/OOPIF/service-worker/HTTP/HTTPS/ws; no BigBike latency or UDP certification",
+  "browser": "148.0.7778.96",
+  "first_asset_requests": 1,
+  "repeated_asset_requests_total": 1,
+  "no_store_private_requests": 3,
+  "denied_target_connections": 0,
+  "cache_hit_requests": 1,
+  "served_from_cache_events": 0,
+  "disk_cache_responses": 1,
+  "private_http_cache_hits": 0,
+  "service_worker_responses": 0,
+  "rejections": {
+    "http_rejected": 15,
+    "connect_rejected": 6,
+    "upgrade_rejected": 0,
+    "malformed_rejected": 0
+  },
+  "default_service_worker_completed": true,
+  "page_errors": 0,
+  "explicit_clear_refetched_asset": true,
+  "asset_requests_total": 2,
+  "observed_cache": {
+    "cache_hit_requests": 1,
+    "served_from_cache_events": 0,
+    "disk_cache_responses": 1,
+    "private_http_cache_hits": 0,
+    "service_worker_responses": 0
+  },
+  "observed_document": {
+    "worker": true,
+    "websocket_denied": true,
+    "service_worker": true
+  },
+  "frames": 2,
+  "source_only_predecessor_finding": {
+    "candidate": "f85d92a682238f3af17361b608219be995ca1257",
+    "issue": "Playwright context.route disables HTTP cache; second navigation was mislabeled warm_browser_cache",
+    "browser_run_executed": false,
+    "reason": "Backend regression gate failed before isolated stack"
+  },
+  "primary_sources": [
+    "https://chromium.googlesource.com/chromium/src/+/HEAD/net/docs/proxy.md",
+    "installed playwright-core/types/types.d.ts: routing disables HTTP cache"
+  ],
+  "application_source_changed": false
+}

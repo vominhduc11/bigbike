@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const { createRequire } = require('node:module');
 const path = require('node:path');
 const { installCollector } = require('./lab-inp.cjs');
+const { createRejectProxy, counterDelta, observeHttpCache, METHOD } = require('./browser-egress.cjs');
 
 async function main() {
   if (process.env.GITHUB_ACTIONS !== 'true' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted') {
@@ -13,25 +14,19 @@ async function main() {
   const fixture = JSON.parse(fs.readFileSync(fixtureFile));
   const session = JSON.parse(fs.readFileSync(sessionFile));
   const collectorDirectory = path.join(process.env.RUNNER_TEMP, 'perf-tools/node_modules/web-vitals');
-  const browser = await chromium.launch({ headless: true });
+  const egress = await createRejectProxy();
+  let browser;
   const results = [];
   const progress = { surface: 'launch', step: 'starting' };
   let inpCollectorIdentity = null;
   const product = fixture.products[0];
   try {
+    browser = await chromium.launch({ headless: true, args: [...egress.launchArgs] });
     for (const viewport of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
+      const egressAtViewportStart = egress.snapshot();
       const context = await browser.newContext({ viewport, locale: 'vi-VN', timezoneId: 'Asia/Ho_Chi_Minh' });
       const inp = await installCollector(context, collectorDirectory);
       inpCollectorIdentity = inp.identity;
-      let blockedExternal = 0;
-      await context.route('**/*', route => {
-        const url = new URL(route.request().url());
-        if (['http:', 'https:'].includes(url.protocol) && !['localhost', '127.0.0.1'].includes(url.hostname)) {
-          blockedExternal += 1;
-          return route.abort();
-        }
-        return route.continue();
-      });
       await context.addInitScript(() => {
         const supported = PerformanceObserver.supportedEntryTypes;
         window.__perf = { lcp: null, cls: null, interactions: [], supported };
@@ -64,6 +59,7 @@ async function main() {
         }
       });
       const page = await context.newPage();
+      const httpCache = await observeHttpCache(context, page);
       let pageErrors = 0, apiErrors = 0, resourceErrors = 0, rateLimited = 0;
       let localNetworkErrors = 0, canceledRequests = 0, consoleErrors = 0, externalConsoleErrors = 0;
       page.on('pageerror', () => pageErrors += 1);
@@ -90,9 +86,10 @@ async function main() {
       });
       page.on('response', response => {
         const url = new URL(response.url());
+        const local = ['localhost', '127.0.0.1'].includes(url.hostname);
         if (response.status() === 429) rateLimited += 1;
-        if (url.pathname.startsWith('/api/') && response.status() >= 400) apiErrors += 1;
-        if (['localhost', '127.0.0.1'].includes(url.hostname) && response.status() >= 400
+        if (local && url.pathname.startsWith('/api/') && response.status() >= 400) apiErrors += 1;
+        if (local && response.status() >= 400
             && ['image', 'script', 'stylesheet', 'font', 'media'].includes(response.request().resourceType())) resourceErrors += 1;
       });
       const surfaces = [
@@ -101,10 +98,18 @@ async function main() {
         ['cart', '/gio-hang/'], ['content', '/lien-he/'], ['account-login', '/dang-nhap/'],
       ];
       for (const [name, route] of surfaces) {
-        for (const cacheState of ['first_navigation_in_context', 'warm_browser_cache']) {
+        for (const cacheState of ['browser_http_cache_cleared', 'browser_http_cache_enabled_repeat']) {
           progress.surface = name;
           progress.step = cacheState;
           progress.viewport = viewport;
+          if (cacheState === 'browser_http_cache_cleared') {
+            // The blank navigation finishes before clearing HTTP cache. Keep cookies
+            // and normal app state; this makes no claim about server/DB cache warmth.
+            await page.goto('about:blank', { waitUntil: 'load' });
+            await httpCache.clearHttpCache();
+          }
+          const cacheBefore = httpCache.snapshot();
+          const egressBefore = egress.snapshot();
           const response = await page.goto('http://localhost:13000' + route, { waitUntil: 'load', timeout: 60000 });
           if (!response || response.status() !== 200) throw Error('Required browser surface failed: ' + name);
           await page.waitForTimeout(2000);
@@ -141,6 +146,8 @@ async function main() {
               json_ld_blocks: document.querySelectorAll('script[type="application/ld+json"]').length };
           });
           results.push({ surface: name, viewport, cache_state: cacheState, metrics,
+            http_cache_observed: counterDelta(httpCache.snapshot(), cacheBefore),
+            egress_rejections: counterDelta(egress.snapshot(), egressBefore),
             inp: await inp.record(page) });
         }
       }
@@ -217,21 +224,31 @@ async function main() {
         if (!metrics.screen_content_visible) throw Error('Authenticated admin screen missing');
         results.push({ surface: 'admin' + route, viewport, metrics, inp: await inp.record(page) });
       }
+      const egressCounts = counterDelta(egress.snapshot(), egressAtViewportStart);
+      const blockedExternal = Object.values(egressCounts).reduce((total, count) => total + count, 0);
+      const cacheCounts = httpCache.snapshot();
       results.push({ viewport, page_errors: pageErrors, api_errors: apiErrors, resource_errors: resourceErrors,
         local_network_errors: localNetworkErrors, canceled_requests: canceledRequests, console_errors: consoleErrors,
-        external_console_errors: externalConsoleErrors, rate_limited_requests: rateLimited, blocked_external_requests: blockedExternal });
-      if (pageErrors || apiErrors || resourceErrors || rateLimited || localNetworkErrors || consoleErrors) throw Error('Browser runtime/API/resource errors occurred');
+        external_console_errors: externalConsoleErrors, rate_limited_requests: rateLimited,
+        blocked_external_requests: blockedExternal, egress_rejections: egressCounts, http_cache_observed: cacheCounts });
+      if (pageErrors || apiErrors || resourceErrors || rateLimited || localNetworkErrors || consoleErrors
+          || cacheCounts.private_http_cache_hits) throw Error('Browser runtime/API/resource/private-cache errors occurred');
       const rotated = (await context.cookies()).find(cookie => cookie.name === 'bb_admin_refresh');
       if (!rotated) throw Error('Rotated admin session cookie missing');
       session.refreshCookie = rotated.value;
+      await httpCache.close();
       await context.close();
     }
     progress.step = 'complete';
   } finally {
-    await browser.close();
-    fs.writeFileSync(output, JSON.stringify({ results, progress,
-      inp_collector: inpCollectorIdentity,
-      method: 'Chromium unthrottled lab; fixed 2s navigation observation, scripted lab INP only; first navigation is not server cold cache' }, null, 2));
+    try {
+      if (browser) await browser.close();
+    } finally {
+      await egress.close();
+      fs.writeFileSync(output, JSON.stringify({ results, progress,
+        inp_collector: inpCollectorIdentity, browser_egress: { ...METHOD, rejections: egress.snapshot() },
+        method: 'Chromium unthrottled lab; HTTP-cache-cleared then cache-enabled repeat with observed hits; fixed 2s navigation observation; scripted lab INP only; server/DB cold cache unmeasured' }, null, 2));
+    }
   }
 }
 main().catch(() => { console.error('Browser validation failed; sanitized partial metrics retained'); process.exitCode = 1; });

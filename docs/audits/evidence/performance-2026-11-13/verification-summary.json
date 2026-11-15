@@ -22,13 +22,15 @@
     "errors": 0,
     "skipped": 0,
     "verify_package": "passed",
-    "timezone": "UTC"
+    "timezone": "UTC",
+    "homepage_fixture_isolation": "full1588 UTC passed"
   },
   "helper_tests": {
-    "python_tests": 38,
-    "python_passed": 38,
-    "node_tests": 4,
-    "node_passed": 4
+    "python_tests": 44,
+    "python_passed": 44,
+    "node_tests": 6,
+    "node_passed": 6,
+    "native_cache_egress_protocol": "passed owned static helper; not BigBike acceptance"
   },
   "boundary_positive_and_deliberate_negative": "passed",
   "baseline_identity": "three attributed source files; all prior optimizations/correctness repairs identical",
@@ -51,7 +53,14 @@
       "admin_failed": 0,
       "admin_build": "passed"
     },
-    "latest_unpublished_work": "Commerce fixes + report-date fixture passed full1588 UTC; large10k draft seeding/page protocol prepared, hosted verification pending"
+    "latest_unpublished_work": "Homepage isolated fixture full1588 UTC passed; cachepreservingbrowser/runtimewebrevalidation/sourceboundresume prepared; remote realstack pending",
+    "integrated_run": {
+      "id": 43670539154,
+      "candidate_commit": "f85d92a682238f3af17361b608219be995ca1257",
+      "frontends": "both passed; source-bound reuse anchor",
+      "backend": "1586passed;2Homepagefixture fail;0skip/error",
+      "isolated_stack": "skipped by required gate"
+    }
   },
   "full_system_performance_acceptance": false,
   "production_deployed": false,

@@ -1,5 +1,5 @@
 {
-  "status": "corrected_frontend_passed; backend_report_date_fixture_failed; next_candidate_in_local_verification",
+  "status": "integrated_snapshot_running_remote",
   "repository_visibility": "public",
   "branch": "ci/performance-validation-20261114",
   "candidate_commit": "92164a621573859a09ccd2da7f88b7e6c7039a18",
@@ -52,5 +52,21 @@
     "commerce_regressions": "86/86 targeted, actual H2 transactions; PostgreSQL validation pending",
     "report_date_fixture": "anchored requested Vietnam day, full backend UTC verification in progress",
     "commerce_api_harness": "prepared real price-review/idempotency/discontinued owned-fixture scenarios; not executed"
+  },
+  "integrated_run_2026_11_15": {
+    "id": 43670539154,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43670539154",
+    "candidate_commit": "f85d92a682238f3af17361b608219be995ca1257",
+    "secret_artifact_guard": {
+      "run_id": 43670539166,
+      "conclusion": "success"
+    },
+    "source_helper_tests": {
+      "python": 38,
+      "node": 4
+    },
+    "backend_latest_local": "1588/1588 verify in UTC; no failures/errors/skips",
+    "status": "in_progress; no new full-stack measurements yet",
+    "unanswered_business_rule": "require selected variant when product has variants; async owner question pending"
   }
 }
