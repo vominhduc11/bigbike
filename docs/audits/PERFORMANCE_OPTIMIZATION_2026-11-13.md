@@ -233,3 +233,11 @@ PG lab1GiB, job90phút dùng cùng resource cả hai bản trên public standard
 không tăng tài nguyên/chi tiêu shop. Source-only frozen-source-proof.json là mốc13/11;
 phép đóng băng toàn cây của commitCI mới phải được chạy lại bởi run_ci.py, giữ cả
 commercefix/calendarfix và mọi thay đổi có trước trong cả hai bản.
+
+Tiếp tục15/11: kiểm lại workspace/main/index, container shop vẫn healthy/không thay;
+source ban đầu2991 tệp không có thay đổi ngoài25 tệp có chủ đích. Helper38Python+
+4Node chạy lại đạt; baseline3file/ingress/Compose/YAML đạt. Quét snapshot công bố
+phát hiện một publicIdempotency-Key thử bị nhận nhầm credential; chuyển thànhUUID5
+từ ID fixture/ngữ cảnh (cùng giá trị hai bản), không đổi rule/ignore. Lượt quét lại0.
+Chưa có đo toàn stack thành công; hai lượtCI trước dừng đúng tại regression, lỗi
+đã có bằng chứng/sửa/verify. Bản tích hợp mới đang được công bố lên cùng nhánhCI.
