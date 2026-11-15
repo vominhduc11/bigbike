@@ -1083,3 +1083,9 @@ phải kiểm hạn mức còn đủ. Đọc từng gate và kết quả, không
 Chỉ dự án Docker tạm do chính job tạo mới được cleanup. Không tác động container
 đang bán hàng. Deploy production vẫn cần lần duyệt riêng cùng backup V1095, image
 rollback, health/giá/hàng/checkout/media/feed checks và người theo dõi sau nạp.
+
+CI14/11 mở rộng dữ liệu Admin qua API import hiện hữu:10.000 sản phẩm nháp tổng hợp,
+100 dòng/tệp, chốt validate/commit và hạn mức còn nguyên. PostgreSQL lab1GiB, backend2GiB,
+web1GiB; trần job stack90phút (tổng200phút runner). Không tăng tài nguyên shop hoặc
+chi tiêu; public standard runner theo ranh giới TESTING_GUIDE. Hai bản dùng cùng snapshot,
+không đổi trạng thái nhập thành public để giả nghiệm thu storefront10k.

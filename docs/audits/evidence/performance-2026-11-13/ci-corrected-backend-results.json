@@ -1,0 +1,19 @@
+{
+  "backend.json": {
+    "errors": 0,
+    "failures": 1,
+    "nonpassing_cases": [
+      {
+        "class": "com.bigbike.bigbike_backend.api.AdminReportApiTest",
+        "name": "analytics_cancelledOrders_excludedFromGrossOrderValue",
+        "status": [
+          "failure"
+        ]
+      }
+    ],
+    "passed": 1579,
+    "skipped": 0,
+    "suite_files": 206,
+    "tests": 1580
+  }
+}

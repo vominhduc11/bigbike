@@ -1,0 +1,27 @@
+{
+  "bigbike-web.json": {
+    "file_reports": 119,
+    "numFailedTestSuites": 0,
+    "numFailedTests": 0,
+    "numPassedTestSuites": 299,
+    "numPassedTests": 805,
+    "numPendingTests": 0,
+    "numTodoTests": 0,
+    "numTotalTestSuites": 299,
+    "numTotalTests": 805,
+    "success": true
+  },
+  "bigbike-admin.json": {
+    "file_reports": 130,
+    "numFailedTestSuites": 4,
+    "numFailedTests": 3,
+    "numPassedTestSuites": 352,
+    "numPassedTests": 1242,
+    "numPendingTests": 0,
+    "numTodoTests": 0,
+    "numTotalTestSuites": 356,
+    "numTotalTests": 1245,
+    "success": false
+  },
+  "run_id": 43521704761
+}

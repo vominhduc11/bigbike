@@ -490,3 +490,32 @@ Evidence: overriding VITE_STOREFRONT_BASE_URL reproduces three unrelated URL-pol
 English-link assertion failures (60/63); do not change assertions or business URL rules
 merely to accommodate the lab build environment. Sanitized Vitest failure output
 includes static case names/source locations and fixed categories, never matcher values.
+
+Commerce integration follow-up (14/11): run real price-review409 → cart reload →
+same-key retry/replay plus discontinued add/quantity/checkout guards on two dedicated
+E2E_PERF products, separate from the measured PDP fixture. Check owned DB order,
+payment and reservation counts around rejected/replayed requests. These deliberate
+price/status changes are functional cases on synthetic CI data, never a way to improve
+benchmark scores or edit shop data. Restore the two original fixture values through
+normal APIs afterward; run the same sequence in both arms and publish booleans/counts
+only in commerce.json. Missing-variant business policy remains pending owner response;
+do not infer it from nullability of the request field.
+
+Large Admin catalog protocol (14/11): prepare 10,000 new synthetic simple products via
+existing import validate/commit APIs, bounded100-row files, identical bytes for validation
+and commit, normal products.update and mutation limits. Import deliberately creates DRAFT
+and ignores media/variants/status per PRODUCT_RULE_009; do not alter this behavior to seed
+published data. Label this separate10k draft/simple scenario; it does not establish10k
+public/variant/media performance. Keep the primary40 published fixtures and PDP price.
+Pace import requests>=1.15s, never retry partial commits blindly, fail on any row error,
+warning/skip,429/timeout or resource boundary. Capture the initial frozen dataset only after
+all imports complete, so both arms have identical IDs/data. Measure published representative
+Admin query separately from10k draft query and verify sampled adjacent/middle/last pages,
+exact totals, repeated-page stability and Before/After page identity hashes in both directions.
+Retain all failures/partial counts; an incomplete seed is not a10k benchmark.
+
+This expanded hosted lab uses PostgreSQL1GiB (same in both arms, shared_buffers128MB),
+and a90-minute stack-job ceiling; total configured ceilings200 standard runner-minutes.
+Public standard compute remains free per the billing boundary above. Private manual runs
+must confirm the corresponding available quota; no spending control is raised. These are
+CI resource limits, not shop tuning. No parallel builds/arms; all other lab limits remain.

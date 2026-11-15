@@ -21,6 +21,7 @@ import com.bigbike.bigbike_backend.service.auth.PasswordService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -156,7 +157,10 @@ class AdminReportApiTest {
     void analytics_cancelledOrders_excludedFromGrossOrderValue() throws Exception {
         double baseline = fetchGrossOrderValue();
 
-        Instant now = Instant.now();
+        // The API interprets TODAY in Vietnam time, independently of the runner's
+        // default zone. Anchor both rows inside that requested calendar day.
+        Instant now = LocalDate.parse(TODAY).atTime(12, 0)
+                .atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         orderRepo.save(buildOrder("COMPLETED", "500000", null, now));
         orderRepo.save(buildOrder("CANCELLED", "200000", null, now));
 

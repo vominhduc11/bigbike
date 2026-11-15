@@ -83,3 +83,14 @@ bash deploy/nginx/tests/domain-boundary-config-test.sh --self-test
 ```
 
 These are unit/source-boundary checks. They are not an executed full-stack result.
+
+14Nov extension: seed10k synthetic simple DRAFT products using the real validate/commit
+import APIs in100-row files, normal limits/permission/auth, then freeze the full initial
+dataset. Only first-arm provisioning imports; both measured arms restore identical data.
+The40 published fixtures remain separate. Sample ASC/DESC adjacent/middle/end pages,
+compare full-row/ID hashes, and separately measure published vs large-draft Admin reads.
+Resource sampling runs at most every3s; seed cutoff20min, sampled-page cutoff4min.
+PostgreSQL1GiB/stack job90min are identical for both arms; no shop resource change.
+Commerce correctness repairs and date-fixture correction remain in BOTH arms. Real
+API/PG checkout409/reload/same-key retry and discontinued cases run separately from
+primary PDP data. Helper tests do not establish that the hosted stack has executed.

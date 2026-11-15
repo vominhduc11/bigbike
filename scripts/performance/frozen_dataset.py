@@ -132,7 +132,8 @@ def identity(snapshot):
             'media_manifest_sha256': fingerprint, 'media_objects': len(objects),
             'media_total_bytes': sum(row['bytes'] for row in objects),
             'fixture_product_count': snapshot['fixture_product_count'],
-            'fixture_media_records': snapshot['fixture_media_records']}
+            'fixture_media_records': snapshot['fixture_media_records'],
+            'large_catalog_count': snapshot.get('large_catalog_count', 0)}
 
 
 def capture(stack, fixtures, private_dir):
@@ -153,7 +154,8 @@ def capture(stack, fixtures, private_dir):
     snapshot = {'private_directory': str(directory),
                 'database': {'filename': archive.name, 'sha256': _checksum(archive), 'bytes': archive.stat().st_size},
                 'objects': [], 'fixture_product_count': len(fixtures.get('products', [])),
-                'fixture_media_records': record_count}
+                'fixture_media_records': record_count,
+                'large_catalog_count': fixtures.get('large_catalog', {}).get('count', 0)}
     for index, key in enumerate(keys):
         content, headers = signed_request(ORIGIN, stack.password, 'GET', _object_path(key))
         if not content or len(content) > MAX_OBJECT_BYTES:

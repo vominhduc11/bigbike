@@ -781,6 +781,18 @@ or order state changes. See `DATA_CONTRACT.md` §"Cart/order analytics metadata"
 | Endpoint | Current contract | Status | Evidence |
 |---|---|---|---|
 | `POST /api/v1/checkout` | Revalidates price/availability state and creates order/payment rows. Availability is gated per-variant by `isAvailable` (boolean), or by `stockState` for no-variant products; there is **no quantity decrement** (V261). The old product-level `forceOutOfStock` hard override (`STOCK_RULE_004`) was removed (V342, 2026-07-19). Billing **and** resolved shipping address require `province` + `ward` + `addressLine1` (two-tier VN address; blank strings in a custom shipping block fall back to billing). No shipping-method choice and **no shipping fee** (`shippingAmount = 0`, owner decision 2026-06-23, `SHIP_RULE_001`). `paymentMethod` accepts only `COD` or omission; explicit `BANK_TRANSFER`, `BACS`, `CHECK`, `CARD` and other values are rejected before persistence. Optional `locale` accepts only `vi|en`, defaults to `vi`, and is a passive order snapshot used only to select the language of a later review invitation. Optional `analyticsClientId` is the pseudonymous GA4 browser id read through the official Google tag API; the backend accepts only the numeric-dot-numeric shape, otherwise discards it, and snapshots it solely to join a later cancellation correction to the original browser. It contains no customer-entered data and changes no price, payment or order processing. | `OWNER_CONFIRMED_2026-09-09` | `CheckoutService.java`, `CheckoutSupport.java`, checkout and invitation tests |
+Checkout recovery clarification (14/11/2026, existing Catalog Availability rule and
+ACCEPTANCE_CRITERIA COD-only reload/price-change recovery): a price increase returns
+409 before any order/payment/notification is created, and the next cart read exposes
+the revalidated prices/totals so the customer can review and submit again. Release
+any uncompleted idempotency reservation on that price-conflict path so retry with the
+same key works; successful retries still deduplicate to one order. Ordinary cart reads
+before a checkout revalidation keep the existing add-to-cart snapshot semantics.
+Never commit partial order writes on other conflicts, stock/validation or storage errors.
+Products marked discontinued are unavailable to add/cart quantity increases/checkout
+regardless of publishStatus/stock, per STATE_MACHINES Product discontinued section.
+Existing conflict/error response shape and authentication/CSRF rules remain unchanged.
+
 > **Removed (2026-07-15).** `POST /api/v1/orders/quick-buy` (single-item direct purchase) was deleted — endpoint, `CheckoutService.quickBuy`, `QuickBuyRequest` DTO, security matcher and tests (owner decision, reversing AUD-010). The storefront has no quick-buy entry point; customers order through the cart.
 
 > **Removed (2026-06-23, online-only).** `POST /api/v1/admin/pos/orders` (immediate in-store sale) and `GET /api/v1/admin/pos/products/search` (POS product search) were deleted along with the POS module. See "POS Contract" below.

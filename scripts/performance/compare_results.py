@@ -11,6 +11,19 @@ def compare(directory):
         raise ValueError('Both frozen dataset identities are required')
     if json.loads(identities[0].read_text()) != json.loads(identities[1].read_text()):
         raise ValueError('Frozen datasets differ between arms')
+    large_count = json.loads(identities[0].read_text()).get('large_catalog_count', 0)
+    large_pages = []
+    if large_count:
+        for arm in ('before', 'after'):
+            path = directory / arm / 'large-catalog-pages.json'
+            if not path.exists():
+                raise ValueError('Large catalog page proof missing')
+            report = json.loads(path.read_text())
+            if not report.get('complete') or report.get('count') != large_count or not report.get('page_identities'):
+                raise ValueError('Large catalog page proof incomplete')
+            large_pages.append(report['page_identities'])
+        if large_pages[0] != large_pages[1]:
+            raise ValueError('Large catalog sampled pages differ between arms')
     reports = {}
     for arm in ('before', 'after'):
         status = json.loads((directory / arm / 'status.json').read_text())
@@ -42,6 +55,7 @@ def compare(directory):
     if not results:
         raise ValueError('No API measurements to compare')
     output = {'api': results, 'note': 'Median of per-repeat P95 values is not a pooled P95. Inspect raw counts/tails/statuses.',
+              'large_catalog_count': large_count, 'sampled_large_pages_equivalent': bool(large_pages),
               'field_INP': 'not measured', 'production_capacity': 'not certified',
               'whole_system_acceptance': 'not established by this bounded suite'}
     (directory / 'comparison.json').write_text(json.dumps(output, indent=2) + '\n')

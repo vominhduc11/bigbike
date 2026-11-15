@@ -1,5 +1,5 @@
 {
-  "status": "initial_run_regression_failed; corrected_snapshot_preparing",
+  "status": "corrected_frontend_passed; backend_report_date_fixture_failed; next_candidate_in_local_verification",
   "repository_visibility": "public",
   "branch": "ci/performance-validation-20261114",
   "candidate_commit": "92164a621573859a09ccd2da7f88b7e6c7039a18",
@@ -39,5 +39,18 @@
     "failed_with_build_origin": 3,
     "passed_with_unit_default_origin": 63,
     "app_source_or_assertion_changed": false
+  },
+  "corrected_run": {
+    "id": 43522719254,
+    "candidate_commit": "543a97d8fb590d87bd657226d2f1e982f54a261c",
+    "frontend_admin": "1245/1245; lint/build passed",
+    "frontend_web": "805/805; lint/build passed",
+    "backend": "1579/1580; one report calendar fixture failed, zero skips/errors",
+    "isolated_stack": "skipped after regression failure"
+  },
+  "new_work": {
+    "commerce_regressions": "86/86 targeted, actual H2 transactions; PostgreSQL validation pending",
+    "report_date_fixture": "anchored requested Vietnam day, full backend UTC verification in progress",
+    "commerce_api_harness": "prepared real price-review/idempotency/discontinued owned-fixture scenarios; not executed"
   }
 }

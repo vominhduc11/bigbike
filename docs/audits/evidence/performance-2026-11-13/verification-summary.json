@@ -16,23 +16,53 @@
     "build": "passed"
   },
   "backend": {
+    "tests": 1588,
+    "passed": 1588,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "verify_package": "passed",
+    "timezone": "UTC"
+  },
+  "helper_tests": {
+    "python_tests": 38,
+    "python_passed": 38,
+    "node_tests": 4,
+    "node_passed": 4
+  },
+  "boundary_positive_and_deliberate_negative": "passed",
+  "baseline_identity": "three attributed source files; all prior optimizations/correctness repairs identical",
+  "gitleaks_current_source": "0 findings; no ignore/rule changed; not history/PII audit",
+  "remote_CI": {
+    "initial_run": {
+      "id": 43521704761,
+      "conclusion": "failure",
+      "admin_passed": 1242,
+      "admin_failed": 3,
+      "web_passed": 805,
+      "web_build": "passed",
+      "backend_and_stack": "skipped_due_to_failed_regression"
+    },
+    "corrected_run": {
+      "id": 43522719254,
+      "candidate_commit": "543a97d8fb590d87bd657226d2f1e982f54a261c",
+      "status": "in_progress",
+      "admin_passed": 1245,
+      "admin_failed": 0,
+      "admin_build": "passed"
+    },
+    "latest_unpublished_work": "Commerce fixes + report-date fixture passed full1588 UTC; large10k draft seeding/page protocol prepared, hosted verification pending"
+  },
+  "full_system_performance_acceptance": false,
+  "production_deployed": false,
+  "V1095_applied_to_shop": false,
+  "performance_claims": "Only synthetic computational sort and offline image-variant component medians/counts; no new API/CWV/INP/transfer/capacity claim",
+  "backend_before_commerce": {
     "tests": 1580,
     "passed": 1580,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
     "verify_package": "passed"
-  },
-  "helper_tests": {
-    "tests": 20,
-    "passed": 20
-  },
-  "boundary_positive_and_deliberate_negative": "passed",
-  "baseline_identity": "three attributed source files; all prior optimizations/correctness repairs identical",
-  "gitleaks_current_source": "0 findings; no ignore/rule changed; not history/PII audit",
-  "remote_CI": "not executed: source not published/dispatch unavailable; requires owner-reviewed publication and manual dispatch/quota verification",
-  "full_system_performance_acceptance": false,
-  "production_deployed": false,
-  "V1095_applied_to_shop": false,
-  "performance_claims": "Only synthetic computational sort and offline image-variant component medians/counts; no new API/CWV/INP/transfer/capacity claim"
+  }
 }

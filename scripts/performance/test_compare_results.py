@@ -52,6 +52,25 @@ class ComparisonIntegrityTest(unittest.TestCase):
         path.write_text(json.dumps({'database_archive_sha256': 'different'}))
         with self.assertRaises(ValueError):
             compare(self.root)
+        path.write_text((self.root / 'before/dataset-identity.json').read_text())
         (self.root / 'after/status.json').write_text(json.dumps({'complete': False}))
+        with self.assertRaises(ValueError):
+            compare(self.root)
+
+    def test_large_dataset_requires_completed_equal_sampled_page_proof(self):
+        for arm in ('before', 'after'):
+            path = self.root / arm / 'dataset-identity.json'
+            value = json.loads(path.read_text())
+            value['large_catalog_count'] = 10000
+            path.write_text(json.dumps(value))
+        with self.assertRaises(ValueError):
+            compare(self.root)
+        proof = {'complete': True, 'count': 10000,
+                 'page_identities': [{'page': 1, 'direction': 'asc', 'sha256': 'same-rows'}]}
+        for arm in ('before', 'after'):
+            (self.root / arm / 'large-catalog-pages.json').write_text(json.dumps(proof))
+        self.assertTrue(compare(self.root)['sampled_large_pages_equivalent'])
+        proof['page_identities'][0]['sha256'] = 'different-order'
+        (self.root / 'after/large-catalog-pages.json').write_text(json.dumps(proof))
         with self.assertRaises(ValueError):
             compare(self.root)

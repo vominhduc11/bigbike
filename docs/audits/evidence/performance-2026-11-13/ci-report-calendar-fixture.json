@@ -1,0 +1,15 @@
+{
+  "canonical_basis": "BUSINESS_RULES REPORT_RULE_008; API_CONTRACT Reports & Analytics",
+  "remote_run": 43522719254,
+  "remote_failed_case": "AdminReportApiTest.analytics_cancelledOrders_excludedFromGrossOrderValue",
+  "before_fixture": "TODAY=host LocalDate.now; orders=Instant.now; CI UTC day differs from Vietnamese report day after17:00UTC",
+  "calendar_reproduction": {
+    "ci_example_instant": "2026-11-13T23:05:00+00:00",
+    "requested_day_from_utc_host": "2026-11-13",
+    "instant_is_inside_requested_vietnam_day": false,
+    "corrected_noon_vietnam_fixture": "2026-11-13T12:00:00+07:00",
+    "corrected_is_inside_requested_day": true
+  },
+  "change": "Anchor the two synthetic order timestamps to noon of the requested date in Asia/Ho_Chi_Minh; preserve500000 GMV assertion and actual report logic",
+  "after_test_status": "Full backend verify exit0 in UTC:1588 passed,0 failures/errors/skips; original report assertion retained"
+}

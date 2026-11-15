@@ -499,6 +499,50 @@ class Phase1ECartApiTest {
                 .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
     }
 
+    @Test
+    void discontinuedCartLine_canBeReducedAndRemoved() throws Exception {
+        ProductEntity product = createTestProduct("Retired cart reduction", 1000000, null, PublishStatus.PUBLISHED);
+        MvcResult session = mockMvc.perform(get("/api/v1/cart")).andReturn();
+        Cookie[] cookies = session.getResponse().getCookies();
+        String csrf = getCookieValue(session.getResponse(), "bb_csrf");
+        MvcResult add = mockMvc.perform(post("/api/v1/cart/items").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":2}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk()).andReturn();
+        String itemId = extractItemId(add.getResponse().getContentAsString(), 0);
+        product.setDiscontinued(true);
+        productRepo.saveAndFlush(product);
+        mockMvc.perform(patch("/api/v1/cart/items/" + itemId).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\":1}").cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].quantity").value(1))
+                .andExpect(jsonPath("$.data.items[0].available").value(false));
+        mockMvc.perform(delete("/api/v1/cart/items/" + itemId).cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(0));
+    }
+
+    @Test
+    void draftProductAfterAdd_cannotIncreaseCartQuantity() throws Exception {
+        ProductEntity product = createTestProduct("Unpublished cart increase", 1000000, null, PublishStatus.PUBLISHED);
+        MvcResult session = mockMvc.perform(get("/api/v1/cart")).andReturn();
+        Cookie[] cookies = session.getResponse().getCookies();
+        String csrf = getCookieValue(session.getResponse(), "bb_csrf");
+        MvcResult add = mockMvc.perform(post("/api/v1/cart/items").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":\"" + product.getId() + "\",\"quantity\":1}")
+                        .cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isOk()).andReturn();
+        String itemId = extractItemId(add.getResponse().getContentAsString(), 0);
+        product.setPublishStatus(PublishStatus.DRAFT);
+        productRepo.saveAndFlush(product);
+        mockMvc.perform(patch("/api/v1/cart/items/" + itemId).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\":2}").cookie(cookies).header("X-CSRF-Token", csrf))
+                .andExpect(status().isConflict());
+        mockMvc.perform(get("/api/v1/cart").cookie(cookies))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].quantity").value(1))
+                .andExpect(jsonPath("$.data.items[0].available").value(false));
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private ProductEntity createTestProduct(

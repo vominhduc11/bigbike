@@ -95,7 +95,7 @@ public class CartService {
     public CartEntity addItem(CartEntity cart, AddCartItemRequest req) {
         ProductEntity product = productRepo.findById(req.productId())
                 .orElseThrow(() -> new NotFoundException("Product not found: " + req.productId()));
-        if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
+        if (product.getPublishStatus() != PublishStatus.PUBLISHED || product.isDiscontinued()) {
             throw new ConflictException("Product is not available.");
         }
 
@@ -169,6 +169,10 @@ public class CartService {
         if (item.getProductPk() != null) {
             ProductEntity product = productRepo.findById(item.getProductPk()).orElse(null);
             if (product != null) {
+                if ((product.getPublishStatus() != PublishStatus.PUBLISHED || product.isDiscontinued())
+                        && quantity > item.getQuantity()) {
+                    throw new ConflictException("Product is not available.");
+                }
                 ProductVariantEntity variant = item.getProductVariantPk() != null
                         ? variantRepo.findById(item.getProductVariantPk()).orElse(null)
                         : null;
@@ -263,6 +267,7 @@ public class CartService {
             boolean productOk = productPk == null
                     || (product != null
                             && product.getPublishStatus() == PublishStatus.PUBLISHED
+                            && !product.isDiscontinued()
                             && (variantPk != null
                                     || product.getStockState() != ProductStockState.OUT_OF_STOCK));
             boolean variantOk = variantPk == null || Boolean.TRUE.equals(variantEnabled.get(variantPk));

@@ -1,0 +1,15 @@
+{
+  "bigbike-admin.json": {
+    "file_reports": 130,
+    "nonpassing_cases": [],
+    "numFailedTestSuites": 0,
+    "numFailedTests": 0,
+    "numPassedTestSuites": 356,
+    "numPassedTests": 1245,
+    "numPendingTests": 0,
+    "numTodoTests": 0,
+    "numTotalTestSuites": 356,
+    "numTotalTests": 1245,
+    "success": true
+  }
+}

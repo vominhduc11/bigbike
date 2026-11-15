@@ -124,7 +124,7 @@ Kết quả cuối đã có sau tích hợp; giữ cả bằng chứng các lư�
 - Backend đầy đủ cuối: **206 suite, 1.580/1.580 đạt**, 0 failure/error/skip; `./mvnw -B verify -DforkCount=1` exit0, gồm cả bản sửa dummy password. [backend-full-summary.json](evidence/performance-2026-11-13/backend-full-summary.json). Lượt trước sửa dummy cũng đạt1.576/1.576 và được giữ riêng, không thay kết quả cuối.
 - Backend đầy đủ lượt đầu: **1.572 ca, 1.571 đạt, 1 fail, 0 skip/error**; lỗi fixture phone ở trên. Giữ [backend-full-initial-summary.json](evidence/performance-2026-11-13/backend-full-initial-summary.json), không che thành xanh. Các ca V1095 JSONB/rollback, migration cũ, catalog và media đều đạt trong lượt này.
 - Backend sạch tập trung đầu:26/26; sort5/5; media26/26. Không cộng các nhóm trùng để gọi là số ca duy nhất.
-- Tooling helper **25/25 Python + 4/4 Node**; parser YAML, Node syntax, cấu hình Compose và kiểm Git diff. Actual stack/pg_restore+MinIO/Lighthouse/load **chưa chạy**, helper test dùng mock ở ranh giới công cụ không đưa mock vào ứng dụng.
+- Tooling helper **38/38 Python + 4/4 Node**; parser YAML, Node syntax, cấu hình Compose và kiểm Git diff. Actual stack/pg_restore+MinIO/Lighthouse/load **chưa chạy**, helper test dùng mock ở ranh giới công cụ không đưa mock vào ứng dụng.
 - QA nguồn độc lập: [ci-independent-review.json](evidence/performance-2026-11-13/ci-independent-review.json), [independent-database-qa.json](evidence/performance-2026-11-13/independent-database-qa.json), [independent-frozen-dataset-qa.json](evidence/performance-2026-11-13/independent-frozen-dataset-qa.json), [frontend-media-ci-qa.md](evidence/performance-2026-11-13/frontend-media-ci-qa.md). Những finding được sửa source không được gọi là đã chạy runtime.
 
 ## 7. Luồng kinh doanh, SEO, tracking và bảo mật
@@ -139,11 +139,11 @@ Chưa có bằng chứng mới cho mọi tổ hợp khuyến mãi/biến thể/n
 - Media đọc tham chiếu có nhiều whole-table scan; lọc/sort usage có thể materialize/tính hai lần. Quick-search còn nhiều nhánh tải toàn bộ rồi rank để lấy5. Public facets/search dùng whole snapshot có TTL. Chưa có profile đủ để đổi semantics/index/concurrency.
 - Xử lý ảnh gốc/metadata vẫn đồng bộ và còn decode nhiều chỗ; chỉ giảm decode biến thể đã đo. MP4 không được chứng minh transcode/playback/Range cho đến CI thật.
 - Chưa có query/request chính xác, tải bền nhiều giờ, cold cache tách biệt, field INP, mọi endpoint/tác vụ nền/schema/index, HA Redis, CDN/TLS, production sizing. Không đặt target giả cho báo cáo lớn/upload/video khi chưa đo dữ liệu đại diện.
-- Giới hạn CI phải đọc theo artifact, không theo màu xanh workflow: synthetic catalog, localhost network, Node/libc khác shipping, thời gian ngắn và low sample counts. Một runner cùng lúc cả dịch vụ và browser/client không đại diện sản lượng VPS bán hàng.
+- Giới hạn CI phải đọc theo số liệu đã lọc, không theo màu xanh workflow: synthetic catalog, localhost network, Node/libc khác shipping, thời gian ngắn và low sample counts. Một runner cùng lúc cả dịch vụ và browser/client không đại diện sản lượng VPS bán hàng.
 
 ## 9. Gói bàn giao, triển khai và hoàn tác để review
 
-Đối chiếu [workspace-preservation.json](evidence/performance-2026-11-13/workspace-preservation.json): ngoài 20 tệp được sửa có chủ đích trong task, tất cả tệp nguồn có trước còn nguyên dấu kiểm; không có tệp ban đầu bị mất. [frozen-source-proof.json](evidence/performance-2026-11-13/frozen-source-proof.json) thực hành trên hai bản sao tất cả tệp trong snapshot nguồn cuối của cùng workspace: chỉ đúng ba file tối ưu khác nhau, mọi tệp khác trùng; chỉ mô phỏng biến môi trường để kiểm công cụ file, không chạy stack/load local.
+Đối chiếu [workspace-preservation.json](evidence/performance-2026-11-13/workspace-preservation.json): ngoài 25 tệp được sửa có chủ đích trong task, tất cả tệp nguồn có trước còn nguyên dấu kiểm; không có tệp ban đầu bị mất. [frozen-source-proof.json](evidence/performance-2026-11-13/frozen-source-proof.json) thực hành trên hai bản sao tất cả tệp trong snapshot nguồn cuối của cùng workspace: chỉ đúng ba file tối ưu khác nhau, mọi tệp khác trùng; chỉ mô phỏng biến môi trường để kiểm công cụ file, không chạy stack/load local.
 
 Source mới thuộc backend comparator, decoded-image reuse, cache publication, dummy password, V1095 và các test; tooling thuộc `scripts/performance/` và workflow. Canonical cập nhật DATA/API/INTEGRATION/TESTING/DEPLOYMENT; không đổi API shape, quyền, trạng thái hay production dependency/index/env.
 
@@ -158,9 +158,9 @@ Source mới thuộc backend comparator, decoded-image reuse, cache publication,
 
 - Website805/805; Admin1.245/1.245; backend1.580/1.580, không failure/error/skip. Hai frontend lint/build và backend verify/package đều exit0. Web sinh97 trang. `final-gates.json` ghi lệnh/exit/thời gian; test XML/log môi trường không đưa vào bằng chứng công khai.
 - Nhóm auth/cache/eviction32/32; nhóm password/legacy/admin-auth32/32 (những ca này cũng nằm trong bộ đầy đủ, không cộng trùng). Bốn kiểm thử hash Boot cũ được giữ nguyên. [password-dummy-targeted-summary.json](evidence/performance-2026-11-13/password-dummy-targeted-summary.json), [independent-password-dummy-qa.json](evidence/performance-2026-11-13/independent-password-dummy-qa.json).
-- Kiểm cấu hình ingress nguyên vẹn và hai biến thể cố tình tháo chốt đều đạt. Cấu hình CI nginx/Compose parse đạt; không khởi động nginx/server mới khi kiểm syntax. Helper20/20, Node syntax và baseline3file đạt.
+- Kiểm cấu hình ingress nguyên vẹn và hai biến thể cố tình tháo chốt đều đạt. Cấu hình CI nginx/Compose parse đạt; không khởi động nginx/server mới khi kiểm syntax. Helper25/25 Python, 4/4 Node, Node syntax và baseline3file đạt.
 - Quét offline toàn bộ source dự kiến công bố bằng Gitleaks8.24.2 (binary chính thức đã đối chiếu checksum): lượt cuối0finding/exit0. Lượt đầu5 cảnh báo đều là4 SHA256 source và1 SKU công khai. Chỉ đổi cách gắn nhãn checksum/SKU, kiểm round-trip giữ nguyên mọi giá trị và không có code caller cho nhãn cũ; không sửa rule/allowlist/ignore. Giữ [kết quả đầu](evidence/performance-2026-11-13/secret-scan-initial-summary.json), [triage](evidence/performance-2026-11-13/secret-scan-triage.json), [kết quả cuối](evidence/performance-2026-11-13/secret-scan-summary.json). Đây không phải quét toàn bộ lịch sử Git hay chứng nhận không có PII. Source công cụ: [Gitleaks v8.24.2](https://github.com/gitleaks/gitleaks/releases/tag/v8.24.2).
-- Repo GitHub hiện có quyền push qua connector và là public; không lấy quyền kỹ thuật này thay cho phê duyệt publish. Chưa commit/push hoặc dispatch. Muốn chạy CI cần owner duyệt snapshot (gồm thay đổi có trước), công bố workflow ở nơi GitHub nhận đăng ký và người có khả năng dispatch chạy manual trong hạn mức. Công cụ GitHub hiện có không cung cấp workflow-dispatch/billing-quota action; không giả đã chạy hoặc đã xác nhận quota.
+- Owner đã yêu cầu tiếp tục bước snapshot/CI ngày14/11. Snapshot đã commit/push trên nhánh `ci/performance-validation-20261114`, main/index gốc không đổi. Công cụ không có workflow-dispatch nên dùng push trigger public-only đã được giới hạn; [CI sửa cấu hình](https://github.com/vominhduc11/bigbike/actions/runs/43522719254) đang chạy thật tại `543a97d8`. Chưa có bảng Before/After hệ thống từ xa hoàn tất; không xác nhận quota/billing tài khoản bằng suy đoán.
 
 **Chưa có nghiệm thu tải/website/media toàn hệ thống hoặc production.** Những giới hạn ở mục7–8 vẫn còn nguyên; số test xanh không thay thế các phép đo thiếu.
 
@@ -194,3 +194,42 @@ Bổ sung official web-vitals@5.1.0 chỉ trong công cụ lab, không dependenc
 Headless có thể không phát native hidden khi điều hướng: số đo là interim lab,
 ghi actual hidden count/finalized flag; có thể thiếu click cuối checkout. Không
 giả visibility event và không gọi kết quả là field INP/INP hoàn chỉnh của phiên.
+
+### QA thương mại và sửa fixture CI — 14/11
+
+QA độc lập phát hiện/tái hiện thêm hai lỗi, không tính là tối ưu hiệu năng mới:
+
+- Giỏ nhận mua sản phẩm ngừng bán dù còn publish/còn hàng. Chặn thêm/tăng lượng,
+  đánh dấu dòng không khả dụng và kiểm lại khi checkout, cho phép khách xóa/giảm
+  lượng và khôi phục khi shop bán lại. Căn cứ STATE_MACHINES mục discontinued.
+- Khi tăng giá, checkout báo409 nhưng giá giỏ không đổi, khách không thể phục hồi
+  theo thông báo. Chỉ ngoại lệ xem lại giá trước tạo đơn được commit giá/tổng giỏ
+  đã kiểm, giải phóng đúng reservation chưa hoàn tất; các lỗi khác rollback như cũ.
+  Không tạo đơn/thanh toán/thông báo trước409; retry cùng khóa tạo đúng một đơn.
+  Căn cứ Catalog Availability, ACCEPTANCE_CRITERIA COD-only recovery và API_CONTRACT
+  Commerce Mutation Contracts đã làm rõ trước code.
+
+Trước sửa3/3 ca thất bại đúng nguyên nhân. Sau sửa86/86 ca tập trung đạt, gồm8 ca
+hồi quy mới; giữ nguyên mọi assertion có trước, cả snapshot giỏ bình thường. Đây
+là MockMvc/H2 với transaction thật, chưa phải PostgreSQL/request tải thật. Lead đã
+review diff độc lập và đang chạy toàn bộ backend UTC; commerce_checks.py chuẩn bị
+kiểm realAPI/PG trên hai fixture riêng, tách khỏi sản phẩm đang đo PDP. Không sửa
+dữ liệu shop. Chi tiết: independent-commerce-qa-2026-11-14.json.
+
+CI43522719254: cả hai frontend lint/test/build đạt (Admin1245, web805). Backend
+1579/1580, fail duy nhất kiểm doanh thu: fixture lấy ngày hostUTC nhưng chèn đơn
+vào Instant.now thuộc ngàyVN kế tiếp; không skip/error. Sửa timestamp hai đơn thử
+thành trưa ngày đang yêu cầu tại Asia/Ho_Chi_Minh, giữ assertion500000 và source
+báo cáo. Căn cứ REPORT_RULE_008; ci-report-calendar-fixture.json. Chưa nhận Before/After
+tải hệ thống vì gate chủ động dừng đúng trước stack.
+
+Lead hoàn tất verify backend ởUTC:206 suite/1588/1588,0 failure/error/skip, package
+exit0 (12phút47giây). Bằng chứng backend-commerce-utc-full-summary.json và
+lead-commerce-integration-qa.json. Đây là kết quả mới sau8 ca thương mại, không
+thay/sửa số1580 lịch sử. Chuẩn bị thêm10k nháp qua import hiện hữu; kiểm parser,
+quyền/rate,gia hạn đăng nhập bình thường, tài nguyên/timeout/partialcommit và24 lần
+đọc trang lấy mẫu ASC/DESC. Helper38/38Python+4/4Node đạt; chưa gọi là đã nhập/đo10k.
+PG lab1GiB, job90phút dùng cùng resource cả hai bản trên public standard runner;
+không tăng tài nguyên/chi tiêu shop. Source-only frozen-source-proof.json là mốc13/11;
+phép đóng băng toàn cây của commitCI mới phải được chạy lại bởi run_ci.py, giữ cả
+commercefix/calendarfix và mọi thay đổi có trước trong cả hai bản.

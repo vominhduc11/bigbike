@@ -19,8 +19,11 @@ import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepo
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.StockMovementJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.order.CheckoutIdempotencyKeyJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -51,12 +54,15 @@ class Phase1FCheckoutApiTest {
 
     @Autowired WebApplicationContext webApplicationContext;
     @Autowired CartJpaRepository cartRepo;
+    @Autowired CartItemJpaRepository cartItemRepo;
     @Autowired ProductJpaRepository productRepo;
     @Autowired CategoryJpaRepository categoryRepo;
     @Autowired OrderJpaRepository orderRepo;
     @Autowired OrderLineItemJpaRepository lineItemRepo;
     @Autowired ProductVariantJpaRepository variantRepo;
     @Autowired StockMovementJpaRepository stockMovementRepo;
+    @Autowired PaymentJpaRepository paymentRepo;
+    @Autowired CheckoutIdempotencyKeyJpaRepository checkoutIdempotencyKeyRepo;
 
     private MockMvc mockMvc;
 
@@ -724,6 +730,181 @@ class Phase1FCheckoutApiTest {
         var order = orderRepo.findByOrderNumber(orderNumber).orElseThrow();
         assertThat(order.getShippingAmount()).isEqualByComparingTo(java.math.BigDecimal.ZERO);
         assertThat(order.getTotalAmount()).isEqualByComparingTo(order.getSubtotalAmount());
+    }
+
+    @Test
+    void checkout_priceIncrease_refreshesCartForReview_andSameKeyRetryCreatesOneOrder() throws Exception {
+        ProductEntity product = createTestProduct("Price review", 1000000, 900000, PublishStatus.PUBLISHED);
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, product.getId(), 2);
+        product.setRetailPrice(BigDecimal.valueOf(1500000));
+        product.setSalePrice(BigDecimal.valueOf(1200000));
+        productRepo.saveAndFlush(product);
+        long ordersBefore = orderRepo.count();
+        long paymentsBefore = paymentRepo.count();
+        String key = "price-review-" + UUID.randomUUID();
+        String payload = "{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
+
+        mockMvc.perform(post("/api/v1/checkout").contentType(MediaType.APPLICATION_JSON).content(payload)
+                        .header("Idempotency-Key", key).cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value("CONFLICT"));
+        assertThat(orderRepo.count()).isEqualTo(ordersBefore);
+        assertThat(paymentRepo.count()).isEqualTo(paymentsBefore);
+        assertThat(checkoutIdempotencyKeyRepo.findByFlowTypeAndScopeKeyAndIdempotencyKey(
+                "CHECKOUT", "guest:" + getCookieValue(session, "bb_guest_id"), key)).isEmpty();
+        mockMvc.perform(get("/api/v1/cart").cookie(session.cookies))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.data.items[0].unitPrice").value(1200000))
+                .andExpect(jsonPath("$.data.items[0].lineTotal").value(2400000))
+                .andExpect(jsonPath("$.data.totals.totalAmount").value(2400000));
+
+        MvcResult retried = mockMvc.perform(post("/api/v1/checkout").contentType(MediaType.APPLICATION_JSON).content(payload)
+                        .header("Idempotency-Key", key).cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalAmount").value(2400000))
+                .andReturn();
+        mockMvc.perform(post("/api/v1/checkout").contentType(MediaType.APPLICATION_JSON).content(payload)
+                        .header("Idempotency-Key", key).cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(extractJsonValue(retried.getResponse().getContentAsString(), "id")));
+        assertThat(orderRepo.count()).isEqualTo(ordersBefore + 1);
+        assertThat(paymentRepo.count()).isEqualTo(paymentsBefore + 1);
+        var lines = lineItemRepo.findByOrderId(UUID.fromString(extractJsonValue(retried.getResponse().getContentAsString(), "id")));
+        assertThat(lines).hasSize(1);
+        assertThat(lines.get(0).getUnitPrice()).isEqualByComparingTo("1200000");
+        assertThat(lines.get(0).getRegularPrice()).isEqualByComparingTo("1500000");
+        assertThat(lines.get(0).getSalePrice()).isEqualByComparingTo("1200000");
+    }
+
+    @Test
+    void discontinuedSimpleProduct_isUnavailableUntilRestored_withoutCreatingOrder() throws Exception {
+        assertDiscontinuedPurchaseGate(false);
+    }
+
+    @Test
+    void discontinuedVariantProduct_isUnavailableUntilRestored_withoutCreatingOrder() throws Exception {
+        assertDiscontinuedPurchaseGate(true);
+    }
+
+    @Test
+    void checkout_priceIncreaseWithoutKey_refreshesCartAndAllowsReviewedRetry() throws Exception {
+        ProductEntity product = createTestProduct("No-key price review", 1000000, null, PublishStatus.PUBLISHED);
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, product.getId(), 1);
+        product.setRetailPrice(BigDecimal.valueOf(1200000));
+        productRepo.saveAndFlush(product);
+        long ordersBefore = orderRepo.count();
+        long paymentsBefore = paymentRepo.count();
+        String payload = "{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}";
+        mockMvc.perform(post("/api/v1/checkout").contentType(MediaType.APPLICATION_JSON).content(payload)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+        assertThat(orderRepo.count()).isEqualTo(ordersBefore);
+        assertThat(paymentRepo.count()).isEqualTo(paymentsBefore);
+        mockMvc.perform(get("/api/v1/cart").cookie(session.cookies))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].unitPrice").value(1200000))
+                .andExpect(jsonPath("$.data.totals.totalAmount").value(1200000));
+        mockMvc.perform(post("/api/v1/checkout").contentType(MediaType.APPLICATION_JSON).content(payload)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.totalAmount").value(1200000));
+    }
+
+    @Test
+    void checkout_priceDecrease_usesCurrentUnitRegularAndSalePrices() throws Exception {
+        ProductEntity product = createTestProduct("Price decrease", 1000000, 900000, PublishStatus.PUBLISHED);
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, product.getId(), 2);
+        product.setRetailPrice(BigDecimal.valueOf(800000));
+        product.setSalePrice(BigDecimal.valueOf(700000));
+        productRepo.saveAndFlush(product);
+        MvcResult result = mockMvc.perform(post("/api/v1/checkout").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalAmount").value(1400000))
+                .andExpect(jsonPath("$.data.priceChanges[0].newPrice").value(700000)).andReturn();
+        var line = lineItemRepo.findByOrderId(UUID.fromString(extractJsonValue(result.getResponse().getContentAsString(), "id"))).get(0);
+        assertThat(line.getUnitPrice()).isEqualByComparingTo("700000");
+        assertThat(line.getRegularPrice()).isEqualByComparingTo("800000");
+        assertThat(line.getSalePrice()).isEqualByComparingTo("700000");
+    }
+
+    @Test
+    void checkout_priceIncreaseWithUnavailableLine_rollsBackSnapshotsAndReservation() throws Exception {
+        ProductEntity increased = createTestProduct("Mixed-cart increase", 1000000, null, PublishStatus.PUBLISHED);
+        ProductEntity retired = createTestProduct("Mixed-cart discontinued", 2000000, null, PublishStatus.PUBLISHED);
+        GuestSession session = newGuestSession();
+        addProductToGuestCart(session, increased.getId(), 1);
+        addProductToGuestCart(session, retired.getId(), 1);
+        increased.setRetailPrice(BigDecimal.valueOf(1500000));
+        productRepo.saveAndFlush(increased);
+        retired.setDiscontinued(true);
+        productRepo.saveAndFlush(retired);
+        long ordersBefore = orderRepo.count();
+        long paymentsBefore = paymentRepo.count();
+        String key = "mixed-review-" + UUID.randomUUID();
+        mockMvc.perform(post("/api/v1/checkout").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .header("Idempotency-Key", key).cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+        assertThat(orderRepo.count()).isEqualTo(ordersBefore);
+        assertThat(paymentRepo.count()).isEqualTo(paymentsBefore);
+        assertThat(checkoutIdempotencyKeyRepo.findByFlowTypeAndScopeKeyAndIdempotencyKey(
+                "CHECKOUT", "guest:" + getCookieValue(session, "bb_guest_id"), key)).isEmpty();
+        CartEntity cart = cartRepo.findBySessionIdAndStatus(getCookieValue(session, "bb_guest_id"), "ACTIVE").get(0);
+        var persisted = cartItemRepo.findByCartId(cart.getId());
+        assertThat(persisted).hasSize(2);
+        assertThat(persisted.stream().filter(item -> increased.getId().equals(item.getProductPk())).findFirst().orElseThrow().getUnitPrice())
+                .isEqualByComparingTo("1000000");
+        mockMvc.perform(get("/api/v1/cart").cookie(session.cookies))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.totals.totalAmount").value(3000000));
+    }
+
+    private void assertDiscontinuedPurchaseGate(boolean withVariant) throws Exception {
+        ProductEntity product = createWpProduct("Discontinued purchase gate", 1500000);
+        ProductVariantEntity variant = withVariant ? createWpVariant(product, 3, 1500000) : null;
+        GuestSession session = newGuestSession();
+        String payload = "{\"productId\":\"" + product.getId() + "\",\"quantity\":1"
+                + (variant == null ? "" : ",\"productVariantId\":\"" + variant.getId() + "\"") + "}";
+        MvcResult add = mockMvc.perform(post("/api/v1/cart/items").contentType(MediaType.APPLICATION_JSON).content(payload)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk()).andReturn();
+        String itemId = extractItemId(add.getResponse().getContentAsString(), 0);
+        // Reload the detached parent: its original empty variants collection predates
+        // createWpVariant and merging that stale collection would orphan the new row.
+        product = productRepo.findById(product.getId()).orElseThrow();
+        product.setDiscontinued(true);
+        product = productRepo.saveAndFlush(product);
+        long ordersBefore = orderRepo.count();
+        long paymentsBefore = paymentRepo.count();
+        mockMvc.perform(post("/api/v1/cart/items").contentType(MediaType.APPLICATION_JSON).content(payload)
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+        mockMvc.perform(get("/api/v1/cart").cookie(session.cookies))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].available").value(false))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(1));
+        mockMvc.perform(patch("/api/v1/cart/items/" + itemId).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\":2}").cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/v1/checkout").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isConflict());
+        assertThat(orderRepo.count()).isEqualTo(ordersBefore);
+        assertThat(paymentRepo.count()).isEqualTo(paymentsBefore);
+
+        product.setDiscontinued(false);
+        productRepo.saveAndFlush(product);
+        mockMvc.perform(get("/api/v1/cart").cookie(session.cookies))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.items[0].available").value(true));
+        mockMvc.perform(post("/api/v1/checkout").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentMethod\":\"COD\",\"billingAddress\":" + VALID_BILLING + "}")
+                        .cookie(session.cookies).header("X-CSRF-Token", session.csrf))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.totalAmount").value(1500000));
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

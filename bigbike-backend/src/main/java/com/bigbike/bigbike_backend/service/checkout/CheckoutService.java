@@ -20,12 +20,14 @@ import com.bigbike.bigbike_backend.persistence.entity.commerce.payment.PaymentEn
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.catalog.ProductVariantJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartJpaRepository;
+import com.bigbike.bigbike_backend.persistence.repository.commerce.cart.CartItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.CheckoutIdempotencyKeyJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderAddressJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.order.OrderLineItemJpaRepository;
 import com.bigbike.bigbike_backend.persistence.repository.commerce.payment.PaymentJpaRepository;
 import com.bigbike.bigbike_backend.service.cart.CartCalculator;
+import com.bigbike.bigbike_backend.service.pricing.VariantPricing;
 import com.bigbike.bigbike_backend.service.web.WebRevalidationService;
 import com.bigbike.bigbike_backend.service.ws.AdminOrderWsService;
 import static com.bigbike.bigbike_backend.service.checkout.CheckoutSupport.*;
@@ -58,6 +60,7 @@ public class CheckoutService {
     private static final Pattern GA4_CLIENT_ID_PATTERN = Pattern.compile("^[0-9]+\\.[0-9]+$");
 
     private final CartJpaRepository cartRepo;
+    private final CartItemJpaRepository cartItemRepo;
     private final CheckoutIdempotencyKeyJpaRepository checkoutIdempotencyKeyRepo;
     private final OrderJpaRepository orderRepo;
     private final OrderLineItemJpaRepository lineItemRepo;
@@ -76,7 +79,7 @@ public class CheckoutService {
 
     // ── Checkout from cart ────────────────────────────────────────────────────
 
-    @Transactional
+    @Transactional(noRollbackFor = PriceReviewRequiredException.class)
     public OrderSummaryResponse checkoutFromCart(
             CartEntity cart,
             List<CartItemEntity> items,
@@ -108,15 +111,17 @@ public class CheckoutService {
 
         // Reject if any product prices increased since the customer loaded the checkout page.
         // Prevents silent overcharges. Price decreases are applied silently (customer benefits).
-        // The transaction rolls back so cart prices revert; CartService will re-sync on the next fetch.
+        // Keep only the refreshed cart snapshot so the next GET can show the prices
+        // for review. No order/payment/notification has been created at this point.
         List<OrderSummaryResponse.PriceChange> priceIncreases = priceChanges.stream()
                 .filter(pc -> pc.newPrice().compareTo(pc.oldPrice()) > 0)
                 .toList();
         if (!priceIncreases.isEmpty()) {
+            persistCartForPriceReview(cart, items, idempotency);
             String detail = priceIncreases.stream()
                     .map(pc -> pc.productName())
                     .collect(Collectors.joining(", "));
-            throw new ConflictException(
+            throw new PriceReviewRequiredException(
                     "Giá của một số sản phẩm vừa thay đổi: " + detail +
                     ". Vui lòng quay lại giỏ hàng để xem giá mới trước khi đặt hàng.");
         }
@@ -300,6 +305,25 @@ public class CheckoutService {
 
     // ── Build helpers ─────────────────────────────────────────────────────────
 
+    private void persistCartForPriceReview(CartEntity cart, List<CartItemEntity> items,
+            IdempotencyReservation reservation) {
+        // open-in-view is disabled: the controller's item snapshots are detached.
+        Instant now = Instant.now();
+        items.forEach(item -> item.setUpdatedAt(now));
+        cartItemRepo.saveAll(items);
+        cartCalculator.recalculateCart(cart, items);
+        cart.setUpdatedAt(now);
+        cartRepo.save(cart);
+        if (reservation.reservationId() != null) {
+            int removed = jdbcTemplate.update(
+                    "DELETE FROM checkout_idempotency_keys WHERE id = ? AND order_id IS NULL",
+                    reservation.reservationId());
+            if (removed != 1) {
+                throw new IllegalStateException("Could not release checkout price-review reservation");
+            }
+        }
+    }
+
     private OrderEntity buildOrder(
             UUID customerId,
             String email,
@@ -418,7 +442,7 @@ public class CheckoutService {
             if (product == null) {
                 throw new ConflictException("Product no longer exists: " + cartItem.getProductName());
             }
-            if (product.getPublishStatus() != PublishStatus.PUBLISHED) {
+            if (product.getPublishStatus() != PublishStatus.PUBLISHED || product.isDiscontinued()) {
                 throw new ConflictException(
                         "Sản phẩm '" + cartItem.getProductName() + "' không còn được bán.");
             }
@@ -446,6 +470,8 @@ public class CheckoutService {
                         cartItem.getProductName(), cartPrice, currentPrice));
             }
             cartItem.setUnitPrice(currentPrice);
+            cartItem.setRegularPrice(VariantPricing.regularPrice(product, variant));
+            cartItem.setSalePrice(VariantPricing.salePrice(product, variant));
             cartCalculator.recalculateItem(cartItem);
         }
     }
@@ -453,6 +479,13 @@ public class CheckoutService {
     private record IdempotencyReservation(UUID reservationId, OrderSummaryResponse existingSummary) {
         private static IdempotencyReservation none() {
             return new IdempotencyReservation(null, null);
+        }
+    }
+
+    /** Only this pre-order review conflict commits the refreshed cart; all other errors roll back. */
+    private static final class PriceReviewRequiredException extends ConflictException {
+        private PriceReviewRequiredException(String message) {
+            super(message);
         }
     }
 

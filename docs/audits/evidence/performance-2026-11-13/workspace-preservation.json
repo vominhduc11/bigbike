@@ -6,8 +6,13 @@
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/PasswordService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/AdminReportApiTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1DCustomerAuthTest.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1ECartApiTest.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1FCheckoutApiTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/PublicReadApiTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/migration/ArticleExcerptAuthorRemovalMigrationPostgresTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/admin/ImageVariantServiceTest.java",
@@ -25,5 +30,5 @@
   "unexpected_changes": [],
   "missing_initial_files": [],
   "all_other_initial_files_identical": true,
-  "scope": "Narrow task source/tests/docs/tooling edits plus one evidence-label-only public-SKU rename; round-trip data equality recorded in secret-scan-triage.json. All other pre-existing source bytes retained; ignored env/build/Python caches excluded."
+  "scope": "Original2991-file snapshot preserved except25 explicit task source/test/docs/tooling changes incl commerce and report-date-fixture corrections. All earlier user changes retained; main/index untouched. Git publication uses a separate worktree/branch."
 }

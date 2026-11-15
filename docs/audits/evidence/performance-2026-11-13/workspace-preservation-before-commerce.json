@@ -1,0 +1,29 @@
+{
+  "initial_file_count": 2991,
+  "changed_initial_files": [
+    ".github/workflows/performance-validation.yml",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/PublishedProductListingCache.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/PasswordService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1DCustomerAuthTest.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/PublicReadApiTest.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/migration/ArticleExcerptAuthorRemovalMigrationPostgresTest.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/admin/ImageVariantServiceTest.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/media/ImageCompressionServiceTest.java",
+    "docs/audits/evidence/gmc-ticket-review-2026-10-30/verification.json",
+    "docs/engineering/API_CONTRACT.md",
+    "docs/engineering/DATA_CONTRACT.md",
+    "docs/engineering/DEPLOYMENT_GUIDE.md",
+    "docs/engineering/INTEGRATION_GUIDE.md",
+    "docs/engineering/TESTING_GUIDE.md",
+    "scripts/performance/baseline-manifest.json",
+    "scripts/performance/benchmark_api.py",
+    "scripts/performance/prepare_baseline.py"
+  ],
+  "unexpected_changes": [],
+  "missing_initial_files": [],
+  "all_other_initial_files_identical": true,
+  "scope": "Narrow task source/tests/docs/tooling edits plus one evidence-label-only public-SKU rename; round-trip data equality recorded in secret-scan-triage.json. All other pre-existing source bytes retained; ignored env/build/Python caches excluded."
+}

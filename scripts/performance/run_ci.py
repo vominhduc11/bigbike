@@ -24,12 +24,26 @@ from fixtures import generate
 from frozen_dataset import capture, restore, identity as dataset_identity
 from admin_smoke import run_smoke
 from compare_results import compare
+from commerce_checks import check_commerce
+from large_catalog import seed_large, verify_large_pages, LargeCatalogFailure
 from s3_setup import setup as setup_bucket
 from stack_checks import functional_checks, login, media_checks, NoRedirect, seed
 
 
 def write_json(path, value):
     Path(path).write_text(json.dumps(value, indent=2) + '\n')
+
+
+def bounded_resources(stack, expected_services=7):
+    """Observe at most every3s, matching the load watcher without Docker probe storms."""
+    state, collected_at = None, float('-inf')
+    def collect():
+        nonlocal state, collected_at
+        if time.monotonic() - collected_at >= 3:
+            state = stack.resources(expected_services)
+            collected_at = time.monotonic()
+        return state
+    return collect
 
 
 def clean_environment():
@@ -171,10 +185,10 @@ class Stack:
         run(['docker', 'build', '-f', str(self.root / 'scripts/performance' / ('Dockerfile.' + app)),
              '-t', self.project + '-' + app, str(context)])
 
-    def resources(self):
+    def resources(self, expected_services=7):
         ids = self.compose('ps', '--all', '-q').split()
-        if len(ids) != 7:
-            raise RuntimeError('Required CI containers absent (expected exactly seven services)')
+        if expected_services not in (5, 7) or len(ids) != expected_services:
+            raise RuntimeError('Required CI containers absent for the current controlled phase')
         states = json.loads(run(['docker', 'inspect', *ids]))
         rows = [json.loads(line) for line in run(['docker', 'stats', '--no-stream', '--format', '{{json .}}', *ids]).splitlines()]
         available = next(int(line.split()[1]) * 1024 for line in Path('/proc/meminfo').read_text().splitlines()
@@ -231,7 +245,8 @@ def api_benchmark(stack, api, product, output):
     thread.start()
     paths = [('/api/v1/settings/public', None, .5), ('/api/v1/categories', None, .5),
              ('/api/v1/products?page=1&size=20', None, .5), ('/api/v1/products/' + product['slug'], None, .5),
-             ('/api/v1/admin/products?page=1&size=20&sort=name:asc', api.token, .5),
+             ('/api/v1/admin/products?page=1&size=20&publishStatus=PUBLISHED&sort=name:asc', api.token, .5),
+             ('/api/v1/admin/products?q=E2E_PERF_LARGE&publishStatus=DRAFT&page=1&size=20&sort=name:asc', api.token, .5),
              ('/api/v1/admin/media?page=1&size=20', api.token, .5),
              # SEARCH is 60/min per IP; max aggregate rate remains <1/sec.
              ('/api/v1/products?q=E2E_PERF&page=1&size=20', None, 5.0)]
@@ -315,6 +330,10 @@ def main():
             'npm': run(['npm', '--version']).strip(),
             'java': run(['java', '--version']).splitlines()[0], 'python': run(['python3', '--version']).strip(),
             'docker': run(['docker', '--version']).strip(), 'compose': run(['docker', 'compose', 'version']).strip(),
+            'docker_engine_api': json.loads(run(['docker', 'version', '--format', '{{json .Server}}']))['ApiVersion'],
+            'host_cpu_count': os.cpu_count(),
+            'host_memory_total_bytes': next(int(line.split()[1]) * 1024 for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:')),
+            'runner_image': {name: os.environ.get(name) for name in ('ImageOS', 'ImageVersion')},
             'ffmpeg': run(['ffmpeg', '-version']).splitlines()[0],
             'lighthouse_version': '12.8.2',
             'web_vitals_version': '5.1.0',
@@ -383,6 +402,15 @@ def main():
                 api = login('http://localhost:18080', stack.password)
                 if dataset is None:
                     fixtures = seed(api, fixture_dir)
+                    phase('large-admin-catalog-seed')
+                    try:
+                        large = seed_large(api, fixtures, bounded_resources(stack, 5),
+                                           auth_refresh=lambda: login('http://localhost:18080', stack.password))
+                        fixtures['large_catalog'] = large['metadata']
+                        write_json(arm_output / 'large-seed.json', large['summary'])
+                    except LargeCatalogFailure as error:
+                        write_json(arm_output / 'large-seed.json', error.summary)
+                        raise
                     dataset = capture(stack, fixtures, private)
                     write_json(arm_output / 'dataset-identity.json', dataset_identity(dataset))
                     # Only this newly created CI project: reset the provisioner JVM
@@ -415,12 +443,26 @@ def main():
                     'web_node': stack.compose('exec', '-T', 'bigbike-web', 'node', '--version').strip()})
                 # New ordinary login after potentially long production builds; no bypass.
                 api = login('http://localhost:18080', stack.password)
+                phase('large-admin-pagination-proof')
+                try:
+                    write_json(arm_output / 'large-catalog-pages.json', verify_large_pages(
+                        api, fixtures['large_catalog'], bounded_resources(stack),
+                        auth_refresh=lambda: login('http://localhost:18080', stack.password)))
+                except LargeCatalogFailure as error:
+                    write_json(arm_output / 'large-catalog-pages.json', error.summary)
+                    raise
                 refresh = next(cookie.value for cookie in api.jar if cookie.name == 'bb_admin_refresh')
                 session_file = private / 'browser-session.json'
                 write_json(session_file, {'refreshCookie': refresh})
                 session_file.chmod(0o600)
                 phase('functional-and-media')
                 write_json(arm_output / 'functional.json', functional_checks(api, fixtures))
+                def commerce_counts():
+                    return json.loads(stack.sql("""SELECT json_build_object(
+                        'orders', (SELECT count(*) FROM orders),
+                        'payments', (SELECT count(*) FROM payments),
+                        'reservations', (SELECT count(*) FROM checkout_idempotency_keys))"""))
+                write_json(arm_output / 'commerce.json', check_commerce(api, fixtures, commerce_counts))
                 def record_media(rows):
                     write_json(arm_output / 'media.json', {'results': rows,
                         'note': 'photo-1600.jpg was seeded as product image: this sample exercises content dedup; wall duration includes transfer/storage, no server-only claim',

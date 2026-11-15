@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: perf
       POSTGRES_PASSWORD: ${PERF_PASSWORD:?CI credential required}
     command: [postgres, -c, shared_preload_libraries=pg_stat_statements, -c, shared_buffers=128MB, -c, max_connections=100]
-    mem_limit: 512m
+    mem_limit: 1g
     ports: ["127.0.0.1:15432:5432"]
     tmpfs: [/var/lib/postgresql/data]
     healthcheck:

@@ -1,0 +1,502 @@
+{
+  "reviewed_at_utc": "2026-11-13T22:57:52.651999+00:00",
+  "reviewer": "independent-commerce-qa agent",
+  "scope": "Source review and existing test evidence only; no runtime, load, shared container access or application edits.",
+  "source_snapshot": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "cc2a830c8b9d39f7fe311c3368e9b4b50b892871c5c089fab9838fcc11808f75",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "docs/business/BUSINESS_RULES.md",
+      "sha256": "87d72b01d8d4307203829d0ff0fa7f13d53414d4b552c17101d9649cada35f4b",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "docs/business/ACCEPTANCE_CRITERIA.md",
+      "sha256": "f3c0254e27c631a3777f4f246c93a88a662f521138234e68526c3f84852cc755",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "docs/business/STATE_MACHINES.md",
+      "sha256": "6a66f0454c16e005bca4eb832801ea73b3d558cf1cd614474976dbb67af8dc1c",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "docs/engineering/API_CONTRACT.md",
+      "sha256": "0a19164d3cb1858576c25063fa0c3d476158bbd411043c710eb396e90e9ade1b",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "docs/engineering/PERMISSION_MATRIX.md",
+      "sha256": "e3c97579d97a86506eed8cd9eb0efe937a1b299d5696f0b3bd5cbbbc1a0e0a19",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/cart/CartController.java",
+      "sha256": "d99cffa114f0db43d8510bfe484837af66e94fea7e730a00368f80a1951b1f74",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/cart/dto/AddCartItemRequest.java",
+      "sha256": "0e3fae128f289b8fb742e1c8d005f46fe5782e11eab173e454721f80439c4e76",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/cart/dto/UpdateCartItemRequest.java",
+      "sha256": "1767ab926ffb679dad360c291155a15172d72c439e24e8f9256c3470b508d0e7",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/checkout/CheckoutController.java",
+      "sha256": "759c3eef0146daec7bb2907cde4b760b9ec6ec757f3b84d27625b809f404583b",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java",
+      "sha256": "8d78aa66c2ef56eb12adcbb7160c5e9d7632b88abbee24e0b9e9eb50918da66f",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartCalculator.java",
+      "sha256": "f7d83c39f913b1c36306907c4799df134d2d2cd7a9026c710a080dd7e76acb15",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java",
+      "sha256": "b1e468fbdd345776b57486b81ef1cb3ae84a520e293b84999c995fa95137503a",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutSupport.java",
+      "sha256": "67248cacca8c938931a75179876b9a6d0c65f4bf036920e86e709b5ee8f32e85",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/pricing/VariantPricing.java",
+      "sha256": "5ebd323d0d02d3b24488eeac930a66005c58943bd725498efd9b008e397ff61c",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/customer/CustomerSessionService.java",
+      "sha256": "529feb9515e62a3fd1635557d76bb8b88be960fc86ca77b389f25a4b92be7c93",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/CustomerSessionFilter.java",
+      "sha256": "59b820095ab8c2d7d84ace0537cae4c021079d3796da0ba3e28802e22fc433d2",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/CustomerCsrfFilter.java",
+      "sha256": "c199054284bac972e042cc7a3f8a41a5d691371a9e0b31b921bbb6227db71c2c",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/CustomerAuthCookies.java",
+      "sha256": "69f0390a2d67c6645d6db8ea4dec558d641a7d5505ce3cfb18b0eafcee42a026",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/PublicCacheHeaderFilter.java",
+      "sha256": "13b0c1c9880f032f5cc27164b78c4a6ec5134ae9dd0474f1b362f932546b113a",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/config/SecurityConfig.java",
+      "sha256": "2d6c162f7bc18099a2c4f3d0a5293a65ddb15adf7c514ebc93ed99412501a418",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ProductJpaRepository.java",
+      "sha256": "0b6af7fc8b9c1aa0220e02b836b6d85634f213f490e260801e8e2aaf652525ba",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/cart/CartJpaRepository.java",
+      "sha256": "4c34d94b3a37a9f0018a60188813c76ad67f42171dd13c6a5e2fd415080a15be",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ProductMutationService.java",
+      "sha256": "c2e3d68b1f8c884f244051707dc2b12746dbfc346e2d11d808aa84977501b01b",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1ECartApiTest.java",
+      "sha256": "9e713276dd421adcc1d6e22fd587402bc661b8c3fda42521583e4e84bdf39f0f",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1FCheckoutApiTest.java",
+      "sha256": "cf24fc6f251021793aeef3c50a530574f5c07cf57c35a923edbc7c2c4c4ea73c",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1DCustomerAuthTest.java",
+      "sha256": "6b484a76930d1b3a4dc88aa68ba1cf9a9c3c99e8b5b16aa00c0a7d9f081ff015",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/RbacUrlGateIntegrationTest.java",
+      "sha256": "0fc44222e76d085c8f52691cf98f363f30d4bd23484e9c10b27d114549a6a791",
+      "scope": "relevant sections only"
+    },
+    {
+      "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/config/CustomerCsrfFilterTest.java",
+      "sha256": "ebf3fd3afb1426fb28e216d00516faa03e09f4118231a3d53bfec81e51a00122",
+      "scope": "relevant sections only"
+    }
+  ],
+  "verified_source_invariants": [
+    {
+      "invariant": "The caller cannot supply order/cart totals: server resolves current price and computes monetary amounts with BigDecimal. New orders normalize COD, start PENDING and use shippingAmount=0. Inventory quantity is not decremented.",
+      "canonical": [
+        "BUSINESS_RULES.md Catalog Availability / ORDER_RULE_001-002 / SHIP_RULE_001",
+        "API_CONTRACT.md Commerce Mutation Contracts"
+      ],
+      "tests": [
+        "Phase1FCheckoutApiTest.checkout_guestCOD_createsOrder_status_PENDING",
+        "Phase1FCheckoutApiTest.checkout_guestOrder_totalMatchesCartItems",
+        "Phase1FCheckoutApiTest.checkout_explicitBankTransfer_isRejected_asCODOnly",
+        "Phase1FCheckoutApiTest.checkout_explicitBACS_isRejected_asLegacyOnly",
+        "Phase1FCheckoutApiTest.checkout_omittedPaymentMethod_normalisesToCOD"
+      ]
+    },
+    {
+      "invariant": "Cart line update/delete checks owning cart id; a different guest cannot modify a known item id. Customer account resolution requires active nonexpired hashed session and active account. Admin routes ignore customer-only session cookies.",
+      "canonical": [
+        "PERMISSION_MATRIX.md Customer vs Admin URL Gates",
+        "API_CONTRACT.md Authentication and Commerce"
+      ],
+      "tests": [
+        "Phase1ECartApiTest.cartItemCannotBeModifiedFromDifferentSession",
+        "Phase1DCustomerAuthTest.session_cookie_authenticates_me_endpoint",
+        "Phase1DCustomerAuthTest.me_withoutSession_returns_401",
+        "Phase1DCustomerAuthTest.refresh_with_valid_token_rotates_session",
+        "Phase1DCustomerAuthTest.logout_revokes_session_in_db"
+      ]
+    },
+    {
+      "invariant": "Cart/checkout/customer/order endpoints are outside PublicCacheHeaderFilter allowlist and retain default no-store. Authenticated and guest commerce mutations require matching CSRF cookie/header; exact public review exceptions do not exempt neighboring product mutation paths.",
+      "canonical": [
+        "API_CONTRACT.md response cache contract and CSRF auth row"
+      ],
+      "tests": [
+        "RbacUrlGateIntegrationTest.cartGet_staysNoStore_notCacheable",
+        "RbacUrlGateIntegrationTest.adminGet_staysNoStore_notCacheable",
+        "RbacUrlGateIntegrationTest.publicCatalogGet_isBrowserCacheable",
+        "Phase1ECartApiTest.addItem_missingCsrf_forbidden",
+        "CustomerCsrfFilterTest.neighboringProductMutationsStillRequireCsrf"
+      ]
+    },
+    {
+      "invariant": "Idempotency reservation is scoped to customer id or guest-session id, hashes payload and uses SQL savepoint around duplicate-key handling. Same-key replay reuses order; different payload conflicts; same key on different guests remains distinct.",
+      "canonical": [
+        "API_CONTRACT.md checkout contract / existing idempotency behavior"
+      ],
+      "tests": [
+        "Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_returnsExistingOrder_andDoesNotDecrementStockTwice",
+        "Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_withDifferentPayload_returns409",
+        "Phase1FCheckoutApiTest.checkout_sameIdempotencyKey_differentGuestSessions_createDistinctOrders"
+      ]
+    },
+    {
+      "invariant": "GA4 client identity accepts only bounded numeric-dot-numeric string; malformed private-looking text is discarded and snapshot is not exposed in checkout response.",
+      "canonical": [
+        "BUSINESS_RULES.md ANALYTICS_RULE_006",
+        "API_CONTRACT.md Commerce Mutation Contracts"
+      ],
+      "tests": [
+        "Phase1FCheckoutApiTest.checkout_snapshotsValidGa4ClientId_withoutExposingItInResponse",
+        "Phase1FCheckoutApiTest.checkout_discardsMalformedGa4ClientId_insteadOfRejectingOrder"
+      ]
+    }
+  ],
+  "findings_at_review_time": [
+    {
+      "id": "COMMERCE-QA-001",
+      "priority": "P1",
+      "status": "high-confidence source defect, sent to Lead for isolated reproduction and repair; not independently runtime reproduced",
+      "problem": "PUBLISHED discontinued products are not rejected by cart add or checkout; existing cart lines are not marked unavailable by discontinued flag.",
+      "canonical": "STATE_MACHINES.md Product State Machine / orthogonal discontinued flag: no checkout; BUSINESS_RULES.md REDIRECT_RULE_013",
+      "evidence": [
+        "CartService.addItem checks publishStatus and stock but not discontinued",
+        "CartService.findUnavailableItemIds checks publishStatus and availability but not discontinued",
+        "CheckoutService.syncPricesAndValidateStock checks publishStatus and stock but not discontinued",
+        "ProductMutationService applies discontinued independently without changing stock state"
+      ],
+      "reproduction_to_add": "Create published in-stock product; add to cart; set discontinued true; assert cart unavailable and checkout409 without order. Also assert direct cart add409 for simple and variant products.",
+      "repair_status_at_handoff": "Fixed in source and targeted86-case suite passed; independent Lead review and hosted real-stack confirmation pending."
+    },
+    {
+      "id": "COMMERCE-QA-002",
+      "priority": "P2",
+      "status": "source-proven recovery gap; exact compatible recovery contract needs review before implementation",
+      "problem": "Price increase causes checkout409 and transaction rollback, while return-to-cart GET preserves old price snapshot; retry repeats409 until removing/readding line.",
+      "canonical": "ACCEPTANCE_CRITERIA.md:83 reload/price-change recovery; BUSINESS_RULES.md Catalog Availability price resync/report",
+      "evidence": [
+        "CheckoutService.checkoutFromCart throws ConflictException for any price increase after changing managed cart item",
+        "CartService.getItems is repository read only and updateItemQuantity keeps stored unitPrice",
+        "Phase1ECartApiTest.productSnapshot_preservedAfterProductChange explicitly expects old price after GET"
+      ],
+      "restriction": "Do not silently change snapshot semantics or allow an unconfirmed overcharge; establish explicit recovery/acknowledgment behavior.",
+      "repair_status_at_handoff": "Fixed in source and targeted86-case suite passed; independent Lead review and hosted real-stack confirmation pending."
+    },
+    {
+      "id": "COMMERCE-QA-003",
+      "priority": "performance-unmeasured",
+      "status": "source debt only; no latency or allocation measurement",
+      "problem": "getOrCreateCustomerCart hydrates all customer carts then filters ACTIVE in Java, including converted history.",
+      "evidence": [
+        "CartService.getOrCreateCustomerCart uses cartRepo.findByCustomerId and stream filter",
+        "Repository already has status-filtered reads; current comment explicitly preserves stale-duplicate robustness"
+      ],
+      "restriction": "Any SQL optimization must retain duplicate tolerance and stable chosen cart; measure representative large history first."
+    }
+  ],
+  "existing_test_reports": [
+    {
+      "suite": "api.Phase1ECartApiTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence_type": "pre-existing local Surefire report, not rerun in this independent review"
+    },
+    {
+      "suite": "api.Phase1FCheckoutApiTest",
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence_type": "pre-existing local Surefire report, not rerun in this independent review"
+    },
+    {
+      "suite": "api.Phase1DCustomerAuthTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence_type": "pre-existing local Surefire report, not rerun in this independent review"
+    },
+    {
+      "suite": "api.RbacUrlGateIntegrationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence_type": "pre-existing local Surefire report, not rerun in this independent review"
+    },
+    {
+      "suite": "config.CustomerCsrfFilterTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence_type": "pre-existing local Surefire report, not rerun in this independent review"
+    },
+    {
+      "suite": "service.pricing.VariantPricingTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence_type": "pre-existing local Surefire report, not rerun in this independent review"
+    }
+  ],
+  "unverified": [
+    "No new tests, service startup, browser, upload or load measurement was executed by this reviewer.",
+    "Source-positive invariants and historic green suites do not certify current full-system or production behavior.",
+    "Concurrent checkout of the same cart with different or missing idempotency keys is not established by sequential replay tests; cart has no explicit checkout lock/status recheck in reviewed service.",
+    "Requiring a selected variant for products with variants is not explicit in the reviewed API DTO; do not invent a rejection rule without canonical decision.",
+    "Real browser/session replay across accounts, deployment proxy/CDN caching and production query/request counts remain runtime work.",
+    "No claim about price recovery or discontinued fixes after Lead edits: source hashes describe the review snapshot only."
+  ],
+  "repair_validation": {
+    "method": "Focused existing MockMvc/H2 test application; no shared database writes, rate-limit remains separately covered by existing isolated rate-limit suites",
+    "command": "MAVEN_OPTS=-Xmx512m JAVA_TOOL_OPTIONS=-Xmx1024m ./mvnw -B -Dtest=Phase1FCheckoutApiTest#checkout_priceIncrease_refreshesCartForReview_andSameKeyRetryCreatesOneOrder+discontinuedSimpleProduct_isUnavailableUntilRestored_withoutCreatingOrder+discontinuedVariantProduct_isUnavailableUntilRestored_withoutCreatingOrder -DforkCount=1 test",
+    "before_exit_code": 1,
+    "initial_probe_with_stale_variant_fixture": {
+      "tests": "3",
+      "failures": "3",
+      "errors": "0",
+      "skipped": "0",
+      "cases": [
+        {
+          "name": "discontinuedSimpleProduct_isUnavailableUntilRestored_withoutCreatingOrder",
+          "status": "failure",
+          "assertion": "Status expected:<409> but was:<200>"
+        },
+        {
+          "name": "checkout_priceIncrease_refreshesCartForReview_andSameKeyRetryCreatesOneOrder",
+          "status": "failure",
+          "assertion": "JSON path \"$.data.items[0].unitPrice\" expected:<1200000> but was:<900000>"
+        },
+        {
+          "name": "discontinuedVariantProduct_isUnavailableUntilRestored_withoutCreatingOrder",
+          "status": "failure",
+          "assertion": "Status expected:<409> but was:<404>"
+        }
+      ]
+    },
+    "initial_probe_note": "The new variant fixture merged a stale empty orphan-removal collection and deleted its variant, producing404. Reloaded detached parent before mutation; original existing tests were unchanged.",
+    "before": {
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "cases": [
+        {
+          "name": "discontinuedSimpleProduct_isUnavailableUntilRestored_withoutCreatingOrder",
+          "assertion": "Status expected:<409> but was:<200>"
+        },
+        {
+          "name": "checkout_priceIncrease_refreshesCartForReview_andSameKeyRetryCreatesOneOrder",
+          "assertion": "JSON path \"$.data.items[0].unitPrice\" expected:<1200000> but was:<900000>"
+        },
+        {
+          "name": "discontinuedVariantProduct_isUnavailableUntilRestored_withoutCreatingOrder",
+          "assertion": "Status expected:<409> but was:<200>"
+        }
+      ]
+    },
+    "first_after_with_detached_version_fixture_error": {
+      "suites": [
+        {
+          "suite": "api.Phase1ECartApiTest",
+          "tests": 27,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "api.Phase1FCheckoutApiTest",
+          "tests": 42,
+          "failures": 0,
+          "errors": 2,
+          "skipped": 0
+        },
+        {
+          "suite": "service.pricing.VariantPricingTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "api.RbacUrlGateIntegrationTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "config.CustomerCsrfFilterTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ],
+      "note": "Two new restored-product fixtures reused an old detached optimistic version after save. App guards passed up to restore. Fixed new helper to retain returned merged entity; rerun follows."
+    },
+    "completed_at_utc": "2026-11-13T23:10:51.843839+00:00",
+    "after": {
+      "exit_code": 0,
+      "tests": 86,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 86,
+      "suites": [
+        {
+          "suite": "api.Phase1ECartApiTest",
+          "tests": 27,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "api.Phase1FCheckoutApiTest",
+          "tests": 42,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "service.pricing.VariantPricingTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "api.RbacUrlGateIntegrationTest",
+          "tests": 8,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        {
+          "suite": "config.CustomerCsrfFilterTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      ]
+    },
+    "after_command": "MAVEN_OPTS=-Xmx512m JAVA_TOOL_OPTIONS=-Xmx1024m ./mvnw -B -Dtest=Phase1ECartApiTest,Phase1FCheckoutApiTest,VariantPricingTest,RbacUrlGateIntegrationTest,CustomerCsrfFilterTest -DforkCount=1 test",
+    "source_after": [
+      {
+        "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java",
+        "sha256": "b1e947871a4dd8aad471b7002dc62eb766714a80593ab331139c61c338611e95"
+      },
+      {
+        "path": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java",
+        "sha256": "aef699d15e0339b598d0fbabc65eef23bb4bf783580fa4365413385cc4bff6dd"
+      },
+      {
+        "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1ECartApiTest.java",
+        "sha256": "0183cc9342bec728c51a4e30074b5a98a0b0f99e263fa6bcd8a0be0bd1ed989c"
+      },
+      {
+        "path": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1FCheckoutApiTest.java",
+        "sha256": "69fd0dde88833165085196402387bc63a1e7a80ccc457666ef6ae365df00bcba"
+      }
+    ],
+    "canonical_contract_read_before_app_fix": {
+      "path": "docs/engineering/API_CONTRACT.md",
+      "section": "Commerce Mutation Contracts / Checkout recovery clarification14Nov",
+      "sha256_at_handoff": "0a19164d3cb1858576c25063fa0c3d476158bbd411043c710eb396e90e9ade1b",
+      "updated_by": "Lead before implementation"
+    },
+    "new_case_names": [
+      "Phase1FCheckoutApiTest.checkout_priceIncrease_refreshesCartForReview_andSameKeyRetryCreatesOneOrder",
+      "Phase1FCheckoutApiTest.discontinuedSimpleProduct_isUnavailableUntilRestored_withoutCreatingOrder",
+      "Phase1FCheckoutApiTest.discontinuedVariantProduct_isUnavailableUntilRestored_withoutCreatingOrder",
+      "Phase1FCheckoutApiTest.checkout_priceIncreaseWithoutKey_refreshesCartAndAllowsReviewedRetry",
+      "Phase1FCheckoutApiTest.checkout_priceDecrease_usesCurrentUnitRegularAndSalePrices",
+      "Phase1FCheckoutApiTest.checkout_priceIncreaseWithUnavailableLine_rollsBackSnapshotsAndReservation",
+      "Phase1ECartApiTest.discontinuedCartLine_canBeReducedAndRemoved",
+      "Phase1ECartApiTest.draftProductAfterAdd_cannotIncreaseCartQuantity"
+    ],
+    "implementation": [
+      "Discontinued/publish gates reject add and quantity increases; discontinued lines appear unavailable and checkout revalidation rejects them. Reducing/removing discontinued lines remains allowed.",
+      "A private PriceReviewRequiredException subtype alone uses noRollbackFor. Only after every item passes current availability checks, persist detached unit/regular/sale snapshots and cart totals, then delete this invocation newly created uncompleted reservation by exact UUID and return unchanged409 error envelope.",
+      "No order/payment/notification writes occur before that narrow exception. Other stock/validation/storage conflicts keep rollback semantics; mixed increased+discontinued regression preserves original cart price and leaves no order/payment/reservation.",
+      "Ordinary GET snapshot expectations and existing idempotent completed-order replay assertions are preserved. Price decreases use current unit/regular/sale values for the order snapshot."
+    ],
+    "limitations": [
+      "MockMvc/H2 profile is the existing repository test profile. It has rate limiting disabled, isolated limiter tests cover policy separately. This is not an HTTP load/performance acceptance run.",
+      "No real PostgreSQL runtime execution of these two new scenarios by this agent; Lead should extend/execute hosted real-stack functional checks.",
+      "This agent implemented the repairs after independent source discovery; Lead must independently review/integrate final diff.",
+      "No migration, deployment, shared-shop database write, commit or push performed by this agent.",
+      "Missing-selected-variant business rule and concurrent different-key checkout remain unresolved; no speculative behavior change."
+    ],
+    "rollback": "Revert the four scoped source/test changes and matching contract clarification in a reviewed release. No migration/data repair needed; refreshed carts are ordinary latest-price snapshots. Production has not been deployed.",
+    "performance": "No after latency measurement claimed. Guards read an already-loaded flag; ordinary cart GET gains no additional query from this fix."
+  }
+}
