@@ -2,6 +2,15 @@
 
 Tiếp nối [báo cáo 12/11](PERFORMANCE_OPTIMIZATION_2026-11-12.md). Đây là kết quả sửa source, kiểm thử và benchmark thành phần; **chưa nghiệm thu hiệu năng toàn hệ thống, chưa triển khai production**. Không dùng số liệu container hiện tại để gọi là After của source mới. Bốn tối ưu đợt trước được giữ nguyên và kiểm tra regression, không ghi thành thành quả mới.
 
+Cập nhật15/11: backend hiện tại đã đạt1588/1588 ở localUTC và hai lượtGitHub;
+frontend805/1245 cùng lint/build đã đạt, được reuse khi có proof source không đổi.
+Run43677437126 dừng tại hạ tầng. Bản sửa MinIO tại1470d418 đã dựng thành công ba
+dịch vụ dữ liệu trong [CI43678807306](https://github.com/vominhduc11/bigbike/actions/runs/43678807306),
+nhưng cổng host không mở trên mạng internal. Bản sửa chuyển tiếp TCP đã đạt54/54
+kiểm thử công cụ và chuẩn bị chạy lại hệ thống thật.
+Chưa có số đo API/browser/media Before/After hệ thống; các số và trạng thái ở những
+đoạn theo ngày bên dưới là lịch sử, không thay kết luận hiện tại này.
+
 ## 1. Workspace và môi trường
 
 - Đã đọc AGENTS.md, hướng dẫn web, báo cáo và bằng chứng đợt trước. Giữ toàn bộ thay đổi có trước; không reset, checkout đè hoặc stash; main/index giữ nguyên. Ngày 14/11 owner yêu cầu tiếp tục bước công bố snapshot/CI trên nhánh riêng đã nêu. `evidence/performance-2026-11-13/workspace-start.json` ghi HEAD và 2.991 dấu kiểm tệp lúc bắt đầu, không gồm env bí mật/build bị Git bỏ qua.
@@ -16,7 +25,7 @@ Tiếp nối [báo cáo 12/11](PERFORMANCE_OPTIMIZATION_2026-11-12.md). Đây l�
 | Backend/API/migration | Sửa chuỗi migration bài viết, bỏ phụ thuộc seed ngoài ở ca catalog; diễn tập schema trống; kiểm kê controller/tác vụ nền | Không coi danh sách annotation là endpoint đã đo |
 | Database/catalog | Đo và tối ưu sắp tên; chứng minh SQL/ICU khác thứ tự hiện tại; phát hiện/sửa race làm mới cache; đọc thêm các đường query rủi ro | Chưa đo tải DB/API; chưa xử lý hết đường materialize |
 | Website/Admin/media | Kiểm kê route/màn; kiểm thử tập trung; profile và giảm giải mã ảnh lặp; kiểm tra SEO/tracking/feed bằng unit và source | Không có CWV/INP/Lighthouse mới từ candidate chạy thật |
-| Lead infrastructure/benchmark | Hoàn thiện source workflow, stack CI thật, fixture, baseline, API/browser/media workload, chốt an toàn và artifact | Đang chuẩn bị publish nhánh CI riêng; chưa có kết quả remote |
+| Lead infrastructure/benchmark | Đã publish nhánhCI riêng; regression chạy từ xa; sửa fixture, cache collector, điều kiệnjob và nguồn MinIO theo bằng chứng | Lần dựng stack đầu dừng; chưa có đo hệ thống thành công |
 | QA độc lập | Database agent rà media/migration/CI/dataset; backend agent rà cấu hình/lifecycle; frontend agent rà browser | QA của công cụ CI là source review và test helper, không thay lần chạy stack thật |
 
 Kiểm kê từ code hiện tại, có trạng thái riêng từng mục:
@@ -290,3 +299,20 @@ và ingress/baseline đạt; chờ chạy thật để xác minh. Bằng chứng
 QA độc lập tải/kiểm118849720byte và --version đạt; SHA256 binary phát hành còn
 trùng hoàn toàn /usr/bin/minio trong container shop (chỉ đọc sau dockerps). Vì vậy
 server executable không đổi byte; runtimebase vẫn là khác biệt cần ghi nhận.
+
+### CI15/11: MinIO đã dựng thành công, sửa đường kết nối công cụ đo
+
+Run43678807306/1470d418: backend1588/1588; officialstorage-image đạt checksum và
+version, backendimagebuild đạt, cảPostgres/Redis/MinIO healthy. Tạo bucket từ host
+bị ConnectionRefused tại localhost19000. ExactDocker28.0.4 libnetwork/endpoint.go
+không ProgramExternalConnectivity khi internal=true; container healthy không
+chứng minh cổng host đã mở. Giữ mạng không có đường ra ngoài, bỏ ports vô hiệu;
+chuẩn bị TCP relay loopback tới đúngIP thuộccontainer/dựán/mạng đã kiểm chứng.
+Không thêm egressbridge, không sửa firewall/daemon, không đổi app/quyền/rate. Cùng
+relay trên hai bản và ghi giới hạn hop mạng thêm. Chưa có số đo ứng dụng.
+Bằng chứng ci-internal-network-2026-11-15.json; QA tiếp theo kiểm protocol/halfclose/
+lifecycle/đích cấm bằng helper-ownedTCP fixture, không mockứngdụng trong phép đo.
+Sau tích hợp relay:54/54Python và6/6Node đạt; nativeTCP1MiB giữ nguyên bytes,
+full-duplex/streaming trướcEOF/halfclose/capacity/retarget/shutdown đạt. Compose
+render đủ7service, internal=true, khôngportbinding vôhiệu; ingress/negativecontrol
+và baseline3file đạt. Đây là test công cụ truyền tải, chưa phải latency BigBike.

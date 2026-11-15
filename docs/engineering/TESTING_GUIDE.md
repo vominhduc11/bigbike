@@ -590,3 +590,20 @@ Compose config, health/resource errors); never publish captured stderr, command
 arguments, generated credentials or environment. Preserve those categories in the
 sanitized arm status. A registry error is an environment dependency failure, not
 an API performance result. Do not substitute a different storage release silently.
+
+Host access to the internal-only lab network (15/11): Docker28.0.4 intentionally
+skips port programming for internal networks (`moby/libnetwork/endpoint.go`,
+`if !n.internal`). Keep that network internal; do not add an egress bridge or change
+daemon/firewall settings. The hosted runner may access owned container IPv4s directly
+as documented by Docker network internal mode. Use bounded host TCP byte relays
+bound only to127.0.0.1:19000 (MinIO9000) and18080/13000/14000 (owned nginx80/81/82).
+Remove the ineffective Compose published ports (Postgres is accessed by exec only).
+Before each relay, verify hosted CI, exact owned project/service/running container,
+only the owned internal network, matching network project/subnet and assignedIP.
+Refresh nginx relays after controlled CI-only recreation; close all relays before
+removing the owned stack. No request/header/auth/cookie/body rewrite or application
+responses originate in relays; normal rate/auth/business gates remain in real apps.
+Record this extra transport hop in both arms as a lab limitation, not production
+network latency. Bound sockets/connections and publish counters only. Verify raw
+bytes, half-close/streaming, bidirectionality and lifecycle with helper-owned TCP
+fixtures; these fixtures never enter the BigBike application or measured workload.

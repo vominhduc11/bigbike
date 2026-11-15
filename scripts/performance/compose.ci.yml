@@ -8,7 +8,6 @@ services:
       POSTGRES_PASSWORD: ${PERF_PASSWORD:?CI credential required}
     command: [postgres, -c, shared_preload_libraries=pg_stat_statements, -c, shared_buffers=128MB, -c, max_connections=100]
     mem_limit: 1g
-    ports: ["127.0.0.1:15432:5432"]
     tmpfs: [/var/lib/postgresql/data]
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U perf -d bigbike_perf"]
@@ -31,7 +30,6 @@ services:
       MINIO_ROOT_USER: perf_minio
       MINIO_ROOT_PASSWORD: ${PERF_PASSWORD:?CI credential required}
     mem_limit: 512m
-    ports: ["127.0.0.1:19000:9000"]
     tmpfs: [/data]
     healthcheck:
       test: [CMD, curl, -f, http://localhost:9000/minio/health/live]
@@ -108,7 +106,6 @@ services:
     mem_limit: 128m
     volumes:
       - ${PERF_SCRIPT_DIR:?CI config directory required}/api.ci.conf:/etc/nginx/conf.d/default.conf:ro
-    ports: ["127.0.0.1:18080:80", "127.0.0.1:13000:81", "127.0.0.1:14000:82"]
     depends_on: [bigbike-backend]
 networks:
   default:

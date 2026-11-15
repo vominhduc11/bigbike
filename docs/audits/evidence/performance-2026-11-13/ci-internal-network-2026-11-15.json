@@ -1,0 +1,59 @@
+{
+  "run": 43678807306,
+  "job": 132705779574,
+  "commit": "1470d4184090250437e4b52860feec36420dbcef",
+  "backend": {
+    "passed": 1588,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "passed": [
+    "native browser cache/egress proof",
+    "full frozen source attribution",
+    "official MinIO binary image checksum/version build",
+    "backend production image build",
+    "docker compose up --wait postgres redis minio"
+  ],
+  "failure": {
+    "phase": "first bucket setup",
+    "request_origin": "http://localhost:19000",
+    "type": "URLError ConnectionRefusedError",
+    "application_measurements_collected": false
+  },
+  "root_cause": {
+    "docker_version": "28.0.4",
+    "internal_network_port_programming": "skipped by exact engine source when n.internal",
+    "engine_source": "https://github.com/moby/moby/blob/v28.0.4/libnetwork/endpoint.go#L698",
+    "host_internal_ip_access_documentation": "https://docs.docker.com/reference/cli/docker/network/create/#network-internal-mode---internal"
+  },
+  "fix": {
+    "network_remains_internal": true,
+    "no_egress_bridge_or_daemon_changes": true,
+    "host_transport": "bounded loopback TCP byte relay to inspected, exactly owned internal container IPv4",
+    "fixed_ports": {
+      "minio": {
+        "19000": 9000
+      },
+      "api-proxy": {
+        "18080": 80,
+        "13000": 81,
+        "14000": 82
+      }
+    },
+    "normal_auth_permissions_rate_limits_retained": true,
+    "application_response_mocking": false,
+    "same_transport_both_arms": true,
+    "production_configuration_changed": false
+  },
+  "full_system_acceptance": false,
+  "checks": {
+    "python_helpers": 54,
+    "node_helpers": 6,
+    "native_TCP": "1MiB binary/full duplex/pre-EOF streaming/half-close/bounded capacity/retarget/shutdown passed",
+    "compose_render": "7 real services, internal network, no ignored published ports",
+    "ingress_self_test": "passed including two negative controls",
+    "baseline_attribution_files": 3,
+    "application_tests": "unchanged; remote latest1588/1588, fronts proven identical805/1245"
+  }
+}

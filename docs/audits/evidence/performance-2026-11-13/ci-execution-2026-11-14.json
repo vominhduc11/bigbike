@@ -95,6 +95,20 @@
     "no_current_full_stack_latency_result": true
   },
   "current_run": {
+    "id": 43678807306,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43678807306",
+    "commit": "1470d4184090250437e4b52860feec36420dbcef",
+    "boundary": "passed46Python/6Node/baseline/ingress; verified frontend reuse",
+    "frontend": "source-bound805/1245 lint/build reuse; not newly executed",
+    "backend": "fresh1588/1588;0fail/error/skip; verify/package passed",
+    "storage_fix": "same official release binary, byte-identical to shop executable, different documented CI runtimebase",
+    "full_system_acceptance": false,
+    "isolated_stack_job_id": 132705779574,
+    "isolated_stack_status": "failed after real infra became healthy: bucket setup could not reach host port19000",
+    "storage_image_build": "passed exact official release binary checksum and version",
+    "next_fix": "host loopback TCP byte relay to strictly owned internal IPv4, keep no-egress network"
+  },
+  "previous_infrastructure_run": {
     "id": 43677437126,
     "url": "https://github.com/vominhduc11/bigbike/actions/runs/43677437126",
     "commit": "7ee514281ffb7f19825f6fe0dbc481cce2c29eb5",

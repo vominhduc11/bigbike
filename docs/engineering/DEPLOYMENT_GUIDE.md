@@ -1062,7 +1062,7 @@ migration trước khi ghi, tránh ghi đè thay đổi mới; không xóa/sửa
 hoặc sửa migration lịch sử. Không đưa snapshot audit/PII vào báo cáo công khai.
 
 
-### Môi trường nghiệm thu CI tách biệt — chuẩn bị 13/11/2026, chưa chạy từ xa
+### Môi trường nghiệm thu CI tách biệt — từ 13/11/2026, chưa nghiệm thu hệ thống
 
 Cấu hình `scripts/performance/compose.ci.yml` chỉ dành cho GitHub-hosted runner;
 không kế thừa root Compose hay `.env`. Mạng nội bộ, PostgreSQL/bucket/account riêng,
@@ -1108,3 +1108,12 @@ image đó ở cả hai bản đo; kiểm binary --version. Runtime Debian bookw
 curl/CA thay UBI-micro của image shop: ghi rõ giới hạn đại diện, không gọi đây là
 benchmark image production. Không tải mirror không rõ nguồn hoặc đổi sang release
 mới để vượt lỗi. Binary/license vẫn từ release chính thức; không công bố image CI.
+
+CI15/11/Docker28: internal-network không lập published-port, dù container healthy.
+Giữ nguyên mạng nội bộ không có đường ra ngoài; runner chuyển tiếp TCP từ các cổng
+loopback đã quy định tới IP container riêng đã đối chiếu nhãn dự án/mạng/subnet.
+Không đổi firewall/daemon, không thêm mạng có internet, không chuyển tiếp tới shop.
+MinIO/API/web/admin vẫn thật, nguyên xác thực/quyền/rate-limit; relay không đọc hay
+sửa nội dung ứng dụng. Hai lượt dùng cùng đường truyền này; số đo có thêm một hop
+trên host, không đại diện TLS/CDN/network production. PostgreSQL chỉ qua exec,
+không cần cổng host. Xem kiểm chứng và giới hạn tại TESTING_GUIDE.

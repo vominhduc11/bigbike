@@ -26,6 +26,7 @@ from admin_smoke import run_smoke
 from compare_results import compare
 from commerce_checks import check_commerce
 from large_catalog import seed_large, verify_large_pages, LargeCatalogFailure
+from loopback_relay import LoopbackRelays
 from revalidation_checks import verify_revalidation
 from s3_setup import setup as setup_bucket
 from stack_checks import functional_checks, login, media_checks, NoRedirect, seed
@@ -148,6 +149,18 @@ class Stack:
                   'PERF_FIXTURE_DIR': str(self.migrations), 'PERF_SCRIPT_DIR': str(root / 'scripts/performance')}
         self.write_env()
         self.fixture_dir = fixtures_dir
+        self.relays = LoopbackRelays(self.project, self.inspect_service, self.inspect_network)
+
+    def inspect_service(self, service):
+        ids = self.compose('ps', '-q', service).split()
+        if len(ids) != 1 or not re.fullmatch(r'[a-f0-9]{12,64}', ids[0]):
+            raise RuntimeError('Expected exactly one owned running service')
+        return json.loads(run(['docker', 'inspect', ids[0]]))
+
+    def inspect_network(self, name):
+        if name != self.project + '_default':
+            raise RuntimeError('Unexpected CI network')
+        return json.loads(run(['docker', 'network', 'inspect', name]))
 
     def write_env(self):
         self.env_file.write_text(''.join(f'{key}={value}\n' for key, value in self.values.items()))
@@ -429,6 +442,10 @@ def main():
                 stack.started = True
                 phase('infrastructure-start')
                 stack.compose('up', '-d', '--wait', 'postgres', 'redis', 'minio')
+                phase('owned-loopback-storage-transport')
+                stack.relays.refresh('minio')
+                wait_ready('http://localhost:19000/minio/health/live', seconds=30)
+                phase('synthetic-bucket-setup')
                 setup_bucket(stack.password)
                 if dataset is not None:
                     write_json(arm_output / 'dataset-identity.json', restore(stack, dataset))
@@ -437,6 +454,7 @@ def main():
                     stack.sql('CREATE EXTENSION IF NOT EXISTS pg_stat_statements')
                 phase('real-schema-and-api-fixtures')
                 stack.compose('up', '-d', 'bigbike-backend', 'api-proxy')
+                stack.relays.refresh('api-proxy')
                 wait_ready('http://localhost:18080/actuator/health')
                 api = login('http://localhost:18080', stack.password)
                 if dataset is None:
@@ -460,6 +478,7 @@ def main():
                     stack.enable_web_revalidation()
                     stack.compose('up', '-d', '--no-deps', '--force-recreate', '--wait', 'redis')
                     stack.compose('up', '-d', '--no-deps', '--force-recreate', 'bigbike-backend', 'api-proxy')
+                    stack.relays.refresh('api-proxy')
                     wait_ready('http://localhost:18080/actuator/health')
                     api = login('http://localhost:18080', stack.password)
                 fixture_file = private / 'api-fixtures.json'
@@ -484,6 +503,7 @@ def main():
                     'limits': {parts[0]: {'memory_bytes': int(parts[1]), 'nano_cpus': int(parts[2])}
                               for row in limit_rows for parts in [row.split('|')]},
                     'internal_web_revalidation': 'enabled, one real owned web replica, generated shared CI secret',
+                    'host_transport': 'bounded loopback TCP byte relay to owned internal container IPv4; same extra hop in both arms; not shipping network latency',
                     'configuration_sha256': hashlib.sha256(json.dumps({key: value for key, value in stack.values.items()
                         if key not in ('PERF_TAG', 'PERF_FIXTURE_DIR', 'PERF_SCRIPT_DIR')}, sort_keys=True).encode()).hexdigest(),
                     'backend_java': stack.compose('exec', '-T', 'bigbike-backend', 'java', '--version').splitlines()[0],
@@ -540,6 +560,8 @@ def main():
                 raise
             finally:
                 write_json(arm_output / 'status.json', status)
+                stack.relays.close()
+                write_json(arm_output / 'transport.json', stack.relays.stats())
                 # Only the exact guarded, ephemeral CI-owned project is removed.
                 if stack.started:
                     stack.compose('down', '--volumes', '--remove-orphans', '--timeout', '10')
