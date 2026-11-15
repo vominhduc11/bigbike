@@ -607,3 +607,18 @@ Record this extra transport hop in both arms as a lab limitation, not production
 network latency. Bound sockets/connections and publish counters only. Verify raw
 bytes, half-close/streaming, bidirectionality and lifecycle with helper-owned TCP
 fixtures; these fixtures never enter the BigBike application or measured workload.
+
+Runtime failure evidence: before cleaning up a failed owned stack, publish only
+allowlisted service state/exit/OOM/health fields and fixed error-signature codes
+derived from at most80 private log lines per backend/web container. No raw logs,
+error messages, environment, request bodies, credentials or customer fields may
+be exported. A real GET from the owned web container to its expected internal
+public API may report status/time and fixed field types/counts for an owned fixture
+only; never export response values. Failure diagnostics do not replace functional
+or latency gates and must not mask the original exception or delay cleanup.
+
+Revalidation fixture name edits must satisfy the existing bilingual write contract
+(TRANSLATION_RULE_002): read the owned Admin detail and preserve its nonblank
+translations.en.name in both Vietnamese-name PATCH and restore. Missing English
+fixture content is a setup failure; do not relax validation or synthesize a rule.
+This independent harness correction does not diagnose an earlier PDP GET500.

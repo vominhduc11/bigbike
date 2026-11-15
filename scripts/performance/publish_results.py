@@ -9,7 +9,7 @@ from pathlib import Path
 
 NAMES = frozenset(('reused-frontend.json', 'bigbike-admin.json', 'bigbike-web.json', 'backend.json',
     'toolchain.json', 'fixture-identities.json', 'source-identities.json',
-    'status.json', 'transport.json', 'dataset-identity.json', 'build-identity.json', 'runtime-identity.json',
+    'status.json', 'transport.json', 'failure-diagnostics.json', 'dataset-identity.json', 'build-identity.json', 'runtime-identity.json',
     'functional.json', 'commerce.json', 'revalidation.json', 'media.json', 'browser.json', 'admin-smoke.json',
     'lighthouse.json', 'api.json', 'resources.json', 'pool-before.json', 'pool-after.json',
     'comparison.json', 'comparison-status.json', 'browser-egress-native.json', 'large-seed.json', 'large-catalog-pages.json'))

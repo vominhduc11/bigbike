@@ -27,6 +27,7 @@ from compare_results import compare
 from commerce_checks import check_commerce
 from large_catalog import seed_large, verify_large_pages, LargeCatalogFailure
 from loopback_relay import LoopbackRelays
+from runtime_diagnostics import collect as collect_failure_diagnostics
 from revalidation_checks import verify_revalidation
 from s3_setup import setup as setup_bucket
 from stack_checks import functional_checks, login, media_checks, NoRedirect, seed
@@ -34,6 +35,28 @@ from stack_checks import functional_checks, login, media_checks, NoRedirect, see
 
 def write_json(path, value):
     Path(path).write_text(json.dumps(value, indent=2) + '\n')
+
+
+def finalize_arm(stack, output, status, original_error=False):
+    """Always attempt both owned cleanups, even if evidence storage fails."""
+    failures = []
+    for code, operation in (
+        ('relay_shutdown_failed', stack.relays.close),
+        ('owned_stack_cleanup_failed', lambda: stack.compose('down', '--volumes', '--remove-orphans', '--timeout', '10') if stack.started else None),
+        ('transport_write_failed', lambda: write_json(output / 'transport.json', stack.relays.stats())),
+    ):
+        try:
+            operation()
+        except Exception:
+            failures.append(code)
+    if failures:
+        status.update(complete=False, completion_failure_codes=failures)
+    try:
+        write_json(output / 'status.json', status)
+    except Exception:
+        failures.append('status_write_failed')
+    if failures and not original_error:
+        raise RuntimeError('CI arm cleanup or evidence recording failed')
 
 
 def bounded_resources(stack, expected_services=7):
@@ -62,7 +85,7 @@ class CommandFailure(RuntimeError):
         super().__init__(f'Command failed: {executable}; exit={exit_code}; categories={",".join(categories)}')
 
 
-def run(command, *, cwd=None, env=None, timeout=1200):
+def run(command, *, cwd=None, env=None, timeout=1200, combine_output=False):
     process = subprocess.run(command, cwd=cwd, env=env or clean_environment(),
                              capture_output=True, text=True, timeout=timeout)
     if process.returncode:
@@ -88,7 +111,7 @@ def run(command, *, cwd=None, env=None, timeout=1200):
             ('assertion', r'AssertionError'),
         ) if re.search(pattern, combined, re.I)]
         raise CommandFailure(Path(command[0]).name, process.returncode, categories)
-    return process.stdout
+    return process.stdout + process.stderr if combine_output else process.stdout
 
 
 def tracked_identities(root):
@@ -408,7 +431,7 @@ def main():
         write_json(output / 'source-identities.json', {'commit': run(['git', 'rev-parse', 'HEAD'], cwd=root).strip(),
             'attributed_differences': sorted(differences), 'arms': identities})
         password, jwt = secrets.token_urlsafe(32), secrets.token_urlsafe(48)
-        dataset = None
+        dataset, fixtures = None, None
         for arm, checkout in arms.items():
             arm_output = output / arm
             arm_output.mkdir()
@@ -557,14 +580,17 @@ def main():
                 status.update(failure_type=type(error).__name__)
                 if isinstance(error, CommandFailure):
                     status['command_failure_categories'] = error.categories
+                try:
+                    diagnostics = collect_failure_diagnostics(stack, run, fixtures)
+                except Exception:
+                    diagnostics = {'collection_failed': True, 'raw_diagnostics_exported': False}
+                try:
+                    write_json(arm_output / 'failure-diagnostics.json', diagnostics)
+                except Exception:
+                    pass  # Evidence storage must never mask the original failure.
                 raise
             finally:
-                write_json(arm_output / 'status.json', status)
-                stack.relays.close()
-                write_json(arm_output / 'transport.json', stack.relays.stats())
-                # Only the exact guarded, ephemeral CI-owned project is removed.
-                if stack.started:
-                    stack.compose('down', '--volumes', '--remove-orphans', '--timeout', '10')
+                finalize_arm(stack, arm_output, status, original_error=sys.exc_info()[0] is not None)
     compare(output)
     write_json(output / 'comparison-status.json', {'both_arms_completed': True,
         'field_INP': 'not measured', 'production_capacity': 'not certified',

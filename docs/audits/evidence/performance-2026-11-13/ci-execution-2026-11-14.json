@@ -95,6 +95,34 @@
     "no_current_full_stack_latency_result": true
   },
   "current_run": {
+    "id": 43679936664,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43679936664",
+    "commit": "216deb709456e4fb72ef7e32ca74e3e318aae99b",
+    "boundary": "passed54Python/6Node/baseline/ingress; frontend source-bound reuse",
+    "frontend": "805/1245 lint/build source-bound reuse; not newly executed",
+    "backend": "fresh1588/1588;0fail/error/skip;verify/package passed",
+    "secret_artifact_guard": {
+      "id": 43679936515,
+      "conclusion": "success"
+    },
+    "fix": "owned internal IPv4 loopback byte relays; same blocked-egress network",
+    "full_system_acceptance": false,
+    "isolated_stack_job_id": 132709031884,
+    "isolated_stack_status": "failed first PDP GET500 after full real stack,10kseed+restore+productionfronts+24paginationreadchecks passed",
+    "partial_evidence": "ci-real-stack-partial-2026-11-15.json"
+  },
+  "previous_infrastructure_run": {
+    "id": 43677437126,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43677437126",
+    "commit": "7ee514281ffb7f19825f6fe0dbc481cce2c29eb5",
+    "frontend": "verified reuse f85 source-identical; not newly executed",
+    "backend": "fresh1588/1588;0fail/error/skip; verify/package passed",
+    "isolated_stack_job_id": 132701770410,
+    "isolated_stack_status": "failed at first infrastructure startup; no API/browser/media latency collected",
+    "full_system_acceptance": false,
+    "next_fix": "Pinned official MinIO binary image; fixed-category startup diagnostics"
+  },
+  "previous_minio_fixed_run": {
     "id": 43678807306,
     "url": "https://github.com/vominhduc11/bigbike/actions/runs/43678807306",
     "commit": "1470d4184090250437e4b52860feec36420dbcef",
@@ -107,16 +135,5 @@
     "isolated_stack_status": "failed after real infra became healthy: bucket setup could not reach host port19000",
     "storage_image_build": "passed exact official release binary checksum and version",
     "next_fix": "host loopback TCP byte relay to strictly owned internal IPv4, keep no-egress network"
-  },
-  "previous_infrastructure_run": {
-    "id": 43677437126,
-    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43677437126",
-    "commit": "7ee514281ffb7f19825f6fe0dbc481cce2c29eb5",
-    "frontend": "verified reuse f85 source-identical; not newly executed",
-    "backend": "fresh1588/1588;0fail/error/skip; verify/package passed",
-    "isolated_stack_job_id": 132701770410,
-    "isolated_stack_status": "failed at first infrastructure startup; no API/browser/media latency collected",
-    "full_system_acceptance": false,
-    "next_fix": "Pinned official MinIO binary image; fixed-category startup diagnostics"
   }
 }

@@ -1,0 +1,1470 @@
+{
+  "run": 43679936664,
+  "commit": "216deb709456e4fb72ef7e32ca74e3e318aae99b",
+  "job": 132709031884,
+  "arm": "before",
+  "packed_bundle_sha256": "aaecdfa56a819bcfd8b0dfe71b59eb5f2307f3fb3e3cca8faeb4125d85cc251b",
+  "note": "Partial real stack evidence; no After; functional page request timings are not load P95 or an optimization comparison",
+  "reports": {
+    "before/build-identity.json": {
+      "images": {
+        "admin": "sha256:c61a00ac402b097f215b90bef175c1d6af5829d2bbe525feecbeb4cb413d6e92",
+        "backend": "sha256:806c89370b99bcb56d77eae9746f478ad07d4032c000bdb8cd57a46ee7bb8a3a",
+        "web": "sha256:d1bdf913d0d2d83ad23a6ad2d3792a012bd54ce87876b65db748c0b2c9dc1ebb"
+      },
+      "jar_sha256": "9acb6444ee833352e803da8e23913f6b8e829233ff8b06ee9793ad1fec875171"
+    },
+    "before/dataset-identity.json": {
+      "database_archive_bytes": 2303121,
+      "database_archive_sha256": "72ccfc97d11480a2234c1ebdad8769c47c7f38b011b9ab8df83a7f5360382a73",
+      "fixture_media_records": 1,
+      "fixture_product_count": 40,
+      "large_catalog_count": 10000,
+      "media_manifest_sha256": "01e8e7c8a8cd19d7fa7d964f292bb4182b43edb90abbfe1a0101c62437af05ce",
+      "media_objects": 3,
+      "media_total_bytes": 123809
+    },
+    "before/large-catalog-pages.json": {
+      "complete": true,
+      "count": 10000,
+      "elapsed_seconds": 27.21,
+      "exact_total_verified": true,
+      "no_overlap_within_direction": true,
+      "page_identities": [
+        {
+          "count": 20,
+          "direction": "asc",
+          "ids_sha256": "80155b1e7c0b15ca93c8f0907cf33d032dfde9358042b30be89ea736a9aa78d2",
+          "page": 1,
+          "page_size": 20,
+          "sha256": "6e0871dd0ac1e7ecba13d666df285eafc9f44b598b3266922363831dd5c036b2",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "asc",
+          "ids_sha256": "99ae02f15ab8bb5ddcad406c207042999b12c70579ed2aa84c19381c6822dcc3",
+          "page": 2,
+          "page_size": 20,
+          "sha256": "207328f5e21ff6af6e02efafdbc422965b5376b88d9952330409926f974fc64a",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "asc",
+          "ids_sha256": "48676680ff90b1d4de1c1767f99e7fc044396488b2598cb6b871bafef2467420",
+          "page": 250,
+          "page_size": 20,
+          "sha256": "9a88959ace2d935d484d0d40867203ae390671256845ac1d034cd5eb012069d7",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "asc",
+          "ids_sha256": "325107e4b1f3e722b792ffd7e6a85df5de6971837f1e9eec0427064ebed8981f",
+          "page": 251,
+          "page_size": 20,
+          "sha256": "b6eaddf4086d7c57c5b40872b40e1e4101b62fcaa5f066acf374b8bfd3512a96",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "asc",
+          "ids_sha256": "577e020d8048fae09f9dc0426e2868daed1932c0183ec718ca04719e4af53bf5",
+          "page": 499,
+          "page_size": 20,
+          "sha256": "28f7cf19f9599c61aaa0b4e816d093afbf8e612f4de9a9a4dedcd492a7656b7c",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "asc",
+          "ids_sha256": "e289baa3dda8a66827ca1cd20e9b56c3f670339ba7c4453418eb9c6d786d86ff",
+          "page": 500,
+          "page_size": 20,
+          "sha256": "ba7a2c244615c22174117089f116849612ef4e327b372fd212aa540eab4f341d",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "desc",
+          "ids_sha256": "43960c92687fce66d8290ebe93731fe76d187f25e800fdf8399846881fd645c5",
+          "page": 1,
+          "page_size": 20,
+          "sha256": "1d9a788034d4b03f4c620937c1c402f8b721c1ecda508869c00ef4258601f063",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "desc",
+          "ids_sha256": "f977435acc3ebeb3a232d9123148f2c41b417f73aad11cd004fc8d78d98259bc",
+          "page": 2,
+          "page_size": 20,
+          "sha256": "d2b93e7a69f2eee1762e48a752dadbdd724881e5a9e4c338f640550f41a2adb4",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "desc",
+          "ids_sha256": "90cf902a99303f934287f4be308b44055c586c7be1bbb18065390e71a2c335ee",
+          "page": 250,
+          "page_size": 20,
+          "sha256": "167edc842dc2f9485af85a82bc13bc8ba329be0a6d0b56e2701edc098a42f5d3",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "desc",
+          "ids_sha256": "aaecba91a25afad8d202ca174f95b81a084454e69d4d6416f703a355c1d6da80",
+          "page": 251,
+          "page_size": 20,
+          "sha256": "4b992cc5a039331906149101262287db5ff0a6b47086d92115ea7efdb5e7abae",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "desc",
+          "ids_sha256": "4f8ba999f948c1f8e2575222cea71cb5d2a0d8d3492647e677ca3cdca0af2b4e",
+          "page": 499,
+          "page_size": 20,
+          "sha256": "68774ae4575f543aa241c93ffddf2a32f523bbcdecf3d8adf2f3ce04f14d45aa",
+          "total": 10000
+        },
+        {
+          "count": 20,
+          "direction": "desc",
+          "ids_sha256": "ec9b1fd5b6aa0efffe01ca9595321dc2d3bb3a07a4db872b786ff5bcb19d2585",
+          "page": 500,
+          "page_size": 20,
+          "sha256": "89a8069232430d085afe559d8a86610c5f71e2103dafbfaa20c1685d8e5c860f",
+          "total": 10000
+        }
+      ],
+      "repeated_pages_stable": true,
+      "request_wall_ms": [
+        {
+          "direction": "asc",
+          "ms": 1441.372,
+          "page": 1,
+          "repeat": 1
+        },
+        {
+          "direction": "asc",
+          "ms": 980.544,
+          "page": 1,
+          "repeat": 2
+        },
+        {
+          "direction": "asc",
+          "ms": 798.182,
+          "page": 2,
+          "repeat": 1
+        },
+        {
+          "direction": "asc",
+          "ms": 573.191,
+          "page": 2,
+          "repeat": 2
+        },
+        {
+          "direction": "asc",
+          "ms": 619.895,
+          "page": 250,
+          "repeat": 1
+        },
+        {
+          "direction": "asc",
+          "ms": 531.77,
+          "page": 250,
+          "repeat": 2
+        },
+        {
+          "direction": "asc",
+          "ms": 486.989,
+          "page": 251,
+          "repeat": 1
+        },
+        {
+          "direction": "asc",
+          "ms": 543.456,
+          "page": 251,
+          "repeat": 2
+        },
+        {
+          "direction": "asc",
+          "ms": 487.451,
+          "page": 499,
+          "repeat": 1
+        },
+        {
+          "direction": "asc",
+          "ms": 528.721,
+          "page": 499,
+          "repeat": 2
+        },
+        {
+          "direction": "asc",
+          "ms": 484.139,
+          "page": 500,
+          "repeat": 1
+        },
+        {
+          "direction": "asc",
+          "ms": 468.466,
+          "page": 500,
+          "repeat": 2
+        },
+        {
+          "direction": "desc",
+          "ms": 491.594,
+          "page": 1,
+          "repeat": 1
+        },
+        {
+          "direction": "desc",
+          "ms": 480.395,
+          "page": 1,
+          "repeat": 2
+        },
+        {
+          "direction": "desc",
+          "ms": 547.052,
+          "page": 2,
+          "repeat": 1
+        },
+        {
+          "direction": "desc",
+          "ms": 473.73,
+          "page": 2,
+          "repeat": 2
+        },
+        {
+          "direction": "desc",
+          "ms": 463.909,
+          "page": 250,
+          "repeat": 1
+        },
+        {
+          "direction": "desc",
+          "ms": 479.731,
+          "page": 250,
+          "repeat": 2
+        },
+        {
+          "direction": "desc",
+          "ms": 458.209,
+          "page": 251,
+          "repeat": 1
+        },
+        {
+          "direction": "desc",
+          "ms": 443.042,
+          "page": 251,
+          "repeat": 2
+        },
+        {
+          "direction": "desc",
+          "ms": 475.147,
+          "page": 499,
+          "repeat": 1
+        },
+        {
+          "direction": "desc",
+          "ms": 467.688,
+          "page": 499,
+          "repeat": 2
+        },
+        {
+          "direction": "desc",
+          "ms": 469.174,
+          "page": 500,
+          "repeat": 1
+        },
+        {
+          "direction": "desc",
+          "ms": 444.43,
+          "page": 500,
+          "repeat": 2
+        }
+      ],
+      "requests": 24,
+      "sampled_pages": [
+        1,
+        2,
+        250,
+        251,
+        499,
+        500
+      ],
+      "scope": "sampled DRAFT simple-product pages; comparator semantics also require source/unit evidence"
+    },
+    "before/large-seed.json": {
+      "batch": 100,
+      "batches_completed": 100,
+      "committed_rows": 10000,
+      "complete": true,
+      "elapsed_seconds": 404.159,
+      "partial_commit_possible": false,
+      "phase": "complete",
+      "request_wall_ms": [
+        {
+          "batch": 1,
+          "mode": "VALIDATE",
+          "ms": 358.847
+        },
+        {
+          "batch": 1,
+          "mode": "COMMIT",
+          "ms": 1176.734
+        },
+        {
+          "batch": 2,
+          "mode": "VALIDATE",
+          "ms": 219.131
+        },
+        {
+          "batch": 2,
+          "mode": "COMMIT",
+          "ms": 984.522
+        },
+        {
+          "batch": 3,
+          "mode": "VALIDATE",
+          "ms": 169.276
+        },
+        {
+          "batch": 3,
+          "mode": "COMMIT",
+          "ms": 825.816
+        },
+        {
+          "batch": 4,
+          "mode": "VALIDATE",
+          "ms": 184.984
+        },
+        {
+          "batch": 4,
+          "mode": "COMMIT",
+          "ms": 860.301
+        },
+        {
+          "batch": 5,
+          "mode": "VALIDATE",
+          "ms": 167.344
+        },
+        {
+          "batch": 5,
+          "mode": "COMMIT",
+          "ms": 748.997
+        },
+        {
+          "batch": 6,
+          "mode": "VALIDATE",
+          "ms": 148.01
+        },
+        {
+          "batch": 6,
+          "mode": "COMMIT",
+          "ms": 797.537
+        },
+        {
+          "batch": 7,
+          "mode": "VALIDATE",
+          "ms": 147.059
+        },
+        {
+          "batch": 7,
+          "mode": "COMMIT",
+          "ms": 630.06
+        },
+        {
+          "batch": 8,
+          "mode": "VALIDATE",
+          "ms": 121.312
+        },
+        {
+          "batch": 8,
+          "mode": "COMMIT",
+          "ms": 600.477
+        },
+        {
+          "batch": 9,
+          "mode": "VALIDATE",
+          "ms": 142.09
+        },
+        {
+          "batch": 9,
+          "mode": "COMMIT",
+          "ms": 533.494
+        },
+        {
+          "batch": 10,
+          "mode": "VALIDATE",
+          "ms": 136.315
+        },
+        {
+          "batch": 10,
+          "mode": "COMMIT",
+          "ms": 523.525
+        },
+        {
+          "batch": 11,
+          "mode": "VALIDATE",
+          "ms": 143.68
+        },
+        {
+          "batch": 11,
+          "mode": "COMMIT",
+          "ms": 498.293
+        },
+        {
+          "batch": 12,
+          "mode": "VALIDATE",
+          "ms": 146.667
+        },
+        {
+          "batch": 12,
+          "mode": "COMMIT",
+          "ms": 498.931
+        },
+        {
+          "batch": 13,
+          "mode": "VALIDATE",
+          "ms": 147.989
+        },
+        {
+          "batch": 13,
+          "mode": "COMMIT",
+          "ms": 480.335
+        },
+        {
+          "batch": 14,
+          "mode": "VALIDATE",
+          "ms": 143.945
+        },
+        {
+          "batch": 14,
+          "mode": "COMMIT",
+          "ms": 580.335
+        },
+        {
+          "batch": 15,
+          "mode": "VALIDATE",
+          "ms": 164.601
+        },
+        {
+          "batch": 15,
+          "mode": "COMMIT",
+          "ms": 477.477
+        },
+        {
+          "batch": 16,
+          "mode": "VALIDATE",
+          "ms": 154.878
+        },
+        {
+          "batch": 16,
+          "mode": "COMMIT",
+          "ms": 599.856
+        },
+        {
+          "batch": 17,
+          "mode": "VALIDATE",
+          "ms": 177.288
+        },
+        {
+          "batch": 17,
+          "mode": "COMMIT",
+          "ms": 544.135
+        },
+        {
+          "batch": 18,
+          "mode": "VALIDATE",
+          "ms": 158.863
+        },
+        {
+          "batch": 18,
+          "mode": "COMMIT",
+          "ms": 543.239
+        },
+        {
+          "batch": 19,
+          "mode": "VALIDATE",
+          "ms": 159.221
+        },
+        {
+          "batch": 19,
+          "mode": "COMMIT",
+          "ms": 543.022
+        },
+        {
+          "batch": 20,
+          "mode": "VALIDATE",
+          "ms": 148.316
+        },
+        {
+          "batch": 20,
+          "mode": "COMMIT",
+          "ms": 505.046
+        },
+        {
+          "batch": 21,
+          "mode": "VALIDATE",
+          "ms": 165.613
+        },
+        {
+          "batch": 21,
+          "mode": "COMMIT",
+          "ms": 501.635
+        },
+        {
+          "batch": 22,
+          "mode": "VALIDATE",
+          "ms": 163.391
+        },
+        {
+          "batch": 22,
+          "mode": "COMMIT",
+          "ms": 543.721
+        },
+        {
+          "batch": 23,
+          "mode": "VALIDATE",
+          "ms": 148.49
+        },
+        {
+          "batch": 23,
+          "mode": "COMMIT",
+          "ms": 446.941
+        },
+        {
+          "batch": 24,
+          "mode": "VALIDATE",
+          "ms": 144.81
+        },
+        {
+          "batch": 24,
+          "mode": "COMMIT",
+          "ms": 506.943
+        },
+        {
+          "batch": 25,
+          "mode": "VALIDATE",
+          "ms": 162.792
+        },
+        {
+          "batch": 25,
+          "mode": "COMMIT",
+          "ms": 485.491
+        },
+        {
+          "batch": 26,
+          "mode": "VALIDATE",
+          "ms": 198.103
+        },
+        {
+          "batch": 26,
+          "mode": "COMMIT",
+          "ms": 537.446
+        },
+        {
+          "batch": 27,
+          "mode": "VALIDATE",
+          "ms": 184.792
+        },
+        {
+          "batch": 27,
+          "mode": "COMMIT",
+          "ms": 603.904
+        },
+        {
+          "batch": 28,
+          "mode": "VALIDATE",
+          "ms": 198.327
+        },
+        {
+          "batch": 28,
+          "mode": "COMMIT",
+          "ms": 520.731
+        },
+        {
+          "batch": 29,
+          "mode": "VALIDATE",
+          "ms": 199.593
+        },
+        {
+          "batch": 29,
+          "mode": "COMMIT",
+          "ms": 478.73
+        },
+        {
+          "batch": 30,
+          "mode": "VALIDATE",
+          "ms": 192.426
+        },
+        {
+          "batch": 30,
+          "mode": "COMMIT",
+          "ms": 503.613
+        },
+        {
+          "batch": 31,
+          "mode": "VALIDATE",
+          "ms": 202.829
+        },
+        {
+          "batch": 31,
+          "mode": "COMMIT",
+          "ms": 492.859
+        },
+        {
+          "batch": 32,
+          "mode": "VALIDATE",
+          "ms": 202.804
+        },
+        {
+          "batch": 32,
+          "mode": "COMMIT",
+          "ms": 588.862
+        },
+        {
+          "batch": 33,
+          "mode": "VALIDATE",
+          "ms": 209.995
+        },
+        {
+          "batch": 33,
+          "mode": "COMMIT",
+          "ms": 486.049
+        },
+        {
+          "batch": 34,
+          "mode": "VALIDATE",
+          "ms": 207.658
+        },
+        {
+          "batch": 34,
+          "mode": "COMMIT",
+          "ms": 497.551
+        },
+        {
+          "batch": 35,
+          "mode": "VALIDATE",
+          "ms": 181.725
+        },
+        {
+          "batch": 35,
+          "mode": "COMMIT",
+          "ms": 441.169
+        },
+        {
+          "batch": 36,
+          "mode": "VALIDATE",
+          "ms": 177.378
+        },
+        {
+          "batch": 36,
+          "mode": "COMMIT",
+          "ms": 481.336
+        },
+        {
+          "batch": 37,
+          "mode": "VALIDATE",
+          "ms": 184.703
+        },
+        {
+          "batch": 37,
+          "mode": "COMMIT",
+          "ms": 517.563
+        },
+        {
+          "batch": 38,
+          "mode": "VALIDATE",
+          "ms": 192.736
+        },
+        {
+          "batch": 38,
+          "mode": "COMMIT",
+          "ms": 459.882
+        },
+        {
+          "batch": 39,
+          "mode": "VALIDATE",
+          "ms": 186.129
+        },
+        {
+          "batch": 39,
+          "mode": "COMMIT",
+          "ms": 487.438
+        },
+        {
+          "batch": 40,
+          "mode": "VALIDATE",
+          "ms": 184.897
+        },
+        {
+          "batch": 40,
+          "mode": "COMMIT",
+          "ms": 469.949
+        },
+        {
+          "batch": 41,
+          "mode": "VALIDATE",
+          "ms": 188.146
+        },
+        {
+          "batch": 41,
+          "mode": "COMMIT",
+          "ms": 457.177
+        },
+        {
+          "batch": 42,
+          "mode": "VALIDATE",
+          "ms": 192.474
+        },
+        {
+          "batch": 42,
+          "mode": "COMMIT",
+          "ms": 590.328
+        },
+        {
+          "batch": 43,
+          "mode": "VALIDATE",
+          "ms": 200.923
+        },
+        {
+          "batch": 43,
+          "mode": "COMMIT",
+          "ms": 465.175
+        },
+        {
+          "batch": 44,
+          "mode": "VALIDATE",
+          "ms": 197.937
+        },
+        {
+          "batch": 44,
+          "mode": "COMMIT",
+          "ms": 470.863
+        },
+        {
+          "batch": 45,
+          "mode": "VALIDATE",
+          "ms": 201.987
+        },
+        {
+          "batch": 45,
+          "mode": "COMMIT",
+          "ms": 498.138
+        },
+        {
+          "batch": 46,
+          "mode": "VALIDATE",
+          "ms": 191.323
+        },
+        {
+          "batch": 46,
+          "mode": "COMMIT",
+          "ms": 467.57
+        },
+        {
+          "batch": 47,
+          "mode": "VALIDATE",
+          "ms": 234.64
+        },
+        {
+          "batch": 47,
+          "mode": "COMMIT",
+          "ms": 541.953
+        },
+        {
+          "batch": 48,
+          "mode": "VALIDATE",
+          "ms": 247.657
+        },
+        {
+          "batch": 48,
+          "mode": "COMMIT",
+          "ms": 534.445
+        },
+        {
+          "batch": 49,
+          "mode": "VALIDATE",
+          "ms": 219.773
+        },
+        {
+          "batch": 49,
+          "mode": "COMMIT",
+          "ms": 483.151
+        },
+        {
+          "batch": 50,
+          "mode": "VALIDATE",
+          "ms": 207.873
+        },
+        {
+          "batch": 50,
+          "mode": "COMMIT",
+          "ms": 453.034
+        },
+        {
+          "batch": 51,
+          "mode": "VALIDATE",
+          "ms": 213.057
+        },
+        {
+          "batch": 51,
+          "mode": "COMMIT",
+          "ms": 490.942
+        },
+        {
+          "batch": 52,
+          "mode": "VALIDATE",
+          "ms": 211.743
+        },
+        {
+          "batch": 52,
+          "mode": "COMMIT",
+          "ms": 471.941
+        },
+        {
+          "batch": 53,
+          "mode": "VALIDATE",
+          "ms": 231.176
+        },
+        {
+          "batch": 53,
+          "mode": "COMMIT",
+          "ms": 580.503
+        },
+        {
+          "batch": 54,
+          "mode": "VALIDATE",
+          "ms": 208.412
+        },
+        {
+          "batch": 54,
+          "mode": "COMMIT",
+          "ms": 512.975
+        },
+        {
+          "batch": 55,
+          "mode": "VALIDATE",
+          "ms": 236.539
+        },
+        {
+          "batch": 55,
+          "mode": "COMMIT",
+          "ms": 617.626
+        },
+        {
+          "batch": 56,
+          "mode": "VALIDATE",
+          "ms": 242.733
+        },
+        {
+          "batch": 56,
+          "mode": "COMMIT",
+          "ms": 469.309
+        },
+        {
+          "batch": 57,
+          "mode": "VALIDATE",
+          "ms": 226.979
+        },
+        {
+          "batch": 57,
+          "mode": "COMMIT",
+          "ms": 499.553
+        },
+        {
+          "batch": 58,
+          "mode": "VALIDATE",
+          "ms": 222.572
+        },
+        {
+          "batch": 58,
+          "mode": "COMMIT",
+          "ms": 482.439
+        },
+        {
+          "batch": 59,
+          "mode": "VALIDATE",
+          "ms": 245.542
+        },
+        {
+          "batch": 59,
+          "mode": "COMMIT",
+          "ms": 484.459
+        },
+        {
+          "batch": 60,
+          "mode": "VALIDATE",
+          "ms": 247.766
+        },
+        {
+          "batch": 60,
+          "mode": "COMMIT",
+          "ms": 505.596
+        },
+        {
+          "batch": 61,
+          "mode": "VALIDATE",
+          "ms": 241.302
+        },
+        {
+          "batch": 61,
+          "mode": "COMMIT",
+          "ms": 486.021
+        },
+        {
+          "batch": 62,
+          "mode": "VALIDATE",
+          "ms": 241.298
+        },
+        {
+          "batch": 62,
+          "mode": "COMMIT",
+          "ms": 497.647
+        },
+        {
+          "batch": 63,
+          "mode": "VALIDATE",
+          "ms": 241.497
+        },
+        {
+          "batch": 63,
+          "mode": "COMMIT",
+          "ms": 480.535
+        },
+        {
+          "batch": 64,
+          "mode": "VALIDATE",
+          "ms": 234.546
+        },
+        {
+          "batch": 64,
+          "mode": "COMMIT",
+          "ms": 560.274
+        },
+        {
+          "batch": 65,
+          "mode": "VALIDATE",
+          "ms": 241.986
+        },
+        {
+          "batch": 65,
+          "mode": "COMMIT",
+          "ms": 563.482
+        },
+        {
+          "batch": 66,
+          "mode": "VALIDATE",
+          "ms": 239.728
+        },
+        {
+          "batch": 66,
+          "mode": "COMMIT",
+          "ms": 544.201
+        },
+        {
+          "batch": 67,
+          "mode": "VALIDATE",
+          "ms": 250.721
+        },
+        {
+          "batch": 67,
+          "mode": "COMMIT",
+          "ms": 527.237
+        },
+        {
+          "batch": 68,
+          "mode": "VALIDATE",
+          "ms": 269.549
+        },
+        {
+          "batch": 68,
+          "mode": "COMMIT",
+          "ms": 506.279
+        },
+        {
+          "batch": 69,
+          "mode": "VALIDATE",
+          "ms": 251.927
+        },
+        {
+          "batch": 69,
+          "mode": "COMMIT",
+          "ms": 586.222
+        },
+        {
+          "batch": 70,
+          "mode": "VALIDATE",
+          "ms": 241.509
+        },
+        {
+          "batch": 70,
+          "mode": "COMMIT",
+          "ms": 489.831
+        },
+        {
+          "batch": 71,
+          "mode": "VALIDATE",
+          "ms": 255.348
+        },
+        {
+          "batch": 71,
+          "mode": "COMMIT",
+          "ms": 529.133
+        },
+        {
+          "batch": 72,
+          "mode": "VALIDATE",
+          "ms": 255.287
+        },
+        {
+          "batch": 72,
+          "mode": "COMMIT",
+          "ms": 511.593
+        },
+        {
+          "batch": 73,
+          "mode": "VALIDATE",
+          "ms": 254.71
+        },
+        {
+          "batch": 73,
+          "mode": "COMMIT",
+          "ms": 499.045
+        },
+        {
+          "batch": 74,
+          "mode": "VALIDATE",
+          "ms": 274.635
+        },
+        {
+          "batch": 74,
+          "mode": "COMMIT",
+          "ms": 559.265
+        },
+        {
+          "batch": 75,
+          "mode": "VALIDATE",
+          "ms": 253.857
+        },
+        {
+          "batch": 75,
+          "mode": "COMMIT",
+          "ms": 526.582
+        },
+        {
+          "batch": 76,
+          "mode": "VALIDATE",
+          "ms": 255.408
+        },
+        {
+          "batch": 76,
+          "mode": "COMMIT",
+          "ms": 600.936
+        },
+        {
+          "batch": 77,
+          "mode": "VALIDATE",
+          "ms": 260.751
+        },
+        {
+          "batch": 77,
+          "mode": "COMMIT",
+          "ms": 529.376
+        },
+        {
+          "batch": 78,
+          "mode": "VALIDATE",
+          "ms": 273.574
+        },
+        {
+          "batch": 78,
+          "mode": "COMMIT",
+          "ms": 569.724
+        },
+        {
+          "batch": 79,
+          "mode": "VALIDATE",
+          "ms": 299.065
+        },
+        {
+          "batch": 79,
+          "mode": "COMMIT",
+          "ms": 567.669
+        },
+        {
+          "batch": 80,
+          "mode": "VALIDATE",
+          "ms": 282.124
+        },
+        {
+          "batch": 80,
+          "mode": "COMMIT",
+          "ms": 647.998
+        },
+        {
+          "batch": 81,
+          "mode": "VALIDATE",
+          "ms": 299.393
+        },
+        {
+          "batch": 81,
+          "mode": "COMMIT",
+          "ms": 529.535
+        },
+        {
+          "batch": 82,
+          "mode": "VALIDATE",
+          "ms": 270.093
+        },
+        {
+          "batch": 82,
+          "mode": "COMMIT",
+          "ms": 605.973
+        },
+        {
+          "batch": 83,
+          "mode": "VALIDATE",
+          "ms": 284.264
+        },
+        {
+          "batch": 83,
+          "mode": "COMMIT",
+          "ms": 619.724
+        },
+        {
+          "batch": 84,
+          "mode": "VALIDATE",
+          "ms": 293.921
+        },
+        {
+          "batch": 84,
+          "mode": "COMMIT",
+          "ms": 611.923
+        },
+        {
+          "batch": 85,
+          "mode": "VALIDATE",
+          "ms": 286.193
+        },
+        {
+          "batch": 85,
+          "mode": "COMMIT",
+          "ms": 606.365
+        },
+        {
+          "batch": 86,
+          "mode": "VALIDATE",
+          "ms": 286.145
+        },
+        {
+          "batch": 86,
+          "mode": "COMMIT",
+          "ms": 607.72
+        },
+        {
+          "batch": 87,
+          "mode": "VALIDATE",
+          "ms": 290.228
+        },
+        {
+          "batch": 87,
+          "mode": "COMMIT",
+          "ms": 613.687
+        },
+        {
+          "batch": 88,
+          "mode": "VALIDATE",
+          "ms": 306.005
+        },
+        {
+          "batch": 88,
+          "mode": "COMMIT",
+          "ms": 667.988
+        },
+        {
+          "batch": 89,
+          "mode": "VALIDATE",
+          "ms": 300.01
+        },
+        {
+          "batch": 89,
+          "mode": "COMMIT",
+          "ms": 623.134
+        },
+        {
+          "batch": 90,
+          "mode": "VALIDATE",
+          "ms": 289.229
+        },
+        {
+          "batch": 90,
+          "mode": "COMMIT",
+          "ms": 666.77
+        },
+        {
+          "batch": 91,
+          "mode": "VALIDATE",
+          "ms": 298.517
+        },
+        {
+          "batch": 91,
+          "mode": "COMMIT",
+          "ms": 566.151
+        },
+        {
+          "batch": 92,
+          "mode": "VALIDATE",
+          "ms": 311.527
+        },
+        {
+          "batch": 92,
+          "mode": "COMMIT",
+          "ms": 589.485
+        },
+        {
+          "batch": 93,
+          "mode": "VALIDATE",
+          "ms": 305.711
+        },
+        {
+          "batch": 93,
+          "mode": "COMMIT",
+          "ms": 673.264
+        },
+        {
+          "batch": 94,
+          "mode": "VALIDATE",
+          "ms": 324.031
+        },
+        {
+          "batch": 94,
+          "mode": "COMMIT",
+          "ms": 554.941
+        },
+        {
+          "batch": 95,
+          "mode": "VALIDATE",
+          "ms": 314.031
+        },
+        {
+          "batch": 95,
+          "mode": "COMMIT",
+          "ms": 573.453
+        },
+        {
+          "batch": 96,
+          "mode": "VALIDATE",
+          "ms": 325.469
+        },
+        {
+          "batch": 96,
+          "mode": "COMMIT",
+          "ms": 705.163
+        },
+        {
+          "batch": 97,
+          "mode": "VALIDATE",
+          "ms": 320.062
+        },
+        {
+          "batch": 97,
+          "mode": "COMMIT",
+          "ms": 700.963
+        },
+        {
+          "batch": 98,
+          "mode": "VALIDATE",
+          "ms": 316.165
+        },
+        {
+          "batch": 98,
+          "mode": "COMMIT",
+          "ms": 665.916
+        },
+        {
+          "batch": 99,
+          "mode": "VALIDATE",
+          "ms": 335.0
+        },
+        {
+          "batch": 99,
+          "mode": "COMMIT",
+          "ms": 659.004
+        },
+        {
+          "batch": 100,
+          "mode": "VALIDATE",
+          "ms": 333.154
+        },
+        {
+          "batch": 100,
+          "mode": "COMMIT",
+          "ms": 687.579
+        }
+      ],
+      "requested_rows": 10000,
+      "requests": 200,
+      "scope": "synthetic simple DRAFT products via real import; no published/variant/media claim",
+      "validated_rows": 10000
+    },
+    "before/runtime-identity.json": {
+      "backend_java": "openjdk 17.0.21 2026-10-20",
+      "configuration_sha256": "08000418842e2baedb6132b51c2b899ea641180260c4b440241f26fde17d1657",
+      "host_transport": "bounded loopback TCP byte relay to owned internal container IPv4; same extra hop in both arms; not shipping network latency",
+      "images": {
+        "api-proxy": "sha256:7cac34a4d72be2539edd7d8732207e8ffc8268a0b6458e6491f9b7c3dc95a70d",
+        "bigbike-admin": "sha256:c61a00ac402b097f215b90bef175c1d6af5829d2bbe525feecbeb4cb413d6e92",
+        "bigbike-backend": "sha256:806c89370b99bcb56d77eae9746f478ad07d4032c000bdb8cd57a46ee7bb8a3a",
+        "bigbike-web": "sha256:d1bdf913d0d2d83ad23a6ad2d3792a012bd54ce87876b65db748c0b2c9dc1ebb",
+        "minio": "sha256:87b2c722951ec48271f03db709a6ec863c0a1b5c495fce2f94eac2da2c163919",
+        "postgres": "sha256:3cbd775daa28461ef484ed88ca1e5a5a72ff126e196deeebce6fec764edf1200",
+        "redis": "sha256:bb8953020f6597e47d5d699a9910a25d77a69608dbd58e0f722940598ed85fc0"
+      },
+      "internal_web_revalidation": "enabled, one real owned web replica, generated shared CI secret",
+      "limits": {
+        "api-proxy": {
+          "memory_bytes": 134217728,
+          "nano_cpus": 0
+        },
+        "bigbike-admin": {
+          "memory_bytes": 134217728,
+          "nano_cpus": 0
+        },
+        "bigbike-backend": {
+          "memory_bytes": 2147483648,
+          "nano_cpus": 0
+        },
+        "bigbike-web": {
+          "memory_bytes": 1073741824,
+          "nano_cpus": 0
+        },
+        "minio": {
+          "memory_bytes": 536870912,
+          "nano_cpus": 0
+        },
+        "postgres": {
+          "memory_bytes": 1073741824,
+          "nano_cpus": 0
+        },
+        "redis": {
+          "memory_bytes": 201326592,
+          "nano_cpus": 0
+        }
+      },
+      "web_node": "v22.23.5"
+    },
+    "before/status.json": {
+      "arm": "before",
+      "complete": false,
+      "failure_type": "AssertionError",
+      "phase": "real-web-revalidation"
+    },
+    "before/transport.json": {
+      "13000": {
+        "accepted": 4,
+        "active": 0,
+        "capacity_rejected": 0,
+        "connect_failed": 0,
+        "idle_timeout": 0,
+        "transport_failed": 1
+      },
+      "14000": {
+        "accepted": 1,
+        "active": 0,
+        "capacity_rejected": 0,
+        "connect_failed": 0,
+        "idle_timeout": 0,
+        "transport_failed": 0
+      },
+      "18080": {
+        "accepted": 407,
+        "active": 0,
+        "capacity_rejected": 0,
+        "connect_failed": 0,
+        "idle_timeout": 0,
+        "transport_failed": 0
+      },
+      "19000": {
+        "accepted": 12,
+        "active": 0,
+        "capacity_rejected": 0,
+        "connect_failed": 0,
+        "idle_timeout": 0,
+        "transport_failed": 0
+      }
+    },
+    "browser-egress-native.json": {
+      "asset_requests_total": 2,
+      "browser": "148.0.7778.96",
+      "cache_hit_requests": 1,
+      "complete": true,
+      "default_service_worker_completed": true,
+      "denied_target_connections": 0,
+      "disk_cache_responses": 1,
+      "explicit_clear_refetched_asset": true,
+      "first_asset_requests": 1,
+      "frames": 2,
+      "no_store_private_requests": 3,
+      "observed_cache": {
+        "cache_hit_requests": 1,
+        "disk_cache_responses": 1,
+        "private_http_cache_hits": 0,
+        "served_from_cache_events": 0,
+        "service_worker_responses": 0
+      },
+      "observed_document": {
+        "service_worker": true,
+        "websocket_denied": true,
+        "worker": true
+      },
+      "page_errors": 0,
+      "phase": "complete",
+      "private_http_cache_hits": 0,
+      "rejections": {
+        "connect_rejected": 6,
+        "http_rejected": 15,
+        "malformed_rejected": 0,
+        "upgrade_rejected": 0
+      },
+      "repeated_asset_requests_total": 1,
+      "scope": "Owned loopback static transport/cache proof; main/worker/OOPIF/service-worker/HTTP/HTTPS/ws; no BigBike latency or UDP certification",
+      "served_from_cache_events": 0,
+      "service_worker_responses": 0
+    },
+    "toolchain.json": {
+      "chromium": "Google Chrome for Testing 148.0.7778.96",
+      "compose": "Docker Compose version v2.38.2",
+      "docker": "Docker version 28.0.4, build b8034c0",
+      "docker_engine_api": "1.48",
+      "ffmpeg": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "host_cpu_count": 4,
+      "host_memory_total_bytes": 16760344576,
+      "java": "openjdk 17.0.21 2026-10-20",
+      "lighthouse_dependency_lock_sha256": "4c27bcdbaa74a41b0022ffc292b7f83d84b5226579e99a926335426dbb7998f9",
+      "lighthouse_version": "12.8.2",
+      "node": "v22.23.4",
+      "node_build_and_lab_runtime": "22/glibc",
+      "npm": "10.9.9",
+      "python": "Python 3.12.3",
+      "runner_image": {
+        "ImageOS": "ubuntu24",
+        "ImageVersion": "20261111.370.1"
+      },
+      "shipping_web_runtime_difference": "shipping uses Node20/Alpine; this is a reproducible lab comparison",
+      "web_vitals_bundle_sha256": "8890ec954757ea8e4801f49958afb76e2b8837c47fec5b16598fc20cbd49c220",
+      "web_vitals_version": "5.1.0"
+    }
+  },
+  "attributed_source_differences": [
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java"
+  ],
+  "whole_system_acceptance": false
+}

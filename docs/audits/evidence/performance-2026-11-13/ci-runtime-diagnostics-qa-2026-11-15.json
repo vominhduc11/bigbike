@@ -1,0 +1,20 @@
+{
+  "scope": "CI tooling only; not PDP500 diagnosis",
+  "checks": {
+    "python": 65,
+    "node": 6,
+    "secret_scan": "zero findings source snapshot",
+    "independent_review": "fixed signature/metadata/probe exports contain no raw logs/env/body; cleanup source reviewed",
+    "forced_cleanup_regressions": 3,
+    "revalidation_protocol_tests": 6
+  },
+  "qa_findings_fixed": [
+    "cleanup failures must not replace original exception",
+    "disk/evidence errors must not skip relay or owned Docker cleanup",
+    "name PATCH/restore preserve stored English translation per TRANSLATION_RULE_002"
+  ],
+  "runtime_diagnostics": "fixed categories, service states, in-container real GET status/time/types/counts only",
+  "application_source_changed": false,
+  "PDP500_root_cause": "not established; diagnostics prepared",
+  "full_system_acceptance": false
+}

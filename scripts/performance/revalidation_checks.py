@@ -1,5 +1,6 @@
 """Real internal backend-to-Next refresh; no direct privileged refresh shortcut."""
 from html.parser import HTMLParser
+import re
 import time
 from ci_guard import require_ci
 from stack_checks import Api
@@ -28,8 +29,23 @@ def verify_revalidation(api, fixtures):
     require_ci()
     product = fixtures['products'][6]
     if (not product.get('name', '').startswith('E2E_PERF_')
-            or not product.get('slug', '').startswith('e2e-perf-product-')):
+            or not product.get('slug', '').startswith('e2e-perf-product-')
+            or not isinstance(product.get('id'), str)
+            or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', product['id'])):
         raise ValueError('Only owned CI product can exercise web refresh')
+    detail = api.data('GET', '/api/v1/admin/products/' + product['id'])
+    translations = detail.get('translations') if isinstance(detail, dict) else None
+    english = translations.get('en') if isinstance(translations, dict) else None
+    name_en = english.get('name') if isinstance(english, dict) else None
+    if (not isinstance(detail, dict) or detail.get('id') != product['id']
+            or detail.get('slug') != product['slug'] or detail.get('name') != product['name']
+            or not isinstance(name_en, str) or not name_en.strip()):
+        raise ValueError('Owned bilingual product detail required before revalidation edit')
+    # TRANSLATION_RULE_002: a name edit requires its English counterpart in the
+    # request. Preserve the actual stored value rather than inventing a fixture.
+    original_name = detail['name']
+    def name_payload(name):
+        return {'name': name, 'translations': {'en': {'name': name_en}}}
     web = Api('http://localhost:13000')
     web.call('POST', '/api/revalidate', {'tags': ['products']}, expected=(401,))
     route = '/product/' + product['slug'] + '/'
@@ -38,7 +54,7 @@ def verify_revalidation(api, fixtures):
         parsed = Headings()
         parsed.feed(body.decode())
         return ''.join(parsed.text)
-    assert product['name'] in heading(), 'Initial real PDP fixture missing'
+    assert original_name in heading(), 'Initial real PDP fixture missing'
     changed = 'E2E_PERF_Đã làm mới nội bộ'
     def wait_for(name):
         started = time.monotonic()
@@ -50,13 +66,13 @@ def verify_revalidation(api, fixtures):
             time.sleep(1)
         raise AssertionError('Committed Admin change did not refresh real rendered PDP')
     time.sleep(1.2)
-    api.call('PATCH', '/api/v1/admin/products/' + product['id'], {'name': changed})
     try:
+        api.call('PATCH', '/api/v1/admin/products/' + product['id'], name_payload(changed))
         observed = wait_for(changed)
     finally:
         time.sleep(1.2)
-        api.call('PATCH', '/api/v1/admin/products/' + product['id'], {'name': product['name']})
-    restored = wait_for(product['name'])
+        api.call('PATCH', '/api/v1/admin/products/' + product['id'], name_payload(original_name))
+        restored = wait_for(original_name)
     return {'unauthorized_refresh_denied': True, 'committed_change_visible_in_rendered_h1': True,
             'fixture_restored': True, 'change_observation': observed, 'restore_observation': restored,
             'scope': 'Real Admin commit -> internal authenticated Next revalidation -> HTML; no direct secret call'}

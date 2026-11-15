@@ -130,10 +130,10 @@ Kết quả cuối đã có sau tích hợp; giữ cả bằng chứng các lư�
 
 - Website đầy đủ: **119 tệp, 805/805 đạt**, 0 fail/skip/todo.
 - Admin đầy đủ: **130 tệp, 1.245/1.245 đạt**, 0 fail/skip/todo. Một lượt Admin khởi chạy sớm bị Lead dừng sau vài giây; không tính kết quả lượt đó. Kết quả trên là lượt tuần tự riêng hoàn tất.
-- Backend đầy đủ cuối: **206 suite, 1.580/1.580 đạt**, 0 failure/error/skip; `./mvnw -B verify -DforkCount=1` exit0, gồm cả bản sửa dummy password. [backend-full-summary.json](evidence/performance-2026-11-13/backend-full-summary.json). Lượt trước sửa dummy cũng đạt1.576/1.576 và được giữ riêng, không thay kết quả cuối.
+- Backend đầy đủ hiện tại: **206 suite, 1.588/1.588 đạt**, 0 failure/error/skip; verify/package UTC local và GitHub đều đạt, gồm8 ca thương mại mới. [backend-homepage-isolated-full-summary.json](evidence/performance-2026-11-13/backend-homepage-isolated-full-summary.json), [ci-relay-backend-results.json](evidence/performance-2026-11-13/ci-relay-backend-results.json). Giữ riêng lượt trước thương mại1.580 và trước sửa dummy1.576 trong [backend-full-summary.json](evidence/performance-2026-11-13/backend-full-summary.json); không cộng trùng các nhóm.
 - Backend đầy đủ lượt đầu: **1.572 ca, 1.571 đạt, 1 fail, 0 skip/error**; lỗi fixture phone ở trên. Giữ [backend-full-initial-summary.json](evidence/performance-2026-11-13/backend-full-initial-summary.json), không che thành xanh. Các ca V1095 JSONB/rollback, migration cũ, catalog và media đều đạt trong lượt này.
 - Backend sạch tập trung đầu:26/26; sort5/5; media26/26. Không cộng các nhóm trùng để gọi là số ca duy nhất.
-- Tooling helper **38/38 Python + 4/4 Node**; parser YAML, Node syntax, cấu hình Compose và kiểm Git diff. Actual stack/pg_restore+MinIO/Lighthouse/load **chưa chạy**, helper test dùng mock ở ranh giới công cụ không đưa mock vào ứng dụng.
+- Tooling hiện tại **54/54 Python + 6/6 Node**; gồm8 ca relay mới với TCP thật do bài kiểm sở hữu. Cấu hình Compose7service/mạng internal và baseline3file đạt; native browser cache/egress đã đạt riêng. Stack đã chạy tới hạ tầng khỏe, đang kiểm lại đường truy cập; chưa có pg_restore/Lighthouse/load hoàn tất. Mock tại ranh giới công cụ không đi vào ứng dụng hay phép đo.
 - QA nguồn độc lập: [ci-independent-review.json](evidence/performance-2026-11-13/ci-independent-review.json), [independent-database-qa.json](evidence/performance-2026-11-13/independent-database-qa.json), [independent-frozen-dataset-qa.json](evidence/performance-2026-11-13/independent-frozen-dataset-qa.json), [frontend-media-ci-qa.md](evidence/performance-2026-11-13/frontend-media-ci-qa.md). Những finding được sửa source không được gọi là đã chạy runtime.
 
 ## 7. Luồng kinh doanh, SEO, tracking và bảo mật
@@ -316,3 +316,27 @@ Sau tích hợp relay:54/54Python và6/6Node đạt; nativeTCP1MiB giữ nguyên
 full-duplex/streaming trướcEOF/halfclose/capacity/retarget/shutdown đạt. Compose
 render đủ7service, internal=true, khôngportbinding vôhiệu; ingress/negativecontrol
 và baseline3file đạt. Đây là test công cụ truyền tải, chưa phải latency BigBike.
+
+QA độc lập rà tiếp phân trang Admin: hai-lượt-SELECT thêm khoảng trống cập nhật
+đồng thời giữa key/tổng và row; chưa đủ tương đương chỉ nhờ so dữ liệu bất biến.
+Hướng hẹp hơn là giữ root-read một lần, sort/lấy trang trước mapper/quan hệ; vẫn
+cần profile API thật và chứng minh output. Chưa triển khai hoặc đổi isolation.
+Chi tiết: [admin-pagination-followup-2026-11-15.md](evidence/performance-2026-11-13/admin-pagination-followup-2026-11-15.md).
+
+### CI15/11: hệ thống thật và10k sản phẩm đã chạy, PDP500 còn điều tra
+
+Run43679936664/216deb70 vượt hạ tầng/TCP/bucket, schema+đăng nhập+40 sản phẩm,
+100batch import validate/commit đủ10.000 nháp (404,159giây); snapshotDB2.303.121byte
+và3object/123.809byte được capture/restore trong job riêng; hai frontendproduction
+đãbuild/chạy. Trên bảnBefore,24lượt đọc trang ASC/DESC1/2/250/251/499/500 đềuđạt
+tổng10.000,khôngchồnglấn,lặplạistable (toànpha27,21giây). Không phải P95tải; After
+chưa chạy, chưa đối chiếu tương đương hai bản. Chưa dùng những thời gian này như
+bảng Before/After. Bằng chứng ci-real-stack-partial-2026-11-15.json có checksumbundle.
+
+Lỗi GETPDP thử số0006 trả500 ở đầu kiểmrevalidation, trước mọi sửa tên. Chưa rõ
+nguyênnhân; bổ sung chẩnđoán cốđịnh/khôngpayload trước cleanup và probeGETtừweb
+container để tách network/API khỏi render, không đoán sửa app. QA tìm thêm lỗi
+chắcchắn ở bước kế: PATCHname thiếutranslations.en.name sẽ400 theo
+TRANSLATION_RULE_002. Harness đã đọc tênEN thật từAdminDetail, giữnguyên cả khi
+sửa/khôi phục; kiểm restore khi request/observationfails. Đây chưa sửaPDP500.
+62Python+6Node đạt; khôngtắt kiểmtra và khôngđổi dữliệu shop.
