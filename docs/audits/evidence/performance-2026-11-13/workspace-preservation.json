@@ -18,6 +18,7 @@
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/migration/ArticleExcerptAuthorRemovalMigrationPostgresTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/admin/ImageVariantServiceTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/media/ImageCompressionServiceTest.java",
+    "bigbike-web/next.config.ts",
     "docs/audits/evidence/gmc-ticket-review-2026-10-30/verification.json",
     "docs/engineering/API_CONTRACT.md",
     "docs/engineering/DATA_CONTRACT.md",
@@ -31,5 +32,5 @@
   "unexpected_changes": [],
   "missing_initial_files": [],
   "all_other_initial_files_identical": true,
-  "scope": "Original2991 files preserved except26 explicit source/test/docs/tooling edits; homepage fixture isolated, original assertions/caches preserved. Original main/index untouched."
+  "scope": "Original2991 files preserved except27 explicit source/test/docs/tooling edits; added css-tree server externalization to repair proven relocated standalone CSS data anchor. Main/index untouched."
 }

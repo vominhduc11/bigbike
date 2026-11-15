@@ -2,14 +2,16 @@
 
 Tiếp nối [báo cáo 12/11](PERFORMANCE_OPTIMIZATION_2026-11-12.md). Đây là kết quả sửa source, kiểm thử và benchmark thành phần; **chưa nghiệm thu hiệu năng toàn hệ thống, chưa triển khai production**. Không dùng số liệu container hiện tại để gọi là After của source mới. Bốn tối ưu đợt trước được giữ nguyên và kiểm tra regression, không ghi thành thành quả mới.
 
-Cập nhật15/11: backend hiện tại đã đạt1588/1588 ở localUTC và hai lượtGitHub;
-frontend805/1245 cùng lint/build đã đạt, được reuse khi có proof source không đổi.
-Run43677437126 dừng tại hạ tầng. Bản sửa MinIO tại1470d418 đã dựng thành công ba
-dịch vụ dữ liệu trong [CI43678807306](https://github.com/vominhduc11/bigbike/actions/runs/43678807306),
-nhưng cổng host không mở trên mạng internal. Bản sửa chuyển tiếp TCP đã đạt54/54
-kiểm thử công cụ và chuẩn bị chạy lại hệ thống thật.
-Chưa có số đo API/browser/media Before/After hệ thống; các số và trạng thái ở những
-đoạn theo ngày bên dưới là lịch sử, không thay kết luận hiện tại này.
+Cập nhật 15/11: backend đã đạt 1.588/1.588 ở local UTC và các lượt GitHub;
+website 805/805, Admin 1.245/1.245 cùng lint/build đã đạt trên nguồn tương ứng.
+Hệ thống CI thật đã nhập 10.000 sản phẩm nháp, thử snapshot/restore và kiểm tra
+các trang Admin mẫu. Trang sản phẩm trong container còn lỗi 500; API nội bộ trả
+200 trong khoảng 45ms. Đã tìm thấy và sửa nguồn lỗi đóng gói CSS chứa đường dẫn
+máy build. Sau sửa, web lint và 805 kiểm thử đạt; 68 kiểm thử Python, 6 Node đạt.
+Build production mới và kiểm lại trang trong container đang chuẩn bị chạy trên CI.
+Chưa có bảng Before/After API/browser/media toàn hệ thống. Các đoạn theo ngày bên
+dưới giữ kết quả lịch sử; trạng thái chạy mới nhất ở
+[ci-execution-2026-11-14.json](evidence/performance-2026-11-13/ci-execution-2026-11-14.json).
 
 ## 1. Workspace và môi trường
 
@@ -36,7 +38,7 @@ Kiểm kê từ code hiện tại, có trạng thái riêng từng mục:
 - [database-inventory.json](evidence/performance-2026-11-13/database-inventory.json): 144 thành phần truy cập dữ liệu/dịch vụ, tên 94 bảng; không đánh dấu mọi query đã kiểm. [database-additional-source-review.json](evidence/performance-2026-11-13/database-additional-source-review.json) bổ sung 14 đường xử lý rủi ro.
 - Báo cáo từng agent: [backend](evidence/performance-2026-11-13/backend-agent.md), [database](evidence/performance-2026-11-13/database-agent.md), [frontend/media](evidence/performance-2026-11-13/frontend-media-agent.md).
 
-**Không gộp “đã đọc source”, “unit đạt”, “đã chạy chức năng thật” và “đã đo” thành cùng trạng thái.** Những luồng runtime còn thiếu phụ thuộc candidate stack CI chưa được chạy. Những thành phần chỉ kiểm kê vẫn ghi chưa source-audit toàn diện, không lấy vài trang hay full unit để suy rộng.
+**Không gộp “đã đọc source”, “unit đạt”, “đã chạy chức năng thật” và “đã đo” thành cùng trạng thái.** Before đã có runtime một phần theo bằng chứng mới; candidate After và các luồng còn thiếu chưa nghiệm thu. Những thành phần chỉ kiểm kê vẫn ghi chưa source-audit toàn diện, không lấy vài trang hay full unit để suy rộng.
 
 ## 3. Vấn đề đã sửa và căn cứ
 
@@ -133,7 +135,7 @@ Kết quả cuối đã có sau tích hợp; giữ cả bằng chứng các lư�
 - Backend đầy đủ hiện tại: **206 suite, 1.588/1.588 đạt**, 0 failure/error/skip; verify/package UTC local và GitHub đều đạt, gồm8 ca thương mại mới. [backend-homepage-isolated-full-summary.json](evidence/performance-2026-11-13/backend-homepage-isolated-full-summary.json), [ci-relay-backend-results.json](evidence/performance-2026-11-13/ci-relay-backend-results.json). Giữ riêng lượt trước thương mại1.580 và trước sửa dummy1.576 trong [backend-full-summary.json](evidence/performance-2026-11-13/backend-full-summary.json); không cộng trùng các nhóm.
 - Backend đầy đủ lượt đầu: **1.572 ca, 1.571 đạt, 1 fail, 0 skip/error**; lỗi fixture phone ở trên. Giữ [backend-full-initial-summary.json](evidence/performance-2026-11-13/backend-full-initial-summary.json), không che thành xanh. Các ca V1095 JSONB/rollback, migration cũ, catalog và media đều đạt trong lượt này.
 - Backend sạch tập trung đầu:26/26; sort5/5; media26/26. Không cộng các nhóm trùng để gọi là số ca duy nhất.
-- Tooling hiện tại **54/54 Python + 6/6 Node**; gồm8 ca relay mới với TCP thật do bài kiểm sở hữu. Cấu hình Compose7service/mạng internal và baseline3file đạt; native browser cache/egress đã đạt riêng. Stack đã chạy tới hạ tầng khỏe, đang kiểm lại đường truy cập; chưa có pg_restore/Lighthouse/load hoàn tất. Mock tại ranh giới công cụ không đi vào ứng dụng hay phép đo.
+- Tooling hiện tại **68/68 Python + 6/6 Node**; gồm8 ca relay mới với TCP thật do bài kiểm sở hữu. Cấu hình Compose7service/mạng internal và baseline3file đạt; native browser cache/egress đã đạt riêng. Stack đã chạy tới hạ tầng khỏe, đang kiểm lại đường truy cập; chưa có pg_restore/Lighthouse/load hoàn tất. Mock tại ranh giới công cụ không đi vào ứng dụng hay phép đo.
 - QA nguồn độc lập: [ci-independent-review.json](evidence/performance-2026-11-13/ci-independent-review.json), [independent-database-qa.json](evidence/performance-2026-11-13/independent-database-qa.json), [independent-frozen-dataset-qa.json](evidence/performance-2026-11-13/independent-frozen-dataset-qa.json), [frontend-media-ci-qa.md](evidence/performance-2026-11-13/frontend-media-ci-qa.md). Những finding được sửa source không được gọi là đã chạy runtime.
 
 ## 7. Luồng kinh doanh, SEO, tracking và bảo mật
@@ -152,7 +154,7 @@ Chưa có bằng chứng mới cho mọi tổ hợp khuyến mãi/biến thể/n
 
 ## 9. Gói bàn giao, triển khai và hoàn tác để review
 
-Đối chiếu [workspace-preservation.json](evidence/performance-2026-11-13/workspace-preservation.json): ngoài 26 tệp được sửa có chủ đích trong task, tất cả tệp nguồn có trước còn nguyên dấu kiểm; không có tệp ban đầu bị mất. [frozen-source-proof.json](evidence/performance-2026-11-13/frozen-source-proof.json) thực hành trên hai bản sao tất cả tệp trong snapshot nguồn cuối của cùng workspace: chỉ đúng ba file tối ưu khác nhau, mọi tệp khác trùng; chỉ mô phỏng biến môi trường để kiểm công cụ file, không chạy stack/load local.
+Đối chiếu [workspace-preservation.json](evidence/performance-2026-11-13/workspace-preservation.json): ngoài 27 tệp được sửa có chủ đích trong task, tất cả tệp nguồn có trước còn nguyên dấu kiểm; không có tệp ban đầu bị mất. [frozen-source-proof.json](evidence/performance-2026-11-13/frozen-source-proof.json) thực hành trên hai bản sao tất cả tệp trong snapshot nguồn cuối của cùng workspace: chỉ đúng ba file tối ưu khác nhau, mọi tệp khác trùng; chỉ mô phỏng biến môi trường để kiểm công cụ file, không chạy stack/load local.
 
 Source mới thuộc backend comparator, decoded-image reuse, cache publication, dummy password, V1095 và các test; tooling thuộc `scripts/performance/` và workflow. Canonical cập nhật DATA/API/INTEGRATION/TESTING/DEPLOYMENT; không đổi API shape, quyền, trạng thái hay production dependency/index/env.
 
@@ -340,3 +342,27 @@ chắcchắn ở bước kế: PATCHname thiếutranslations.en.name sẽ400 the
 TRANSLATION_RULE_002. Harness đã đọc tênEN thật từAdminDetail, giữnguyên cả khi
 sửa/khôi phục; kiểm restore khi request/observationfails. Đây chưa sửaPDP500.
 62Python+6Node đạt; khôngtắt kiểmtra và khôngđổi dữliệu shop.
+
+### Lỗi đóng gói web — đã sửa nguồn, chờ build và kiểm lại container
+
+Run 43697879265 / 0fd57, attempt 2: bảy dịch vụ chạy, không OOM. Probe API từ web
+trả 200 trong 44,934ms; PDP trả 500 và log web có mã node_module_missing. Rà hai
+chunk Webpack 9527/9364 phát hiện bốn file URL css-tree trỏ về thư mục máy build.
+Nhánh ESM của css-tree 3.2.1 dùng createRequire(import.meta.url) để đọc patch.json
+và MDN. Dữ liệu thực sự có trong standalone, nhưng đường dẫn đọc đã bị cố định.
+Phép thử Node cấm đọc thư mục gốc báo ERR_ACCESS_DENIED tại đúng patch.json.
+Đối chứng nạp CJS thật trong artifact vẫn parse/walk/lexer/generate thành công
+với quyền đọc chỉ dành cho artifact. Local PDP 200 khi thư mục build còn tồn tại
+không chứng minh gói có thể chuyển sang máy/container khác.
+
+Docs Deployment/Testing cập nhật trước code. Cấu hình serverExternalPackages cho
+css-tree giúp Node tìm dữ liệu trong package được triển khai. Không đổi phiên bản,
+quy tắc lọc HTML/CSS hoặc bundle browser. Giữ sửa đóng gói giống nhau ở hai bản đo;
+không tính thành lợi ích độ trễ của ba tối ưu đang so sánh. Gate sau Webpack và
+khi dựng cả hai image từ chối đường dẫn máy build, kiểm CSS/MDN thật dưới quyền
+filesystem giới hạn, và từ chối symlink ra ngoài artifact.
+
+Web lint, 805/805 kiểm thử, 68 Python và 6 Node đạt. Production build mới và Docker
+PDP chưa xác minh. Bằng chứng: standalone-css-portability-2026-11-15.json,
+ci-pdp-failure-2026-11-15.json, web-portability-unit-results.json. Có 27 tệp gốc được
+sửa có chủ đích; toàn bộ tệp gốc khác và main/index được bảo toàn.

@@ -21,16 +21,16 @@
       "component": "CI stack",
       "source": "scripts/performance/compose.ci.yml",
       "source_status": "source reviewed + configuration parser passed",
-      "functional_and_performance_status": "not executed",
-      "reason_or_evidence": "Requires published clean source and included quota",
+      "functional_and_performance_status": "real7services built/started,40published+10000draft fixtures, frozenDB/media capture+restore; firstPDP500 stops flow",
+      "reason_or_evidence": "ci-real-stack-partial-2026-11-15.json",
       "fixed_and_runtime_reverified": false
     },
     {
       "component": "CI ingress",
       "source": "scripts/performance/api.ci.conf",
       "source_status": "source reviewed + nginx -t passed",
-      "functional_and_performance_status": "not executed",
-      "reason_or_evidence": "API10rps;web/admin30rps;WS exemption; loopback HTTP differs TLS/CDN",
+      "functional_and_performance_status": "real HTTP transport/login/Adminseed and sampledpages; WS/security-budget/runtimecompression not fully verified",
+      "reason_or_evidence": "ci-real-stack-partial-2026-11-15.json",
       "fixed_and_runtime_reverified": false
     },
     {
@@ -53,49 +53,66 @@
       "component": "PostgreSQL",
       "source": "postgres16 and public schema",
       "source_status": "read-only aggregates/source inventory",
-      "functional_and_performance_status": "not isolated load measured",
-      "reason_or_evidence": "94tables/350indexes are inventory only",
+      "functional_and_performance_status": "real isolated freshschema/JPA validation+import10000+privatepg_dump/restore completed; no all-query/locking/pool/load acceptance",
+      "reason_or_evidence": "ci-real-stack-partial-2026-11-15.json",
       "fixed_and_runtime_reverified": false
     },
     {
       "component": "Redis limiter",
       "source": "existing rate-limit config and CI dedicatedRedis",
       "source_status": "source reviewed; regression tests",
-      "functional_and_performance_status": "not distributed capacity tested",
-      "reason_or_evidence": "No security tier disabled; no HA/TLS lab equivalence",
+      "functional_and_performance_status": "real servicehealthy and configuredRedis limiter enabled duringreal requests; no exhaustive tier/429/failover test",
+      "reason_or_evidence": "ci-real-stack-partial-2026-11-15.json",
       "fixed_and_runtime_reverified": false
     },
     {
       "component": "MinIO",
       "source": "same pinned image; private CI public-bucket fixture",
       "source_status": "source reviewed; helper tests",
-      "functional_and_performance_status": "not real candidate transfer measured",
-      "reason_or_evidence": "No shop bucket writes; exact byte/MIME copy prepared",
+      "functional_and_performance_status": "same official server executable asshop; bucket+realJPEG+3objects capture/restorechecksum passed; fullmedia matrix notyetexecuted",
+      "reason_or_evidence": "ci-real-stack-partial-2026-11-15.json",
       "fixed_and_runtime_reverified": false
     },
     {
       "component": "web production runtime",
       "source": "scripts/performance/Dockerfile.web + launch-web.cjs",
       "source_status": "source reviewed",
-      "functional_and_performance_status": "not container executed",
-      "reason_or_evidence": "Node22/glibc lab vs Node20/Alpine shipping; nested standalone supported",
+      "functional_and_performance_status": "productionbuild+homepage readiness200; ownedPDP500 failed before revalidation; no browser/Lighthouse acceptance",
+      "reason_or_evidence": "ci-real-stack-partial-2026-11-15.json",
       "fixed_and_runtime_reverified": false
     },
     {
       "component": "admin production runtime",
       "source": "existing nginx.conf + CI artifact image",
       "source_status": "source reviewed",
-      "functional_and_performance_status": "not authenticated runtime measured",
-      "reason_or_evidence": "Existing build/gzip behavior preserved",
+      "functional_and_performance_status": "productiondistbuild+nginx readiness200; no browserCRUD/bulk/report smoke completed",
+      "reason_or_evidence": "ci-real-stack-partial-2026-11-15.json",
       "fixed_and_runtime_reverified": false
     },
     {
       "component": "CI artifacts and resource stop",
       "source": "run_ci/frozen_dataset/admin_smoke/guards",
       "source_status": "source reviewed; mocked helper boundaries",
-      "functional_and_performance_status": "not actual remote run",
-      "reason_or_evidence": "Only sanitized JSON published; partial failures retained",
+      "functional_and_performance_status": "bounded sanitized partialJSON retrieved andcompressedbundleSHAverified; stophelpers passed; no capacity certification",
+      "reason_or_evidence": "ci-real-stack-partial-2026-11-15.json",
       "fixed_and_runtime_reverified": false
+    },
+    {
+      "component": "CI MinIO release source",
+      "source": "scripts/performance/Dockerfile.minio",
+      "source_status": "reviewed; fixedchecksum/officialrelease matches running shopbinary",
+      "functional_and_performance_status": "rebuiltexactserver executable healthy; not isolated server-performance comparison",
+      "reason_or_evidence": "ci-stack-startup-2026-11-15.json + ci-real-stack-partial-2026-11-15.json",
+      "fixed_and_runtime_reverified": true
+    },
+    {
+      "component": "CI host-to-internal transport",
+      "source": "scripts/performance/loopback_relay.py",
+      "source_status": "independentreview/nativeTCPtests passed",
+      "functional_and_performance_status": "real MinIO/API/web/admin loopback access works; underlyingPDP500 not relayconnectfailure",
+      "reason_or_evidence": "ci-internal-network-2026-11-15.json + ci-real-stack-partial-2026-11-15.json",
+      "fixed_and_runtime_reverified": true
     }
-  ]
+  ],
+  "runtime_update": "2026-11-15: frozen216deb70 Before real7services; webpage500 stops continuation before load/After"
 }

@@ -37,7 +37,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminAttributeController.java",
@@ -84,7 +84,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminAuditLogController.java",
@@ -103,7 +103,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCatalogController.java",
@@ -223,10 +223,20 @@
       ],
       "source_inventoried": true,
       "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "functional_test_status": "partial real API/PostgreSQL/MinIO evidence on Before arm only; not all methods or roles",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence.",
+      "runtime_partial_evidence": {
+        "file": "ci-real-stack-partial-2026-11-15.json",
+        "verified_operations": [
+          "POST brands/categories/products and publish40 ownedproducts",
+          "POST homepage-blocks",
+          "GET products q/filters/name ASC-DESC:24 page reads on10000drafts; totals/overlap/repeats checked"
+        ],
+        "candidate_after_verified": false,
+        "whole_controller_verified": false
+      }
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminContentController.java",
@@ -273,7 +283,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminCustomerController.java",
@@ -312,7 +322,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminDashboardController.java",
@@ -331,7 +341,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminHomeHighlightsController.java",
@@ -354,7 +364,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminHomeVideoController.java",
@@ -389,7 +399,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminInventoryController.java",
@@ -412,7 +422,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminLegacyDiscontinuedProductController.java",
@@ -443,7 +453,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminMediaController.java",
@@ -511,10 +521,18 @@
       ],
       "source_inventoried": true,
       "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "functional_test_status": "partial real API/PostgreSQL/MinIO evidence on Before arm only; not all methods or roles",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence.",
+      "runtime_partial_evidence": {
+        "file": "ci-real-stack-partial-2026-11-15.json",
+        "verified_operations": [
+          "one real JPEG upload for catalog fixture, creates3 stored objects; not full format/upload matrix"
+        ],
+        "candidate_after_verified": false,
+        "whole_controller_verified": false
+      }
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminMediaFolderController.java",
@@ -545,7 +563,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminMenuController.java",
@@ -596,7 +614,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminNotificationController.java",
@@ -619,7 +637,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminOrderController.java",
@@ -654,7 +672,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminPermissionsController.java",
@@ -673,7 +691,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminPresenceController.java",
@@ -683,7 +701,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminProductAssignmentController.java",
@@ -702,7 +720,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminProductExportController.java",
@@ -721,7 +739,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminProductImportController.java",
@@ -745,10 +763,18 @@
       ],
       "source_inventoried": true,
       "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "functional_test_status": "partial real API/PostgreSQL/MinIO evidence on Before arm only; not all methods or roles",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence.",
+      "runtime_partial_evidence": {
+        "file": "ci-real-stack-partial-2026-11-15.json",
+        "verified_operations": [
+          "100 batches100rows each, real validate+commit10000rows,404.159s setup; not APIloadP95"
+        ],
+        "candidate_after_verified": false,
+        "whole_controller_verified": false
+      }
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminQuickSearchController.java",
@@ -767,7 +793,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminRedirectController.java",
@@ -802,7 +828,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminReportController.java",
@@ -829,7 +855,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminReviewController.java",
@@ -872,7 +898,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminRolesController.java",
@@ -903,7 +929,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminSettingsController.java",
@@ -930,7 +956,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminSizeScaleController.java",
@@ -989,7 +1015,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminSliderController.java",
@@ -1021,10 +1047,18 @@
       ],
       "source_inventoried": true,
       "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "functional_test_status": "partial real API/PostgreSQL/MinIO evidence on Before arm only; not all methods or roles",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence.",
+      "runtime_partial_evidence": {
+        "file": "ci-real-stack-partial-2026-11-15.json",
+        "verified_operations": [
+          "GEThome existing sliders; PATCHinactive old synthetic slots; POSTone ownedhero"
+        ],
+        "candidate_after_verified": false,
+        "whole_controller_verified": false
+      }
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/auth/AuthController.java",
@@ -1060,10 +1094,18 @@
       ],
       "source_inventoried": true,
       "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "functional_test_status": "partial real API/PostgreSQL/MinIO evidence on Before arm only; not all methods or roles",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence.",
+      "runtime_partial_evidence": {
+        "file": "ci-real-stack-partial-2026-11-15.json",
+        "verified_operations": [
+          "POST /api/v1/auth/login: realSUPER_ADMIN generatedCIaccount"
+        ],
+        "candidate_after_verified": false,
+        "whole_controller_verified": false
+      }
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/cart/CartController.java",
@@ -1098,7 +1140,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/catalog/CatalogController.java",
@@ -1142,14 +1184,23 @@
       ],
       "source_inventoried": true,
       "source_reviewed": false,
-      "functional_test_status": "22 PublicReadApiTest cases PASS, zero skipped; partial controller coverage, H2+Spring MockMvc (not real-network acceptance).",
+      "functional_test_status": "partial real CI internal public product GET200; not controller-wide acceptance",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run.",
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence.",
       "source_reviewed_sections": [
         "Category/brand detail response and current PublicReadApiTest fixtures"
       ],
-      "evidence": "backend-migration-tests.json"
+      "evidence": "backend-migration-tests.json",
+      "runtime_partial_evidence": {
+        "file": "ci-pdp-failure-2026-11-15.json",
+        "verified_operations": [
+          "GET /api/v1/products/{ownedslug}?lang=vi from realwebcontainer; validproductobject"
+        ],
+        "single_probe_wall_ms": 44.933734,
+        "latency_percentile": false,
+        "whole_controller_verified": false
+      }
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/checkout/CheckoutController.java",
@@ -1168,7 +1219,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/content/ContentController.java",
@@ -1195,7 +1246,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/customer/CustomerAddressController.java",
@@ -1226,7 +1277,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/customer/CustomerAuthController.java",
@@ -1273,7 +1324,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/customer/CustomerController.java",
@@ -1304,7 +1355,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/customer/CustomerOAuthController.java",
@@ -1335,7 +1386,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/internal/InternalRedirectController.java",
@@ -1362,7 +1413,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/openapi/OpenApiStaticController.java",
@@ -1377,7 +1428,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/order/CustomerOrderController.java",
@@ -1404,7 +1455,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/order/OrderLookupController.java",
@@ -1423,7 +1474,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicHomeHighlightsController.java",
@@ -1442,7 +1493,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicHomeVideoController.java",
@@ -1461,7 +1512,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicLegacyDiscontinuedProductController.java",
@@ -1480,7 +1531,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicMenuController.java",
@@ -1499,7 +1550,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicReviewController.java",
@@ -1526,7 +1577,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicSearchController.java",
@@ -1545,7 +1596,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicSettingsController.java",
@@ -1564,7 +1615,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicSliderController.java",
@@ -1583,7 +1634,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/PublicStorePolicyController.java",
@@ -1602,7 +1653,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/public_/ReviewInvitationController.java",
@@ -1621,7 +1672,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/controller/HealthController.java",
@@ -1640,7 +1691,7 @@
       "functional_test_status": "not individually verified this session",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Current workspace not deployed in isolated CI; no authenticated load run."
+      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
     }
   ],
   "background_declaration_count": 20,
@@ -2031,5 +2082,6 @@
     "gap": "Catalog/database specialist owns focused query assessment; remaining repositories need isolated plans and request attribution."
   },
   "http_method_mapping_annotation_count": 212,
-  "controller_count_note": "53 includes HealthController; the previous 52 count covered only /api controllers. 212 HTTP method annotations includes health; no route added by this task."
+  "controller_count_note": "53 includes HealthController; the previous 52 count covered only /api controllers. 212 HTTP method annotations includes health; no route added by this task.",
+  "runtime_update": "2026-11-15: run43679936664, frozen216deb70 Before only; candidate After and all-controller acceptance unverified"
 }

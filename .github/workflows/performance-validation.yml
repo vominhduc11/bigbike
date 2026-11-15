@@ -95,6 +95,9 @@ jobs:
         run: npm run build -- --webpack > "${{ runner.temp }}/build-private.log" 2>&1
       - if: matrix.app == 'bigbike-admin'
         run: npm run build > "${{ runner.temp }}/build-private.log" 2>&1
+      - name: Check standalone portability without access to the build directory
+        if: matrix.app == 'bigbike-web'
+        run: python3 -B ../scripts/performance/check_standalone.py --app . --output '${{ runner.temp }}/perf-counts/standalone.json'
       - name: Publish bounded sanitized results through job logs
         if: always()
         run: python3 -B ../scripts/performance/publish_results.py '${{ runner.temp }}/perf-counts'

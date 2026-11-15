@@ -1,0 +1,15 @@
+{
+  "scope": "local production artifact copy; one public shop product via read-only API; no load or shop writes",
+  "node_version": "v22.22.1",
+  "home": {
+    "status": 200,
+    "html_bytes": 522953,
+    "h1_count": 1
+  },
+  "product": {
+    "status": 200,
+    "html_bytes": 483671,
+    "h1_count": 1
+  },
+  "error_signature_codes": []
+}

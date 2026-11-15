@@ -622,3 +622,15 @@ Revalidation fixture name edits must satisfy the existing bilingual write contra
 translations.en.name in both Vietnamese-name PATCH and restore. Missing English
 fixture content is a setup failure; do not relax validation or synthesize a rule.
 This independent harness correction does not diagnose an earlier PDP GET500.
+
+Standalone portability gate (15/11): after the production Webpack build, inspect
+only deployable server JS (not source maps/dependency sources) for literal
+file://.../node_modules/css-tree/lib/data{,-patch}.js anchors left by bundling
+createRequire(import.meta.url). Reject such host-dependent chunks. Native-load
+css-tree from the real standalone entrypoint, verify resolution remains inside
+the artifact, and parse/generate CSS under Node filesystem permissions permitting
+only that artifact and Node/system runtime. Require CJS/patch/MDN trace closure.
+Export booleans/counts/fixed failure codes only; no absolute paths or logs. A local
+replica that can read its original build directory is insufficient portability proof.
+The CI Docker PDP/revalidation scenario remains mandatory; this package gate does
+not replace real application rendering or end-to-end acceptance.

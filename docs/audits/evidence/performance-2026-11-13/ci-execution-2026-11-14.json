@@ -95,21 +95,31 @@
     "no_current_full_stack_latency_result": true
   },
   "current_run": {
-    "id": 43679936664,
-    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43679936664",
-    "commit": "216deb709456e4fb72ef7e32ca74e3e318aae99b",
-    "boundary": "passed54Python/6Node/baseline/ingress; frontend source-bound reuse",
-    "frontend": "805/1245 lint/build source-bound reuse; not newly executed",
-    "backend": "fresh1588/1588;0fail/error/skip;verify/package passed",
+    "id": 43697879265,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43697879265",
+    "commit": "0fd57b0ff0aa11a7251494ee54c649ca95996198",
+    "boundary": "passed65Python/6Node/baseline/ingress; source-bound frontend reuse verified",
+    "frontend": "source unchanged; reuse subject to boundary proof",
+    "backend": "1588/1588 passed in attempt1; preserved by failed-job rerun",
     "secret_artifact_guard": {
-      "id": 43679936515,
+      "id": 43697879208,
       "conclusion": "success"
     },
-    "fix": "owned internal IPv4 loopback byte relays; same blocked-egress network",
+    "fix": "diagnostic exports and cleanup guards; bilingual fixture PATCH/restore; PDP500 still unknown",
     "full_system_acceptance": false,
-    "isolated_stack_job_id": 132709031884,
-    "isolated_stack_status": "failed first PDP GET500 after full real stack,10kseed+restore+productionfronts+24paginationreadchecks passed",
-    "partial_evidence": "ci-real-stack-partial-2026-11-15.json"
+    "isolated_stack_status": "attempt2 in progress frozen source/build/real-stack phase",
+    "setup_retry": "GitHub rerun_failed_workflow_run_jobs success; attempt2 same source; only isolated lab rerun",
+    "isolated_stack_job_id": 132764645713,
+    "attempt1": {
+      "job_id": 132763720946,
+      "failure_phase": "backend package before container startup",
+      "command": "./mvnw -B package -Dmaven.test.skip=true -DforkCount=1",
+      "exit_code": 1,
+      "duration_seconds_less_than": 1,
+      "diagnostic_categories": [],
+      "exact_cause": "unknown",
+      "official_distribution_HEAD_on_host": 200
+    }
   },
   "previous_infrastructure_run": {
     "id": 43677437126,
@@ -135,5 +145,22 @@
     "isolated_stack_status": "failed after real infra became healthy: bucket setup could not reach host port19000",
     "storage_image_build": "passed exact official release binary checksum and version",
     "next_fix": "host loopback TCP byte relay to strictly owned internal IPv4, keep no-egress network"
+  },
+  "previous_real_stack_run": {
+    "id": 43679936664,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43679936664",
+    "commit": "216deb709456e4fb72ef7e32ca74e3e318aae99b",
+    "boundary": "passed54Python/6Node/baseline/ingress; frontend source-bound reuse",
+    "frontend": "805/1245 lint/build source-bound reuse; not newly executed",
+    "backend": "fresh1588/1588;0fail/error/skip;verify/package passed",
+    "secret_artifact_guard": {
+      "id": 43679936515,
+      "conclusion": "success"
+    },
+    "fix": "owned internal IPv4 loopback byte relays; same blocked-egress network",
+    "full_system_acceptance": false,
+    "isolated_stack_job_id": 132709031884,
+    "isolated_stack_status": "failed first PDP GET500 after full real stack,10kseed+restore+productionfronts+24paginationreadchecks passed",
+    "partial_evidence": "ci-real-stack-partial-2026-11-15.json"
   }
 }

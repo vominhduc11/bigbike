@@ -1,0 +1,147 @@
+{
+  "run": 43697879265,
+  "attempt": 2,
+  "job": 132764645713,
+  "commit": "0fd57b0ff0aa11a7251494ee54c649ca95996198",
+  "arm": "before",
+  "bundle_sha256": "ab9895ce857b35a0e72328a0289570cff0e1adb244267534fc3c6414c2d4c233",
+  "status": {
+    "arm": "before",
+    "complete": false,
+    "failure_type": "AssertionError",
+    "phase": "real-web-revalidation"
+  },
+  "diagnostics": {
+    "scope": "owned CI runtime failure diagnostics; no app logs or response values",
+    "services": {
+      "api-proxy": {
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "bigbike-admin": {
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "bigbike-backend": {
+        "error_signature_codes": [],
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "bigbike-web": {
+        "error_signature_codes": [
+          "node_module_missing"
+        ],
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "minio": {
+        "exit_code": 0,
+        "health": "healthy",
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "postgres": {
+        "exit_code": 0,
+        "health": "healthy",
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "redis": {
+        "exit_code": 0,
+        "health": "healthy",
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      }
+    },
+    "web_container_public_product_read": {
+      "data_object": true,
+      "expected_api_origin": true,
+      "fields": {
+        "brand": {
+          "type": "object"
+        },
+        "categories": {
+          "count": 1,
+          "type": "array"
+        },
+        "category": {
+          "type": "object"
+        },
+        "commitments": {
+          "count": 0,
+          "type": "array"
+        },
+        "description": {
+          "type": "string"
+        },
+        "faqs": {
+          "count": 0,
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "image": {
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        },
+        "price": {
+          "type": "object"
+        },
+        "publishStatus": {
+          "type": "string"
+        },
+        "relatedProducts": {
+          "count": 0,
+          "type": "array"
+        },
+        "seo": {
+          "type": "undefined"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "variantOptions": {
+          "type": "undefined"
+        },
+        "variants": {
+          "count": 0,
+          "type": "array"
+        }
+      },
+      "http_status": 200,
+      "wall_ms": 44.933734
+    }
+  },
+  "dataset_identity": {
+    "database_archive_bytes": 2300035,
+    "database_archive_sha256": "074a2cdfd34f689e4a5a48916e36dfbf8060d8dd57c0544cea63c886bbd71ab3",
+    "fixture_media_records": 1,
+    "fixture_product_count": 40,
+    "large_catalog_count": 10000,
+    "media_manifest_sha256": "e6320934b51233ab3fe17852815e74d01669cce96a93cd2b66e5a4d657656532",
+    "media_objects": 3,
+    "media_total_bytes": 123809
+  },
+  "large_seed_rows": 10000,
+  "large_page_requests": 24,
+  "after_executed": false,
+  "latency_is_single_diagnostic_probe_not_load_percentile": true
+}

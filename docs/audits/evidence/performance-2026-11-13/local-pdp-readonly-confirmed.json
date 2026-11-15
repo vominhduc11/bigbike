@@ -1,0 +1,10 @@
+{
+  "scope": "local production artifact copy; single public PDP GET via real read-only shop API; no load or shop mutation",
+  "node_version": "v22.22.1",
+  "redirects_followed": false,
+  "status": 200,
+  "final_url_matches_owned_process": true,
+  "html_bytes": 483494,
+  "h1_count": 1,
+  "error_signature_codes": []
+}

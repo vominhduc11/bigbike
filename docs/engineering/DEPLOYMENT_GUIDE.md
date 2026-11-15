@@ -1117,3 +1117,23 @@ MinIO/API/web/admin vẫn thật, nguyên xác thực/quyền/rate-limit; relay 
 sửa nội dung ứng dụng. Hai lượt dùng cùng đường truyền này; số đo có thêm một hop
 trên host, không đại diện TLS/CDN/network production. PostgreSQL chỉ qua exec,
 không cần cổng host. Xem kiểm chứng và giới hạn tại TESTING_GUIDE.
+
+### Web standalone độc lập thư mục build — sửa nguồn 15/11, chưa triển khai
+
+CI 0fd57 / attempt 2: API nội bộ đọc sản phẩm trả 200 trong khoảng 45ms, bảy dịch
+vụ không OOM, nhưng PDP web trả 500 với MODULE_NOT_FOUND. Chunk Webpack thực tế
+chứa nhánh ESM css-tree 3.2.1: createRequire(import.meta.url) đã thành đường dẫn
+tuyệt đối của máy build, rồi đọc ../data/patch.json và mdn-data. Chạy artifact trên
+cùng máy có thể qua nhờ thư mục gốc còn tồn tại; trong container thư mục đó không có.
+Không quy lỗi này cho database, dữ liệu 10k hoặc thời hạn 5s.
+
+Khai báo serverExternalPackages: ['css-tree'] theo Next 16 để server nạp package
+bằng Node tại vị trí triển khai. Export CJS dùng require tương đối. Browser vẫn
+bundle thư viện; không đổi phiên bản, quy tắc sanitize HTML/CSS hoặc nội dung/SEO.
+Build Webpack phải không còn file URL css-tree trỏ về máy build, đủ CJS/data/MDN
+trong standalone và chạy package thật khi không được đọc thư mục build gốc.
+Nguồn: css-tree/lib/data{,-patch}.js, css-tree/cjs/data{,-patch}.cjs; tài liệu Next
+cài đặt serverExternalPackages.md và [Next chính thức](https://nextjs.org/docs/app/api-reference/config/next-config-js/serverExternalPackages).
+Giữ sửa đóng gói giống nhau ở hai bản đo; không ghi thành lợi ích độ trễ của ba
+tối ưu đang so sánh. Rollback bằng diff cấu hình hẹp/image được phê duyệt, giữ mọi
+thay đổi khác. Chưa được restart/recreate shop trong công việc này.

@@ -1,0 +1,53 @@
+{
+  "scope": "deployment portability correctness; not a new latency optimization",
+  "observed_ci": {
+    "run": 43697879265,
+    "attempt": 2,
+    "job": 132764645713,
+    "commit": "0fd57b0ff0aa11a7251494ee54c649ca95996198",
+    "PDP_http_status": 500,
+    "web_error_signature": [
+      "node_module_missing"
+    ],
+    "internal_API_http_status": 200,
+    "internal_API_wall_ms": 44.933734,
+    "all_seven_services_running": true,
+    "oom": false
+  },
+  "local_old_artifact": {
+    "webpack": true,
+    "build_host_css_data_anchors": 4,
+    "guard_result": "STANDALONE_BUILD_HOST_CSS_ANCHOR",
+    "native_CJS_CSS_under_artifact_only_fs_permissions": "pass; MDN closure+parse/generate works",
+    "same_host_PDP": "200 with original builddir accessible; not portability proof"
+  },
+  "root_cause_evidence": [
+    "css-tree/lib/data-patch.js andlib/data.js use createRequire(import.meta.url)",
+    "serverchunks9527/9364 contain fileURL build-host css-tree/lib/data*.js anchors",
+    "Nodepermission test rejects original CSS patch path with ERR_ACCESS_DENIED",
+    "css-tree CJS export uses relative package data require",
+    "css-tree absent from Next default server-external list"
+  ],
+  "fix": {
+    "serverExternalPackages": [
+      "css-tree"
+    ],
+    "package_version_unchanged": "3.2.1",
+    "sanitizer_policy_unchanged": true,
+    "both_arms_same_fix": true,
+    "production_services_changed": false
+  },
+  "canonical_docs": [
+    "docs/engineering/DEPLOYMENT_GUIDE.md: Web standalone độc lập thư mục build",
+    "docs/engineering/TESTING_GUIDE.md: Standalone portability gate"
+  ],
+  "checks": {
+    "web_lint": "passed",
+    "python_helpers": 68,
+    "node_helpers": 6,
+    "web_unit": "805/805;119files;0fail/skip/todo",
+    "new_production_build_and_Docker_PDP": "pending",
+    "production_build": "pending new GitHub snapshot; no heavy local build on shared8GiBhost"
+  },
+  "full_system_acceptance": false
+}

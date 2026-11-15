@@ -107,6 +107,7 @@ def run(command, *, cwd=None, env=None, timeout=1200, combine_output=False):
             ('compose_config', r'invalid compose|validating.*compose|invalid interpolation|must be a mapping|service.*refers to undefined'),
             ('port_conflict', r'address already in use|port is already allocated'),
             ('frontend_build', r'Failed to compile|Type error:|Build error occurred'),
+            ('standalone_portability', r'STANDALONE_[A-Z_]+'),
             ('api_http_error', r'HTTPError|Unexpected HTTP status'),
             ('assertion', r'AssertionError'),
         ) if re.search(pattern, combined, re.I)]
@@ -224,6 +225,9 @@ class Stack:
             run(['npm', 'ci', '--no-audit', '--no-fund'], cwd=self.root / name, env=environment)
             run(['npm', 'run', 'build', *(['--', '--webpack'] if app == 'web' else [])],
                 cwd=self.root / name, env=environment, timeout=1200)
+            if app == 'web':
+                run(['python3', '-B', str(self.root / 'scripts/performance/check_standalone.py'),
+                     '--app', str(self.root / name), '--output', str(self.directory / 'web-standalone.json')])
         context = self.directory / ('image-' + app)
         context.mkdir()
         if app == 'backend':
@@ -511,6 +515,7 @@ def main():
                     stack.build(app, env)
                 write_json(arm_output / 'build-identity.json', {
                     'jar_sha256': hashlib.sha256((checkout / 'bigbike-backend/target/bigbike-backend-0.0.1-SNAPSHOT.jar').read_bytes()).hexdigest(),
+                    'standalone_portability': json.loads((private / 'web-standalone.json').read_text()),
                     'images': {app: run(['docker', 'image', 'inspect', '--format', '{{.Id}}', stack.project + '-' + app]).strip()
                                for app in ('backend', 'web', 'admin')}})
                 stack.compose('up', '-d', 'bigbike-web', 'bigbike-admin')

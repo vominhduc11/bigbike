@@ -203,6 +203,9 @@ const dynamicMediaPattern = (() => {
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // css-tree's ESM createRequire(import.meta.url) embeds build-host file URLs
+  // when bundled. Native server CJS resolves its JSON data inside standalone.
+  serverExternalPackages: ["css-tree"],
   trailingSlash: true,
   // Keep legacy WordPress `.html` URLs from being normalized before rewrites.
   // Proxy below still normalizes extensionless routes to trailing slash.
