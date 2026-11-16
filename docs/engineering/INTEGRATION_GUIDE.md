@@ -309,6 +309,22 @@ Redis service. `OWNER_CONFIRMED_2026-08-20`
 - Public media URLs are validated against configured public base URL rules. `CONFIRMED_FROM_CODE`
 - Server-side content detection uses Apache Tika. `CONFIRMED_FROM_CODE`
 - New Admin Media uploads accept only JPEG/PNG/WebP images and MP4 video. Apache Tika content detection must match the declared MIME exactly; filename extensions are not trusted, so GIF/SVG content and renamed GIF/SVG files are rejected. Customer review/avatar/chat upload paths retain their separate JPEG/PNG/WebP contracts. `OWNER_CONFIRMED_2026-08-28`
+- Tika core3.2.2 recognizes major `mp41`/`mp42` directly, but reports generic
+  QuickTime for common FFmpeg MP4 files with major `isom`. For Admin MP4 only,
+  refine that generic result when the first complete `ftyp` box is inside the
+  existing8192-byte detection budget, has major `isom`/`iso2`, and lists explicit
+  compatible `mp41`/`mp42`. Check unsigned box size, bounds and four-byte alignment;
+  never search arbitrary later bytes or trust filename/content-type hints.
+  Before refining this generic family to video, also require a video handler
+  (`vide`) in the container's `moov/trak/mdia/hdlr` path. Walk bounded box metadata,
+  skipping media payload, with a shared1024-box budget and fixed path depth; reject
+  malformed sizes. This prevents newly accepting audio-only `isom` MP4 renamed
+  or declared as video. It does not decode codecs or change direct Tika MP4 paths.
+  Preserve all bytes, limits, authorization, image handling and stored MIME
+  `video/mp4`; reject truncated/oversized boxes, bare ISO-base and other major
+  brands including MOV/M4A/AVIF. This is content-type refinement, not codec
+  decoding or a new FFmpeg/runtime dependency. Registration reference:
+  [MP4 Registration Authority brands](https://mp4ra.org/registered-types/brands).
 - **Customer review photos** (`REVIEW_RULE_005`/`011`) are stored in MinIO under the `reviews/{uuid}/...` prefix (public URL `/media/reviews/...`) via a **public, no-auth** upload endpoint (`POST /api/v1/products/{id}/reviews/photos`). Stricter than the admin path: image only (`image/jpeg|png|webp`, declared Content-Type must exactly match Tika magic-byte detection; stored extension is canonicalized — no SVG/GIF/video), ≤ 8 MB, rate-limited per IP (`REVIEW_PHOTO` tier). They are **not** registered in the admin media library (`media` table). Every successful upload creates a durable `review_photo_uploads` ledger row and submit atomically claims it once for the same product. `ReviewPhotoOrphanCleanupService` removes unclaimed uploads older than 24 hours, cascade tombstones left when product deletion removes reviews, and old untracked MinIO objects from the narrow put-before-ledger crash window. Review deletion schedules reference-safe object cleanup only after commit. Photos show publicly only after the review is `APPROVED`. `CONFIRMED_FROM_CODE`
 - **Server-side compression before storage** (`MEDIA_RULE_006`): all 3 raster upload paths (admin media original, review photo, customer avatar) run through `ImageCompressionService` (Thumbnailator-backed) before the `putObject` call — admin media original capped at 2000px wide, review photo at 1600px wide, avatar center-cropped to 400×400, all at JPEG quality 0.85. Never upscales, preserves alpha and fails soft (returns the original bytes untouched) on a decode error — an upload is never blocked by a compression failure. JPEG/PNG are decoded and resized as required. **Known shared P2 gap (2026-07-28):** WebP is accepted by all three paths, but the current JDK ImageIO runtime has no WebP reader, so WebP reaches the documented fail-soft path and is stored without the required resize. Fixing this requires a shared Media compression change that preserves a correct output MIME/extension when alpha-bearing WebP is re-encoded; it is not a Review-only format-rule change. `CODE_GAP_WEBP_2026-07-28`
 - Image variants are stored only when compression produces new bytes. If compression returns the original buffer (size saving unavailable or fail-soft), omit that variant for JPEG/PNG as well as WebP; callers use the existing original-image fallback. Never create duplicate full-size objects under thumbnail keys. This does not rewrite existing objects or change original quality. `PERFORMANCE_OPTIMIZATION_2026-11-12`

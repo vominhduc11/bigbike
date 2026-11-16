@@ -156,11 +156,33 @@ async function main() {
       progress.step = 'submit';
       const searchInp = await inp.record(page);
       const search = page.locator('[data-search-page-form] input');
-      await search.fill('E2E_PERF_Áo');
+      // Use the real API's current page, preserving search ranking/alias rules.
+      // This reference read intentionally warms API cache in both measured arms.
+      const referenceResponse = await context.request.get('http://localhost:18080/api/v1/products?'
+        + new URLSearchParams({ q: 'Áo', page: '1', size: '24', sort: 'relevance', lang: 'vi' }));
+      if (!referenceResponse.ok()) throw Error('Search reference API failed');
+      const referenceSearch = await referenceResponse.json();
+      const ownedProducts = new Map(fixture.products.map(item => [item.id, item.slug]));
+      if (!Array.isArray(referenceSearch.data) || !referenceSearch.data.length
+          || referenceSearch.data.some(item => ownedProducts.get(item.id) !== item.slug)) {
+        throw Error('Expected owned search reference page missing');
+      }
+      const expectedSearchPaths = referenceSearch.data.map(item => '/product/' + item.slug + '/').sort();
+      await search.fill('Áo');
       await page.locator('[data-search-page-form] button[type=submit]').click();
-      await page.waitForURL(url => url.searchParams.get('s') === 'E2E_PERF_Áo');
+      await page.waitForURL(url => url.searchParams.get('s') === 'Áo');
+      await page.waitForFunction(expected => {
+        if (!document.querySelector('h1')?.textContent.includes('Áo')) return false;
+        const grid = document.querySelector('#main-content [data-catalog-product-grid]');
+        if (!grid || grid.getAttribute('aria-busy') === 'true') return false;
+        const actual = [...grid.querySelectorAll('[data-product-card] h3 a')]
+          .map(link => new URL(link.href).pathname).sort();
+        return actual.length === expected.length && actual.every((value, index) => value === expected[index]);
+      }, expectedSearchPaths, { timeout: 60000 });
       await inp.record(page, true);
-      results.push({ surface: 'search-interaction', viewport, url_state_updated: true, inp: searchInp });
+      results.push({ surface: 'search-interaction', viewport, url_state_updated: true,
+        rendered_fixture_results_verified: true, current_page_result_count: expectedSearchPaths.length,
+        api_reference_read_cache_prewarmed: true, inp: searchInp });
       // A real add-to-cart interaction. Seeded simple product deliberately has no variant.
       progress.surface = 'cart-to-checkout';
       progress.step = 'add-and-order';

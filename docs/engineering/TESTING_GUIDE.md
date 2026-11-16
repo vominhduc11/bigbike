@@ -442,6 +442,33 @@ and backend processing duration must be labeled separately: no server-only timin
 be inferred from upload wall time. Long uploads/video and report SLOs remain open until
 measured on representative data; do not force the ordinary 300ms API target on them.
 
+Search submission is functionally verified only after the new query appears in
+the rendered heading and the non-busy catalog grid contains exactly the expected
+owned fixture links on the current page. A changed URL or a short INP observation
+alone does not prove that search results loaded. Obtain the reference page through
+the real public API with the same query/page/size/sort/language rather than copying
+search ranking or majority-match rules into the harness. Label the resulting API
+cache prewarm explicitly; still wait for the actual rendered results, and keep the
+same readiness check and reference read in both arms.
+
+After all API/browser/Lighthouse/media measurements finish in each arm, the
+isolated lab may create a separate `E2E_PRODUCT_MERCHANT_` product through normal
+Admin APIs, with its own generic attribute and two owned values/variants. Do not
+change the40 published products or10000 drafts used for measurement. Check the
+complete real Merchant XML and headers, two variant SKU rows, inherited/own sale
+prices, stock, option/group/image identity, then real initial HTML/structured data,
+canonical and manual selection on375/768/1440 viewports. Use the existing browser
+egress boundary and quality helpers. Add the explicitly selected available variant
+to a separate guest cart and check opaque product/variant IDs, inherited sale price
+and totals; adding the unavailable variant must409 without changing that cart.
+This does not decide whether omitting a variant is allowed. Keep credentials, payloads and raw
+browser output private; publish only bounded counts/statuses and partial phase
+evidence. Remove these records only with teardown of their job-owned stack.
+This proves a generic single-axis variant flow, not color/size/multi-axis coverage
+or Google account approval. When the lab has no configured GMC store code, assert
+Local Inventory503 with no-store/retry headers; a positive TSV parity check needs
+the actual configured store code and must never invent or configure one.
+
 Publish only allowlisted sanitized JSON summaries. Never publish raw test XML,
 application/access logs, environment files, passwords/tokens/cookies, audit snapshots,
 request payloads or browser storage/traces. Preserve errors as counts/case names.

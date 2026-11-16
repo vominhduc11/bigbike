@@ -38,9 +38,10 @@
     "failures": 0,
     "errors": 0,
     "skipped": 0,
-    "full_backend": "pending freshCI afternewsource; prior7ce full1588passed",
+    "full_backend": "freshCI323 clean verify:209suitefiles/1600tests;1600passed,0failure/error/skip",
     "helper_python": 69,
-    "helper_node": 6
+    "helper_node": 6,
+    "ci_gate_evidence": "ci-cart-access-fixed-gates-2026-11-16.json"
   },
   "owner_decisions_pending": [
     "variant selection required before cart/checkout when variants exist",

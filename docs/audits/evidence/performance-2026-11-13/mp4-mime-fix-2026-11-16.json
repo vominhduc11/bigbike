@@ -1,0 +1,90 @@
+{
+  "problem": "Tika3.2.2 detects real FFmpeg MP4 with majorisom/compatiblemp41 asvideo/quicktime; upload400 observed in hosted Before323 after3PNG",
+  "canonical": [
+    "BUSINESS_RULES.md Media MIME/MP4 andMEDIA_RULE_013",
+    "INTEGRATION_GUIDE.md Media Integration Policy"
+  ],
+  "fix": "Admin-only declaredvideo/mp4+detectedgenericQuickTime refined only by boundedcompletefirstftyp withmajorisom/iso2+explicitMP4compatibility ANDvideo-handler in fixedmoov/trak/mdia/hdlr path; unsignedboundedboxes/shared1024budget; skipmdat withoutdecode",
+  "preserved": "no new format/dependency/FFmpegserver/architecture/permission/rate/size change; no fileextensionhint; exactstoredbytes; directTikaMP41/42 pathunchanged",
+  "before_evidence": "mp4-mime-before-2026-11-16.json",
+  "targeted_after": {
+    "initial_four_classes": 49,
+    "expanded_mp4_class": 31,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0
+  },
+  "full_backend": "fresh localUTCcleanverify:210suitefiles,1631/1631,0failure/error/skip,packagepassed; freshremote gate pending",
+  "fixtures": [
+    {
+      "file": "bigbike-backend/src/test/resources/media/admin-isom-video.mp4",
+      "bytes": 2962,
+      "sha256": "a7ef9cb0367280ec4923a52e8692df8646a0ae5cc5073c7ca516a70222d0714c",
+      "probe": {
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 64,
+            "height": 64
+          }
+        ],
+        "format": {
+          "duration": "0.200000"
+        }
+      }
+    },
+    {
+      "file": "bigbike-backend/src/test/resources/media/admin-isom-tail-video.mp4",
+      "bytes": 3452,
+      "sha256": "c94486bb781962ae548d9eaecac29724e48dae203c95577a0c99266ba6a0473d",
+      "probe": {
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 64,
+            "height": 64
+          }
+        ],
+        "format": {
+          "duration": "0.209000"
+        }
+      }
+    },
+    {
+      "file": "bigbike-backend/src/test/resources/media/admin-isom-audio.mp4",
+      "bytes": 2856,
+      "sha256": "9e872f2473eb993dadb1a9d94f6fafed92f30f9f414ac29a7cd3d3c79a9b2c42",
+      "probe": {
+        "programs": [],
+        "streams": [
+          {
+            "codec_name": "aac",
+            "codec_type": "audio"
+          }
+        ],
+        "format": {
+          "duration": "0.200000"
+        }
+      }
+    }
+  ],
+  "independent_review": {
+    "agent": "media_fix_qa",
+    "parser_source": "no blocker in bounds/depth/budget/path",
+    "audio_control": "independently generatedrealAAC-onlyisom/mp41 fixture proves whyvideo-handlercheckneeded",
+    "merchant_source": "no blocker; renamed product_image_loaded toavoidoriginalbytesclaim"
+  },
+  "runtime_after": "not yet run; no fullBefore/Aftermetrics",
+  "rollback": "reverse only MP4refinement/privatehelpers inAdminMediaService; restore previousrejection; noDBmigration/objectrewrite",
+  "risk": "container contenttyperefinement is not fullcodec/movie validation; directTika branches retain existingbehavior; unsupportedmajor/invalidmetadata failclosed",
+  "primary_references": [
+    "https://mp4ra.org/registered-types/brands",
+    "https://ffmpeg.org/ffmpeg-formats.html"
+  ],
+  "production_changes": false,
+  "full_backend_evidence": "backend-mp4-full-2026-11-16.json"
+}

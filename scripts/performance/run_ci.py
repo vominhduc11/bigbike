@@ -27,6 +27,7 @@ from compare_results import compare
 from commerce_checks import check_commerce
 from large_catalog import seed_large, verify_large_pages, LargeCatalogFailure
 from loopback_relay import LoopbackRelays
+from merchant_checks import run_merchant_checks
 from runtime_diagnostics import collect as collect_failure_diagnostics
 from revalidation_checks import verify_revalidation
 from s3_setup import setup as setup_bucket
@@ -580,6 +581,13 @@ def main():
                 phase('api-load')
                 api = login('http://localhost:18080', stack.password)
                 api_benchmark(stack, api, fixtures['products'][0], arm_output)
+                phase('post-measurement-merchant-variants')
+                api = login('http://localhost:18080', stack.password)
+                run_merchant_checks(checkout, api, fixtures, private,
+                    {**clean_environment(), 'GITHUB_RUN_ID': os.environ['GITHUB_RUN_ID'],
+                     'GITHUB_RUN_ATTEMPT': os.environ['GITHUB_RUN_ATTEMPT']},
+                    measurements_complete=True,
+                    record_callback=lambda report: write_json(arm_output / 'merchant.json', report))
                 status.update(phase='complete', complete=True)
             except Exception as error:
                 status.update(failure_type=type(error).__name__)

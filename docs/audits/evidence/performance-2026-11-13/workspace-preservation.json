@@ -5,6 +5,7 @@
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/mapper/CartMapper.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/PublishedProductListingCache.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminMediaService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/AdminAccountStatusService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/AdminPermissionService.java",
@@ -23,6 +24,7 @@
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/media/ImageCompressionServiceTest.java",
     "bigbike-web/next.config.ts",
     "docs/audits/evidence/gmc-ticket-review-2026-10-30/verification.json",
+    "docs/business/BUSINESS_RULES.md",
     "docs/engineering/API_CONTRACT.md",
     "docs/engineering/DATA_CONTRACT.md",
     "docs/engineering/DEPLOYMENT_GUIDE.md",
@@ -35,5 +37,5 @@
   "unexpected_changes": [],
   "missing_initial_files": [],
   "all_other_initial_files_identical": true,
-  "scope": "Original2991 files preserved except30 deliberate source/test/docs/tooling edits; newcart opaqueID mapper+twoaccesscache publication fixes; main/index untouched."
+  "scope": "Original2991 files preserved except32 deliberate source/test/docs/tooling edits; newMP4detectionrefinement+canonicalMedia clarification; main/index untouched."
 }

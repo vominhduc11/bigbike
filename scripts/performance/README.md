@@ -57,6 +57,9 @@ initial snapshot equality is not a claim that runtime databases remain identical
   checkout, authenticated Admin pages, image delivery and local runtime/network
   errors. `admin_smoke.py` also runs the repository's real auth/quality fixture.
   Missing CRUD/bulk/variant/role/report scenarios remain explicit in the audit.
+  Search submission waits for the heading and actual current-page fixture links
+  to match a real public API reference read (same query/page/size/sort/language).
+  That reference read warms API cache; it is not a cold-search claim.
 - API stages 1/2/4 use fixed pacing, two repeats, 3s warmup / 12s measurements. Search
   stays below its normal 60/minute tier. Stop on any non-success, timeout, OOM,
   restart, memory 85% or host available RAM below 512MiB. Success-only P50/P95/P99
@@ -94,3 +97,11 @@ PostgreSQL1GiB/stack job90min are identical for both arms; no shop resource chan
 Commerce correctness repairs and date-fixture correction remain in BOTH arms. Real
 API/PG checkout409/reload/same-key retry and discontinued cases run separately from
 primary PDP data. Helper tests do not establish that the hosted stack has executed.
+
+16Nov extension: after all measurements, `merchant_checks.py` creates one separately
+owned product, generic attribute and two values/variants through normal APIs. It
+checks complete XML/header consistency and six real variant landing/switch cases
+at375/768/1440, preserving the measured40/10k dataset. `merchant.json` records partial
+phases on failure. This does not certify size/color/multi-axis variants or Google
+account acceptance. Local Inventory without a configured store code must503; positive
+TSV parity needs the actual configured code, never a fabricated shop identifier.

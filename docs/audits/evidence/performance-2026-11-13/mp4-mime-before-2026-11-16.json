@@ -1,0 +1,27 @@
+{
+  "phase": "before",
+  "source_fix_present": false,
+  "tests": 25,
+  "failures": 0,
+  "errors": 4,
+  "skipped": 0,
+  "nonpassing": [
+    {
+      "case": "storesRealMp4BytesAndMimeForExplicitMp4Brands(String, String)[1]",
+      "type": "com.bigbike.bigbike_backend.api.error.ValidationException"
+    },
+    {
+      "case": "storesRealMp4BytesAndMimeForExplicitMp4Brands(String, String)[2]",
+      "type": "com.bigbike.bigbike_backend.api.error.ValidationException"
+    },
+    {
+      "case": "storesRealMp4BytesAndMimeForExplicitMp4Brands(String, String)[3]",
+      "type": "com.bigbike.bigbike_backend.api.error.ValidationException"
+    },
+    {
+      "case": "storesRealMp4BytesAndMimeForExplicitMp4Brands(String, String)[4]",
+      "type": "com.bigbike.bigbike_backend.api.error.ValidationException"
+    }
+  ],
+  "scope": "Real generated H264 fixture through current AdminMediaService, mocked storage; not real upload latency. Four generic ISO-base variants rejected; direct MP41/MP42 controls pass."
+}

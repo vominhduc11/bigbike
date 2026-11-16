@@ -4,11 +4,16 @@ Tiếp nối [báo cáo 12/11](PERFORMANCE_OPTIMIZATION_2026-11-12.md). Đây l�
 
 Cập nhật 16/11: lỗi đóng gói CSS đã được xác minh sửa thành công trong CI7ce:
 PDP mở được, thao tác đổi tên/khôi phục từ Admin xuất hiện trong HTML thật. Hai
-frontend lint/test/build và chốt standalone đều đạt (web805, Admin1245). Lượt
-backend đầy đủ gần nhất1588 đạt thuộc7ce. Sau đó phát hiện/sửa mapper làm mất mã
-sản phẩm dạng chuỗi trong giỏ và hai cuộc đua cache quyền/trạng thái quản trị.
-Nguồn mới đã đạt160 kiểm thử tập trung, có QA source độc lập; full backend mới
-và nghiệm thu Before/After toàn hệ thống vẫn chờ CI. Không triển khai shop.
+frontend lint/test/build và chốt standalone đều đạt (web805, Admin1245). Sau đó
+phát hiện/sửa mapper làm mất mã sản phẩm dạng chuỗi trong giỏ và hai cuộc đua cache
+quyền/trạng thái quản trị. Nguồn323 đã đạt160 kiểm thử tập trung, có QA source
+độc lập và CI mới đạt backend1600/1600, web805/805, Admin1245/1245, không fail/skip.
+Hai frontend đều lint/build lại thành công; chốt standalone đạt. Bằng chứng:
+[CI323 gates](evidence/performance-2026-11-13/ci-cart-access-fixed-gates-2026-11-16.json).
+Before đã vượt giỏ/checkout/account/commerce thật, dừng tại upload MP4400 sau3PNG;
+chưa có After hoặc kết quả nghiệm thu. Bản sửa kiểm định MP4 đã đạt31ca tập trung
+và full backend1631/1631 localUTC,0fail/error/skip; đóng gói đạt, chờ runtimeCI mới.
+Không triển khai shop.
 Trạng thái chạy mới nhất:
 [ci-execution-2026-11-14.json](evidence/performance-2026-11-13/ci-execution-2026-11-14.json).
 
@@ -385,8 +390,9 @@ hợp lệ trước sửa; fixture đầu thiếu ID dòng giỏ được sửa 
 NPE của fixture là lỗi ứng dụng.
 
 Sau tích hợp,9 lớp/160 kiểm thử đạt,0fail/error/skip; gồm12 ca mới cho hai cache và
-mapper. QA độc lập đọc source/test không thấy lỗi chặn; toàn bộ backend mới chưa
-chạy. Frontend có thể reuse7ce khi chứng minh cùng source, gate và chốt standalone;
+mapper. QA độc lập đọc source/test không thấy lỗi chặn. CI323 sau đó chạy lại
+đầy đủ backend1600/1600, web805/805, Admin1245/1245,0fail/skip. Frontend đã chạy lại
+do không lấy được chứng minh reuse trong jobCI; không gọi đó là reuse7ce;
 full backend luôn chạy mới.69 helper Python và6 Node đạt. Có30 tệp gốc được sửa
 có chủ đích, tất cả tệp gốc khác và main/index giữ nguyên. Không áp migration hay
 thay dịch vụ shop. Hai quyết định nghiệp vụ còn chờ owner; chưa tự sửa lời mời
@@ -395,3 +401,61 @@ SUPER_ADMIN hoặc bắt buộc chọn biến thể.
 Bằng chứng: ci-css-fixed-gates-2026-11-16.json, ci-css-runtime-fixed-2026-11-16.json,
 admin-cache-cart-before-2026-11-16.json, cart-mapper-valid-fixture-before-2026-11-16.json,
 admin-cache-cart-after-2026-11-16.json và admin-cache-cart-fixes-2026-11-16.json.
+
+
+### CI16/11: giỏ, checkout và giao dịch thật đạt; upload MP4 bị từ chối
+
+Run43790978933/323421 chạy lại đủ805web/1245Admin/1600backend,0fail/error/skip.
+Trên Before realPostgreSQL, giỏ giữ đúng mã sản phẩm tạo quaAdmin; tổng giá200000,
+CODcheckout tạo đơn; hai giỏ khách và hai hồ sơ tài khoản không lẫn dữ liệu,
+response riêng cóno-store; không đăng nhập bị chặn APIAdmin. Thao tác đổi giá trả409,
+giỏ cập nhật giá mới, thử lại và phát lại cùng khóa chỉ tạo một đơn/payment/reservation;
+những lần bị từ chối không tạo dữ liệu thừa. Ngừng bán chặn thêm/tăng số lượng/checkout,
+đánh dấu không mua được và hoạt động lại khi khôi phục riêng sản phẩm thử.
+
+Ba ca PNG alpha320/1600/2400 đều tải lên, download đúng bản gốc đang lưu, giữalpha96,
+metadata và giới hạn chiều rộng; tải riêng không đăng nhập bị chặn. Sau đóclip.mp4
+bị400. Các thời gian Before riêng được giữ trong bằng chứng, không so với component
+benchmark hoặc gọi là cải thiện. Cả7service đangchạy/khôngOOM; browser/Lighthouse/
+APIload/After chưa chạy. [Bằng chứngruntime323](evidence/performance-2026-11-13/ci-commerce-runtime-2026-11-16.json).
+
+Tái hiện với tệp H264 MP4 doFFmpeg tạo và đúngtika-core3.2.2: cả8192byte đầu và
+cảtệp đều được Tika gọi làvideo/quicktime. Định nghĩa trongJAR chỉ nhậnmajorbrand
+mp41/mp42 trực tiếp; fileMP4 cómajorisom vàcompatiblemp41 rơi vào nhánh generic.
+Không đổifixture sangbrandkhác, không cho phépMOV hoặc tinđuôi tệp. CanonicalMedia
+đã nêu cách tinh chỉnh MIME bằngboxftyp đầy đủ, có chặnđộdài/cănchỉnh/brand, trước
+khi sửa code. Đây là sửa tính đúng giống nhau ởhai bản, không phải tối ưu latency.
+
+QA độc lập cũng phát hiện kịch bản tìm kiếm chỉ chờURL. Harness kế tiếp phải so
+kết quả thực hiện trên màn hình với trangAPI công khai cùngtham số; ghi rõAPI được
+làmấm bởi lượt đọc tham chiếu, không tự saoquy tắc khớp2/3 từ. Đã sửa sourceharness,
+chưa chạy trên browser mới; kết quả323 không được nâng phạmvi theo code mới.
+
+
+### MP4 và mở rộng nghiệm thu tiếp theo — nguồn chuẩn bị16/11
+
+Tinh chỉnh riêng nhánh genericQuickTime củaAdmin: firstftyp đầyđủ trong8192byte,
+majorisom/iso2 vớicompatiblemp41/mp42 và video handler đúngđườngmoov/trak/mdia/hdlr.
+Giới hạn1024box/depthcốđịnh, bỏqua payload, kiểm độdài/overflow/extendedheader;
+không lấy tênđuôi làm bằngchứng, không alias toànbộQuickTime. CóvideoH264 thậtcả
+moovđầu vàmoovcuối, audio-only thật, negativepayload/wrongpath/truncated/budget.
+DirectTikaMP41/MP42 giữhànhvi cũ; không chứngnhận giải mãcodec hoặc mọiđườngaudio.
+Không tănggiới hạn/concurrency/timeout, không thêmdependency/migration hoặc viếtlạiobject.
+
+Before25ca có4errors đúngnhánhMP4hợplệ bịValidation; After31caMP4 đềuđạt. Full
+local cleanverify ởUTC đạt210suite/1631/1631,0fail/error/skip vàpackage;80Python,
+6Node,baseline3file vàingressnegativecontrol đạt. QuétGitleaks publicationkhông finding.
+QA source độc lập không thấyblocker, cóchứngminh riêng audioisom/mp41 cầnvideo-handler.
+Căn cứcanonical `BUSINESS_RULES.md` Media/MEDIA_RULE_013 và `INTEGRATION_GUIDE.md`
+Media Integration Policy. Hoàn tác riêngrefinement/helpers; không cầnrollbackdata.
+[Chi tiếtMP4](evidence/performance-2026-11-13/mp4-mime-fix-2026-11-16.json),
+[fullbackend](evidence/performance-2026-11-13/backend-mp4-full-2026-11-16.json).
+
+Sau tấtcảphépđo ởmỗibản, harness tạo sảnphẩm/thuộctính/hai giátrị riêngquaAPIthật,
+kiểmgiỏvới biếnthểđượcchọn, mãchuỗi/giá kếthừa/tổng và409 khôngđổigiỏkhi hếthàng.
+Tiếpđó kiểmXML/header/SKU/giá/stock/group/option/image, sáulượt trangđích/chuyểnbiếnthể
+ở375/768/1440, SSR/schema/canonical vàảnhsảnphẩm. Khôngđụng40/10k hàng dùngđo.
+LocalInventory thiếucode kiểm503GET/HEAD; positive cầncodeđãcấuhình, khôngtựbịa.
+Đây mớilàsourceharness/helpertest, chưa phải Merchant/runtime/Googleaccount acceptance;
+không chốt thayowner chínhsách thiếu biếnthể hoặc resendinviteSUPER_ADMIN.
+[Phạmvichuẩnbị](evidence/performance-2026-11-13/merchant-preparation-2026-11-16.json).

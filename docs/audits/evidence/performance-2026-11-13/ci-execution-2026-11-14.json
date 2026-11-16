@@ -95,31 +95,34 @@
     "no_current_full_stack_latency_result": true
   },
   "current_run": {
-    "id": 43697879265,
-    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43697879265",
-    "commit": "0fd57b0ff0aa11a7251494ee54c649ca95996198",
-    "boundary": "passed65Python/6Node/baseline/ingress; source-bound frontend reuse verified",
-    "frontend": "source unchanged; reuse subject to boundary proof",
-    "backend": "1588/1588 passed in attempt1; preserved by failed-job rerun",
+    "id": 43790978933,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43790978933",
+    "commit": "323421e8a1aabdc8e7a0cb427c4e581daf9e8f13",
+    "status": "completed_failure",
+    "frontend_reuse": "CI boundary could not obtain proof; fail-closed fallback reruns BOTHfrontendgates; localread-onlysource-boundproof true is not a substitute forCIproof",
+    "backend": "fresh1600/1600;0fail/error/skip;clean verify/package and realPostgreSQL schema/color gates passed",
+    "local_targeted": {
+      "tests": 160,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "source_fixes": [
+      "opaque cart identifiers",
+      "admin permission cold-loader race",
+      "admin status/version cold-loader race"
+    ],
     "secret_artifact_guard": {
-      "id": 43697879208,
+      "id": 43790978952,
       "conclusion": "success"
     },
-    "fix": "diagnostic exports and cleanup guards; bilingual fixture PATCH/restore; PDP500 still unknown",
+    "production_changes": false,
     "full_system_acceptance": false,
-    "isolated_stack_status": "attempt2 in progress frozen source/build/real-stack phase",
-    "setup_retry": "GitHub rerun_failed_workflow_run_jobs success; attempt2 same source; only isolated lab rerun",
-    "isolated_stack_job_id": 132764645713,
-    "attempt1": {
-      "job_id": 132763720946,
-      "failure_phase": "backend package before container startup",
-      "command": "./mvnw -B package -Dmaven.test.skip=true -DforkCount=1",
-      "exit_code": 1,
-      "duration_seconds_less_than": 1,
-      "diagnostic_categories": [],
-      "exact_cause": "unknown",
-      "official_distribution_HEAD_on_host": 200
-    }
+    "frontend": "fresh805web/1245admin;0fail/pending/todo;bothlint/build passed;standalone portable",
+    "isolated_stack_job_id": 133053207537,
+    "isolated_stack_status": "real Before functional+commerce passed; media clip.mp4 POST400 after3PNG; noAfter/browser/load/Lighthouse",
+    "gate_evidence": "ci-cart-access-fixed-gates-2026-11-16.json",
+    "runtime_evidence": "ci-commerce-runtime-2026-11-16.json"
   },
   "previous_infrastructure_run": {
     "id": 43677437126,
@@ -162,5 +165,54 @@
     "isolated_stack_job_id": 132709031884,
     "isolated_stack_status": "failed first PDP GET500 after full real stack,10kseed+restore+productionfronts+24paginationreadchecks passed",
     "partial_evidence": "ci-real-stack-partial-2026-11-15.json"
+  },
+  "previous_diagnostic_run": {
+    "id": 43697879265,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43697879265",
+    "commit": "0fd57b0ff0aa11a7251494ee54c649ca95996198",
+    "boundary": "passed65Python/6Node/baseline/ingress; source-bound frontend reuse verified",
+    "frontend": "source unchanged; reuse subject to boundary proof",
+    "backend": "1588/1588 passed in attempt1; preserved by failed-job rerun",
+    "secret_artifact_guard": {
+      "id": 43697879208,
+      "conclusion": "success"
+    },
+    "fix": "diagnostic exports and cleanup guards; bilingual fixture PATCH/restore; PDP500 still unknown",
+    "full_system_acceptance": false,
+    "isolated_stack_status": "attempt2 in progress frozen source/build/real-stack phase",
+    "setup_retry": "GitHub rerun_failed_workflow_run_jobs success; attempt2 same source; only isolated lab rerun",
+    "isolated_stack_job_id": 132764645713,
+    "attempt1": {
+      "job_id": 132763720946,
+      "failure_phase": "backend package before container startup",
+      "command": "./mvnw -B package -Dmaven.test.skip=true -DforkCount=1",
+      "exit_code": 1,
+      "duration_seconds_less_than": 1,
+      "diagnostic_categories": [],
+      "exact_cause": "unknown",
+      "official_distribution_HEAD_on_host": 200
+    }
+  },
+  "previous_css_fixed_run": {
+    "id": 43702380890,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43702380890",
+    "commit": "7ce05befd54a10f2aee36e8f20c52d0dee36863c",
+    "status": "completed failure in cart identity check; CSSPDP/revalidation passed",
+    "web_source_change": "css-tree serverExternalPackages removes proven hostabsoluteJSONpath; fullfrontendgatesrequired",
+    "standalone_portability_gate": "new postWebpack gate also mandatory in botharms; no sourcebuilddirectory reads",
+    "local_checks": {
+      "web_tests": 805,
+      "web_lint": "passed",
+      "python": 68,
+      "node": 6,
+      "baseline_files": 3,
+      "gitleaks_findings": 0
+    },
+    "secret_artifact_guard": {
+      "id": 43702380881,
+      "conclusion": "success"
+    },
+    "production_services_changed": false,
+    "full_system_acceptance": false
   }
 }

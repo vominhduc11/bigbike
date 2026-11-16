@@ -1,0 +1,25 @@
+{
+  "scope": "Prepared post-measurement functionalchecks only, not executed Merchant/runtime/performance acceptance",
+  "owned_fixtures": "one product, one generic attribute, two values/variants created with real authenticated API after allmeasurements; no40/10k measuredproduct mutation",
+  "offline_guard_tests": 11,
+  "all_python_helpers": 80,
+  "browser_cases_prepared": 6,
+  "viewports": [
+    375,
+    768,
+    1440
+  ],
+  "browser_source_syntax": "passed",
+  "browser_execution": "pending hosted isolatedstack",
+  "merchant_xml": "real fullfeed/header/sku/group/price/stock/image/options checks prepared",
+  "local_inventory": "missingstorecode GET/HEAD503 prepared; positive requiresactualconfiguredstorecode; notinvented",
+  "boundary": "existingreject-onlybrowserproxy,0600privatefiles,hostedCI/dedicatedorigins/ownedtempguards; teardownonlyownstack",
+  "qa": "independent source review including explicitvariantcart; no blocker; no runtime acceptance inferred",
+  "limitations": [
+    "generic single-axis only; no size/color/multi-axis certification",
+    "no Googleaccount approval or externaltracking/mail",
+    "reference searchAPI read prewarmscache andUIresultsstillmustmatch",
+    "Before323search didnotexecute; sourcechangesarenotbackdated asruntimeproof"
+  ],
+  "explicit_variant_cart": "prepared: realguestCSRFcart, selectedopaquevariant+inheritedsaleprice, unavailable409cartunchanged; not yet run"
+}

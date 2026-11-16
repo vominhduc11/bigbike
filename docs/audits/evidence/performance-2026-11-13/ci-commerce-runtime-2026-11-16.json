@@ -1,0 +1,109 @@
+{
+  "run": 43790978933,
+  "job": 133053207537,
+  "commit": "323421e8a1aabdc8e7a0cb427c4e581daf9e8f13",
+  "bundle_sha256": "3763e52197b307aa4966c2a20d3e73869ee56510ac9e5e9b63be8cc1fe675789",
+  "bundle_bytes": 325165,
+  "scope": "Real Before arm only; no After, API load, browser, Lighthouse or complete media acceptance; all seven owned CI services running, no OOM.",
+  "functional": {
+    "admin_bulk_reports_role_denial": "not verified by this scenario",
+    "admin_product_patch": true,
+    "customer_account_registration_and_profile_isolation": true,
+    "private_cart_isolation": true,
+    "real_guest_cart_and_checkout": true,
+    "unauthenticated_admin_denied": true
+  },
+  "commerce": {
+    "discontinued_add_quantity_checkout_denied": true,
+    "fixture_values_restored": true,
+    "price_review_409_then_reload": true,
+    "rejected_requests_no_order_payment_or_reservation": true,
+    "same_key_retry_and_replay_one_order": true,
+    "scope": "Real API/PostgreSQL; two owned simple products; variant guards separately tested"
+  },
+  "media_partial": {
+    "not_measured": [
+      "transfer-only/server-only/storage-only split",
+      "UI retry/progress",
+      "mid-stream fault injection"
+    ],
+    "note": "photo-1600.jpg was seeded as product image: this sample exercises content dedup; wall duration includes transfer/storage, no server-only claim",
+    "results": [
+      {
+        "alpha_min": 96,
+        "cache_control": null,
+        "content_length": "11056",
+        "download_request_wall_ms": 24.435788000005232,
+        "fixture": "alpha-1600.png",
+        "height": 1200,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 3.0318860000306813,
+        "server_processing_ms": null,
+        "stored_sha256": "96f69e792586fb9575ae30ff37525cb9ffc8b0ac4da7db00783f85e75b5c46fd",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 328.3349910000197,
+        "width": 1600
+      },
+      {
+        "alpha_min": 96,
+        "cache_control": null,
+        "content_length": "8530544",
+        "download_request_wall_ms": 53.93619000005856,
+        "fixture": "alpha-2400.png",
+        "height": 1500,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 45.80294300001242,
+        "server_processing_ms": null,
+        "stored_sha256": "d1f34258c5c57dc689a16ed6323d5d5b16b86fc5af74a498a57ada3ba04e88db",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 3209.415970000009,
+        "width": 2000
+      },
+      {
+        "alpha_min": 96,
+        "cache_control": null,
+        "content_length": "1018",
+        "download_request_wall_ms": 14.237676999982796,
+        "fixture": "alpha-320.png",
+        "height": 240,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 3.3396390000461906,
+        "server_processing_ms": null,
+        "stored_sha256": "ae2dde97f71e8adb6b63cd2ac9e958069cbdca6fcda8d675aa15078daecfbfef",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 31.963950999966073,
+        "width": 320
+      }
+    ]
+  },
+  "dataset_identity": {
+    "database_archive_bytes": 2302389,
+    "database_archive_sha256": "cc1ea51450923c031b9c00aba5583b21fb858cf7b54f8f510be37831618e719a",
+    "fixture_media_records": 1,
+    "fixture_product_count": 40,
+    "large_catalog_count": 10000,
+    "media_manifest_sha256": "1e6adad5013ec18877b19d4be58511f64f68940e1e111d086014eaca74e5b210",
+    "media_objects": 3,
+    "media_total_bytes": 123809
+  },
+  "failure": {
+    "phase": "functional-and-media",
+    "operation": "POST /api/v1/admin/media",
+    "status": 400,
+    "next_sorted_fixture": "clip.mp4",
+    "proven_uploaded_fixtures": [
+      "alpha-1600.png",
+      "alpha-2400.png",
+      "alpha-320.png"
+    ],
+    "exact_error_response_not_exported": true
+  },
+  "production_changes": false,
+  "full_system_acceptance": false
+}

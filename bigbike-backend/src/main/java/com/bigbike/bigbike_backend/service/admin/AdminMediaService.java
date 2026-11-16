@@ -796,11 +796,72 @@ public class AdminMediaService {
                     "File must not be empty / tệp không được để trống.");
         }
         String detected = normalizeMimeType(TIKA.detect(Arrays.copyOf(header, read)));
+        // Tika core labels ISO-base MP4 as generic QuickTime unless mp41/mp42 is
+        // the major brand. Refine content, never a filename or MIME hint.
+        if ("video/mp4".equals(declared) && "video/quicktime".equals(detected)
+                && hasExplicitMp4Compatibility(bytes, read)
+                && hasVideoHandler(bytes, 0, bytes.length, 0, new int[] {1024})) {
+            detected = "video/mp4";
+        }
         if (!ALLOWED_MIME_TYPES.contains(detected) || !detected.equals(declared)) {
             throw ValidationException.fromField("file", "MIME_MISMATCH",
                     "Only JPEG/JPG, PNG, WebP images and MP4 video are accepted; file content does not match the declared type / chỉ nhận ảnh JPEG/JPG, PNG, WebP và video MP4; nội dung tệp không khớp MIME khai báo (detected/phát hiện: " + detected + ").");
         }
         return declared;
+    }
+
+    private static boolean hasExplicitMp4Compatibility(byte[] bytes, int headerLength) {
+        if (headerLength < 20 || !boxType(bytes, 4, "ftyp")) return false;
+        long size = unsignedBoxSize(bytes, 0);
+        if (size < 20 || size > headerLength || (size - 16) % 4 != 0
+                || !(boxType(bytes, 8, "isom") || boxType(bytes, 8, "iso2"))) return false;
+        for (int offset = 16; offset < (int) size; offset += 4) {
+            if (boxType(bytes, offset, "mp41") || boxType(bytes, offset, "mp42")) return true;
+        }
+        return false;
+    }
+
+    /** Walk only the fixed container path; skip payload without decoding or scanning it. */
+    private static boolean hasVideoHandler(byte[] bytes, int start, int end, int depth, int[] budget) {
+        String[] path = {"moov", "trak", "mdia", "hdlr"};
+        for (int offset = start; offset < end;) {
+            if (--budget[0] < 0 || end - offset < 8) return false;
+            long size = unsignedBoxSize(bytes, offset);
+            int header = 8;
+            if (size == 1) {
+                if (end - offset < 16) return false;
+                // All received bytes fit in a Java array: a high 32-bit word is invalid here.
+                if (unsignedBoxSize(bytes, offset + 8) != 0) return false;
+                size = unsignedBoxSize(bytes, offset + 12);
+                header = 16;
+            } else if (size == 0) {
+                size = end - offset;
+            }
+            if (size < header || size > end - offset) return false;
+            int boxEnd = offset + (int) size;
+            if (boxType(bytes, offset + 4, path[depth])) {
+                if (depth == path.length - 1) {
+                    // FullBox flags and pre_defined precede the handler_type.
+                    if (size >= header + 12 && boxType(bytes, offset + header + 8, "vide")) return true;
+                } else if (hasVideoHandler(bytes, offset + header, boxEnd, depth + 1, budget)) {
+                    return true;
+                }
+            }
+            offset = boxEnd;
+        }
+        return false;
+    }
+
+    private static long unsignedBoxSize(byte[] bytes, int offset) {
+        return ((long) (bytes[offset] & 255) << 24) | ((long) (bytes[offset + 1] & 255) << 16)
+                | ((long) (bytes[offset + 2] & 255) << 8) | (bytes[offset + 3] & 255);
+    }
+
+    private static boolean boxType(byte[] bytes, int offset, String type) {
+        for (int index = 0; index < 4; index++) {
+            if (bytes[offset + index] != type.charAt(index)) return false;
+        }
+        return true;
     }
 
     private static String normalizeMimeType(String mimeType) {
