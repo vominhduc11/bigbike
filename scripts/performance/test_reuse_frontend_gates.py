@@ -12,6 +12,9 @@ class ReuseProofTest(unittest.TestCase):
                 'Unit regressions', 'Preserve only sanitized counts and enforce no skips',
                 'Run npm run lint > private', 'Run npm run build > private')]}
             for app in ('bigbike-web', 'bigbike-admin')]}
+        self.jobs['jobs'][0]['steps'].append({
+            'name': 'Check standalone portability without access to the build directory',
+            'conclusion': 'success'})
 
     def test_can_reuse_successful_frontends_even_when_unrelated_backend_failed(self):
         self.run['conclusion'] = 'failure'
@@ -32,3 +35,12 @@ class ReuseProofTest(unittest.TestCase):
         resumed = original.replace('    needs: boundary', "    if: needs.boundary.outputs.reuse_frontend != 'true'\n    needs: boundary")
         self.assertEqual(frontend_block(original), frontend_block(resumed))
         self.assertNotEqual(frontend_block(original), frontend_block(resumed.replace('env: original', 'env: changed')))
+
+    def test_refuses_missing_or_nonpassing_standalone_portability_gate(self):
+        for conclusion in ('skipped', 'failure', None):
+            jobs = deepcopy(self.jobs)
+            jobs['jobs'][0]['steps'][-1]['conclusion'] = conclusion
+            self.assertFalse(successful_jobs(self.run, jobs))
+        jobs = deepcopy(self.jobs)
+        jobs['jobs'][0]['steps'].pop()
+        self.assertFalse(successful_jobs(self.run, jobs))

@@ -1,0 +1,65 @@
+{
+  "initial_test_development_attempt": [
+    {
+      "class": "service.auth.AdminPermissionServiceTest",
+      "tests": 4,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "nonpassing": [
+        {
+          "method": "lateLoaderCannotRestoreRevokedPermissions",
+          "failure_type": "org.opentest4j.AssertionFailedError"
+        },
+        {
+          "method": "lateLoaderCannotOverwriteFreshPermissions",
+          "failure_type": "org.opentest4j.AssertionFailedError"
+        }
+      ]
+    },
+    {
+      "class": "service.auth.AdminAccountStatusServiceTest",
+      "tests": 4,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "nonpassing": [
+        {
+          "method": "lateLoaderCannotOverwriteFreshDisabledSnapshot",
+          "failure_type": "org.opentest4j.AssertionFailedError"
+        },
+        {
+          "method": "lateLoaderCannotRestoreActiveStatusAndOldAccessVersion",
+          "failure_type": "org.opentest4j.AssertionFailedError"
+        }
+      ]
+    },
+    {
+      "class": "mapper.CartMapperTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 4,
+      "skipped": 0,
+      "nonpassing": [
+        {
+          "method": "opaqueVariantIdSurvivesResponseMapping",
+          "failure_type": "java.lang.NullPointerException"
+        },
+        {
+          "method": "legacyUuidOnlyRowsKeepTheirExistingIdentifiers",
+          "failure_type": "java.lang.NullPointerException"
+        },
+        {
+          "method": "simpleProductDoesNotInventVariantIdentity",
+          "failure_type": "java.lang.NullPointerException"
+        },
+        {
+          "method": "opaqueProductIdSurvivesResponseMapping",
+          "failure_type": "java.lang.NullPointerException"
+        }
+      ]
+    }
+  ],
+  "note": "Cart NPEs in this initial attempt were invalid test fixtures, not app findings; persisted cart-line IDs added and source-unchanged rerun produced2assertion failures and0errors. Cache4assertion failures valid.",
+  "authoritative_cart_before": "cart-mapper-valid-fixture-before-2026-11-16.json"
+}

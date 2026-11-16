@@ -1,0 +1,78 @@
+{
+  "scope": "9 targeted classes only; not a new full-backend run",
+  "command": "MAVEN_OPTS=-Xmx512m JAVA_TOOL_OPTIONS=-Xmx768m ./mvnw -B -DforkCount=1 -Dtest=AdminPermissionServiceTest,AdminAccountStatusServiceTest,CartMapperTest,AdminAccessChangeServiceTest,AdminAuthApiTest,AdminUsersApiTest,AdminRolesApiTest,Phase1ECartApiTest,Phase1FCheckoutApiTest test",
+  "exit_code": 0,
+  "classes": [
+    {
+      "class": "service.auth.AdminPermissionServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "service.auth.AdminAccountStatusServiceTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "mapper.CartMapperTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "service.auth.AdminAccessChangeServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "api.AdminAuthApiTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "api.AdminUsersApiTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "api.AdminRolesApiTest",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "api.Phase1ECartApiTest",
+      "tests": 27,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "class": "api.Phase1FCheckoutApiTest",
+      "tests": 42,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "totals": {
+    "tests": 160,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "independent_QA": "ci_independent_review: no blocking source/test finding; no tests run by reviewer",
+  "production_changes": false
+}

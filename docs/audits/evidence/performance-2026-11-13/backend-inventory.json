@@ -33,11 +33,12 @@
         }
       ],
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Targeted MockMvc/H2 admin users/roles/auth suites passed in9class160test run; no full-role browser/PG load certification",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
+      "gap": "No representative admin-user-list performance profile; resend-invite SUPER_ADMIN hierarchy awaits owner policy. Cache race fixed/tested separately.",
+      "source_review_scope": "All5admin-user/all4rolecontroller methods, services, propagation and access caches; independent source review16Nov"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminAttributeController.java",
@@ -925,11 +926,12 @@
         }
       ],
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Targeted MockMvc/H2 admin users/roles/auth suites passed in9class160test run; no full-role browser/PG load certification",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "Candidate After not yet run; no complete per-controller authenticated load or all-business-flow acceptance. See any scoped runtime_partial_evidence."
+      "gap": "No representative admin-user-list performance profile; resend-invite SUPER_ADMIN hierarchy awaits owner policy. Cache race fixed/tested separately.",
+      "source_review_scope": "All5admin-user/all4rolecontroller methods, services, propagation and access caches; independent source review16Nov"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/api/admin/AdminSettingsController.java",

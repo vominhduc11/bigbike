@@ -1,0 +1,51 @@
+{
+  "date": "2026-11-16",
+  "fixes": [
+    {
+      "component": "CartMapper",
+      "problem": "opaque prod_/var_/wp-* catalog IDs were lost when legacyUUID columns were null",
+      "canonical": [
+        "API_CONTRACT.md Commerce Mutation Contracts",
+        "DATA_CONTRACT.md cart_items V74/V176"
+      ],
+      "before": "valid persisted-line fixture4tests:2assertion failures,0errors",
+      "after": "4mapping tests pass inclUUIDfallback/simpleproduct; partof160targeted",
+      "source_changes": "explicit productPk/variantPk mapping with UUIDfallback; no price/stock/selectionrule changes",
+      "rollback": "reverse only two mapping annotations/helper; existingcartrows/schema untouched"
+    },
+    {
+      "component": "AdminPermissionService/AdminAccountStatusService",
+      "problem": "cold loader could republish oldpermissions/active status+version after commit-timeevict; noTTL",
+      "canonical": [
+        "PERMISSION_MATRIX.md Admin access-change lifecycle"
+      ],
+      "before": "4deterministic latch races fail; no sleeps",
+      "after": "8unit tests pass inclnormalizedimmutablehotreads,otherkeys,unknownentries; partof160targeted",
+      "source_changes": "generation-checked publication serializedwithevict; DBoutside lock, hotreadslockfree",
+      "scope_limit": "does not cancel already authorized in-flight request; no multi-replica certification",
+      "risk": "unrelatedevict can conservativelydiscard another coldpublication, causingone extraDBlookup; existinghotentries retained",
+      "rollback": "reverse only generation/publicationlock diff; reintroducesstalerace so needsoperatorreview"
+    }
+  ],
+  "independent_review": {
+    "agent": "ci_independent_review",
+    "source_and_tests": "no blocking finding; no tests run by reviewer",
+    "minor_optional_coverage_gap": "both-IDs-present precedence case not separately tested; source correct"
+  },
+  "verification": {
+    "targeted_classes": 9,
+    "tests": 160,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "full_backend": "pending freshCI afternewsource; prior7ce full1588passed",
+    "helper_python": 69,
+    "helper_node": 6
+  },
+  "owner_decisions_pending": [
+    "variant selection required before cart/checkout when variants exist",
+    "who may resend invite for pending SUPER_ADMIN account"
+  ],
+  "production_changes": false,
+  "full_system_acceptance": false
+}

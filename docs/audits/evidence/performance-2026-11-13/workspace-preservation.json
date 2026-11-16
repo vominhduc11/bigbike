@@ -2,9 +2,12 @@
   "initial_file_count": 2991,
   "changed_initial_files": [
     ".github/workflows/performance-validation.yml",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/mapper/CartMapper.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/PublishedProductListingCache.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/AdminAccountStatusService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/AdminPermissionService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/auth/PasswordService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java",
@@ -32,5 +35,5 @@
   "unexpected_changes": [],
   "missing_initial_files": [],
   "all_other_initial_files_identical": true,
-  "scope": "Original2991 files preserved except27 explicit source/test/docs/tooling edits; added css-tree server externalization to repair proven relocated standalone CSS data anchor. Main/index untouched."
+  "scope": "Original2991 files preserved except30 deliberate source/test/docs/tooling edits; newcart opaqueID mapper+twoaccesscache publication fixes; main/index untouched."
 }

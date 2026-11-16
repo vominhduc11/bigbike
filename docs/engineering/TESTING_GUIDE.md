@@ -634,3 +634,22 @@ Export booleans/counts/fixed failure codes only; no absolute paths or logs. A lo
 replica that can read its original build directory is insufficient portability proof.
 The CI Docker PDP/revalidation scenario remains mandatory; this package gate does
 not replace real application rendering or end-to-end acceptance.
+
+Admin access-cache concurrency regression (15/11): PERMISSION_MATRIX's Admin
+access-change lifecycle applies to later requests after commit. Test a cold DB
+lookup paused after reading an old permission/account snapshot; commit-time evict
+must prevent that loader from repopulating either cache. A later request must
+read current permissions/status/accessVersion, including disable/revoke cases.
+Use deterministic latches, not timing sleeps. Preserve unknown-role/user behavior,
+role normalization, immutable permission lists and cached hot reads. Keep DB work
+outside any publication lock; serialize invalidation with generation-checked
+publication only. This does not cancel an already authorized request or introduce
+a role/session rule. Do not change resend-invite hierarchy without an owner rule.
+
+Frontend reuse anchor updated16/11 after the CSS portability repair: immutable
+run43702380890 / 7ce05befd54a10f2aee36e8f20c52d0dee36863c replaces the historical
+f85 reference above. Both frontend lint/unit/no-skip/build jobs passed; the web's
+standalone portability step also passed. Compare check_standalone.py as well as
+both app trees and summarize_tests.py, and require that explicit web step success.
+The later cart failure in that run does not invalidate its completed frontend
+gates; backend changes still require a fresh full backend gate and runtime checks.

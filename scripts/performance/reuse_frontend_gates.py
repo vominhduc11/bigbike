@@ -7,8 +7,8 @@ from pathlib import Path
 import subprocess
 import urllib.request
 
-ANCHOR = 'f85d92a682238f3af17361b608219be995ca1257'
-RUN_ID = 43670539154
+ANCHOR = '7ce05befd54a10f2aee36e8f20c52d0dee36863c'
+RUN_ID = 43702380890
 REPOSITORY = 'vominhduc11/bigbike'
 WORKFLOW = '.github/workflows/performance-validation.yml'
 CONDITION = "    if: needs.boundary.outputs.reuse_frontend != 'true'\n"
@@ -35,6 +35,10 @@ def successful_jobs(run, report):
         for prefix in ('Run npm run lint >', 'Run npm run build'):
             if not any(step.get('name', '').startswith(prefix) and step.get('conclusion') == 'success' for step in steps):
                 return False
+        if app == 'bigbike-web' and not any(
+                step.get('name') == 'Check standalone portability without access to the build directory'
+                and step.get('conclusion') == 'success' for step in steps):
+            return False
     return True
 
 
@@ -43,7 +47,8 @@ def decision(root, fetch):
               'anchor_url': f'https://github.com/{REPOSITORY}/actions/runs/{RUN_ID}'}
     try:
         diff = subprocess.run(['git', 'diff', '--quiet', ANCHOR, 'HEAD', '--',
-            'bigbike-web', 'bigbike-admin', 'scripts/performance/summarize_tests.py'], cwd=root)
+            'bigbike-web', 'bigbike-admin', 'scripts/performance/summarize_tests.py',
+            'scripts/performance/check_standalone.py'], cwd=root)
         if diff.returncode != 0:
             return {**result, 'reason': 'frontend_source_changed_or_unavailable'}
         previous = subprocess.check_output(['git', 'show', ANCHOR + ':' + WORKFLOW], cwd=root, text=True)

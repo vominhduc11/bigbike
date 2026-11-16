@@ -36,10 +36,16 @@ public interface CartMapper {
     CartTotalsResponse toTotalsResponse(CartEntity cart);
 
     @Mapping(target = "image", expression = "java(toImageAsset(item))")
+    @Mapping(target = "productId", expression = "java(item == null ? null : catalogId(item.getProductPk(), item.getProductId()))")
+    @Mapping(target = "productVariantId", expression = "java(item == null ? null : catalogId(item.getProductVariantPk(), item.getProductVariantId()))")
     @Mapping(target = "available", expression = "java(!unavailableIds.contains(item.getId()))")
     @Mapping(target = "brandName", source = "metadata.brandName")
     @Mapping(target = "categoryName", source = "metadata.categoryName")
     CartItemResponse toItemResponse(CartItemEntity item, @Context Set<UUID> unavailableIds, Metadata metadata);
+
+    default String catalogId(String primaryKey, UUID legacyId) {
+        return primaryKey != null ? primaryKey : legacyId != null ? legacyId.toString() : null;
+    }
 
     default ImageAsset toImageAsset(CartItemEntity item) {
         if (item.getProductImageUrl() == null || item.getProductImageUrl().isBlank()) {

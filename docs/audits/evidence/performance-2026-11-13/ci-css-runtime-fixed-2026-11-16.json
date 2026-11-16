@@ -1,0 +1,50 @@
+{
+  "run": 43702380890,
+  "job": 132779312608,
+  "commit": "7ce05befd54a10f2aee36e8f20c52d0dee36863c",
+  "bundle_sha256": "6f0f7d2d617542fda6cb93ca42e1fc530553683bb40397cdd82135dcd991154e",
+  "before_status": {
+    "arm": "before",
+    "complete": false,
+    "failure_type": "AssertionError",
+    "phase": "functional-and-media"
+  },
+  "revalidation": {
+    "change_observation": {
+      "attempts": 1,
+      "wall_ms": 93.25145399998291
+    },
+    "committed_change_visible_in_rendered_h1": true,
+    "fixture_restored": true,
+    "restore_observation": {
+      "attempts": 1,
+      "wall_ms": 137.36745400001382
+    },
+    "scope": "Real Admin commit -> internal authenticated Next revalidation -> HTML; no direct secret call",
+    "unauthorized_refresh_denied": true
+  },
+  "standalone_portability": {
+    "build_host_css_anchors": 0,
+    "css_roundtrip": true,
+    "mdn_data_inside_artifact": true,
+    "native_css_tree": true,
+    "original_build_directory_readable": false,
+    "portable": true,
+    "scope": "css-tree data portability; not full application acceptance"
+  },
+  "dataset_identity": {
+    "database_archive_bytes": 2301044,
+    "database_archive_sha256": "fc5ef3ef96fa4b1b205c61367b04635e1ef269a69a063b5184d9fa1b459f0602",
+    "fixture_media_records": 1,
+    "fixture_product_count": 40,
+    "large_catalog_count": 10000,
+    "media_manifest_sha256": "2b175bc0c1c1699a1a5c81abc7dd745c7e3129d4dc86d63a8471c2ebb64d2ded",
+    "media_objects": 3,
+    "media_total_bytes": 123809
+  },
+  "large_page_complete": true,
+  "failure": "functional_checks cart line productId assertion; generated prod_ catalog keys are mapped from nulllegacyUUID instead of varchar product_pk",
+  "performance_after_executed": false,
+  "media_load_browser_measurements_completed": false,
+  "whole_system_acceptance": false
+}

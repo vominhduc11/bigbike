@@ -1,0 +1,56 @@
+{
+  "run": 43702380890,
+  "commit": "7ce05befd54a10f2aee36e8f20c52d0dee36863c",
+  "jobs": {
+    "132776227493": {
+      "bigbike-admin.json": {
+        "file_reports": 130,
+        "nonpassing_cases": [],
+        "numFailedTestSuites": 0,
+        "numFailedTests": 0,
+        "numPassedTestSuites": 356,
+        "numPassedTests": 1245,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "numTotalTestSuites": 356,
+        "numTotalTests": 1245,
+        "success": true
+      }
+    },
+    "132776227503": {
+      "bigbike-web.json": {
+        "file_reports": 119,
+        "nonpassing_cases": [],
+        "numFailedTestSuites": 0,
+        "numFailedTests": 0,
+        "numPassedTestSuites": 299,
+        "numPassedTests": 805,
+        "numPendingTests": 0,
+        "numTodoTests": 0,
+        "numTotalTestSuites": 299,
+        "numTotalTests": 805,
+        "success": true
+      },
+      "standalone.json": {
+        "build_host_css_anchors": 0,
+        "css_roundtrip": true,
+        "mdn_data_inside_artifact": true,
+        "native_css_tree": true,
+        "original_build_directory_readable": false,
+        "portable": true,
+        "scope": "css-tree data portability; not full application acceptance"
+      }
+    },
+    "132778438494": {
+      "backend.json": {
+        "errors": 0,
+        "failures": 0,
+        "nonpassing_cases": [],
+        "passed": 1588,
+        "skipped": 0,
+        "suite_files": 206,
+        "tests": 1588
+      }
+    }
+  }
+}

@@ -2185,13 +2185,20 @@ keep `product_variant_pk = NULL` and fall back to product-level restore. Fixed B
 |---|---|---|---|---|---|
 | `cart_items` | `product_variant_pk` | `VARCHAR(64)` | YES | `null` | Varchar snapshot of `product_variants.id` for the line's variant — the cart-side counterpart of `order_line_items.product_variant_pk` (V158) and `cart_items.product_pk` (V74). |
 
-The legacy UUID columns `cart_items.product_id` / `product_variant_id` are `null` for migrated wp-*
-catalog (string PKs), which made cart-checkout skip stock for those lines (see V176 fix box above).
+The legacy UUID columns `cart_items.product_id` / `product_variant_id` are `null` for non-UUID
+catalog keys, including migrated `wp-*` and admin-created `prod_*` / `var_*`, which
+made cart-checkout skip stock for those lines (see V176 fix box above).
 `product_pk` was already stored; `product_variant_pk` adds the variant side so checkout resolves and
 decrements the exact variant. Populated by `CartService.addItem`; cart item dedup, guest-cart merge,
 availability marking, and quantity re-validation all key on `product_pk` / `product_variant_pk` so
 two distinct wp-* products no longer collapse onto one cart line. V176 backfills existing rows from
 the UUID column (exact) and from `product_pk` + `variant_name` (best-effort, only when unambiguous).
+
+Cart responses also use the string snapshots for `productId` / `productVariantId`.
+If a historical row has no string snapshot, preserve its legacy UUID string;
+when neither variant identifier exists, return null rather than inventing a variant.
+No migration is needed for this mapper correction: V74/V176 already provide and
+populate the columns. Existing UUID-only in-memory fixtures remain supported.
 
 ### customers / customer_sessions — social login + remember-me (V129)
 

@@ -778,6 +778,15 @@ or order state changes. See `DATA_CONTRACT.md` §"Cart/order analytics metadata"
 
 ## Commerce Mutation Contracts
 
+Cart item `productId` and `productVariantId` expose the catalog's opaque string
+identifiers, including admin-created `prod_*` / `var_*` and historical `wp-*`.
+Resolve response identifiers from `cart_items.product_pk` / `product_variant_pk`;
+for a historical UUID-only row without the string snapshot, retain the legacy
+UUID string fallback. A simple product keeps `productVariantId = null`. Do not
+lose a valid catalog identifier merely because its legacy UUID column is null.
+This is a response-mapping repair consistent with V74/V176; no schema or price,
+stock, cart ownership, checkout authorization or variant-selection rule changes.
+
 | Endpoint | Current contract | Status | Evidence |
 |---|---|---|---|
 | `POST /api/v1/checkout` | Revalidates price/availability state and creates order/payment rows. Availability is gated per-variant by `isAvailable` (boolean), or by `stockState` for no-variant products; there is **no quantity decrement** (V261). The old product-level `forceOutOfStock` hard override (`STOCK_RULE_004`) was removed (V342, 2026-07-19). Billing **and** resolved shipping address require `province` + `ward` + `addressLine1` (two-tier VN address; blank strings in a custom shipping block fall back to billing). No shipping-method choice and **no shipping fee** (`shippingAmount = 0`, owner decision 2026-06-23, `SHIP_RULE_001`). `paymentMethod` accepts only `COD` or omission; explicit `BANK_TRANSFER`, `BACS`, `CHECK`, `CARD` and other values are rejected before persistence. Optional `locale` accepts only `vi|en`, defaults to `vi`, and is a passive order snapshot used only to select the language of a later review invitation. Optional `analyticsClientId` is the pseudonymous GA4 browser id read through the official Google tag API; the backend accepts only the numeric-dot-numeric shape, otherwise discards it, and snapshots it solely to join a later cancellation correction to the original browser. It contains no customer-entered data and changes no price, payment or order processing. | `OWNER_CONFIRMED_2026-09-09` | `CheckoutService.java`, `CheckoutSupport.java`, checkout and invitation tests |

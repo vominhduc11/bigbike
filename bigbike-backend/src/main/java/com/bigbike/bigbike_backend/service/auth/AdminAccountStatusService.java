@@ -3,6 +3,7 @@ package com.bigbike.bigbike_backend.service.auth;
 import com.bigbike.bigbike_backend.persistence.repository.auth.AdminUserJpaRepository;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,9 @@ public class AdminAccountStatusService {
 
     private final AdminUserJpaRepository adminUserRepo;
     private final ConcurrentHashMap<UUID, Snapshot> cache = new ConcurrentHashMap<>();
+    // Commit-time eviction must also invalidate an older DB load still in flight.
+    private final AtomicLong generation = new AtomicLong();
+    private final Object publicationLock = new Object();
 
     /** Returns null if the admin user no longer exists (deleted). */
     public Snapshot getSnapshot(UUID userId) {
@@ -28,10 +32,13 @@ public class AdminAccountStatusService {
         if (cached != null) {
             return cached;
         }
+        long observedGeneration = generation.get();
         return adminUserRepo.findById(userId)
                 .map(u -> {
                     Snapshot snapshot = new Snapshot(u.getRole(), u.getStatus(), u.getAccessVersion());
-                    cache.put(userId, snapshot);
+                    synchronized (publicationLock) {
+                        if (observedGeneration == generation.get()) cache.put(userId, snapshot);
+                    }
                     return snapshot;
                 })
                 .orElse(null);
@@ -39,7 +46,10 @@ public class AdminAccountStatusService {
 
     public void evict(UUID userId) {
         if (userId != null) {
-            cache.remove(userId);
+            synchronized (publicationLock) {
+                generation.incrementAndGet();
+                cache.remove(userId);
+            }
         }
     }
 }

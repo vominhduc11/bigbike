@@ -2,15 +2,14 @@
 
 Tiếp nối [báo cáo 12/11](PERFORMANCE_OPTIMIZATION_2026-11-12.md). Đây là kết quả sửa source, kiểm thử và benchmark thành phần; **chưa nghiệm thu hiệu năng toàn hệ thống, chưa triển khai production**. Không dùng số liệu container hiện tại để gọi là After của source mới. Bốn tối ưu đợt trước được giữ nguyên và kiểm tra regression, không ghi thành thành quả mới.
 
-Cập nhật 15/11: backend đã đạt 1.588/1.588 ở local UTC và các lượt GitHub;
-website 805/805, Admin 1.245/1.245 cùng lint/build đã đạt trên nguồn tương ứng.
-Hệ thống CI thật đã nhập 10.000 sản phẩm nháp, thử snapshot/restore và kiểm tra
-các trang Admin mẫu. Trang sản phẩm trong container còn lỗi 500; API nội bộ trả
-200 trong khoảng 45ms. Đã tìm thấy và sửa nguồn lỗi đóng gói CSS chứa đường dẫn
-máy build. Sau sửa, web lint và 805 kiểm thử đạt; 68 kiểm thử Python, 6 Node đạt.
-Build production mới và kiểm lại trang trong container đang chuẩn bị chạy trên CI.
-Chưa có bảng Before/After API/browser/media toàn hệ thống. Các đoạn theo ngày bên
-dưới giữ kết quả lịch sử; trạng thái chạy mới nhất ở
+Cập nhật 16/11: lỗi đóng gói CSS đã được xác minh sửa thành công trong CI7ce:
+PDP mở được, thao tác đổi tên/khôi phục từ Admin xuất hiện trong HTML thật. Hai
+frontend lint/test/build và chốt standalone đều đạt (web805, Admin1245). Lượt
+backend đầy đủ gần nhất1588 đạt thuộc7ce. Sau đó phát hiện/sửa mapper làm mất mã
+sản phẩm dạng chuỗi trong giỏ và hai cuộc đua cache quyền/trạng thái quản trị.
+Nguồn mới đã đạt160 kiểm thử tập trung, có QA source độc lập; full backend mới
+và nghiệm thu Before/After toàn hệ thống vẫn chờ CI. Không triển khai shop.
+Trạng thái chạy mới nhất:
 [ci-execution-2026-11-14.json](evidence/performance-2026-11-13/ci-execution-2026-11-14.json).
 
 ## 1. Workspace và môi trường
@@ -132,10 +131,10 @@ Kết quả cuối đã có sau tích hợp; giữ cả bằng chứng các lư�
 
 - Website đầy đủ: **119 tệp, 805/805 đạt**, 0 fail/skip/todo.
 - Admin đầy đủ: **130 tệp, 1.245/1.245 đạt**, 0 fail/skip/todo. Một lượt Admin khởi chạy sớm bị Lead dừng sau vài giây; không tính kết quả lượt đó. Kết quả trên là lượt tuần tự riêng hoàn tất.
-- Backend đầy đủ hiện tại: **206 suite, 1.588/1.588 đạt**, 0 failure/error/skip; verify/package UTC local và GitHub đều đạt, gồm8 ca thương mại mới. [backend-homepage-isolated-full-summary.json](evidence/performance-2026-11-13/backend-homepage-isolated-full-summary.json), [ci-relay-backend-results.json](evidence/performance-2026-11-13/ci-relay-backend-results.json). Giữ riêng lượt trước thương mại1.580 và trước sửa dummy1.576 trong [backend-full-summary.json](evidence/performance-2026-11-13/backend-full-summary.json); không cộng trùng các nhóm.
+- Backend đầy đủ gần nhất, trước ba sửa ngày16/11: **206 suite, 1.588/1.588 đạt**, 0 failure/error/skip; verify/package UTC local và GitHub đều đạt, gồm8 ca thương mại mới. [backend-homepage-isolated-full-summary.json](evidence/performance-2026-11-13/backend-homepage-isolated-full-summary.json), [ci-relay-backend-results.json](evidence/performance-2026-11-13/ci-relay-backend-results.json). Giữ riêng lượt trước thương mại1.580 và trước sửa dummy1.576 trong [backend-full-summary.json](evidence/performance-2026-11-13/backend-full-summary.json); không cộng trùng các nhóm.
 - Backend đầy đủ lượt đầu: **1.572 ca, 1.571 đạt, 1 fail, 0 skip/error**; lỗi fixture phone ở trên. Giữ [backend-full-initial-summary.json](evidence/performance-2026-11-13/backend-full-initial-summary.json), không che thành xanh. Các ca V1095 JSONB/rollback, migration cũ, catalog và media đều đạt trong lượt này.
 - Backend sạch tập trung đầu:26/26; sort5/5; media26/26. Không cộng các nhóm trùng để gọi là số ca duy nhất.
-- Tooling hiện tại **68/68 Python + 6/6 Node**; gồm8 ca relay mới với TCP thật do bài kiểm sở hữu. Cấu hình Compose7service/mạng internal và baseline3file đạt; native browser cache/egress đã đạt riêng. Stack đã chạy tới hạ tầng khỏe, đang kiểm lại đường truy cập; chưa có pg_restore/Lighthouse/load hoàn tất. Mock tại ranh giới công cụ không đi vào ứng dụng hay phép đo.
+- Tooling hiện tại **69/69 Python + 6/6 Node**; gồm8 ca relay mới với TCP thật do bài kiểm sở hữu. Cấu hình Compose7service/mạng internal và baseline3file đạt; native browser cache/egress đã đạt riêng. Stack đã chạy tới hạ tầng khỏe, đang kiểm lại đường truy cập; chưa có pg_restore/Lighthouse/load hoàn tất. Mock tại ranh giới công cụ không đi vào ứng dụng hay phép đo.
 - QA nguồn độc lập: [ci-independent-review.json](evidence/performance-2026-11-13/ci-independent-review.json), [independent-database-qa.json](evidence/performance-2026-11-13/independent-database-qa.json), [independent-frozen-dataset-qa.json](evidence/performance-2026-11-13/independent-frozen-dataset-qa.json), [frontend-media-ci-qa.md](evidence/performance-2026-11-13/frontend-media-ci-qa.md). Những finding được sửa source không được gọi là đã chạy runtime.
 
 ## 7. Luồng kinh doanh, SEO, tracking và bảo mật
@@ -154,7 +153,7 @@ Chưa có bằng chứng mới cho mọi tổ hợp khuyến mãi/biến thể/n
 
 ## 9. Gói bàn giao, triển khai và hoàn tác để review
 
-Đối chiếu [workspace-preservation.json](evidence/performance-2026-11-13/workspace-preservation.json): ngoài 27 tệp được sửa có chủ đích trong task, tất cả tệp nguồn có trước còn nguyên dấu kiểm; không có tệp ban đầu bị mất. [frozen-source-proof.json](evidence/performance-2026-11-13/frozen-source-proof.json) thực hành trên hai bản sao tất cả tệp trong snapshot nguồn cuối của cùng workspace: chỉ đúng ba file tối ưu khác nhau, mọi tệp khác trùng; chỉ mô phỏng biến môi trường để kiểm công cụ file, không chạy stack/load local.
+Đối chiếu [workspace-preservation.json](evidence/performance-2026-11-13/workspace-preservation.json): ngoài 30 tệp được sửa có chủ đích trong task, tất cả tệp nguồn có trước còn nguyên dấu kiểm; không có tệp ban đầu bị mất. [frozen-source-proof.json](evidence/performance-2026-11-13/frozen-source-proof.json) thực hành trên hai bản sao tất cả tệp trong snapshot nguồn cuối của cùng workspace: chỉ đúng ba file tối ưu khác nhau, mọi tệp khác trùng; chỉ mô phỏng biến môi trường để kiểm công cụ file, không chạy stack/load local.
 
 Source mới thuộc backend comparator, decoded-image reuse, cache publication, dummy password, V1095 và các test; tooling thuộc `scripts/performance/` và workflow. Canonical cập nhật DATA/API/INTEGRATION/TESTING/DEPLOYMENT; không đổi API shape, quyền, trạng thái hay production dependency/index/env.
 
@@ -366,3 +365,33 @@ Web lint, 805/805 kiểm thử, 68 Python và 6 Node đạt. Production build m�
 PDP chưa xác minh. Bằng chứng: standalone-css-portability-2026-11-15.json,
 ci-pdp-failure-2026-11-15.json, web-portability-unit-results.json. Có 27 tệp gốc được
 sửa có chủ đích; toàn bộ tệp gốc khác và main/index được bảo toàn.
+
+### Tiếp tục16/11: CSS đã qua runtime; sửa giỏ và cache quản trị
+
+Run43702380890/7ce đã vượt cả frontend, backend1588 và chốt đóng gói CSS. Trên
+hệ thống thật, HTML sản phẩm phản ánh đổi tên rồi khôi phục từ Admin, mỗi lần
+quan sát đầu tiên đều đạt. Đây là kiểm chức năng, không phải P95 hoặc INP.
+Lượt chạy dừng ở assertion mã sản phẩm của giỏ, trước checkout/media/browser/load.
+Source xác nhận sản phẩm mới có ID prod_* và biến thể var_*, còn CartMapper lấy
+cột UUID cũ đang null. Đã sửa về product_pk/product_variant_pk với fallback UUID
+cho bản ghi cũ; không làm yếu assertion, đổi giá, tồn kho hay quy tắc chọn biến thể.
+
+QA độc lập phát hiện cache quyền và trạng thái quản trị có thể tái lưu kết quả đọc
+cũ sau invalidation. Không TTL nên các yêu cầu sau có thể nhận dữ liệu cũ lâu dài.
+Bốn kiểm thử có latch tái hiện thất bại trên source cũ; thêm generation và khóa
+ngắn cho publish/evict, giữ DB ngoài khóa và hot reads không khóa. Hai cache không
+đổi vai trò/quyền/TTL/chính sách phiên. Cart có hai assertion thất bại trên fixture
+hợp lệ trước sửa; fixture đầu thiếu ID dòng giỏ được sửa và ghi riêng, không tính
+NPE của fixture là lỗi ứng dụng.
+
+Sau tích hợp,9 lớp/160 kiểm thử đạt,0fail/error/skip; gồm12 ca mới cho hai cache và
+mapper. QA độc lập đọc source/test không thấy lỗi chặn; toàn bộ backend mới chưa
+chạy. Frontend có thể reuse7ce khi chứng minh cùng source, gate và chốt standalone;
+full backend luôn chạy mới.69 helper Python và6 Node đạt. Có30 tệp gốc được sửa
+có chủ đích, tất cả tệp gốc khác và main/index giữ nguyên. Không áp migration hay
+thay dịch vụ shop. Hai quyết định nghiệp vụ còn chờ owner; chưa tự sửa lời mời
+SUPER_ADMIN hoặc bắt buộc chọn biến thể.
+
+Bằng chứng: ci-css-fixed-gates-2026-11-16.json, ci-css-runtime-fixed-2026-11-16.json,
+admin-cache-cart-before-2026-11-16.json, cart-mapper-valid-fixture-before-2026-11-16.json,
+admin-cache-cart-after-2026-11-16.json và admin-cache-cart-fixes-2026-11-16.json.

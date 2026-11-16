@@ -4,6 +4,7 @@ import com.bigbike.bigbike_backend.persistence.repository.auth.AdminRoleJpaRepos
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,9 @@ public class AdminPermissionService {
 
     private final AdminRoleJpaRepository roleRepo;
     private final ConcurrentHashMap<String, List<String>> cache = new ConcurrentHashMap<>();
+    // Commit-time eviction must also invalidate an older DB load still in flight.
+    private final AtomicLong generation = new AtomicLong();
+    private final Object publicationLock = new Object();
 
     /**
      * Returns the permission list for the given role, loading from DB on first access.
@@ -31,10 +35,13 @@ public class AdminPermissionService {
         String key = roleId.toUpperCase(Locale.ROOT);
         List<String> cached = cache.get(key);
         if (cached != null) return cached;
+        long observedGeneration = generation.get();
         return roleRepo.findById(key)
                 .map(r -> {
                     List<String> perms = List.copyOf(r.getPermissions());
-                    cache.put(key, perms);
+                    synchronized (publicationLock) {
+                        if (observedGeneration == generation.get()) cache.put(key, perms);
+                    }
                     return perms;
                 })
                 .orElse(List.of());
@@ -43,7 +50,10 @@ public class AdminPermissionService {
     /** Removes a role's cached permissions, forcing a DB re-read on next access. */
     public void evict(String roleId) {
         if (roleId != null) {
-            cache.remove(roleId.toUpperCase(Locale.ROOT));
+            synchronized (publicationLock) {
+                generation.incrementAndGet();
+                cache.remove(roleId.toUpperCase(Locale.ROOT));
+            }
         }
     }
 }
