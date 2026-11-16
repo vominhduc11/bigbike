@@ -1,0 +1,15 @@
+{
+  "run": 43820985928,
+  "commit": "cc59c3c4a02fd45ca7e7c19bb3cf362d30d48e59",
+  "job": 133143763959,
+  "proof": {
+    "reused-frontend.json": {
+      "anchor_commit": "7ce05befd54a10f2aee36e8f20c52d0dee36863c",
+      "anchor_run_id": 43702380890,
+      "anchor_url": "https://github.com/vominhduc11/bigbike/actions/runs/43702380890",
+      "reason": "same_source_same_gates_both_remote_jobs_passed",
+      "reuse_frontend": true
+    }
+  },
+  "scope": "Frontend source/gates unchanged; verified reuse of actual805web/1245Admin lint/test/build plusstandalonegate in7ce; NOT rerun thisCI"
+}

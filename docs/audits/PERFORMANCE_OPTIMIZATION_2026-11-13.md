@@ -12,7 +12,8 @@ Hai frontend đều lint/build lại thành công; chốt standalone đạt. B�
 [CI323 gates](evidence/performance-2026-11-13/ci-cart-access-fixed-gates-2026-11-16.json).
 Before đã vượt giỏ/checkout/account/commerce thật, dừng tại upload MP4400 sau3PNG;
 chưa có After hoặc kết quả nghiệm thu. Bản sửa kiểm định MP4 đã đạt31ca tập trung
-và full backend1631/1631 localUTC,0fail/error/skip; đóng gói đạt, chờ runtimeCI mới.
+và full backend1631/1631 cả localUTC lẫnCI,0fail/error/skip; đóng gói đạt.
+CIcc59 dừng vì downloadPNG lớn502 trước khi tớiMP4; nguyên nhân đang điều tra.
 Không triển khai shop.
 Trạng thái chạy mới nhất:
 [ci-execution-2026-11-14.json](evidence/performance-2026-11-13/ci-execution-2026-11-14.json).
@@ -459,3 +460,45 @@ LocalInventory thiếucode kiểm503GET/HEAD; positive cầncodeđãcấuhình, 
 Đây mớilàsourceharness/helpertest, chưa phải Merchant/runtime/Googleaccount acceptance;
 không chốt thayowner chínhsách thiếu biếnthể hoặc resendinviteSUPER_ADMIN.
 [Phạmvichuẩnbị](evidence/performance-2026-11-13/merchant-preparation-2026-11-16.json).
+
+
+### Tác vụ nền và trần lượt AI — cần chủ shop chốt một điểm
+
+Đã kiểm nguồn đủ20 khai báo Scheduled/Async trong15 tệp và đối chiếu các repository,
+giao dịch, cơ chế nhận việc, giới hạn từng lô và xử lý lỗi. Những kiểm thử thành phần
+liên quan đã chạy trong bộ1631 được ghi đúng phạm vi; chưa chạy nghiệm thu lịch nền
+hoặc đo tải tác vụ. Không suy ra bottleneck từ việc đọc thấy full-scan/list-bucket.
+[Bằng chứng từng tác vụ](evidence/performance-2026-11-13/background-source-review-2026-11-16.json).
+
+Có một sai khác xác nhận được: lớp kiểm duyệt đọc số kết quả AI đã lưu rồi mới gọi
+dịch vụ, không giữ chỗ nguyên tử. Harness chạy đúng class hiện có với phụ thuộc giả
+đã tái hiện hai tác vụ đều đọc0, gọi bộ giả lập2lần dù hạn mức1. Không gọi AI thật,
+không phải số liệu sự cố hoặc chi phí production. Lượt bị lỗi được ghi SKIPPED nên
+không vào số đếm; xóa đánh giá cũng làm mất dấu lượt đã dùng.
+
+`BUSINESS_RULES.md` REVIEW_RULE_013 yêu cầu trần cứng, mỗi review tối đa một lượt,
+không dùng bảng đếm riêng; nhưng `DATA_CONTRACT.md` và `API_CONTRACT.md` quy định
+nguồn AI chỉ là kết quả hợp lệ, lỗi phải là SKIPPED, checked_at là lúc hoàn thành.
+Không thể lặng lẽ đổi các ý nghĩa này để làm bộ đếm xanh. Đã hỏi owner giữa lưu lượt
+đã gửi trong nhật ký sẵn có (giữ nguyên hiển thị), hoặc đổi nghĩa nguồn AI kèm hiển
+thị/dấu vết sau xóa. Chỉ phần sửa cách tính lượt đang chờ quyết định; không tăng,
+reset hạn mức, chặn quyền xóa hay thêm bảng/migration. CI cc59 giữ nguyên source.
+
+CI cc59 đã đạt backend1631/1631,0fail/error/skip và đóng gói/PG bắt buộc; frontend
+reuse7ce có chứng minh source/gate giống nhau, không gọi là chạy lại.
+[Bằng chứng gate](evidence/performance-2026-11-13/ci-mp4-fixed-gates-2026-11-16.json).
+
+
+### CIcc59: download ảnh lớn502 — chưa xác định nguyên nhân
+
+Run43820985928 vượt regression1631 và dựng đủ stack/data. Sau functional/commerce
+đạt, ảnhalpha1600 tải lên/tải về thành công; alpha2400 tải lên201 nhưng download
+bản gốc riêng trả502. Run323 trước đó tải được đúng tệp lớn này. Cùng imageproxy,
+PG/Redis và runner; cả7service còn chạy/khôngOOM, không có bằng chứng ảnh mới do
+nhánh nhận diện MP4 làm lỗi (PNG không chạy nhánh đó). Chưa tới MP4, browser,
+Lighthouse, loadAPI hoặcAfter; không lấy một lần chạy lại thành công để xóa lỗi.
+
+Chưa sửa app/proxybuffer/timeout hay nới assertion. Bổ sung chẩn đoán cố định cho
+nginx/MinIO và asyncstream, phân biệt HTML/JSON cùng mã lỗi thuộc allowlist, ghi
+fixture/stage và relaycounters trước cleanup; không xuất payload/log gốc. Cần CI
+mới để thu bằng chứng. [Lỗi download cc59](evidence/performance-2026-11-13/ci-large-download-failure-2026-11-16.json).

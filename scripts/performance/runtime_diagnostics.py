@@ -28,6 +28,19 @@ SIGNATURES = (
     ('schema_validation', r'SchemaManagementException|Schema-validation'),
     ('database_connection', r'PSQLException|CannotCreateTransactionException'),
     ('invalid_json', r'Unexpected token.*JSON|JSON.*unexpected|not valid JSON'),
+    ('async_timeout', r'AsyncRequestTimeoutException'),
+    ('async_response_unusable', r'AsyncRequestNotUsableException'),
+    ('executor_rejected', r'RejectedExecutionException|TaskRejectedException'),
+    ('stream_closed', r'stream.*closed|closed.*stream|Broken pipe|premature EOF'),
+    ('access_denied', r'AccessDeniedException'),
+    ('http_message_conversion', r'HttpMessageNotWritableException|HttpMessageConversionException'),
+    ('proxy_upstream_closed_early', r'upstream prematurely closed connection'),
+    ('proxy_header_too_large', r'upstream sent too big header'),
+    ('proxy_header_invalid', r'upstream sent invalid header|upstream sent invalid status|upstream sent duplicate header|upstream sent no valid HTTP|invalid chunked response'),
+    ('proxy_conflicting_length_headers', r'upstream sent [^\n]*Content-Length[^\n]*Transfer-Encoding[^\n]*at the same time'),
+    ('proxy_dns_failure', r'could not be resolved|no resolver defined|host not found in upstream'),
+    ('filesystem_io_failure', r'(?:open|mkdir|writev?|pwritev?)\(\).*failed|Permission denied|No space left on device'),
+    ('proxy_no_live_upstream', r'no live upstreams'),
 )
 PROPERTIES = frozenset(('map', 'filter', 'length', 'name', 'url', 'retailPrice', 'salePrice',
                         'price', 'image', 'variants', 'categories', 'brand', 'slug', 'id',
@@ -59,6 +72,18 @@ def service_state(project, item):
         'health': health if health in ('starting', 'healthy', 'unhealthy') else None}
 
 
+def transport_state(value):
+    if not isinstance(value, dict) or set(value) - {'13000', '14000', '18080', '19000'}:
+        raise ValueError('Unexpected relay diagnostics')
+    fields = ('accepted', 'active', 'capacity_rejected', 'connect_failed', 'transport_failed', 'idle_timeout')
+    result = {}
+    for port, counters in value.items():
+        if not isinstance(counters, dict) or any(type(counters.get(key)) is not int or counters[key] < 0 for key in fields):
+            raise ValueError('Invalid relay counters')
+        result[port] = {key: counters[key] for key in fields}
+    return result
+
+
 PROBE = r"""
 (async()=>{
  const result={expected_api_origin:process.env.BIGBIKE_API_BASE_URL==='http://bigbike-backend:8080'};
@@ -86,6 +111,10 @@ def collect(stack, run, fixtures=None):
     require_ci()
     project_name(stack.project)
     result = {'scope': 'owned CI runtime failure diagnostics; no app logs or response values', 'services': {}}
+    try:
+        result['transport_before_cleanup'] = transport_state(stack.relays.stats())
+    except Exception:
+        result['transport_before_cleanup_unavailable'] = True
     ids = run(stack.compose_command('ps', '--all', '-q'), timeout=15).split()
     if not ids:
         return result
@@ -98,8 +127,8 @@ def collect(stack, run, fixtures=None):
         cid = item.get('Id')
         if cid not in ids:
             raise ValueError('Docker inspection returned an unexpected container')
-        if name in ('bigbike-backend', 'bigbike-web'):
-            state['error_signature_codes'] = signatures(run(['docker', 'logs', '--tail', '80', cid],
+        if name in ('bigbike-backend', 'bigbike-web', 'api-proxy', 'minio'):
+            state['error_signature_codes'] = signatures(run(['docker', 'logs', '--since', '5m', '--tail', '400', cid],
                                                            timeout=15, combine_output=True))
         if name == 'bigbike-web' and state['running'] and fixtures:
             products = fixtures.get('products') or []

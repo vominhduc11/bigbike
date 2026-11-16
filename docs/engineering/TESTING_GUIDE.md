@@ -475,6 +475,14 @@ request payloads or browser storage/traces. Preserve errors as counts/case names
 The job must fail on missing required cases/skips and retain partial sanitized evidence
 when a gate fails; cleanup cannot turn an incomplete run into acceptance.
 
+For CI-only failures, classify a bounded tail of the owned backend, web, nginx
+proxy and MinIO logs into fixed source-defined signature codes before teardown.
+Include async/stream errors and nginx header/DNS/upstream/buffering failures;
+never export raw log lines, credentials, filenames, request payloads or provider
+responses. Publish the failure's response class (JSON/HTML/other), fixed recognized
+API error code, and source-controlled fixture/stage when available. This adds
+diagnostics, not retries, relaxed assertions or changed proxy/buffer/timeouts.
+
 Continuation baseline (13/11): `baseline-manifest.json` now attributes exactly three
 backend files for the two new optimizations. Hash-bound Before snapshots of image
 services retain pre-existing PNG conversion and the earlier unchanged-variant skip.

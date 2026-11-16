@@ -14,7 +14,7 @@
     "failures": 0,
     "skipped": 0
   },
-  "full_backend": "fresh localUTCcleanverify:210suitefiles,1631/1631,0failure/error/skip,packagepassed; freshremote gate pending",
+  "full_backend": "freshlocalUTCcleanverify ANDremotecc59:210suitefiles,1631/1631,0failure/error/skip,package+PGgatepassed",
   "fixtures": [
     {
       "file": "bigbike-backend/src/test/resources/media/admin-isom-video.mp4",
@@ -78,7 +78,7 @@
     "audio_control": "independently generatedrealAAC-onlyisom/mp41 fixture proves whyvideo-handlercheckneeded",
     "merchant_source": "no blocker; renamed product_image_loaded toavoidoriginalbytesclaim"
   },
-  "runtime_after": "not yet run; no fullBefore/Aftermetrics",
+  "runtime_after": "notverified: cc59stoppedonlargePNGdownload502 before reachingMP4; noAfter",
   "rollback": "reverse only MP4refinement/privatehelpers inAdminMediaService; restore previousrejection; noDBmigration/objectrewrite",
   "risk": "container contenttyperefinement is not fullcodec/movie validation; directTika branches retain existingbehavior; unsupportedmajor/invalidmetadata failclosed",
   "primary_references": [
@@ -86,5 +86,6 @@
     "https://ffmpeg.org/ffmpeg-formats.html"
   ],
   "production_changes": false,
-  "full_backend_evidence": "backend-mp4-full-2026-11-16.json"
+  "full_backend_evidence": "backend-mp4-full-2026-11-16.json",
+  "remote_gate_evidence": "ci-mp4-fixed-gates-2026-11-16.json"
 }

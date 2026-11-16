@@ -1,0 +1,931 @@
+{
+  "generated_utc": "2026-11-16T07:21:22.652337+00:00",
+  "scope": "Read-only source review of all20 current Scheduled/Async declarations and selected direct dependencies. No app/config/migration changes, no Docker/shop/API/provider access, no heavy tests. One small deterministic Mockito harness in /tmp executes existing compiled moderation service with mocked dependencies.",
+  "source_baseline": "Current workspace content hashes; associated frozen candidate cc59c3c4a02fd45ca7e7c19bb3cf362d30d48e59. Original main/index untouched.",
+  "declaration_count": 20,
+  "distinct_declaring_files": 15,
+  "source_reviewed_count": 20,
+  "scheduled_or_async_runtime_verified_count": 0,
+  "performance_measured_count": 0,
+  "not_a_whole_system_acceptance": true,
+  "entries": [
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminNotificationRetentionCleanupService.java",
+      "method": "purgeExpiredNotifications",
+      "method_line": 33,
+      "source_sha256": "c89b56464d347427dd660cffbf3608005b8ada865046ecd2c84b227a2423cc7c",
+      "annotation": "@Scheduled(cron = \"0 50 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "500-row ordered CTE DELETE with FOR UPDATE SKIP LOCKED; repeats until final short batch. No total-run count/time cap.",
+      "transaction_and_locking": "One TransactionTemplate transaction per batch; six calendar months in Vietnam time.",
+      "idempotency_or_claim": "Date predicate makes later reruns no-op for already deleted rows; per-admin read markers not explicitly updated.",
+      "error_handling": "No local catch; a DB error terminates this invocation; successful batches have already committed. Logs total count/duration on success.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md NOTIFICATION_RULE_001"
+      ],
+      "unverified": "No cron invocation, large backlog, concurrent replica or resource measurement. Migration test checks read-state preservation, not scheduler throughput.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/admin/AdminNotificationJpaRepository.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/admin/AdminNotificationRetentionCleanupServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "6bdddca8e187341b0b2e44c29f522cf73740113065b6c2ed60cbd3e02ccc3977",
+          "observed_existing_local_full_result": {
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/migration/AdminNotificationRetentionMigrationPostgresTest.java",
+          "scope": "real PostgreSQL component integration; not scheduled runtime",
+          "source_sha256": "84027c6a39c1dfed3539b8ba40754238490f91bb61f1cccbbb9f40a791ef44fa",
+          "observed_existing_local_full_result": {
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/OrderOverdueReminderScheduler.java",
+      "method": "remindOverdueOrders",
+      "method_line": 16,
+      "source_sha256": "74078c1367c2500cb675f09af456fc79470bd19d276349e6d1ca77f6949018eb",
+      "annotation": "@Scheduled(cron = \"0 20 4 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "Loads all unreminded eligible operational PENDING order candidates, then saves reminder rows; no page/time cap in this path.",
+      "transaction_and_locking": "Transactional runDaily; claims local-date run before candidates, then notification/reminder records and after-commit WebSocket.",
+      "idempotency_or_claim": "Run claim plus per-order reminder records; active historical batch and valid threshold required.",
+      "error_handling": "Scheduler has no local catch; DB failures propagate and roll back current run.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md NOTIFICATION_RULE_002 / ORDER_RULE_015"
+      ],
+      "unverified": "Unit mocks cover outcomes; no real multi-replica schedule or broad overdue corpus profile.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/OrderOverdueReminderService.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/admin/OrderOverdueReminderServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "a1b914054ac336d5e15261a895a16b7a7c49f141fc08a7cb451cc83f5fd1822f",
+          "observed_existing_local_full_result": {
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/analytics/Ga4RefundDispatcher.java",
+      "method": "dispatchDueEvents",
+      "method_line": 18,
+      "source_sha256": "b78f83cac29b9b0dae39b25b77506bcaae44dc55ab770f57d83430e765c84542",
+      "annotation": "@Scheduled(\n            fixedDelayString = \"${bigbike.analytics.ga4.dispatch-delay-ms:30000}\",\n            initialDelayString = \"${bigbike.analytics.ga4.dispatch-delay-ms:30000}\"\n    )",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "At most25 dispatchNext calls per tick; default30s fixed delay, each claim limit1. Network may occupy scheduler thread; no total-run timing measured.",
+      "transaction_and_locking": "SENDING claim commits before provider; markSent/markFailed are separate transactions.",
+      "idempotency_or_claim": "Pending row selected FOR UPDATE SKIP LOCKED LIMIT1; terminal SENDING/FAILED are never automatically reclaimed.",
+      "error_handling": "Provider errors are converted to fixed failure codes; DB finalization failure leaves terminal SENDING for manual reconciliation.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md ANALYTICS_RULE_004",
+        "docs/engineering/INTEGRATION_GUIDE.md GA4 refund outbox"
+      ],
+      "unverified": "No real GA4 call by this audit; provider disabled in lab. Scheduler occupancy/concurrency and production delivery not verified.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/analytics/Ga4RefundDeliveryService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/analytics/Ga4RefundDeliveryClaimService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/analytics/Ga4EventOutboxJpaRepository.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/analytics/Ga4RefundDeliveryServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "1f5996640e1fd5e28d7aa303456ba0d221a067eec920271a2a2d061b3ea2271b",
+          "observed_existing_local_full_result": {
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/analytics/Ga4RefundDeliveryClaimServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "fffb13775342d3cd4657472588fdaa603432417011c749ac8249d2e56cd25fc5",
+          "observed_existing_local_full_result": {
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/audit/AuditLogRetentionCleanupService.java",
+      "method": "purgeExpiredAuditLogs",
+      "method_line": 31,
+      "source_sha256": "246154a2d2a155f0d3511aba2797ca30a4507610353caeffc04610d3af7935b0",
+      "annotation": "@Scheduled(cron = \"0 40 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "500-row ordered CTE DELETE with SKIP LOCKED; loops until a short batch, no whole-run cap.",
+      "transaction_and_locking": "Independent TransactionTemplate per batch; cutoff12 calendar months in Vietnam time.",
+      "idempotency_or_claim": "Expiration predicate, committed batches durable.",
+      "error_handling": "No local catch; logs deleted count and elapsed time only after full success.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md AUDIT_RULE_001"
+      ],
+      "unverified": "Actual PostgreSQL component tests cover expiration boundary; no timer, large backlog or lock-contention benchmark.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/audit/AuditLogJpaRepository.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/cart/RetentionBatchSchedulerTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "762a64f2af4d58fc16570ce52a847e69d526be880f80e8a64e594d0fe35104d6",
+          "observed_existing_local_full_result": {
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/cart/CartRetentionPostgresIntegrationTest.java",
+          "scope": "real PostgreSQL component integration; not scheduled runtime",
+          "source_sha256": "f678f8455e25ba4956ad42b8650a79912a6e1adf1d1f08aedc8b191afb4c63c0",
+          "observed_existing_local_full_result": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartRetentionCleanupService.java",
+      "method": "purgeExpiredCarts",
+      "method_line": 29,
+      "source_sha256": "b3058c9526770bc785d1a1397cda98e6c649654698b9bc81f5346fcc9232bc07",
+      "annotation": "@Scheduled(cron = \"0 45 2 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "500-row CTE DELETE batches, ordered expires_at/id and SKIP LOCKED; excludes CONVERTED by ACTIVE/MERGED predicate.",
+      "transaction_and_locking": "Separate transaction per batch; DB cascade handles cart items.",
+      "idempotency_or_claim": "Strict expires_at cutoff; repeated runs only see remaining expired carts.",
+      "error_handling": "No local catch; earlier batches remain committed if later batch fails; count/duration logged on success.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md CART_RULE_001"
+      ],
+      "unverified": "PG component cases verify expired-only deletion, converted item preservation and >500 batches. No scheduled runtime/load test.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/cart/CartJpaRepository.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/cart/RetentionBatchSchedulerTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "762a64f2af4d58fc16570ce52a847e69d526be880f80e8a64e594d0fe35104d6",
+          "observed_existing_local_full_result": {
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/cart/CartRetentionPostgresIntegrationTest.java",
+          "scope": "real PostgreSQL component integration; not scheduled runtime",
+          "source_sha256": "f678f8455e25ba4956ad42b8650a79912a6e1adf1d1f08aedc8b191afb4c63c0",
+          "observed_existing_local_full_result": {
+            "tests": 6,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartRetentionCleanupService.java",
+      "method": "purgeExpiredBackups",
+      "method_line": 38,
+      "source_sha256": "b3058c9526770bc785d1a1397cda98e6c649654698b9bc81f5346fcc9232bc07",
+      "annotation": "@Scheduled(cron = \"0 15 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "500 completed purge-run rows per transaction, older than90days, ordered cutoff/id SKIP LOCKED; loops over backlog.",
+      "transaction_and_locking": "Per-batch TransactionTemplate; not a shop backup/restore execution.",
+      "idempotency_or_claim": "Only completed old runs qualify, repeated removal is naturally idempotent.",
+      "error_handling": "No local catch; logs count/duration after completion.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md CART_RULE_002"
+      ],
+      "unverified": "No dedicated test invoking this method identified. Shared batch helper has unit coverage for cart/audit, not proof of backup expiry boundaries. Initial operator backup/rollback not exercised.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/cart/CartJpaRepository.java"
+      ],
+      "component_test_evidence": []
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutIdempotencyKeyCleanupScheduler.java",
+      "method": "cleanup",
+      "method_line": 22,
+      "source_sha256": "a0154440f91941469851ec0028dd61bb32bdcaa8aae373e83328b4a247e9e3b4",
+      "annotation": "@Scheduled(cron = \"0 30 2 * * *\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "Single unpaged DELETE of checkout_idempotency_keys.createdAt older than90days; no row/time cap.",
+      "transaction_and_locking": "One transactional repository delete; cron has no explicit zone and uses configured scheduler timezone.",
+      "idempotency_or_claim": "Existing-order data is not deleted by this method; already removed keys absent on rerun.",
+      "error_handling": "No local catch; logs affected rows when positive.",
+      "canonical": [
+        "docs/engineering/API_CONTRACT.md Commerce Mutation Contracts / checkout idempotency",
+        "docs/engineering/DATA_CONTRACT.md Checkout idempotency keys"
+      ],
+      "unverified": "No dedicated scheduler cleanup test found; functional checkout idempotency tests do not prove this retention job. Large-delete locking/zone not measured.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/commerce/order/CheckoutIdempotencyKeyJpaRepository.java"
+      ],
+      "component_test_evidence": []
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/OrderNotificationService.java",
+      "method": "sendOrderConfirmation",
+      "method_line": 45,
+      "source_sha256": "ed6631b2772f6798453dc4dc92eeacadf179f38db5d3325baa8a721db0144841",
+      "annotation": "@Async",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "One async email invocation; no retry loop/outbox in this class. Uses fields on passed order; status path accepts only PROCESSING/COMPLETED/CANCELLED.",
+      "transaction_and_locking": "No job transaction; checkout/admin mutation caller registers after commit; shared EmailDispatchService performs rendering/provider handoff.",
+      "idempotency_or_claim": "Dispatch-once per caller invocation, no durable de-duplication claim in this class.",
+      "error_handling": "Blank recipient or disabled mail skips; shared dispatcher catches provider/render failure and returns false. Async task submission/pool saturation not tested here.",
+      "canonical": [
+        "docs/engineering/INTEGRATION_GUIDE.md SMTP / Internal notification recipient",
+        "docs/business/BUSINESS_RULES.md ORDER_RULE_004"
+      ],
+      "unverified": "Shared dispatcher unit tests are indirect only, not entrypoint/Spring async/mailbox receipt. Actual SMTP latency, pool occupancy and concurrent formatting unmeasured.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/email/EmailDispatchService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminOrderService.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/email/EmailDispatchServiceTest.java",
+          "scope": "indirect shared-dispatcher unit only; does not invoke these OrderNotification async entrypoints",
+          "source_sha256": "6c8649d468f5701ed202d34a16ceeaa519a553b21262f06879fd54b9136a76f5",
+          "observed_existing_local_full_result": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/OrderNotificationService.java",
+      "method": "sendAdminNewOrderNotification",
+      "method_line": 82,
+      "source_sha256": "ed6631b2772f6798453dc4dc92eeacadf179f38db5d3325baa8a721db0144841",
+      "annotation": "@Async",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "One async email invocation; no retry loop/outbox in this class. Uses fields on passed order; status path accepts only PROCESSING/COMPLETED/CANCELLED.",
+      "transaction_and_locking": "No job transaction; checkout/admin mutation caller registers after commit; shared EmailDispatchService performs rendering/provider handoff.",
+      "idempotency_or_claim": "Dispatch-once per caller invocation, no durable de-duplication claim in this class.",
+      "error_handling": "Blank recipient or disabled mail skips; shared dispatcher catches provider/render failure and returns false. Async task submission/pool saturation not tested here.",
+      "canonical": [
+        "docs/engineering/INTEGRATION_GUIDE.md SMTP / Internal notification recipient",
+        "docs/business/BUSINESS_RULES.md ORDER_RULE_004"
+      ],
+      "unverified": "Shared dispatcher unit tests are indirect only, not entrypoint/Spring async/mailbox receipt. Actual SMTP latency, pool occupancy and concurrent formatting unmeasured.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/email/EmailDispatchService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminOrderService.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/email/EmailDispatchServiceTest.java",
+          "scope": "indirect shared-dispatcher unit only; does not invoke these OrderNotification async entrypoints",
+          "source_sha256": "6c8649d468f5701ed202d34a16ceeaa519a553b21262f06879fd54b9136a76f5",
+          "observed_existing_local_full_result": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/OrderNotificationService.java",
+      "method": "sendOrderStatusUpdate",
+      "method_line": 111,
+      "source_sha256": "ed6631b2772f6798453dc4dc92eeacadf179f38db5d3325baa8a721db0144841",
+      "annotation": "@Async",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "One async email invocation; no retry loop/outbox in this class. Uses fields on passed order; status path accepts only PROCESSING/COMPLETED/CANCELLED.",
+      "transaction_and_locking": "No job transaction; checkout/admin mutation caller registers after commit; shared EmailDispatchService performs rendering/provider handoff.",
+      "idempotency_or_claim": "Dispatch-once per caller invocation, no durable de-duplication claim in this class.",
+      "error_handling": "Blank recipient or disabled mail skips; shared dispatcher catches provider/render failure and returns false. Async task submission/pool saturation not tested here.",
+      "canonical": [
+        "docs/engineering/INTEGRATION_GUIDE.md SMTP / Internal notification recipient",
+        "docs/business/BUSINESS_RULES.md ORDER_RULE_004"
+      ],
+      "unverified": "Shared dispatcher unit tests are indirect only, not entrypoint/Spring async/mailbox receipt. Actual SMTP latency, pool occupancy and concurrent formatting unmeasured.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/email/EmailDispatchService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminOrderService.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/email/EmailDispatchServiceTest.java",
+          "scope": "indirect shared-dispatcher unit only; does not invoke these OrderNotification async entrypoints",
+          "source_sha256": "6c8649d468f5701ed202d34a16ceeaa519a553b21262f06879fd54b9136a76f5",
+          "observed_existing_local_full_result": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/TelegramOrderNotificationService.java",
+      "method": "sendNewOrderNotification",
+      "method_line": 81,
+      "source_sha256": "42fc3b1a385511283c99db979737cdd5c8d282e22fd13a94c213ef3746d4a176",
+      "annotation": "@Async",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "One Bot API sendMessage attempt; message capped4096characters and10lines; default5s connect/read timeout.",
+      "transaction_and_locking": "Immutable TelegramOrderSnapshot assembled from already persisted checkout lines and submitted after commit, no DB lookup on worker.",
+      "idempotency_or_claim": "No retry; one caller invocation, no new lifecycle/outbox.",
+      "error_handling": "Disabled if credentials missing; fixed safe categories/statuses only; caller separately catches async scheduling rejection.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md NOTIFICATION_RULE_003",
+        "docs/engineering/INTEGRATION_GUIDE.md Telegram new-order notification"
+      ],
+      "unverified": "Formatting/transport component tests with synthetic configuration are not actual Telegram or Spring executor acceptance; no outbound request made in this audit.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/TelegramOrderSnapshot.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/checkout/TelegramOrderNotificationServiceTest.java",
+          "scope": "unit/formatting plus synthetic local HTTP transport; not real Telegram or Spring async",
+          "source_sha256": "dea7c6416a8b85d5cfdc0a56fbfed159c47be57ca0a3383f96a2ac21e8d279cc",
+          "observed_existing_local_full_result": {
+            "tests": 5,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/content/ArticleBodyBlockMaintenance.java",
+      "method": "fillMissingBlocks",
+      "method_line": 18,
+      "source_sha256": "eb7eee6ec760f0d911a0348d21fb093eae9336eaeb09667de4b335da75989a21",
+      "annotation": "@Scheduled(fixedDelay = 60000, initialDelay = 60000)",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "At most25 missing-block articles loaded per invocation; parser rejects >400blocks; existing HTML/metadata untouched.",
+      "transaction_and_locking": "JDBC connection held across select/parse/conditional updates; WHERE body IS NOT DISTINCT FROM oldBody prevents overwriting concurrent edits; no enclosing transaction declared by scheduler.",
+      "idempotency_or_claim": "Only missing/empty-derived blocks selected; preexisting intentional empty HTML/blocks preserved.",
+      "error_handling": "Conversion needing review aborts current pass and logs warning; original HTML not overwritten.",
+      "canonical": [
+        "docs/engineering/DATA_CONTRACT.md Article body blocks — conversion and recurrence prevention"
+      ],
+      "unverified": "PostgreSQL component backfill test checks original fields/concurrent-write preconditions; no scheduled throughput, backlog or connection-hold profile.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/content/ArticleBodyBlockBackfill.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/migration/ArticleBodyBlockBackfillPostgresTest.java",
+          "scope": "real PostgreSQL component integration; not scheduled runtime",
+          "source_sha256": "0e1ffe7712b32675cd7ba1d14998e8869f4715af762db6f4e39ba5341b087b02",
+          "observed_existing_local_full_result": {
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/inventory/InventoryOutOfStockDigestScheduler.java",
+      "method": "runScheduled",
+      "method_line": 27,
+      "source_sha256": "79e5e00b57f2656a0022c2050c18548fabba7db55c977456747e89955fb23c66",
+      "annotation": "@Scheduled(cron = \"0 * * * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "Checks settings once per minute; after configured local time builds full candidate product/variant digest, no pagination/global time cap.",
+      "transaction_and_locking": "Read-only build transaction ends before coordinator writes. Daily result insert and notification are one transaction; separate atomic email claim before network.",
+      "idempotency_or_claim": "Date-key insertIfAbsent collapses result to one/day; claimEmail consumes at most one email attempt/day, even on failure.",
+      "error_handling": "Scheduler catches top-level failure; invalid time logs/returns; SMTP acceptance boolean recorded without claiming receipt.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md STOCK_ALERT_RULE_001..006"
+      ],
+      "unverified": "Unit coverage only for this entrypoint/coordinator. Full catalog cardinality, digest payload size, DB plans, mail delivery and daily concurrent execution unmeasured.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/inventory/InventoryOutOfStockDigestService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/inventory/InventoryOutOfStockDigestCoordinator.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/inventory/InventoryOutOfStockDigestSchedulerTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "3d11fae8903eb5c5a0d7c34be185e2fbe42e6fa4d0f225b13ae253b28fb4209e",
+          "observed_existing_local_full_result": {
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/inventory/InventoryOutOfStockDigestCoordinatorTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "533493c3e0839b5070c22b2ab8c1c46f692ce12740ca1d184754b6cc44f4bbfe",
+          "observed_existing_local_full_result": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/inventory/InventoryOutOfStockDigestServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "a041b58d0780f75c5381cb7ee24c7608aa0c7368defa60705ad083487b72e8ec",
+          "observed_existing_local_full_result": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/public_/ReviewPhotoOrphanCleanupService.java",
+      "method": "cleanupOrphans",
+      "method_line": 34,
+      "source_sha256": "3208634a3eb279a44d116cf525823310b3a0c0c2ced25b064b7441881f75e4d5",
+      "annotation": "@Scheduled(cron = \"${bigbike.review-photo.cleanup-cron:0 30 3 * * *}\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "Materializes all review-photo references and all cleanup candidates; lists complete reviews/ bucket prefix; no row/global duration cap.",
+      "transaction_and_locking": "Whole selection and bucket listing are inside one @Transactional method; ledger delete rechecks unclaimed status/cutoff; physical deletion deferred after commit.",
+      "idempotency_or_claim": "24h cutoff and references guard; untracked old objects recover crash window. Storage delete failure can be retried via later orphan scan.",
+      "error_handling": "Bucket/storage helpers catch and warn; database error aborts transaction. Full transaction spans bucket listing, not bounded as small SQL batch.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md REVIEW_RULE_005/011",
+        "docs/engineering/INTEGRATION_GUIDE.md Customer review photos"
+      ],
+      "unverified": "One mocked component case does not prove concurrent claim-vs-cleanup, real MinIO deletion failures or large bucket/transaction duration.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/public_/ReviewPhotoStorageService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ReviewPhotoUploadJpaRepository.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/public_/ReviewPhotoOrphanCleanupServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "dd38df4e09857c3bf0efabab980ec16685880b68bb8936a58234f8a7d5680b67",
+          "observed_existing_local_full_result": {
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionService.java",
+      "method": "deleteExpiredHistory",
+      "method_line": 34,
+      "source_sha256": "d9e98e5669fed03d856dd848a3dfc7c571a29382227f753e8a47a076eb27015a",
+      "annotation": "@Scheduled(cron = \"0 20 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "Materializes all expired conversations and image candidates; per-conversation attachment queries and object removal; no batch limit.",
+      "transaction_and_locking": "No enclosing transaction; objects removed before their metadata, then conversation; visitor delete excludes conversations still present.",
+      "idempotency_or_claim": "MinIO removal/SQL delete repeats are safe; storage failure preserves dependent metadata/conversation for retry.",
+      "error_handling": "Per-object failure logs safe exception class and skips delete; top-level DB errors propagate.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md CHAT_RULE_070 (retained history expiry)"
+      ],
+      "unverified": "Mock JDBC/MinIO cases cover storage failure and metadata retention; no actual archived data purge, timer or backlog/connection profile.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionService.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "3070077dd1bae55e5f662b57f203aad962011d2143e4dcc3304d693123588129",
+          "observed_existing_local_full_result": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionService.java",
+      "method": "deleteExpiredVideos",
+      "method_line": 57,
+      "source_sha256": "d9e98e5669fed03d856dd848a3dfc7c571a29382227f753e8a47a076eb27015a",
+      "annotation": "@Scheduled(fixedDelay = 60_000, initialDelay = 60_000)",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "Loads all expired video metadata and streams full private chat/videos/ prefix for old untracked objects; no whole-run cap.",
+      "transaction_and_locking": "No enclosing transaction; object removed before status/deleted_at metadata update.",
+      "idempotency_or_claim": "Seven-day orphan boundary; failed remove leaves row for next retry; assistant is retired and accepts no new media.",
+      "error_handling": "Per-object and listing exceptions are caught with safe class warning; DB failure propagates.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md CHAT_RULE_070",
+        "docs/engineering/INTEGRATION_GUIDE.md Retained chat video expiry"
+      ],
+      "unverified": "Mock cases are not real MinIO or cron/large-prefix validation. No production archive write/deletion performed.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionService.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "3070077dd1bae55e5f662b57f203aad962011d2143e4dcc3304d693123588129",
+          "observed_existing_local_full_result": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewModerationService.java",
+      "method": "moderateAsync",
+      "method_line": 50,
+      "source_sha256": "34c3cd725ac7ebd84c738a05348e5f6b5eb776119b21213bde9e26a1858435cb",
+      "annotation": "@Async",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "One review per async invocation; free banned words before provider; empty/unconfigured/limit skip; one provider call, no retry. Daily limit currently non-atomic success-row count.",
+      "transaction_and_locking": "Review snapshot read and final AdminReviewService transaction are separated around network; daily count has no persistent reservation/lock.",
+      "idempotency_or_claim": "Only PublicReviewService submit-after-commit triggers entrypoint; final state transition rechecks PENDING; no durable paid-attempt reservation.",
+      "error_handling": "RuntimeException swallowed by async method; provider empty/timeout -> SKIPPED. Automatic verdict can block but cannot approve.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md REVIEW_RULE_012/013",
+        "docs/engineering/API_CONTRACT.md review_moderation / Review moderation metadata",
+        "docs/engineering/DATA_CONTRACT.md Review AI moderation fields"
+      ],
+      "unverified": "Confirmed component race under limit1 documented in findings. Failed attempts and deletion of counted rows also undermine hard cap; metadata/counter contract needs owner reconciliation before patch. No real AI/production billing evidence.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/public_/PublicReviewService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminReviewService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewModerationOutcome.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewModerationSettings.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/ReviewModerationServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "581feefca4a142c418a6dc47a0aae15953249afe00dd79c11b3aee34067b1d26",
+          "observed_existing_local_full_result": {
+            "tests": 19,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationScheduler.java",
+      "method": "queueNightly",
+      "method_line": 18,
+      "source_sha256": "6ae2b1240719c3f4a8f2fd1422903ff8c816853d9149b42962523044506fbd2a",
+      "annotation": "@Scheduled(cron = \"0 30 4 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "Selects at most500 candidate orders per invocation; per-order line/opt-out/review lookups; at most500 rows queued, no loop to finish backlog.",
+      "transaction_and_locking": "Lifecycle sync and queue operations are separate transactional services; queue locks active campaign and persists each delivery/items in that transaction.",
+      "idempotency_or_claim": "One delivery per order plus cutoff/new-order/public-product checks; closed campaign pending rows skipped.",
+      "error_handling": "No retry loop in scheduler; DB exception propagates/rolls back current transaction.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md REVIEW_RULE_014..016",
+        "docs/engineering/INTEGRATION_GUIDE.md Post-purchase review invitation mail"
+      ],
+      "unverified": "Unit mocks validate logic, not multi-replica PG claim/concurrency or queue throughput; actual SMTP disabled in lab.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationStore.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationLifecycleService.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationSchedulerTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "1734c6b5d9592e36fba19d408f9fb588d9bd7abb5a9fa7ba9c53e59754e117b4",
+          "observed_existing_local_full_result": {
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationStoreTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "b01b5054fc1631ebecb5274ff113de7d58e96a775cbf83250f669db9ebe69eac",
+          "observed_existing_local_full_result": {
+            "tests": 9,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationLifecycleServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "0e0ef46fe35d2d974a5ba82d62658e373149a9b41360a4779c6a9be194068baf",
+          "observed_existing_local_full_result": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationScheduler.java",
+      "method": "dispatchPaced",
+      "method_line": 27,
+      "source_sha256": "6ae2b1240719c3f4a8f2fd1422903ff8c816853d9149b42962523044506fbd2a",
+      "annotation": "@Scheduled(cron = \"0 */10 9-20 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "One paid email attempt at each10-minute tick09:00–20:50; may walk arbitrarily many invalid/skipped pending deliveries before finding one valid row.",
+      "transaction_and_locking": "Short transactional store claim commits SENDING and date quota before SMTP; completion is separate. Campaign and delivery rows lock for update.",
+      "idempotency_or_claim": "Atomic UPDATE attempt_count<20 reserves quota, including failed/uncertain attempts. Stale SENDING>30min becomes terminal UNCERTAIN; no retry.",
+      "error_handling": "SMTP/runtime failure -> FAILED or UNCERTAIN; completion failure cannot return row to pending.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md REVIEW_RULE_014..016",
+        "docs/engineering/INTEGRATION_GUIDE.md Post-purchase review invitation mail"
+      ],
+      "unverified": "Unit mocks and schema migration tests do not prove real SMTP receipt/PG multi-replica quota. Invalid-pending backlog transaction time not measured.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationStore.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/review/ReviewInvitationDailyQuotaJpaRepository.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationSchedulerTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "1734c6b5d9592e36fba19d408f9fb588d9bd7abb5a9fa7ba9c53e59754e117b4",
+          "observed_existing_local_full_result": {
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationStoreTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "b01b5054fc1631ebecb5274ff113de7d58e96a775cbf83250f669db9ebe69eac",
+          "observed_existing_local_full_result": {
+            "tests": 9,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "ed0c1d9beaaa339c918a77f5e4fe503c336d345b25a00bd123c858076756d2d9",
+          "observed_existing_local_full_result": {
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/video/HomeVideoSyncScheduler.java",
+      "method": "syncOfficialYouTubeChannel",
+      "method_line": 17,
+      "source_sha256": "26f14c0a6bc3a1cdbd586604632c08f488ab8dadb9c664a4b86d342b71151f95",
+      "annotation": "@Scheduled(cron = \"0 10 4 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
+      "source_reviewed": true,
+      "functional_scheduler_or_async_runtime_verified": false,
+      "performance_measured": false,
+      "fixed_and_reverified": false,
+      "bounds_and_materialization": "Feed capped15entries/512KiB; channel page5MiB and oEmbed64KiB; current video list materialized. Availability walks until10visible; many unavailable candidates can require many bounded HTTP calls.",
+      "transaction_and_locking": "All network finishes before transactional writer; writer rereads current setting/list and preserves owner-managed fields; revalidation after commit.",
+      "idempotency_or_claim": "Known IDs and stable hv_yt IDs prevent duplicate insert; settings changed during run =>no-op.",
+      "error_handling": "Invalid/empty/feed mismatch/unknown availability =>no-op; provider/write failure sanitized/logged, existing rows preserved.",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md HOME_VIDEO_RULE_001..003",
+        "docs/engineering/INTEGRATION_GUIDE.md Homepage YouTube Video Feed"
+      ],
+      "unverified": "Mock source/component tests only; no live YouTube call, full old-video backlog, shared scheduler occupancy or runtime latency measured.",
+      "related_source_files": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/video/YouTubeHomeVideoSyncService.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/video/YouTubeHomeVideoSyncWriter.java",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/video/YouTubeHomeVideoClient.java"
+      ],
+      "component_test_evidence": [
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/video/YouTubeHomeVideoSyncServiceTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "aa6ebf79d07ef53322ff76a493ed27f9a1a7d3cb81245148e53e32a2451a345a",
+          "observed_existing_local_full_result": {
+            "tests": 3,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        },
+        {
+          "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/video/YouTubeHomeVideoSyncWriterTest.java",
+          "scope": "unit/mock component; not scheduled/async runtime",
+          "source_sha256": "65acc655bc3a0e59c2e4b24e3b62ab2569237fd99ded9d07a946b086e8aaed8a",
+          "observed_existing_local_full_result": {
+            "tests": 4,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "result_note": "Read existing XML from Lead local1631 full run; not rerun by this source-review agent and not additive across shared references."
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "BACKGROUND_AI_DAILY_HARD_CAP",
+      "status": "component race reproduced; remediation blocked only on owner metadata/attempt-journal clarification",
+      "canonical": [
+        "docs/business/BUSINESS_RULES.md REVIEW_RULE_013 (hard daily ceiling, each attempt recorded, no separate counter table)",
+        "docs/business/BUSINESS_RULES.md REVIEW_RULE_012 (failure source SKIPPED)",
+        "docs/engineering/API_CONTRACT.md Settings review_moderation daily_limit and Review moderation metadata",
+        "docs/engineering/DATA_CONTRACT.md1306-1310 moderation source/verdict/checked_at"
+      ],
+      "cause": "dailyBudgetSpent reads count of existing sourceAI/completedCheckedAt rows before provider, with no reservation/serialization. Two async jobs can both observe an available final slot. Uncertain/failed provider call persists sourceSKIPPED and is excluded; hard deletion/cascade of a counted review can later lower count.",
+      "source_evidence": [
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewModerationService.java evaluate/dailyBudgetSpent",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminReviewService.java applyAutoModeration assigns outcome.source and current checked_at",
+        "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewModerationOutcome.java skipped returns SOURCE_SKIPPED",
+        "docs/business/BUSINESS_RULES.md REVIEW_RULE_010 permits hard-delete of TRASH by authorized SUPER_ADMIN"
+      ],
+      "reproduction": {
+        "configured_limit": 1,
+        "count_read_values": [
+          0,
+          0
+        ],
+        "mock_provider_call_attempts": 2,
+        "persisted_ai_rows_in_mock": 2,
+        "race_reproduced": true,
+        "external_provider_calls": 0,
+        "scope": "Actual compiled ReviewModerationService; mocked repository/settings/provider/persistence; deterministic count-read latch, two distinct reviews. Not a production incident or paid billing/load measurement.",
+        "harness_path": "/tmp/bbperf-review-budget-proof-ooho17_z/BudgetRaceProof.java",
+        "service_source_sha256": "34c3cd725ac7ebd84c738a05348e5f6b5eb776119b21213bde9e26a1858435cb",
+        "compiled_class_sha256": "1b4c2bb411caf81c755bd315518bad109bb27fd4696f7d7689174cd258b832f4"
+      },
+      "test_gap": "Existing19-case ReviewModerationServiceTest verifies threshold/zero/free-layer/AI failure individually, not concurrent final-slot reservation or durable failed/deleted attempt accounting.",
+      "canonical_conflict": "Current data/API docs define AI as valid response and checked_at as finish time; preclaiming AI/checked_at before HTTP and keeping AI on timeout changes that contract. SourceSKIPPED failure rule and AI-only-row hard-attempt counter cannot both account for failed attempts/deleted rows without reconciled persistent accounting semantics.",
+      "owner_options_under_lead_review": "Lead asks to preserve SKIPPED/UI and use durable attempt journal in existing audit, or change AI source semantics plus deletion-safe journal. No new counter table; no limit reset/raise; no guard/permission weakening. No option assumed approved.",
+      "production_incident_or_billed_overrun_proven": false,
+      "code_fixed": false
+    }
+  ],
+  "profile_gaps": [
+    {
+      "scope": "review-photo cleanup",
+      "fact": "Full reference/candidate materialization and bucket listing inside one transaction.",
+      "status": "Source-observed scale exposure; no measured bottleneck/lock profile; no tuning proposed."
+    },
+    {
+      "scope": "archived history and videos",
+      "fact": "Unpaged expired metadata reads/full owned prefixes; per-conversation attachment queries.",
+      "status": "Source-observed cardinality exposure; no actual archive purge or workload profile."
+    },
+    {
+      "scope": "reports/digest/reminder",
+      "fact": "Full eligible candidates required for complete notifications; invitation claim can walk skipped backlog in one transaction.",
+      "status": "Need report/job-specific workloads and targets; no300ms blanket target or cut-off added."
+    },
+    {
+      "scope": "executors and SMTP",
+      "fact": "No explicit task pool/queue/scheduler sizing or SMTP timeout properties found in inspected application configuration.",
+      "status": "Effective framework/runtime/provider configuration and concurrency not measured; do not claim default sizes or change them without evidence."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "scope": "Diagnostics-only change; no app/proxyconfiguration/auth/timeouts/buffers/rate changes or failedsample retries",
+  "trigger": "ci-large-download-failure-2026-11-16.json",
+  "python_helpers": 86,
+  "node_helpers": 6,
+  "app_source_identical_to": "cc59c3c4a02fd45ca7e7c19bb3cf362d30d48e59",
+  "backend_proof": "sameappsource full1631local+remote gate; freshnextCI stillmandatory",
+  "privacy": "responsekind+knownerrorcode only; stage namesfixedsourcefixtures; ownedlogtail5m/400linesreducedfixedcodes; relaycountersallowlistbeforecleanup",
+  "independent_qa": "no blocker; no app/timeout/buffer/security/retrychange; HTMLclass notproofspecificcause",
+  "root_cause_502": "unknown untilnewruntimeevidence",
+  "whole_system_acceptance": false
+}

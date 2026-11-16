@@ -1,0 +1,221 @@
+{
+  "run": 43820985928,
+  "job": 133146262021,
+  "commit": "cc59c3c4a02fd45ca7e7c19bb3cf362d30d48e59",
+  "bundle_sha256": "9ed45af3205cda3ec8ff9402b62b0f852f7c346536a6d288f20b45d6780709fc",
+  "bundle_bytes": 326162,
+  "phase": {
+    "arm": "before",
+    "complete": false,
+    "failure_type": "AssertionError",
+    "phase": "functional-and-media"
+  },
+  "failure": {
+    "operation": "GET /api/v1/admin/media/{ownedID}/download",
+    "http_status": 502,
+    "fixture": "alpha-2400.png",
+    "fixture_upload": "returned201 before download failed",
+    "root_cause": "unknown; old collector omits proxy/MinIO logs and responsekind",
+    "retry_of_failed_samples": false
+  },
+  "successful_media_rows": {
+    "not_measured": [
+      "transfer-only/server-only/storage-only split",
+      "UI retry/progress",
+      "mid-stream fault injection"
+    ],
+    "note": "photo-1600.jpg was seeded as product image: this sample exercises content dedup; wall duration includes transfer/storage, no server-only claim",
+    "results": [
+      {
+        "alpha_min": 96,
+        "cache_control": null,
+        "content_length": "11056",
+        "download_request_wall_ms": 23.29329899998811,
+        "fixture": "alpha-1600.png",
+        "height": 1200,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 2.562545000046157,
+        "server_processing_ms": null,
+        "stored_sha256": "96f69e792586fb9575ae30ff37525cb9ffc8b0ac4da7db00783f85e75b5c46fd",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 282.86163400002806,
+        "width": 1600
+      }
+    ]
+  },
+  "functional": {
+    "admin_bulk_reports_role_denial": "not verified by this scenario",
+    "admin_product_patch": true,
+    "customer_account_registration_and_profile_isolation": true,
+    "private_cart_isolation": true,
+    "real_guest_cart_and_checkout": true,
+    "unauthenticated_admin_denied": true
+  },
+  "commerce": {
+    "discontinued_add_quantity_checkout_denied": true,
+    "fixture_values_restored": true,
+    "price_review_409_then_reload": true,
+    "rejected_requests_no_order_payment_or_reservation": true,
+    "same_key_retry_and_replay_one_order": true,
+    "scope": "Real API/PostgreSQL; two owned simple products; variant guards separately tested"
+  },
+  "diagnostics": {
+    "scope": "owned CI runtime failure diagnostics; no app logs or response values",
+    "services": {
+      "api-proxy": {
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "bigbike-admin": {
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "bigbike-backend": {
+        "error_signature_codes": [],
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "bigbike-web": {
+        "error_signature_codes": [],
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "minio": {
+        "exit_code": 0,
+        "health": "healthy",
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "postgres": {
+        "exit_code": 0,
+        "health": "healthy",
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "redis": {
+        "exit_code": 0,
+        "health": "healthy",
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      }
+    },
+    "web_container_public_product_read": {
+      "data_object": true,
+      "expected_api_origin": true,
+      "fields": {
+        "brand": {
+          "type": "object"
+        },
+        "categories": {
+          "count": 1,
+          "type": "array"
+        },
+        "category": {
+          "type": "object"
+        },
+        "commitments": {
+          "count": 0,
+          "type": "array"
+        },
+        "description": {
+          "type": "string"
+        },
+        "faqs": {
+          "count": 0,
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "image": {
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        },
+        "price": {
+          "type": "object"
+        },
+        "publishStatus": {
+          "type": "string"
+        },
+        "relatedProducts": {
+          "count": 0,
+          "type": "array"
+        },
+        "seo": {
+          "type": "undefined"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "variantOptions": {
+          "type": "undefined"
+        },
+        "variants": {
+          "count": 0,
+          "type": "array"
+        }
+      },
+      "http_status": 200,
+      "wall_ms": 47.797779
+    }
+  },
+  "transport_after_cleanup": {
+    "13000": {
+      "accepted": 6,
+      "active": 0,
+      "capacity_rejected": 0,
+      "connect_failed": 0,
+      "idle_timeout": 0,
+      "transport_failed": 1
+    },
+    "14000": {
+      "accepted": 2,
+      "active": 0,
+      "capacity_rejected": 0,
+      "connect_failed": 0,
+      "idle_timeout": 0,
+      "transport_failed": 0
+    },
+    "18080": {
+      "accepted": 447,
+      "active": 0,
+      "capacity_rejected": 0,
+      "connect_failed": 0,
+      "idle_timeout": 0,
+      "transport_failed": 1
+    },
+    "19000": {
+      "accepted": 12,
+      "active": 0,
+      "capacity_rejected": 0,
+      "connect_failed": 0,
+      "idle_timeout": 0,
+      "transport_failed": 0
+    }
+  },
+  "same_proxy_image_across323_and_cc59": true,
+  "mp4_runtime_verified": false,
+  "after_executed": false,
+  "browser_lighthouse_load_executed": false,
+  "production_changes": false,
+  "next_action": "only extend fixed sanitized proxy/stream failure diagnostics and mediafixture/stage logs; unchangedapp/auth/timeout/buffer; new isolatedrun required, no latency win claimed"
+}

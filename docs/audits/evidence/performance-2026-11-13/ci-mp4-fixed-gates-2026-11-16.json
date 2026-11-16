@@ -1,0 +1,20 @@
+{
+  "run": 43820985928,
+  "commit": "cc59c3c4a02fd45ca7e7c19bb3cf362d30d48e59",
+  "backend_job": 133143943930,
+  "fresh_backend": {
+    "backend.json": {
+      "errors": 0,
+      "failures": 0,
+      "nonpassing_cases": [],
+      "passed": 1631,
+      "skipped": 0,
+      "suite_files": 210,
+      "tests": 1631
+    }
+  },
+  "frontend": "source-identical reused7ce805web/1245admin lint/test/build+portablegate; notnewlyexecuted",
+  "frontend_proof": "ci-mp4-frontend-reuse-2026-11-16.json",
+  "secret_guard": "43820985930 completed success",
+  "scope": "regression/package/realPostgreSQL schema gate only; isolatedstackacceptance stillinprogress"
+}

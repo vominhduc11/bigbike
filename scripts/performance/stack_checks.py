@@ -18,6 +18,27 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+class ApiFailure(AssertionError):
+    """Fixed failure categories only; never retain a response body or headers."""
+    def __init__(self, method, path, response, body):
+        content_type = response.headers.get('Content-Type', '').lower()
+        self.status = response.status
+        self.response_class = ('json' if 'application/json' in content_type or '+json' in content_type
+                               else 'html' if 'text/html' in content_type else 'other')
+        self.error_code = 'unrecognized'
+        if self.response_class == 'json' and len(body) <= 65536:
+            try:
+                value = json.loads(body)
+                code = value.get('error', {}).get('code')
+                if code in ('VALIDATION_ERROR', 'NOT_FOUND', 'UNAUTHORIZED', 'FORBIDDEN', 'CONFLICT',
+                            'UPSTREAM_ERROR', 'INTERNAL_ERROR', 'RATE_LIMIT_EXCEEDED', 'SERVICE_UNAVAILABLE'):
+                    self.error_code = code
+            except (ValueError, TypeError, AttributeError):
+                pass
+        super().__init__(f'{method} {path.split("?")[0]} unexpected status {self.status}; '
+                         f'response_class={self.response_class}; error_code={self.error_code}')
+
+
 class Api:
     def __init__(self, origin, token=None):
         self.origin = loopback_url(origin)
@@ -49,7 +70,7 @@ class Api:
         elapsed = (time.perf_counter() - started) * 1000
         if response.status not in expected:
             # Do not leak payloads, cookies, error details, email or token values.
-            raise AssertionError(f'{method} {path.split("?")[0]} unexpected status {response.status}')
+            raise ApiFailure(method, path, response, body)
         return (body if raw else json.loads(body) if body else None), dict(response.headers), elapsed
 
     def data(self, method, path, payload=None, **kwargs):
@@ -123,12 +144,19 @@ def media_checks(api, directory, record_callback=None):
     for file in sorted(Path(directory).iterdir()):
         if file.suffix not in ('.jpg', '.png', '.webp', '.mp4') or file.name.startswith('batch-'):
             continue
+        if file.name not in ({f'{kind}-{width}.png' for kind in ('alpha', 'opaque') for width in (320, 1600, 2400)}
+                             | {f'photo-{width}.{kind}' for kind in ('jpg', 'webp') for width in (320, 1600)} | {'clip.mp4'}):
+            raise ValueError('Refusing unapproved media fixture name in diagnostics')
         time.sleep(2.1)  # Keep each real upload within 30/min; no synthetic identity spoofing.
         content = file.read_bytes()
+        print('BBPERF-MEDIA', file.name, 'upload', flush=True)
         media, _, duration = upload(api, file)
+        print('BBPERF-MEDIA', file.name, 'private-original-download', flush=True)
         original, download_headers, download_ms = api.call('GET', f'/api/v1/admin/media/{media["id"]}/download', raw=True)
+        print('BBPERF-MEDIA', file.name, 'authorization-denial', flush=True)
         Api(api.origin).call('GET', f'/api/v1/admin/media/{media["id"]}/download', expected=(401, 403), raw=True)
         public = Api('http://localhost:14000')
+        print('BBPERF-MEDIA', file.name, 'public-original-download', flush=True)
         stored, cache_headers, public_ms = public.call('GET', media['publicUrl'], raw=True)
         # MEDIA_RULE_006 compresses the stored original. Download must return that
         # exact object (MEDIA_RULE_008), not the pre-compression upload/thumbnail.

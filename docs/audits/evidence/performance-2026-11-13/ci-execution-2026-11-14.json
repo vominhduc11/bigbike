@@ -95,34 +95,40 @@
     "no_current_full_stack_latency_result": true
   },
   "current_run": {
-    "id": 43790978933,
-    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43790978933",
-    "commit": "323421e8a1aabdc8e7a0cb427c4e581daf9e8f13",
+    "id": 43820985928,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43820985928",
+    "commit": "cc59c3c4a02fd45ca7e7c19bb3cf362d30d48e59",
     "status": "completed_failure",
-    "frontend_reuse": "CI boundary could not obtain proof; fail-closed fallback reruns BOTHfrontendgates; localread-onlysource-boundproof true is not a substitute forCIproof",
-    "backend": "fresh1600/1600;0fail/error/skip;clean verify/package and realPostgreSQL schema/color gates passed",
-    "local_targeted": {
-      "tests": 160,
+    "local_backend_full_utc": {
+      "suite_files": 210,
+      "tests": 1631,
+      "passed": 1631,
       "failures": 0,
       "errors": 0,
-      "skipped": 0
+      "skipped": 0,
+      "package": "passed"
     },
-    "source_fixes": [
-      "opaque cart identifiers",
-      "admin permission cold-loader race",
-      "admin status/version cold-loader race"
-    ],
+    "local_helpers": {
+      "python": 80,
+      "node": 6,
+      "baseline": 3,
+      "ingress": "positive/two negativecontrols passed",
+      "gitleaks_findings": 0
+    },
+    "source_fix": "genericISO-MP4refinement+realvideohandler; existingsecurity/limits/directTikapaths retained",
+    "new_acceptance_source": "renderedsearch currentpage vsAPIreference; explicitvariantcart+Merchant/landing postmeasurement, not yet runtimeverified",
+    "frontend": "source-boundremoteproof PASSED; reuse7ce805web/1245admin lint/test/build/standalone; NOTnewlyexecuted",
     "secret_artifact_guard": {
-      "id": 43790978952,
+      "id": 43820985930,
+      "status": "completed",
       "conclusion": "success"
     },
-    "production_changes": false,
     "full_system_acceptance": false,
-    "frontend": "fresh805web/1245admin;0fail/pending/todo;bothlint/build passed;standalone portable",
-    "isolated_stack_job_id": 133053207537,
-    "isolated_stack_status": "real Before functional+commerce passed; media clip.mp4 POST400 after3PNG; noAfter/browser/load/Lighthouse",
-    "gate_evidence": "ci-cart-access-fixed-gates-2026-11-16.json",
-    "runtime_evidence": "ci-commerce-runtime-2026-11-16.json"
+    "production_changes": false,
+    "backend": "freshremote210suitefiles/1631/1631;0fail/error/skip;cleanverify/package+PGschema/colorrequiredgatespassed",
+    "isolated_stack_job_id": 133146262021,
+    "isolated_stack_status": "Before stoppedprivateoriginalGET502 onsecondalpha2400PNG afterupload201; earlier323samePNGpassed; noAfter/MP4/browser/load verified",
+    "runtime_evidence": "ci-large-download-failure-2026-11-16.json"
   },
   "previous_infrastructure_run": {
     "id": 43677437126,
@@ -214,5 +220,35 @@
     },
     "production_services_changed": false,
     "full_system_acceptance": false
+  },
+  "previous_cart_access_run": {
+    "id": 43790978933,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43790978933",
+    "commit": "323421e8a1aabdc8e7a0cb427c4e581daf9e8f13",
+    "status": "completed_failure",
+    "frontend_reuse": "CI boundary could not obtain proof; fail-closed fallback reruns BOTHfrontendgates; localread-onlysource-boundproof true is not a substitute forCIproof",
+    "backend": "fresh1600/1600;0fail/error/skip;clean verify/package and realPostgreSQL schema/color gates passed",
+    "local_targeted": {
+      "tests": 160,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "source_fixes": [
+      "opaque cart identifiers",
+      "admin permission cold-loader race",
+      "admin status/version cold-loader race"
+    ],
+    "secret_artifact_guard": {
+      "id": 43790978952,
+      "conclusion": "success"
+    },
+    "production_changes": false,
+    "full_system_acceptance": false,
+    "frontend": "fresh805web/1245admin;0fail/pending/todo;bothlint/build passed;standalone portable",
+    "isolated_stack_job_id": 133053207537,
+    "isolated_stack_status": "real Before functional+commerce passed; media clip.mp4 POST400 after3PNG; noAfter/browser/load/Lighthouse",
+    "gate_evidence": "ci-cart-access-fixed-gates-2026-11-16.json",
+    "runtime_evidence": "ci-commerce-runtime-2026-11-16.json"
   }
 }
