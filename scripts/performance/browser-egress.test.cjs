@@ -122,6 +122,14 @@ if (process.argv.includes('--native')) {
   nativeProof().catch(() => { console.error('Native cache/egress protocol proof failed'); process.exitCode = 1; });
 } else {
   const test = require('node:test');
+  test('initial HTML diagnostic retains marker booleans only', async () => {
+    const { failureHtmlCounts } = require('./browser.cjs');
+    const result = await failureHtmlCounts({ body: async () => Buffer.from('<div class="bb-main-banner" data-analytics-location="homepage_hero">private</div>') });
+    assert.deepEqual(result, { hero_marker_present: true, hero_analytics_marker_present: true });
+    assert.ok(!JSON.stringify(result).includes('private'));
+    assert.deepEqual(await failureHtmlCounts({ body: async () => { throw Error('private'); } }), { unavailable: true });
+    assert.deepEqual(await failureHtmlCounts({ body: async () => Buffer.alloc(4 * 1024 * 1024 + 1) }), { unavailable: true });
+  });
   test('browser error categories retain only fixed origin, resource and error classes', () => {
     const { responseCategory, pageErrorCategory } = require('./browser.cjs');
     const privateUrl = 'http://localhost:13000/private-token?secret=private';

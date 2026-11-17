@@ -20,6 +20,20 @@ function pageErrorCategory(error) {
   return ['TypeError', 'ReferenceError', 'SyntaxError', 'RangeError'].includes(name) ? name : 'other';
 }
 
+async function failureHtmlCounts(response) {
+  let deadline;
+  try {
+    const body = await Promise.race([response.body(), new Promise((_, reject) => {
+      deadline = setTimeout(() => reject(Error('html_diagnostics_timeout')), 1500);
+    })]);
+    if (!Buffer.isBuffer(body) || body.length > 4 * 1024 * 1024) return { unavailable: true };
+    const html = body.toString('utf8');
+    return { hero_marker_present: /<div\b[^>]*\bclass=["'][^"']*\bbb-main-banner\b[^"']*["']/i.test(html),
+      hero_analytics_marker_present: /<[^>]+\bdata-analytics-location=["']homepage_hero["']/i.test(html) };
+  } catch (_) { return { unavailable: true }; }
+  finally { clearTimeout(deadline); }
+}
+
 async function failureDomCounts(page) {
   let deadline;
   try {
@@ -59,7 +73,7 @@ async function main() {
   const collectorDirectory = path.join(process.env.RUNNER_TEMP, 'perf-tools/node_modules/web-vitals');
   const egress = await createRejectProxy();
   let browser;
-  let activePage = null, runtimeCounters = null;
+  let activePage = null, runtimeCounters = null, lastNavigationResponse = null;
   const results = [];
   const progress = { surface: 'launch', step: 'starting' };
   let inpCollectorIdentity = null;
@@ -166,7 +180,9 @@ async function main() {
           }
           const cacheBefore = httpCache.snapshot();
           const egressBefore = egress.snapshot();
+          lastNavigationResponse = null;
           const response = await page.goto('http://localhost:13000' + route, { waitUntil: 'load', timeout: 60000 });
+          lastNavigationResponse = response;
           progress.navigation_status = response?.status() ?? null;
           if (!response || response.status() !== 200) throw Error('Required browser surface failed: ' + name);
           await page.waitForTimeout(2000);
@@ -325,6 +341,7 @@ async function main() {
   } catch (error) {
     progress.failure_code = error?.name === 'TimeoutError' ? 'browser_timeout' : 'browser_validation_failed';
     if (activePage) progress.dom_counts = await failureDomCounts(activePage);
+    if (progress.surface === 'home' && lastNavigationResponse) progress.initial_html = await failureHtmlCounts(lastNavigationResponse);
     if (runtimeCounters) progress.runtime_counters = runtimeCounters();
     throw error;
   } finally {
@@ -341,4 +358,4 @@ async function main() {
 if (require.main === module) {
   main().catch(() => { console.error('Browser validation failed; sanitized partial metrics retained'); process.exitCode = 1; });
 }
-module.exports = { failureDomCounts, responseCategory, pageErrorCategory };
+module.exports = { failureDomCounts, failureHtmlCounts, responseCategory, pageErrorCategory };
