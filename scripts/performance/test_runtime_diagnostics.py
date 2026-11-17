@@ -12,7 +12,11 @@ class RuntimeDiagnosticsTest(unittest.TestCase):
         for log, expected in (
             ('AsyncRequestNotUsableException ' + private, 'async_response_unusable'),
             ('upstream sent too big header ' + private, 'proxy_header_too_large'),
-            ('upstream sent invalid header ' + private, 'proxy_header_invalid'),
+            ('upstream sent invalid header ' + private, 'proxy_invalid_header'),
+            ('upstream sent invalid status ' + private, 'proxy_invalid_status'),
+            ('upstream sent duplicate header ' + private, 'proxy_duplicate_header'),
+            ('upstream sent no valid HTTP ' + private, 'proxy_no_valid_http'),
+            ('invalid chunked response ' + private, 'proxy_invalid_chunked'),
             ('upstream prematurely closed connection ' + private, 'proxy_upstream_closed_early'),
             ('bigbike-backend could not be resolved ' + private, 'proxy_dns_failure'),
             ('open() failed (13: Permission denied) ' + private, 'filesystem_io_failure'),
