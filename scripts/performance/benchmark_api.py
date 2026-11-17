@@ -35,7 +35,7 @@ def measure(target, path, concurrency, duration, *, headers=None, interval=0, st
 
     def worker():
         connection = http.client.HTTPConnection(target.hostname, target.port, timeout=10)
-        samples, successful_samples, statuses, byte_count = [], [], Counter(), 0
+        samples, successful_samples, statuses, observed_statuses, byte_count = [], [], Counter(), Counter(), 0
         try:
             while time.perf_counter() < deadline and len(samples) < 10000 and not stop.is_set():
                 started = time.perf_counter()
@@ -43,14 +43,23 @@ def measure(target, path, concurrency, duration, *, headers=None, interval=0, st
                 try:
                     connection.request("GET", path, headers={"Accept": "application/json", **(headers or {})})
                     response = connection.getresponse()
+                    observed_statuses[str(response.status)] += 1
+                    # Stop new work as soon as non-success headers arrive. Body
+                    # completion still determines the one terminal outcome below.
+                    if not 200 <= response.status < 300:
+                        stop.set()
                     # Consume and discard response bodies; never persist catalog/customer data.
                     while chunk := response.read(65536):
                         byte_count += len(chunk)
+                    if response.length is not None and response.length > 0:
+                        raise http.client.IncompleteRead(b"", response.length)
                     statuses[str(response.status)] += 1
                     successful = 200 <= response.status < 300
                     if not successful:
                         stop.set()
                 except (OSError, http.client.HTTPException) as error:
+                    if isinstance(error, http.client.IncompleteRead) and isinstance(error.partial, bytes):
+                        byte_count += len(error.partial)
                     statuses["timeout" if isinstance(error, TimeoutError) else "network_error"] += 1
                     stop.set()
                     connection.close()
@@ -63,27 +72,30 @@ def measure(target, path, concurrency, duration, *, headers=None, interval=0, st
                     stop.wait(min(max(0, interval - elapsed_ms / 1000), max(0, deadline - time.perf_counter())))
         finally:
             connection.close()
-        return samples, statuses, byte_count, successful_samples
+        return samples, statuses, byte_count, successful_samples, observed_statuses
 
     started = time.perf_counter()
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
         runs = list(executor.map(lambda _: worker(), range(concurrency)))
     elapsed = time.perf_counter() - started
-    samples, successes, statuses = [], [], Counter()
-    for timings, counts, _, successful_timings in runs:
+    samples, successes, statuses, observed_statuses = [], [], Counter(), Counter()
+    for timings, counts, _, successful_timings, observed_counts in runs:
         samples.extend(timings)
         successes.extend(successful_timings)
         statuses.update(counts)
+        observed_statuses.update(observed_counts)
     return {"path": path, "concurrency": concurrency, "elapsed_seconds": elapsed,
             "requests": len(samples), "statuses": dict(statuses),
+            "observed_http_statuses": dict(observed_statuses),
             "requests_per_second": len(samples) / elapsed,
             "successful_requests_per_second": len(successes) / elapsed,
             "non_2xx_or_network_error_rate": (len(samples) - len(successes)) / len(samples) if samples else None,
-            "rate_limited_requests": statuses.get("429", 0), "timeouts": statuses.get("timeout", 0),
+            "rate_limited_requests": observed_statuses.get("429", 0), "timeouts": statuses.get("timeout", 0),
             "network_errors": statuses.get("network_error", 0),
             "latency_ms_2xx_only": {f"p{p}": percentile(successes, p / 100) for p in (50, 95, 99)},
             "latency_ms_including_errors": {f"p{p}": percentile(samples, p / 100) for p in (50, 95, 99)},
-            "bytes_received": sum(run[2] for run in runs)}
+            "bytes_received": sum(run[2] for run in runs),
+            "bytes_received_note": "Body bytes returned by HTTP client; truncated chunked responses may undercount."}
 
 
 def main():

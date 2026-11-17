@@ -213,9 +213,20 @@ def media_checks(api, directory, record_callback=None):
 
 
 def functional_checks(api, fixtures):
-    """Real requests, guest isolation and checkout; all identities are synthetic."""
+    """Real isolated requests, guest/account ownership and COD; synthetic data only."""
     require_ci()
-    product = fixtures['products'][0]
+    products = fixtures.get('products', [])[:2]
+    if (api.origin != 'http://localhost:18080' or len(products) != 2
+            or any(not isinstance(row, dict) or not row.get('id')
+                   or not row.get('slug', '').startswith('e2e-perf-product-')
+                   or not row.get('name', '').startswith('E2E_PERF_') for row in products)):
+        raise ValueError('Functional writes require dedicated CI origin and owned product fixtures')
+    product = products[0]
+
+    def require_private(headers):
+        value = next((value for key, value in headers.items() if key.lower() == 'cache-control'), '')
+        assert 'no-store' in {token.strip().lower() for token in value.split(',')}, \
+            'Private account response must not be shared-cacheable'
     public = Api(api.origin)
     public.call('GET', '/api/v1/admin/products', expected=(401, 403))
     api.call('GET', '/api/v1/admin/products?page=1&size=20&sort=name:asc')
@@ -247,6 +258,7 @@ def functional_checks(api, fixtures):
     assert order.get('data'), 'Checkout returned no order'
     assert order['data']['totalAmount'] == 200000, 'Checkout total differs from authoritative fixture price'
     customers = []
+    sessions = []
     password = 'E2E-PERF-Account-only-32characters'
     for index in (1, 2):
         customer = Api(api.origin)
@@ -259,8 +271,74 @@ def functional_checks(api, fixtures):
         assert own_profile['data']['email'] == email, 'Customer profile crossed sessions'
         customer.call('GET', '/api/v1/admin/products', expected=(401,))
         customers.append(own_profile['data'])
+        sessions.append(customer)
     assert customers[0]['id'] != customers[1]['id']
+
+    # Use ordinary registered-customer cookies/CSRF. No verification, role or limiter bypass.
+    carts = []
+    for index, customer in enumerate(sessions):
+        empty, headers, _ = customer.call('GET', '/api/v1/cart')
+        require_private(headers)
+        assert empty['data']['items'] == [], 'Authenticated cart crossed customer sessions'
+        populated, headers, _ = customer.call('POST', '/api/v1/cart/items', {
+            'productId': products[index]['id'], 'quantity': index + 1})
+        require_private(headers)
+        carts.append(populated['data'])
+    assert carts[0]['id'] != carts[1]['id'], 'Authenticated customers received the same cart'
+    for index, customer in enumerate(sessions):
+        current, headers, _ = customer.call('GET', '/api/v1/cart')
+        require_private(headers)
+        cart = current['data']
+        assert cart['id'] == carts[index]['id'] and len(cart['items']) == 1, \
+            'Authenticated cart identity or contents crossed sessions'
+        line = cart['items'][0]
+        assert line['productId'] == products[index]['id'] and line['quantity'] == index + 1, \
+            'Authenticated cart product or quantity crossed sessions'
+        assert line['unitPrice'] > 0 and cart['totals']['totalAmount'] == line['unitPrice'] * (index + 1)
+
+    authenticated_checkout = {**checkout, 'billingAddress': {
+        **checkout['billingAddress'], 'email': 'perf-customer-1@example.invalid'}}
+    # One normal refill of the shared 5/min checkout bucket before the extra checkout.
+    time.sleep(12.1)
+    placed, headers, _ = sessions[0].call('POST', '/api/v1/checkout', authenticated_checkout,
+        headers={'Idempotency-Key': 'E2E-PERF-AUTH-CHECKOUT-1'}, expected=(200, 201))
+    require_private(headers)
+    placed = placed['data']
+    order_id = placed.get('id')
+    assert (isinstance(order_id, str) and len(order_id) == 36
+            and all(char in '0123456789abcdefABCDEF-' for char in order_id)), 'Invalid own-order identity'
+    assert placed['status'] == 'PENDING' and placed['paymentMethod'] == 'COD'
+    assert placed['totalAmount'] == carts[0]['totals']['totalAmount']
+    own_detail, headers, _ = sessions[0].call('GET', '/api/v1/customer/orders/' + order_id)
+    require_private(headers)
+    detail = own_detail['data']
+    assert detail['id'] == order_id and detail['orderNumber'] == placed['orderNumber']
+    assert detail['totalAmount'] == placed['totalAmount'] and not detail.get('orderKey'), \
+        'Own-order response exposed a guest lookup key or wrong total'
+    own_orders, headers, _ = sessions[0].call('GET', '/api/v1/customer/orders?page=1&size=20')
+    require_private(headers)
+    assert [row['id'] for row in own_orders['data']] == [order_id], 'Own-order list missing or mixed'
+    foreign, headers, _ = sessions[1].call('GET', '/api/v1/customer/orders/' + order_id, expected=(404,))
+    require_private(headers)
+    assert not foreign.get('data'), 'Foreign-order denial included private order data'
+    other_orders, headers, _ = sessions[1].call('GET', '/api/v1/customer/orders?page=1&size=20')
+    require_private(headers)
+    assert other_orders['data'] == [], 'Order list crossed customer sessions'
+    other_cart, headers, _ = sessions[1].call('GET', '/api/v1/cart')
+    require_private(headers)
+    assert other_cart['data'] == carts[1], 'Another customer checkout changed the second cart'
+    anonymous = Api(api.origin)
+    for path in ('/api/v1/customer/orders?page=1&size=20', '/api/v1/customer/orders/' + order_id):
+        denied, headers, _ = anonymous.call('GET', path, expected=(401,))
+        require_private(headers)
+        assert not denied.get('data'), 'Anonymous-order denial included private data'
     return {'real_guest_cart_and_checkout': True, 'private_cart_isolation': True,
             'admin_product_patch': True, 'unauthenticated_admin_denied': True,
             'customer_account_registration_and_profile_isolation': True,
+            'authenticated_cart_session_count': len(sessions),
+            'authenticated_cart_isolation': True,
+            'authenticated_cod_checkout_and_own_order': True,
+            'foreign_order_404_and_list_isolation': True,
+            'signed_out_order_401': True,
+            'private_account_success_and_error_no_store': True,
             'admin_bulk_reports_role_denial': 'not verified by this scenario'}

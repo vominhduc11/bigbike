@@ -5,6 +5,21 @@ const path = require('node:path');
 const { installCollector } = require('./lab-inp.cjs');
 const { createRejectProxy, counterDelta, observeHttpCache, METHOD } = require('./browser-egress.cjs');
 
+function responseCategory(rawUrl, resourceType, status) {
+  let url;
+  try { url = new URL(rawUrl); } catch (_) { return null; }
+  if (!['localhost', '127.0.0.1'].includes(url.hostname) || status < 400) return null;
+  const origin = { '13000': 'web', '14000': 'admin', '18080': 'api', '19000': 'storage' }[url.port] || 'other';
+  const kind = ['document', 'script', 'stylesheet', 'image', 'font', 'media', 'fetch', 'xhr'].includes(resourceType) ? resourceType : 'other';
+  const code = status === 429 ? '429' : status >= 500 ? '5xx' : 'other_4xx';
+  return `${origin}_${kind}_${code}`;
+}
+
+function pageErrorCategory(error) {
+  const name = error?.name;
+  return ['TypeError', 'ReferenceError', 'SyntaxError', 'RangeError'].includes(name) ? name : 'other';
+}
+
 async function failureDomCounts(page) {
   let deadline;
   try {
@@ -91,8 +106,13 @@ async function main() {
       activePage = page;
       const httpCache = await observeHttpCache(context, page);
       let pageErrors = 0, apiErrors = 0, resourceErrors = 0, rateLimited = 0;
+      const responseCategories = {}, pageErrorCategories = {};
       let localNetworkErrors = 0, canceledRequests = 0, consoleErrors = 0, externalConsoleErrors = 0;
-      page.on('pageerror', () => pageErrors += 1);
+      page.on('pageerror', error => {
+        pageErrors += 1;
+        const category = pageErrorCategory(error);
+        pageErrorCategories[category] = (pageErrorCategories[category] || 0) + 1;
+      });
       page.on('requestfailed', request => {
         const url = new URL(request.url());
         if (!['localhost', '127.0.0.1'].includes(url.hostname)) return;
@@ -116,6 +136,8 @@ async function main() {
       });
       page.on('response', response => {
         const url = new URL(response.url());
+        const category = responseCategory(response.url(), response.request().resourceType(), response.status());
+        if (category) responseCategories[category] = (responseCategories[category] || 0) + 1;
         const local = ['localhost', '127.0.0.1'].includes(url.hostname);
         if (response.status() === 429) rateLimited += 1;
         if (local && url.pathname.startsWith('/api/') && response.status() >= 400) apiErrors += 1;
@@ -124,7 +146,8 @@ async function main() {
       });
       runtimeCounters = () => ({ page_errors: pageErrors, api_errors: apiErrors, resource_errors: resourceErrors,
         local_network_errors: localNetworkErrors, canceled_requests: canceledRequests, console_errors: consoleErrors,
-        external_console_errors: externalConsoleErrors, rate_limited_requests: rateLimited });
+        external_console_errors: externalConsoleErrors, rate_limited_requests: rateLimited,
+        response_categories: { ...responseCategories }, page_error_categories: { ...pageErrorCategories } });
       const surfaces = [
         ['home', '/'], ['category', '/danh-muc/' + fixture.category.slug + '/'],
         ['product', '/product/' + product.slug + '/'], ['search', '/tim-kiem/?s=E2E_PERF'],
@@ -318,4 +341,4 @@ async function main() {
 if (require.main === module) {
   main().catch(() => { console.error('Browser validation failed; sanitized partial metrics retained'); process.exitCode = 1; });
 }
-module.exports = { failureDomCounts };
+module.exports = { failureDomCounts, responseCategory, pageErrorCategory };

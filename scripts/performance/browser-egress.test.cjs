@@ -122,6 +122,17 @@ if (process.argv.includes('--native')) {
   nativeProof().catch(() => { console.error('Native cache/egress protocol proof failed'); process.exitCode = 1; });
 } else {
   const test = require('node:test');
+  test('browser error categories retain only fixed origin, resource and error classes', () => {
+    const { responseCategory, pageErrorCategory } = require('./browser.cjs');
+    const privateUrl = 'http://localhost:13000/private-token?secret=private';
+    assert.equal(responseCategory(privateUrl, 'script', 429), 'web_script_429');
+    assert.equal(responseCategory(privateUrl, 'private', 503), 'web_other_5xx');
+    assert.equal(responseCategory('https://private.invalid/token', 'image', 429), null);
+    assert.equal(responseCategory(privateUrl, 'image', 200), null);
+    assert.equal(pageErrorCategory({ name: 'TypeError', message: 'private' }), 'TypeError');
+    assert.equal(pageErrorCategory({ name: 'private' }), 'other');
+    assert.ok(!JSON.stringify([responseCategory(privateUrl, 'script', 429), pageErrorCategory({ name: 'private' })]).includes('private'));
+  });
   test('hung renderer diagnostics end with an explicit unavailable result', async () => {
     const { failureDomCounts } = require('./browser.cjs');
     assert.deepEqual(await failureDomCounts({ evaluate: () => new Promise(() => {}) }), { unavailable: true });
