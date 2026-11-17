@@ -122,6 +122,23 @@ if (process.argv.includes('--native')) {
   nativeProof().catch(() => { console.error('Native cache/egress protocol proof failed'); process.exitCode = 1; });
 } else {
   const test = require('node:test');
+  test('hung renderer diagnostics end with an explicit unavailable result', async () => {
+    const { failureDomCounts } = require('./browser.cjs');
+    assert.deepEqual(await failureDomCounts({ evaluate: () => new Promise(() => {}) }), { unavailable: true });
+  });
+  test('browser failure diagnostics retain only fixed DOM counts without content or URLs', async () => {
+    const { failureDomCounts } = require('./browser.cjs');
+    const result = await failureDomCounts({ evaluate: async () => ({ ready_state: 'complete',
+      hero_containers: 1, hero_images: 1, hero_visible_images: 0, hero_decoded_images: 0,
+      images: 9, headings: 1, text: 'private-value', url: 'https://private.invalid/?token=private-value' }) });
+    assert.equal(result.hero_visible_images, 0);
+    assert.equal(result.ready_state, 'complete');
+    assert.ok(!JSON.stringify(result).includes('private'));
+    const invalid = await failureDomCounts({ evaluate: async () => ({ ready_state: 'private-value', hero_images: NaN }) });
+    assert.equal(invalid.ready_state, 'unknown');
+    assert.equal(invalid.hero_images, null);
+    assert.deepEqual(await failureDomCounts({ evaluate: async () => { throw Error('private-value'); } }), { unavailable: true });
+  });
   test('reject-only proxy denies HTTP CONNECT and upgrade without upstream forwarding', async () => {
     const proxy = await createRejectProxy();
     try {

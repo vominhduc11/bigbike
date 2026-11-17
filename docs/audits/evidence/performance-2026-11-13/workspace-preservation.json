@@ -2,8 +2,14 @@
   "initial_file_count": 2991,
   "changed_initial_files": [
     ".github/workflows/performance-validation.yml",
+    "bigbike-admin/src/locales/en.json",
+    "bigbike-admin/src/locales/vi.json",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/mapper/CartMapper.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/audit/AuditLogJpaRepository.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ReviewJpaRepository.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/settings/SiteSettingJpaRepository.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/repository/catalog/PublishedProductListingCache.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminAuditLogService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminCatalogReadService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminMediaService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/ImageVariantService.java",
@@ -13,6 +19,8 @@
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutService.java",
     "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/media/ImageCompressionService.java",
+    "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewModerationService.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/AdminAuditLogApiTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/AdminReportApiTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/HomepagePublicApiTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/Phase1DCustomerAuthTest.java",
@@ -22,6 +30,8 @@
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/migration/ArticleExcerptAuthorRemovalMigrationPostgresTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/admin/ImageVariantServiceTest.java",
     "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/media/ImageCompressionServiceTest.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/ReviewModerationServiceTest.java",
+    "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/ReviewModerationSettingsTest.java",
     "bigbike-web/next.config.ts",
     "docs/audits/evidence/gmc-ticket-review-2026-10-30/verification.json",
     "docs/business/BUSINESS_RULES.md",
@@ -37,5 +47,5 @@
   "unexpected_changes": [],
   "missing_initial_files": [],
   "all_other_initial_files_identical": true,
-  "scope": "Original2991 files preserved except32 deliberate source/test/docs/tooling edits; newMP4detectionrefinement+canonicalMedia clarification; main/index untouched."
+  "scope": "Original files preserved except deliberate documented performance/correctness/source/test/docs/tooling edits. 17Nov adds owner-approved AI journal and Admin audit label/resolver changes; main/index untouched."
 }

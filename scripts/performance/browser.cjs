@@ -5,6 +5,34 @@ const path = require('node:path');
 const { installCollector } = require('./lab-inp.cjs');
 const { createRejectProxy, counterDelta, observeHttpCache, METHOD } = require('./browser-egress.cjs');
 
+async function failureDomCounts(page) {
+  let deadline;
+  try {
+    const observation = page.evaluate(() => {
+      const hero = [...document.querySelectorAll('[data-analytics-location="homepage_hero"] img')];
+      return { ready_state: document.readyState,
+        hero_containers: document.querySelectorAll('.bb-main-banner').length,
+        hero_images: hero.length,
+        hero_visible_images: hero.filter(img => getComputedStyle(img).visibility !== 'hidden'
+          && getComputedStyle(img).display !== 'none' && img.getBoundingClientRect().width > 0 && img.getBoundingClientRect().height > 0).length,
+        hero_decoded_images: hero.filter(img => img.complete && img.naturalWidth > 0).length,
+        images: document.images.length, headings: document.querySelectorAll('h1').length };
+    });
+    const raw = await Promise.race([observation, new Promise((_, reject) => {
+      deadline = setTimeout(() => reject(Error('browser_diagnostics_timeout')), 1500);
+    })]);
+    const result = { ready_state: ['loading', 'interactive', 'complete'].includes(raw?.ready_state) ? raw.ready_state : 'unknown' };
+    for (const key of ['hero_containers', 'hero_images', 'hero_visible_images', 'hero_decoded_images', 'images', 'headings']) {
+      result[key] = Number.isSafeInteger(raw?.[key]) && raw[key] >= 0 ? raw[key] : null;
+    }
+    return result;
+  } catch (_) {
+    return { unavailable: true };
+  } finally {
+    clearTimeout(deadline);
+  }
+}
+
 async function main() {
   if (process.env.GITHUB_ACTIONS !== 'true' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted') {
     throw Error('Browser workload requires the isolated GitHub-hosted stack');
@@ -16,6 +44,7 @@ async function main() {
   const collectorDirectory = path.join(process.env.RUNNER_TEMP, 'perf-tools/node_modules/web-vitals');
   const egress = await createRejectProxy();
   let browser;
+  let activePage = null, runtimeCounters = null;
   const results = [];
   const progress = { surface: 'launch', step: 'starting' };
   let inpCollectorIdentity = null;
@@ -59,6 +88,7 @@ async function main() {
         }
       });
       const page = await context.newPage();
+      activePage = page;
       const httpCache = await observeHttpCache(context, page);
       let pageErrors = 0, apiErrors = 0, resourceErrors = 0, rateLimited = 0;
       let localNetworkErrors = 0, canceledRequests = 0, consoleErrors = 0, externalConsoleErrors = 0;
@@ -92,6 +122,9 @@ async function main() {
         if (local && response.status() >= 400
             && ['image', 'script', 'stylesheet', 'font', 'media'].includes(response.request().resourceType())) resourceErrors += 1;
       });
+      runtimeCounters = () => ({ page_errors: pageErrors, api_errors: apiErrors, resource_errors: resourceErrors,
+        local_network_errors: localNetworkErrors, canceled_requests: canceledRequests, console_errors: consoleErrors,
+        external_console_errors: externalConsoleErrors, rate_limited_requests: rateLimited });
       const surfaces = [
         ['home', '/'], ['category', '/danh-muc/' + fixture.category.slug + '/'],
         ['product', '/product/' + product.slug + '/'], ['search', '/tim-kiem/?s=E2E_PERF'],
@@ -111,11 +144,14 @@ async function main() {
           const cacheBefore = httpCache.snapshot();
           const egressBefore = egress.snapshot();
           const response = await page.goto('http://localhost:13000' + route, { waitUntil: 'load', timeout: 60000 });
+          progress.navigation_status = response?.status() ?? null;
           if (!response || response.status() !== 200) throw Error('Required browser surface failed: ' + name);
           await page.waitForTimeout(2000);
           if (name === 'home') {
+            progress.step = 'homepage-hero-visible';
             const hero = page.locator('[data-analytics-location="homepage_hero"] img').first();
             await hero.waitFor({ state: 'visible' });
+            progress.step = 'homepage-hero-decoded';
             if (!await hero.evaluate(image => image.complete && image.naturalWidth > 0)) {
               throw Error('Representative home hero image failed');
             }
@@ -260,8 +296,14 @@ async function main() {
       session.refreshCookie = rotated.value;
       await httpCache.close();
       await context.close();
+      activePage = null;
     }
     progress.step = 'complete';
+  } catch (error) {
+    progress.failure_code = error?.name === 'TimeoutError' ? 'browser_timeout' : 'browser_validation_failed';
+    if (activePage) progress.dom_counts = await failureDomCounts(activePage);
+    if (runtimeCounters) progress.runtime_counters = runtimeCounters();
+    throw error;
   } finally {
     try {
       if (browser) await browser.close();
@@ -273,4 +315,7 @@ async function main() {
     }
   }
 }
-main().catch(() => { console.error('Browser validation failed; sanitized partial metrics retained'); process.exitCode = 1; });
+if (require.main === module) {
+  main().catch(() => { console.error('Browser validation failed; sanitized partial metrics retained'); process.exitCode = 1; });
+}
+module.exports = { failureDomCounts };

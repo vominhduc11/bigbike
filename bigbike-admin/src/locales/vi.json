@@ -3265,6 +3265,7 @@
       "CONTENT_ARTICLE_DELETED": "Xoá bài viết",
       "INVENTORY_STOCK_ADJUSTED": "Điều chỉnh tồn kho",
       "REVIEW_STATUS_CHANGED": "Cập nhật trạng thái đánh giá",
+      "REVIEW_AI_ATTEMPT_RESERVED": "Giữ chỗ lượt kiểm duyệt AI",
       "REVIEW_DELETED": "Xoá đánh giá",
       "ADMIN_LOGIN_SUCCESS": "Đăng nhập thành công",
       "ADMIN_LOGIN_FAILED": "Đăng nhập thất bại",

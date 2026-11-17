@@ -282,6 +282,9 @@ public class AdminAuditLogService {
         }
 
         Object reviewId = payload.get("id");
+        if (reviewId == null && "REVIEW_AI_ATTEMPT_RESERVED".equals(entity.getAction())) {
+            reviewId = payload.get("reviewId");
+        }
         Object productName = payload.get("productName");
         String resourceCode = reviewId != null ? "Review #" + reviewId : null;
         String resourceDisplayName = productName instanceof String name && !name.isBlank() ? name : null;

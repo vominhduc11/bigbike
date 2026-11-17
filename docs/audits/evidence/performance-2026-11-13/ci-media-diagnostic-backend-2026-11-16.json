@@ -1,0 +1,17 @@
+{
+  "run": 43826062280,
+  "commit": "24fc792aa9e27e3bd438b20cfe6dcfd53e36796e",
+  "job": 133163682181,
+  "results": {
+    "backend.json": {
+      "errors": 0,
+      "failures": 0,
+      "nonpassing_cases": [],
+      "passed": 1631,
+      "skipped": 0,
+      "suite_files": 210,
+      "tests": 1631
+    }
+  },
+  "scope": "freshbackend regression/verify/package/requiredPostgreSQL gates only; isolatedstack notyetaccepted"
+}

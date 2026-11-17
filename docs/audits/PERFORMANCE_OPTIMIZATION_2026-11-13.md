@@ -13,7 +13,7 @@ Hai frontend đều lint/build lại thành công; chốt standalone đạt. B�
 Before đã vượt giỏ/checkout/account/commerce thật, dừng tại upload MP4400 sau3PNG;
 chưa có After hoặc kết quả nghiệm thu. Bản sửa kiểm định MP4 đã đạt31ca tập trung
 và full backend1631/1631 cả localUTC lẫnCI,0fail/error/skip; đóng gói đạt.
-CIcc59 dừng vì downloadPNG lớn502 trước khi tớiMP4; nguyên nhân đang điều tra.
+CIcc59 dừng vì downloadPNG lớn502 trước khi tớiMP4. CI24fc sau đó đạt đủ13 ca media Before, gồmMP4 vàRange206, nhưng dừng ở trang chủ trên trình duyệt;502 cũ chưa rõ nguyên nhân. Chưa có After, Lighthouse hay tải API. Ngày17/11 đã tích hợp nhật ký lượtAI theo quyết định owner, backend cleanverify1647/1647 đã đạt trước khi publish nguồn mới.
 Không triển khai shop.
 Trạng thái chạy mới nhất:
 [ci-execution-2026-11-14.json](evidence/performance-2026-11-13/ci-execution-2026-11-14.json).
@@ -462,7 +462,7 @@ không chốt thayowner chínhsách thiếu biếnthể hoặc resendinviteSUPER
 [Phạmvichuẩnbị](evidence/performance-2026-11-13/merchant-preparation-2026-11-16.json).
 
 
-### Tác vụ nền và trần lượt AI — cần chủ shop chốt một điểm
+### Tác vụ nền và trần lượt AI — phát hiện16/11 (quyết định đã chốt, xem cập nhật17/11)
 
 Đã kiểm nguồn đủ20 khai báo Scheduled/Async trong15 tệp và đối chiếu các repository,
 giao dịch, cơ chế nhận việc, giới hạn từng lô và xử lý lỗi. Những kiểm thử thành phần
@@ -502,3 +502,64 @@ Chưa sửa app/proxybuffer/timeout hay nới assertion. Bổ sung chẩn đoán
 nginx/MinIO và asyncstream, phân biệt HTML/JSON cùng mã lỗi thuộc allowlist, ghi
 fixture/stage và relaycounters trước cleanup; không xuất payload/log gốc. Cần CI
 mới để thu bằng chứng. [Lỗi download cc59](evidence/performance-2026-11-13/ci-large-download-failure-2026-11-16.json).
+
+
+### Cập nhật17/11: media thật đạt, trình duyệt trang chủ chưa hoàn tất
+
+Nguồn24fc792/run43826062280 đã chạy mới backend1631/1631, web805/805 vàAdmin1245/1245,
+không fail/error/skip; hai frontend đều lint/build lại, standalone đạt. Không gọi là
+reuse7ce. Lab dựng7dịch vụ thật và dữ liệu riêng; functional/commerce, revalidation
+và24 lượt phân trang lớn đạt. Before vượt đủ13 ca ảnh/video: JPEG, PNG có/không alpha,
+WebP, MP4 hợp lệ, hai ảnh batch; download đúng byte bản gốc đang lưu, PNGalpha96,
+cap2000px, private download bị chặn nếu không đăng nhập và MP4 Range206.
+
+Đây là bằng chứng runtime cho sửa nhận diện MP4. DownloadPNG502 của cc59 không tái
+hiện nhưng chưa có nguyên nhân hoặc bản sửa được chứng minh. Thời gian upload/download
+là wall time từng request, chưa tách truyền/xử lý/lưu trữ; không phải cải thiện A/B.
+Sau đó browser dừng ở mobilehome trước khi ghi bất kỳ navigation metric nào. Bảy
+service vẫn chạy/khôngOOM; mã connection_refused và stream_closed trong khoảng log
+không đủ chứng minh nguyên nhân. Không có INP/Lighthouse/loadAPI/Adminsmoke/Merchant
+hoặc After từ lần này. [Bằng chứng24fc](evidence/performance-2026-11-13/ci-media-runtime-browser-failure-2026-11-17.json).
+
+Nguồn kế tiếp bổ sung stage trước khi chờ hero, HTTPstatus, số lượng DOM/ảnh hiển
+thị/ảnh giải mã và số lỗi đã lọc; DOM probe có giới hạn1,5giây. Probe nội bộ kiểm
+slider tổng hợp thuộc dataset. Không xuất URL/text/body/header/log gốc, không nới
+assertion hoặc timeout ứng dụng.86 helperPython,8 Node,baseline3file và ingress
+positive/hai negative controls đạt; QA độc lập không thấy lỗi chặn. Đây là công cụ
+chẩn đoán, chưa phải sửa nguyên nhân trang chủ.
+
+### Cập nhật17/11: giữ trần lượt kiểm duyệt AI bằng nhật ký hiện có
+
+Owner đã chọn ghi lượt đã gửi vào nhật ký sẵn có và giữ nguyên cách hiển thị kết quả.
+Đã cập nhật canonical trước source: BUSINESS_RULES REVIEW_RULE_013/AUDIT_RULE_001;
+DATA_CONTRACT phần review/journal/retention; API_CONTRACT Audit Log; DEPLOYMENT_GUIDE
+cutover. Không thêm bảng/column/index/dependency/migration, không nâng/reset hạn mức.
+
+Khóa hàng cấu hình hiện có, đọc lại hạn mức/ngày Việt Nam sau khi lấy khóa, giữ chỗ
+trong giao dịch riêng và bắt buộc lưu audit trước khi gọi provider. Lượt lỗi/timeout
+và lượt đã xóa review vẫn được tính; cùng review chỉ được giữ chỗ một lần. Không đổi
+nguồnAI chỉ dành cho phản hồi hợp lệ, trạng tháiSKIPPED khi lỗi hoặc checked_at hoàn
+thành. Audit chỉ giữ version/reviewId/ngày, không chứa nội dung đánh giá hay dữ liệu
+provider. Giữ lâu hơn12tháng chỉ với lượt treo chưa có dấu kết quả trong review còn
+tồn tại, để tránh gọi lại; nhật ký thông thường giữ policy12tháng. Admin có nhãn
+song ngữ và nhận diện đúng mã review cho action mới.
+
+57 ca tập trung đạt, gồm10ca PostgreSQL thật về cạnh tranh hạn mức, trùng review,
+lỗi/timeout, xóa và tái tạo service, audit rollback, cấu hình hiện thời, chuyển ngày
+Việt Nam và retention. BộPG này dùng schema Hibernate riêng, Flyway tắt; provider
+giả trong test, không có cuộc gọi trả phí. Không gọi đó là nghiệm thu scheduler hay
+migration/runtime toàn hệ thống. QA độc lập phát hiện fallback mã review còn thiếu;
+đã sửa phạm vi đúng action và API test12/12 đạt trong lần tích hợp. Admin lint/build
+và1245/1245 đạt. Full backend cleanverify/đóng gói đạt211suite/1647/1647,0fail/error/skip,exit0;
+Surefire có cảnh báo fork shutdown30giây sau System.exit(0), ghi riêng để điều tra,
+không coi là lỗi assertion hoặc đã sửa shutdown.
+[Fullbackend](evidence/performance-2026-11-13/review-ai-backend-full-2026-11-17.json). [Chi tiết](evidence/performance-2026-11-13/review-ai-journal-2026-11-17.json),
+[Admin](evidence/performance-2026-11-13/review-ai-admin-gates-2026-11-17.json).
+
+Triển khai cần đợi ngày Việt Nam mới sau khi worker cũ kết thúc; không khôi phục được
+lượt lỗi/xóa vốn chưa được ghi trong lịch sử. Truy vấn audit quy mô production và
+lịch nền/provider thật chưa đo. Hoàn tác code cũ có thể làm mất bảo đảm trần: operator
+phải dừng paid calls nếu không bảo đảm được trước khi revert, giữ nguyên nhật ký.
+Không có thay đổi shop/production trong phiên.42 tệp gốc được sửa có chủ đích;
+2949 tệp gốc còn lại giống manifest, main/index nguyên trạng. Hai quyết định còn chờ
+chỉ là chính sách bắt buộc chọn biến thể và quyền gửi lại lời mời SUPER_ADMIN.

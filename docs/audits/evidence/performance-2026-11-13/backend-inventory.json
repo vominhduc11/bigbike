@@ -1704,11 +1704,12 @@
       "annotation": "@Scheduled(cron = \"0 50 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
       "method": "purgeExpiredNotifications",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "No cron invocation, large backlog, concurrent replica or resource measurement. Migration test checks read-state preservation, not scheduler throughput.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/OrderOverdueReminderScheduler.java",
@@ -1716,11 +1717,12 @@
       "annotation": "@Scheduled(cron = \"0 20 4 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
       "method": "remindOverdueOrders",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Unit mocks cover outcomes; no real multi-replica schedule or broad overdue corpus profile.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/analytics/Ga4RefundDispatcher.java",
@@ -1728,11 +1730,12 @@
       "annotation": "@Scheduled(\n            fixedDelayString = \"${bigbike.analytics.ga4.dispatch-delay-ms:30000}\",\n            initialDelayString = \"${bigbike.analytics.ga4.dispatch-delay-ms:30000}\"\n    )",
       "method": "dispatchDueEvents",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "No real GA4 call by this audit; provider disabled in lab. Scheduler occupancy/concurrency and production delivery not verified.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/audit/AuditLogRetentionCleanupService.java",
@@ -1741,10 +1744,11 @@
       "method": "purgeExpiredAuditLogs",
       "source_inventoried": true,
       "source_reviewed": true,
-      "functional_test_status": "not individually verified this session",
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Actual PostgreSQL component tests cover expiration boundary; no timer, large backlog or lock-contention benchmark.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartRetentionCleanupService.java",
@@ -1752,11 +1756,12 @@
       "annotation": "@Scheduled(cron = \"0 45 2 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
       "method": "purgeExpiredCarts",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "PG component cases verify expired-only deletion, converted item preservation and >500 batches. No scheduled runtime/load test.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/cart/CartRetentionCleanupService.java",
@@ -1764,11 +1769,12 @@
       "annotation": "@Scheduled(cron = \"0 15 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
       "method": "purgeExpiredBackups",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "No dedicated test invoking this method identified. Shared batch helper has unit coverage for cart/audit, not proof of backup expiry boundaries. Initial operator backup/rollback not exercised.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/CheckoutIdempotencyKeyCleanupScheduler.java",
@@ -1776,11 +1782,12 @@
       "annotation": "@Scheduled(cron = \"0 30 2 * * *\")",
       "method": "cleanup",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "No dedicated scheduler cleanup test found; functional checkout idempotency tests do not prove this retention job. Large-delete locking/zone not measured.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/OrderNotificationService.java",
@@ -1788,11 +1795,12 @@
       "annotation": "@Async",
       "method": "sendOrderConfirmation",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Shared dispatcher unit tests are indirect only, not entrypoint/Spring async/mailbox receipt. Actual SMTP latency, pool occupancy and concurrent formatting unmeasured.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/OrderNotificationService.java",
@@ -1800,11 +1808,12 @@
       "annotation": "@Async",
       "method": "sendAdminNewOrderNotification",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Shared dispatcher unit tests are indirect only, not entrypoint/Spring async/mailbox receipt. Actual SMTP latency, pool occupancy and concurrent formatting unmeasured.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/OrderNotificationService.java",
@@ -1812,11 +1821,12 @@
       "annotation": "@Async",
       "method": "sendOrderStatusUpdate",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Shared dispatcher unit tests are indirect only, not entrypoint/Spring async/mailbox receipt. Actual SMTP latency, pool occupancy and concurrent formatting unmeasured.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/checkout/TelegramOrderNotificationService.java",
@@ -1824,11 +1834,12 @@
       "annotation": "@Async",
       "method": "sendNewOrderNotification",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Formatting/transport component tests with synthetic configuration are not actual Telegram or Spring executor acceptance; no outbound request made in this audit.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/content/ArticleBodyBlockMaintenance.java",
@@ -1837,10 +1848,11 @@
       "method": "fillMissingBlocks",
       "source_inventoried": true,
       "source_reviewed": true,
-      "functional_test_status": "not individually verified this session",
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "PostgreSQL component backfill test checks original fields/concurrent-write preconditions; no scheduled throughput, backlog or connection-hold profile.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/inventory/InventoryOutOfStockDigestScheduler.java",
@@ -1848,11 +1860,12 @@
       "annotation": "@Scheduled(cron = \"0 * * * * *\", zone = \"Asia/Ho_Chi_Minh\")",
       "method": "runScheduled",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Unit coverage only for this entrypoint/coordinator. Full catalog cardinality, digest payload size, DB plans, mail delivery and daily concurrent execution unmeasured.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/public_/ReviewPhotoOrphanCleanupService.java",
@@ -1860,11 +1873,12 @@
       "annotation": "@Scheduled(cron = \"${bigbike.review-photo.cleanup-cron:0 30 3 * * *}\")",
       "method": "cleanupOrphans",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "One mocked component case does not prove concurrent claim-vs-cleanup, real MinIO deletion failures or large bucket/transaction duration.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionService.java",
@@ -1872,11 +1886,12 @@
       "annotation": "@Scheduled(cron = \"0 20 3 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
       "method": "deleteExpiredHistory",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Mock JDBC/MinIO cases cover storage failure and metadata retention; no actual archived data purge, timer or backlog/connection profile.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/retention/ArchivedChatRetentionService.java",
@@ -1884,11 +1899,12 @@
       "annotation": "@Scheduled(fixedDelay = 60_000, initialDelay = 60_000)",
       "method": "deleteExpiredVideos",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Mock cases are not real MinIO or cron/large-prefix validation. No production archive write/deletion performed.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewModerationService.java",
@@ -1896,11 +1912,12 @@
       "annotation": "@Async",
       "method": "moderateAsync",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Confirmed component race under limit1 documented in findings. Failed attempts and deletion of counted rows also undermine hard cap; metadata/counter contract needs owner reconciliation before patch. No real AI/production billing evidence.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationScheduler.java",
@@ -1908,11 +1925,12 @@
       "annotation": "@Scheduled(cron = \"0 30 4 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
       "method": "queueNightly",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Unit mocks validate logic, not multi-replica PG claim/concurrency or queue throughput; actual SMTP disabled in lab.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/invitation/ReviewInvitationScheduler.java",
@@ -1920,11 +1938,12 @@
       "annotation": "@Scheduled(cron = \"0 */10 9-20 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
       "method": "dispatchPaced",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Unit mocks and schema migration tests do not prove real SMTP receipt/PG multi-replica quota. Invalid-pending backlog transaction time not measured.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     },
     {
       "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/video/HomeVideoSyncScheduler.java",
@@ -1932,11 +1951,12 @@
       "annotation": "@Scheduled(cron = \"0 10 4 * * *\", zone = \"Asia/Ho_Chi_Minh\")",
       "method": "syncOfficialYouTubeChannel",
       "source_inventoried": true,
-      "source_reviewed": false,
-      "functional_test_status": "not individually verified this session",
+      "source_reviewed": true,
+      "functional_test_status": "Related component tests mapped to actual1631suite XML in evidence; scheduler/async runtime not executed",
       "performance_measured": false,
       "fixed_and_reverified": false,
-      "gap": "No scheduler/async isolated runtime profile in this session."
+      "gap": "Mock source/component tests only; no live YouTube call, full old-video backlog, shared scheduler occupancy or runtime latency measured.",
+      "source_review_evidence": "background-source-review-2026-11-16.json"
     }
   ],
   "entity_inventory": {

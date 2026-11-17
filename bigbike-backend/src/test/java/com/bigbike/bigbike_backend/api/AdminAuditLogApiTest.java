@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import com.bigbike.bigbike_backend.domain.auth.AdminPrincipal;
 import com.bigbike.bigbike_backend.persistence.entity.audit.AuditLogEntity;
@@ -63,6 +64,26 @@ class AdminAuditLogApiTest {
     }
 
     // ── 1. No auth → 401 ─────────────────────────────────────────────────────
+
+    @Test
+    void paidAiAttemptJournalUsesItsNumericReviewReferenceWithoutCustomerData() throws Exception {
+        AuditLogEntity entry = new AuditLogEntity();
+        entry.setActorType("SYSTEM");
+        entry.setAction("REVIEW_AI_ATTEMPT_RESERVED");
+        entry.setResourceType("REVIEW");
+        entry.setResourceId(UUID.nameUUIDFromBytes("bigbike:review-ai-attempt:v1:42"
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        entry.setAfterData("{\"version\":1,\"reviewId\":42,\"reservationDay\":\"2026-11-16\"}");
+        entry.setCreatedAt(Instant.now());
+        auditLogRepo.saveAndFlush(entry);
+
+        mockMvc.perform(get("/api/v1/admin/audit-logs")
+                        .param("action", "REVIEW_AI_ATTEMPT_RESERVED")
+                        .with(principalAuth(ADMIN_ID, "ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].resourceCode").value("Review #42"))
+                .andExpect(jsonPath("$.data[0].resourceDisplayName").isEmpty());
+    }
 
     @Test
     void listAuditLogs_noAuth_returns401() throws Exception {

@@ -1,0 +1,118 @@
+{
+  "command": "MAVEN_OPTS=-Xmx512m JAVA_TOOL_OPTIONS=-Xmx768m ./mvnw -q -Dtest=ReviewModerationServiceTest,ReviewModerationSettingsTest,ReviewAiAttemptJournalPostgresTest -DforkCount=1 test",
+  "results": {
+    "ReviewModerationServiceTest": {
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ReviewModerationSettingsTest": {
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ReviewAiAttemptJournalPostgresTest": {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total_tests": 57,
+  "real_provider_calls": 0,
+  "shop_database_access": false,
+  "database": "fresh Testcontainers PostgreSQL16.13, actual JPA repositories and Spring transaction proxies; Flyway disabled / Hibernate generated test schema",
+  "scope_limits": [
+    "Not a production deployment or actual backend process restart: journal component recreated over same persisted PostgreSQL data.",
+    "No real AI provider/network calls; provider is Mockito test double.",
+    "No migration/full-backend-suite run by this agent.",
+    "Legacy unjournaled failed/deleted calls cannot be reconstructed; cutover next Vietnam day after old workers drain, per canonical docs."
+  ],
+  "exit_code": 0,
+  "owner_decision": "Record reserved paid moderation attempts in existing audit journal; preserve review result display semantics. Approved 16Nov.",
+  "canonical_basis": [
+    "docs/business/BUSINESS_RULES.md REVIEW_RULE_013 / AUDIT_RULE_001",
+    "docs/engineering/DATA_CONTRACT.md Review AI journal and audit retention",
+    "docs/engineering/API_CONTRACT.md Audit Log",
+    "docs/engineering/DEPLOYMENT_GUIDE.md AI journal cutover"
+  ],
+  "correctness_change_not_latency_optimization": true,
+  "schema_migration": null,
+  "new_dependencies": null,
+  "implementation": [
+    "Lock existing current limit settings row; reserve with REQUIRES_NEW and required audit write before provider call.",
+    "Count failure/timeout and retain reservation independently of review deletion; suppress duplicate review attempts.",
+    "Sample Vietnam day and current setting after acquiring lock; no counter reset or increase.",
+    "Keep narrow unresolved-journal retention exception; ordinary logs retain existing 12-month policy.",
+    "Resolve new journal reviewId in existing Admin audit list; add VI/EN action labels."
+  ],
+  "independent_qa": {
+    "agent": "media_fix_qa",
+    "scope": "Read-only final source/docs review of quota/retention/resolver, required PG gate and browser diagnostics; no blocking findings. No runtime or performance claim."
+  },
+  "rollout": [
+    "Drain old workers and activate at new Vietnam day; historical unjournaled failed/deleted calls cannot be reconstructed.",
+    "Preserve limit and journal. No shop migration or deployment performed."
+  ],
+  "rollback": [
+    "Returning to old counter can reintroduce overspend; operator must stop paid calls before reverting if safe cap cannot be guaranteed.",
+    "Retain all audit rows; no automated deletion/reset."
+  ],
+  "remaining_unverified": [
+    "Actual provider billing/network and live scheduler runtime.",
+    "Journal query/retention behavior at production-scale audit history; no latency claim.",
+    "Mixed-version operation is not an accepted rollout."
+  ],
+  "source_identity": [
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewAiAttemptJournal.java",
+      "sha256": "aec94b4919f4f0ac9f47da5fe485b41b101ec3d0ae92419676a9c1ed9c8ee50a"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/review/ReviewModerationService.java",
+      "sha256": "f700b2ad865570c1689f1ce06332d0f27aad7bcde0d2fed76dade33580dfe409"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/audit/AuditLogJpaRepository.java",
+      "sha256": "3d41e480dc0d40a8a517dbf5582ccf98ea7e671e491e4b8d0374c1524b0cf1ef"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/settings/SiteSettingJpaRepository.java",
+      "sha256": "f22ebbccc241381a2d153fced8521fb528524d7807a970eb76cadddf3b4fa6f2"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/persistence/repository/catalog/ReviewJpaRepository.java",
+      "sha256": "12c7580a3f06e9c8ca3eaf32327b2cb0ba7d597476b268ab47adc2f1db7a1cee"
+    },
+    {
+      "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/ReviewAiAttemptJournalPostgresTest.java",
+      "sha256": "93bfc528cdcfbf9676f413741118261b0d438a2127eba84c21b6199b0fcf0f4e"
+    },
+    {
+      "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/ReviewModerationServiceTest.java",
+      "sha256": "ac75b7095490dad69dd3e1a85c888ec346bfb1d837546d7817f70f14cf99b1eb"
+    },
+    {
+      "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/service/review/ReviewModerationSettingsTest.java",
+      "sha256": "31f50eab731bdf5e558a447fd4525ba4a6f238b64acff9a9eb014b0dbae653fe"
+    },
+    {
+      "file": "bigbike-backend/src/main/java/com/bigbike/bigbike_backend/service/admin/AdminAuditLogService.java",
+      "sha256": "7a923041e943821eca0945849b9aaf64653709c3c04c02e8582ae39cf6e5d597"
+    },
+    {
+      "file": "bigbike-backend/src/test/java/com/bigbike/bigbike_backend/api/AdminAuditLogApiTest.java",
+      "sha256": "185e9f92fe3aea32125798d09c28ecf6e244b0abe0b4abc58feb9e394a2b0d5e"
+    },
+    {
+      "file": "bigbike-admin/src/locales/en.json",
+      "sha256": "ffb20fe1aa22cde79e18567cb8a7cf55a88dbab4ef5146a2eca31da4f3e269be"
+    },
+    {
+      "file": "bigbike-admin/src/locales/vi.json",
+      "sha256": "a54929d17573cd23cfb4ce16e35db3de7c9fd95251df2509ef18ef58f6deddf5"
+    }
+  ]
+}

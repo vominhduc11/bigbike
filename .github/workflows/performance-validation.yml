@@ -126,13 +126,13 @@ jobs:
       - name: Preserve only sanitized counts and enforce no skips
         if: always() && steps.tests.outcome != 'skipped'
         run: python3 scripts/performance/summarize_tests.py --format junit --input bigbike-backend/target/surefire-reports --output '${{ runner.temp }}/perf-counts/backend.json'
-      - name: Require real PostgreSQL schema and color coverage
+      - name: Require real PostgreSQL schema, color and AI quota coverage
         working-directory: bigbike-backend
         run: |
           python3 - <<'PY'
           import pathlib
           import xml.etree.ElementTree as E
-          for suffix, minimum in (('service.catalog.CatalogColorAccessibilityLabelServicePostgresTest', 4), ('migration.PerformanceCiSchemaMigrationPostgresTest', 1), ('migration.NestedArticleAuditCleanupMigrationPostgresTest', 2)):
+          for suffix, minimum in (('service.catalog.CatalogColorAccessibilityLabelServicePostgresTest', 4), ('migration.PerformanceCiSchemaMigrationPostgresTest', 1), ('migration.NestedArticleAuditCleanupMigrationPostgresTest', 2), ('service.review.ReviewAiAttemptJournalPostgresTest', 10)):
               path = pathlib.Path('target/surefire-reports/TEST-com.bigbike.bigbike_backend.' + suffix + '.xml')
               result = E.parse(path).getroot()
               assert int(result.attrib['tests']) >= minimum, 'Required PostgreSQL coverage absent'

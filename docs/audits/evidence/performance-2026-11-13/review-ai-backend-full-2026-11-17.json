@@ -1,0 +1,43 @@
+{
+  "suite_files": 211,
+  "tests": 1647,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "passed": 1647,
+  "nonpassing_cases": [],
+  "date": "2026-11-17",
+  "command": "TZ=UTC MAVEN_OPTS=-Xmx512m JAVA_TOOL_OPTIONS=-Xmx768m ./mvnw -B clean verify -DforkCount=1",
+  "exit_code": 0,
+  "build": "SUCCESS",
+  "package": "Spring Boot executable JAR",
+  "wall_duration": "15:47 min",
+  "scope": "Full backend clean verify on root integrated candidate; isolated Testcontainers, no shop writes or provider calls.",
+  "shutdown_diagnostic": "Surefire reported fork termination 30s after System.exit(0), following all1647 passing cases; Maven verify/package exited0. Record separately from assertions; inspect before treating shutdown as resolved.",
+  "required_postgresql": {
+    "service.catalog.CatalogColorAccessibilityLabelServicePostgresTest": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "migration.PerformanceCiSchemaMigrationPostgresTest": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "migration.NestedArticleAuditCleanupMigrationPostgresTest": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "service.review.ReviewAiAttemptJournalPostgresTest": {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  }
+}

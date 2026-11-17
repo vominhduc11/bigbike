@@ -3,7 +3,6 @@ package com.bigbike.bigbike_backend.service.review;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -43,13 +42,15 @@ class ReviewModerationServiceTest {
     @Mock private ReviewModerationSettings moderationSettings;
     @Mock private AiReviewModerationClient aiClient;
     @Mock private AdminReviewService adminReviewService;
+    @Mock private ReviewAiAttemptJournal attemptJournal;
 
     private ReviewModerationService service;
 
     @BeforeEach
     void setUp() {
         service = new ReviewModerationService(
-                reviewRepo, moderationSettings, aiClient, adminReviewService);
+                reviewRepo, moderationSettings, aiClient, adminReviewService, attemptJournal);
+        when(attemptJournal.isCurrentDay(any())).thenReturn(true);
         givenReview("PENDING", "Nội dung đánh giá bình thường.");
         givenSettings("");
         when(aiClient.isConfigured()).thenReturn(true);
@@ -72,11 +73,17 @@ class ReviewModerationServiceTest {
     private void givenSettings(String bannedWords, int dailyLimit) {
         when(moderationSettings.load()).thenReturn(
                 new ReviewModerationSettings.Snapshot(bannedWords, dailyLimit));
+        when(attemptJournal.reserve(REVIEW_ID)).thenReturn(dailyLimit <= 0
+                ? ReviewAiAttemptJournal.Reservation.limitReached()
+                : new ReviewAiAttemptJournal.Reservation(ReviewAiAttemptJournal.State.RESERVED,
+                        java.time.LocalDate.now(ReviewAiAttemptJournal.VN_ZONE)));
     }
 
     private void givenCallsSpentToday(long spent) {
-        when(reviewRepo.countByModerationSourceAndModerationCheckedAtGreaterThanEqual(
-                eq(ReviewModerationOutcome.SOURCE_AI), any())).thenReturn(spent);
+        when(attemptJournal.reserve(REVIEW_ID)).thenReturn(spent >= 200
+                ? ReviewAiAttemptJournal.Reservation.limitReached()
+                : new ReviewAiAttemptJournal.Reservation(ReviewAiAttemptJournal.State.RESERVED,
+                        java.time.LocalDate.now(ReviewAiAttemptJournal.VN_ZONE)));
     }
 
     private ReviewModerationOutcome captureOutcome() {
@@ -291,6 +298,50 @@ class ReviewModerationServiceTest {
         ReviewModerationOutcome outcome = captureOutcome();
         assertThat(outcome.source()).isEqualTo(ReviewModerationOutcome.SOURCE_RULE);
         assertThat(outcome.blocked()).isTrue();
+        verify(aiClient, never()).classify(anyString(), any());
+    }
+
+    @Test
+    void duplicateDoesNotOverwriteTheFirstWorkerResult() {
+        when(attemptJournal.reserve(REVIEW_ID)).thenReturn(ReviewAiAttemptJournal.Reservation.duplicate());
+        service.moderate(REVIEW_ID);
+        verify(aiClient, never()).classify(anyString(), any());
+        verifyNoInteractions(adminReviewService);
+    }
+
+    @Test
+    void journalFailurePreventsProviderCallAndKeepsSkippedSemantics() {
+        when(attemptJournal.reserve(REVIEW_ID)).thenThrow(new IllegalStateException("audit unavailable"));
+        service.moderate(REVIEW_ID);
+        assertThat(captureOutcome().source()).isEqualTo(ReviewModerationOutcome.SOURCE_SKIPPED);
+        verify(aiClient, never()).classify(anyString(), any());
+    }
+
+    @Test
+    void reservationFromPreviousVietnamDayIsNotSent() {
+        when(attemptJournal.isCurrentDay(any())).thenReturn(false);
+        service.moderate(REVIEW_ID);
+        assertThat(captureOutcome().reason()).isEqualTo(ReviewModerationService.REASON_DAILY_LIMIT_REACHED);
+        verify(aiClient, never()).classify(anyString(), any());
+    }
+
+    @Test
+    void unexpectedProviderFailureIsSkippedWithoutRetry() {
+        when(aiClient.classify(anyString(), any())).thenThrow(new IllegalStateException("timeout"));
+        service.moderate(REVIEW_ID);
+        assertThat(captureOutcome().source()).isEqualTo(ReviewModerationOutcome.SOURCE_SKIPPED);
+        verify(aiClient).classify(anyString(), any());
+        verify(attemptJournal).reserve(REVIEW_ID);
+    }
+
+    @Test
+    void historicalAiResultIsNeverRetriedOrOverwritten() {
+        ReviewEntity review = new ReviewEntity();
+        review.setStatus("PENDING");
+        review.setModerationSource("AI");
+        when(reviewRepo.findById(REVIEW_ID)).thenReturn(Optional.of(review));
+        service.moderate(REVIEW_ID);
+        verifyNoInteractions(adminReviewService, attemptJournal);
         verify(aiClient, never()).classify(anyString(), any());
     }
 }

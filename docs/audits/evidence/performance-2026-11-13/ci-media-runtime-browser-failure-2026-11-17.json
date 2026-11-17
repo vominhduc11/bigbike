@@ -1,0 +1,431 @@
+{
+  "run": 43826062280,
+  "job": 133165139900,
+  "commit": "24fc792aa9e27e3bd438b20cfe6dcfd53e36796e",
+  "bundle_sha256": "b50a0fb93d35233303122c3fa192bde41174e5cf6eaa6bc5ae3f0694ba6e660d",
+  "bundle_bytes": 328074,
+  "phase": {
+    "arm": "before",
+    "command_failure_categories": [],
+    "complete": false,
+    "failure_type": "CommandFailure",
+    "phase": "browser"
+  },
+  "functional": {
+    "admin_bulk_reports_role_denial": "not verified by this scenario",
+    "admin_product_patch": true,
+    "customer_account_registration_and_profile_isolation": true,
+    "private_cart_isolation": true,
+    "real_guest_cart_and_checkout": true,
+    "unauthenticated_admin_denied": true
+  },
+  "commerce": {
+    "discontinued_add_quantity_checkout_denied": true,
+    "fixture_values_restored": true,
+    "price_review_409_then_reload": true,
+    "rejected_requests_no_order_payment_or_reservation": true,
+    "same_key_retry_and_replay_one_order": true,
+    "scope": "Real API/PostgreSQL; two owned simple products; variant guards separately tested"
+  },
+  "media": {
+    "not_measured": [
+      "transfer-only/server-only/storage-only split",
+      "UI retry/progress",
+      "mid-stream fault injection"
+    ],
+    "note": "photo-1600.jpg was seeded as product image: this sample exercises content dedup; wall duration includes transfer/storage, no server-only claim",
+    "results": [
+      {
+        "alpha_min": 96,
+        "cache_control": null,
+        "content_length": "11056",
+        "download_request_wall_ms": 32.25040000006629,
+        "fixture": "alpha-1600.png",
+        "height": 1200,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 2.5518099998862454,
+        "server_processing_ms": null,
+        "stored_sha256": "96f69e792586fb9575ae30ff37525cb9ffc8b0ac4da7db00783f85e75b5c46fd",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 313.84345299989036,
+        "width": 1600
+      },
+      {
+        "alpha_min": 96,
+        "cache_control": null,
+        "content_length": "8530544",
+        "download_request_wall_ms": 53.151183999943896,
+        "fixture": "alpha-2400.png",
+        "height": 1500,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 17.041138999957184,
+        "server_processing_ms": null,
+        "stored_sha256": "d1f34258c5c57dc689a16ed6323d5d5b16b86fc5af74a498a57ada3ba04e88db",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 2851.925215000165,
+        "width": 2000
+      },
+      {
+        "alpha_min": 96,
+        "cache_control": null,
+        "content_length": "1018",
+        "download_request_wall_ms": 9.900846000164165,
+        "fixture": "alpha-320.png",
+        "height": 240,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 3.2817629999044584,
+        "server_processing_ms": null,
+        "stored_sha256": "ae2dde97f71e8adb6b63cd2ac9e958069cbdca6fcda8d675aa15078daecfbfef",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 34.86193700018703,
+        "width": 320
+      },
+      {
+        "alpha_min": null,
+        "cache_control": null,
+        "content_length": "69703",
+        "download_request_wall_ms": 14.112522999994326,
+        "fixture": "clip.mp4",
+        "height": null,
+        "http_range_status": 206,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 2.5193070000568696,
+        "server_processing_ms": null,
+        "stored_sha256": "d83956b2824978e60331431ad397058bc271f482889ee8e16effb956b430176b",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 21.20792400000937,
+        "width": null
+      },
+      {
+        "alpha_min": null,
+        "cache_control": null,
+        "content_length": "10238",
+        "download_request_wall_ms": 10.468357000036121,
+        "fixture": "opaque-1600.png",
+        "height": 1200,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 1.9264769998699194,
+        "server_processing_ms": null,
+        "stored_sha256": "a2f8744588d6efb709481f80d6fc032c9ffc38ba5cc0d4d0504e7a5011bfbba6",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 128.04205299994464,
+        "width": 1600
+      },
+      {
+        "alpha_min": null,
+        "cache_control": null,
+        "content_length": "9914924",
+        "download_request_wall_ms": 51.07955900007255,
+        "fixture": "opaque-2400.png",
+        "height": 1500,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 20.710692999955427,
+        "server_processing_ms": null,
+        "stored_sha256": "b28dcb182eea12898f8782ffa4eca9e1e5e50d8ed986f105262c036105e7228c",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 3143.7059689999387,
+        "width": 2000
+      },
+      {
+        "alpha_min": null,
+        "cache_control": null,
+        "content_length": "869",
+        "download_request_wall_ms": 8.91464400001496,
+        "fixture": "opaque-320.png",
+        "height": 240,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 1.7463260001022718,
+        "server_processing_ms": null,
+        "stored_sha256": "7e538aca120c64530b2d942352589c95537b8ca062885bcc435d3232ed1ed79b",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 27.569044000074427,
+        "width": 320
+      },
+      {
+        "alpha_min": null,
+        "cache_control": null,
+        "content_length": "78886",
+        "download_request_wall_ms": 10.048784999980853,
+        "fixture": "photo-1600.jpg",
+        "height": 1200,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 2.3938439999255934,
+        "server_processing_ms": null,
+        "stored_sha256": "1e83804e272af31c959ec46a1436b979beaecb9e83caa24520a6364bfb6816ae",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 180.8107829999699,
+        "width": 1600
+      },
+      {
+        "alpha_min": null,
+        "cache_control": null,
+        "content_length": "41072",
+        "download_request_wall_ms": 14.254675999836763,
+        "fixture": "photo-1600.webp",
+        "height": 1200,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 2.5466889999279374,
+        "server_processing_ms": null,
+        "stored_sha256": "5a451ffd8dc99c07bd8fd23ba590f73f02221acd2e4025546c346ede1a919641",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 1272.6832599998943,
+        "width": 1600
+      },
+      {
+        "alpha_min": null,
+        "cache_control": null,
+        "content_length": "9455",
+        "download_request_wall_ms": 9.49865399979899,
+        "fixture": "photo-320.jpg",
+        "height": 240,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 2.124528000194914,
+        "server_processing_ms": null,
+        "stored_sha256": "f637313ff7d0a9f9aa8ce2838f7a7e7a4f0de7bf5f3c009b4d1ec0cd5422f648",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 32.56363700006659,
+        "width": 320
+      },
+      {
+        "alpha_min": null,
+        "cache_control": null,
+        "content_length": "4078",
+        "download_request_wall_ms": 10.175140999990617,
+        "fixture": "photo-320.webp",
+        "height": 240,
+        "http_range_status": null,
+        "original_hash_matches": true,
+        "public_download_wall_ms": 1.9011320000572596,
+        "server_processing_ms": null,
+        "stored_sha256": "c5d9b671d66e0d4031fb8b9cc5196713597cf8c10dcc0bddc44ac12f2d097f76",
+        "transfer_only_ms": null,
+        "unauthenticated_download_denied": true,
+        "upload_request_wall_ms": 69.39188699993792,
+        "width": 320
+      },
+      {
+        "concurrent_uploads": 2,
+        "fixture": "batch-a.jpg",
+        "original_hash_matches": true,
+        "stored_sha256": "99169378eb9fd7edb2393fdbf85022a2b12cf5a9c68c95222bb122b24f86b769",
+        "upload_request_wall_ms": 101.30306599990035
+      },
+      {
+        "concurrent_uploads": 2,
+        "fixture": "batch-b.jpg",
+        "original_hash_matches": true,
+        "stored_sha256": "60e4ab569cccae585eccbe5bcba321cc1b48a9d03ea1f2d7f0be2854e52ff861",
+        "upload_request_wall_ms": 101.4175550001255
+      }
+    ]
+  },
+  "browser_failure": {
+    "browser_egress": {
+      "application_mutation": false,
+      "cache": "HTTP cache enabled; first measured navigation explicitly clears only HTTP cache",
+      "mode": "browser-wide reject-only loopback HTTP proxy; allowed localhost/127.0.0.1 go directly",
+      "rejections": {
+        "connect_rejected": 0,
+        "http_rejected": 0,
+        "malformed_rejected": 0,
+        "upgrade_rejected": 0
+      },
+      "scope": "HTTP/HTTPS/ws/wss transport; QUIC/non-proxied WebRTC UDP disabled in lab; not a blanket network audit",
+      "service_workers": "normal browser behavior; no service-worker bypass/block override"
+    },
+    "inp_collector": {
+      "bundle_sha256": "8890ec954757ea8e4801f49958afb76e2b8837c47fec5b16598fc20cbd49c220",
+      "duration_threshold_ms": 16,
+      "package": "web-vitals",
+      "scope": "interim scripted lab document; hidden finalization only when observed; not field INP",
+      "version": "5.1.0"
+    },
+    "method": "Chromium unthrottled lab; HTTP-cache-cleared then cache-enabled repeat with observed hits; fixed 2s navigation observation; scripted lab INP only; server/DB cold cache unmeasured",
+    "progress": {
+      "step": "browser_http_cache_cleared",
+      "surface": "home",
+      "viewport": {
+        "height": 812,
+        "width": 375
+      }
+    },
+    "results": []
+  },
+  "diagnostics": {
+    "scope": "owned CI runtime failure diagnostics; no app logs or response values",
+    "services": {
+      "api-proxy": {
+        "error_signature_codes": [
+          "connection_refused"
+        ],
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "bigbike-admin": {
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "bigbike-backend": {
+        "error_signature_codes": [
+          "stream_closed"
+        ],
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "bigbike-web": {
+        "error_signature_codes": [],
+        "exit_code": 0,
+        "health": null,
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "minio": {
+        "error_signature_codes": [],
+        "exit_code": 0,
+        "health": "healthy",
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "postgres": {
+        "exit_code": 0,
+        "health": "healthy",
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      },
+      "redis": {
+        "exit_code": 0,
+        "health": "healthy",
+        "oom_killed": false,
+        "running": true,
+        "status": "running"
+      }
+    },
+    "transport_before_cleanup": {
+      "13000": {
+        "accepted": 12,
+        "active": 0,
+        "capacity_rejected": 0,
+        "connect_failed": 0,
+        "idle_timeout": 0,
+        "transport_failed": 1
+      },
+      "14000": {
+        "accepted": 13,
+        "active": 0,
+        "capacity_rejected": 0,
+        "connect_failed": 0,
+        "idle_timeout": 0,
+        "transport_failed": 0
+      },
+      "18080": {
+        "accepted": 482,
+        "active": 0,
+        "capacity_rejected": 0,
+        "connect_failed": 0,
+        "idle_timeout": 0,
+        "transport_failed": 0
+      },
+      "19000": {
+        "accepted": 12,
+        "active": 0,
+        "capacity_rejected": 0,
+        "connect_failed": 0,
+        "idle_timeout": 0,
+        "transport_failed": 0
+      }
+    },
+    "web_container_public_product_read": {
+      "data_object": true,
+      "expected_api_origin": true,
+      "fields": {
+        "brand": {
+          "type": "object"
+        },
+        "categories": {
+          "count": 1,
+          "type": "array"
+        },
+        "category": {
+          "type": "object"
+        },
+        "commitments": {
+          "count": 0,
+          "type": "array"
+        },
+        "description": {
+          "type": "string"
+        },
+        "faqs": {
+          "count": 0,
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "image": {
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        },
+        "price": {
+          "type": "object"
+        },
+        "publishStatus": {
+          "type": "string"
+        },
+        "relatedProducts": {
+          "count": 0,
+          "type": "array"
+        },
+        "seo": {
+          "type": "undefined"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "variantOptions": {
+          "type": "undefined"
+        },
+        "variants": {
+          "count": 0,
+          "type": "array"
+        }
+      },
+      "http_status": 200,
+      "wall_ms": 47.85444699999999
+    }
+  },
+  "scope": "Actual Before production-stack functional13media checks inclMP4bytes/Range206 andalpha96; browserfirsthome failed before anynavigationmetrics. NoAfter/Lighthouse/APIload/Merchant, no performancegainclaim. PreviouslargePNG502 didnotrecur andremainsunexplained; signatureconnection_refused mayincludestartup andnotprovecause. NewAIjournal isnotinthisfrozencommit."
+}

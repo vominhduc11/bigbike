@@ -2,6 +2,7 @@ package com.bigbike.bigbike_backend.service.review;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,6 +38,7 @@ class ReviewModerationSettingsTest {
     @Mock private ReviewJpaRepository reviewRepo;
     @Mock private AiReviewModerationClient aiClient;
     @Mock private AdminReviewService adminReviewService;
+    @Mock private ReviewAiAttemptJournal attemptJournal;
 
     private final Map<String, SiteSettingEntity> rows = new HashMap<>();
 
@@ -64,6 +66,7 @@ class ReviewModerationSettingsTest {
         }
         Map<String, SiteSettingEntity> originalRows = Map.copyOf(rows);
         ReviewEntity review = new ReviewEntity();
+        review.setId(42L);
         review.setStatus("PENDING");
         review.setBody("Nội dung cần kiểm duyệt.");
         review.setRating(new BigDecimal("4.5"));
@@ -72,10 +75,15 @@ class ReviewModerationSettingsTest {
         when(aiClient.classify(review.getBody(), review.getRating())).thenReturn(Optional.of(
                 new AiReviewModerationClient.AiVerdict(true, List.of(category), "Vi phạm.")));
 
+        when(attemptJournal.reserve(42L)).thenReturn(new ReviewAiAttemptJournal.Reservation(
+                ReviewAiAttemptJournal.State.RESERVED, java.time.LocalDate.now(ReviewAiAttemptJournal.VN_ZONE)));
+        when(attemptJournal.isCurrentDay(any())).thenReturn(true);
+
+        // This test isolates legacy flags; durable duplicate suppression is covered separately.
         // Recreate both components to model a restart; absent rows model a fresh installation.
         for (int attempt = 0; attempt < 2; attempt++) {
             new ReviewModerationService(reviewRepo, new ReviewModerationSettings(settingRepo),
-                    aiClient, adminReviewService).moderate(42L);
+                    aiClient, adminReviewService, attemptJournal).moderate(42L);
         }
 
         ArgumentCaptor<ReviewModerationOutcome> outcomes =

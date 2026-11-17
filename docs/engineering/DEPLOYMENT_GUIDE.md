@@ -1137,3 +1137,16 @@ cài đặt serverExternalPackages.md và [Next chính thức](https://nextjs.or
 Giữ sửa đóng gói giống nhau ở hai bản đo; không ghi thành lợi ích độ trễ của ba
 tối ưu đang so sánh. Rollback bằng diff cấu hình hẹp/image được phê duyệt, giữ mọi
 thay đổi khác. Chưa được restart/recreate shop trong công việc này.
+
+
+Review AI attempt-journal cutover (owner16/11/2026): no separate quota table or
+new review annotation fields. Preserve the existing configured daily limit and
+required audit records. Drain all old moderation workers/replicas before cutover,
+and start the new worker logic at a fresh Vietnam calendar day. Older failed or
+hard-deleted unjournaled calls cannot be reconstructed or certified for an in-day
+rollout; do not reset the limit, invent historical journal entries or claim their
+costs recovered. This is a reviewable deployment plan only, not authorization to
+restart shop services or enable paid provider calls during CI. Rollback of the
+worker code restores the old unsafe counter; retain journals and keep paid calls
+off under operator control until a safe version/day is available. Existing audit
+retention remains; never purge today's attempt evidence to free quota.

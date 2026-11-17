@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-17",
+  "scope": "Root integration of two Admin audit action translations; no screen/review-result logic changed.",
+  "tests": {
+    "numTotalTests": 1245,
+    "numPassedTests": 1245,
+    "numFailedTests": 0,
+    "numPendingTests": 0,
+    "success": true
+  },
+  "lint_exit_code": 0,
+  "test_exit_code": 0,
+  "build_exit_code": 0,
+  "hygiene": "UTF-8 Vietnamese labels; no CSS changes; existing lint runtime-data/mock guards passed.",
+  "commands": [
+    "npm run lint",
+    "NODE_OPTIONS=--max-old-space-size=2048 npm run test -- --maxWorkers=1 --testTimeout=20000 --reporter=json --outputFile=<private file>",
+    "NODE_OPTIONS=--max-old-space-size=2048 npm run build"
+  ],
+  "runtime_e2e": false
+}

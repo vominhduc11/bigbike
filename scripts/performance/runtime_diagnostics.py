@@ -101,6 +101,16 @@ PROBE = r"""
     if(Array.isArray(v))result.fields[key].count=v.length;
    }
   }
+  const sr=await fetch('http://bigbike-backend:8080/api/v1/sliders?location=home',{signal:AbortSignal.timeout(5000),cache:'no-store',redirect:'error'});
+  const sv=await sr.json();const rows=sv?.data;
+  result.public_slider_read={http_status:sr.status,data_array:Array.isArray(rows)};
+  if(Array.isArray(rows)){
+   const owned=rows.filter(item=>item?.productId===process.argv[2]);
+   result.public_slider_read.count=rows.length;
+   result.public_slider_read.owned_count=owned.length;
+   result.public_slider_read.owned_desktop_url_present=owned.some(item=>typeof item?.desktopImage?.url==='string'&&item.desktopImage.url.length>0);
+   result.public_slider_read.owned_product_link_present=owned.some(item=>typeof item?.productLink==='string'&&item.productLink.length>0);
+  }
  }catch(e){result.failure_code=['ECONNREFUSED','ECONNRESET','ETIMEDOUT'].includes(e?.cause?.code)?e.cause.code:e?.name==='TimeoutError'?'timeout':'probe_failed';}
  console.log(JSON.stringify(result));
 })().catch(()=>{console.log('{"failure_code":"probe_failed"}')});
@@ -136,6 +146,9 @@ def collect(stack, run, fixtures=None):
                 slug = products[6].get('slug', '')
                 if not re.fullmatch(r'e2e-perf-product-[0-9]{4}', slug):
                     raise ValueError('Internal probe requires an owned fixture')
+                product_id = products[0].get('id', '')
+                if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', product_id):
+                    raise ValueError('Slider probe requires an owned product identifier')
                 result['web_container_public_product_read'] = json.loads(run(
-                    ['docker', 'exec', cid, 'node', '-e', PROBE, slug], timeout=15))
+                    ['docker', 'exec', cid, 'node', '-e', PROBE, slug, product_id], timeout=15))
     return result

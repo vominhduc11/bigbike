@@ -246,6 +246,12 @@ for deletion after 90 days.
 
 `audit_logs.created_at` is the retention timestamp for administrative audit rows; records older
 than 12 calendar months are eligible for the daily batch cleanup.
+An unresolved `REVIEW_AI_ATTEMPT_RESERVED` / REVIEW journal remains required
+idempotency evidence while its review still exists without a durable paid-attempt
+annotation (AI or SKIPPED/AI_UNAVAILABLE). Keep only these unresolved journals past
+the ordinary cutoff. Once the review is deleted or the durable annotation exists,
+normal audit retention applies. Other audit rows and the 12-month cutoff are unchanged;
+no review content or provider payload is retained in this journal.
 
 Evidence:
 
@@ -1308,6 +1314,25 @@ Cache denormalized của review **APPROVED**, phục vụ list/detail đọc nha
   - `reviews.moderation_categories` — `jsonb NULL`. Mảng mã loại vi phạm, giá trị hợp lệ `PROFANITY`, `HARASSMENT`, `ADVERTISING`, `SENSITIVE`. Từ 2026-10-03, luôn xét đủ bốn loại và bỏ qua các giá trị công tắc cũ. Ghi chú lịch sử hoặc kết quả đã được nhân viên xử lý vẫn được giữ nguyên; không dùng mảng này để suy ra trạng thái hiện tại. `NULL`/`[]` = không phát hiện gì.
   - `reviews.moderation_reason` — `varchar(500) NULL`. Câu giải thích ngắn bằng tiếng Việt hiển thị cho admin (với `RULE` là từ cấm đã khớp; với `SKIPPED` là mã lý do máy đọc được). **Không bao giờ** được sao chép vào audit (`REVIEW_RULE_011`).
   - `reviews.moderation_checked_at` — `timestamptz NULL`, thời điểm chạy xong. `NULL` = chưa từng chạy. Đặt cùng lúc với 4 cột trên, kể cả khi `SKIPPED`, nên `NULL` phân biệt được rõ "chưa chạy" với "chạy rồi nhưng bỏ qua".
+- Paid AI attempt journal (owner 2026-11-16, REVIEW_RULE_013) uses the existing audit
+  log, independently of review deletion. Reserve once per review in a short committed
+  transaction before provider I/O; serialize the daily check and append across workers
+  using an existing persistent lock. No new counter table, review annotation column or
+  public review response field. Entries contain only safe metadata (review identifier,
+  reservation day/version); never body, author, rating, photos, prompt or provider output.
+  Event `REVIEW_AI_ATTEMPT_RESERVED` has actor SYSTEM, resource type REVIEW and a
+  deterministic resource UUID from UTF-8 `bigbike:review-ai-attempt:v1:<reviewId>`.
+  Its controlled afterData is `{"version":1,"reviewId":42,"reservationDay":"YYYY-MM-DD"}`;
+  preserve this versioned serialization for safe legacy de-duplication without casting
+  unrelated malformed audit text. Duplicate lookup uses action/type/resource UUID;
+  daily counting uses created_at within the Vietnam calendar day. Existing review
+  annotations AI or SKIPPED/AI_UNAVAILABLE without matching journals form a conservative
+  legacy floor, never a reset to zero. Missing/invalid locked daily setting prevents
+  spending. A reservation crossing midnight before dispatch is spent but not sent.
+  Use business-required audit persistence: a journal failure prevents the paid call.
+  Failed/timed-out calls and crashes after reservation do not refund the daily slot.
+  Keep source/verdict/checked_at semantics above unchanged. Retain journals through
+  the existing audit retention; permanent review deletion must not reduce today's count.
 - `reviews.first_approved_at` — `timestamptz NULL` (`V356`), marker bền vững cho email duyệt lần đầu. `V356` backfill row đang `APPROVED`; `V358` đọc audit `REVIEW_STATUS_CHANGED` lịch sử để backfill cả review từng được duyệt rồi đã về `PENDING`/`SPAM`/`TRASH`, trước khi redaction audit. Marker không bị xóa khi review rời `APPROVED`, nên restore rồi duyệt lại không gửi email lần hai.
 
 `review_photo_uploads` (`V357`) là sổ claim ảnh bền vững, tách khỏi JSON hiển thị:

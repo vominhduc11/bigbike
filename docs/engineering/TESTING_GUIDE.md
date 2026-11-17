@@ -483,6 +483,13 @@ responses. Publish the failure's response class (JSON/HTML/other), fixed recogni
 API error code, and source-controlled fixture/stage when available. This adds
 diagnostics, not retries, relaxed assertions or changed proxy/buffer/timeouts.
 
+Browser failures retain a fixed stage, navigation status and DOM counts only
+(hero containers/images, visible/decoded images, headings and ready state), plus
+numeric runtime-error counters. Do not export DOM text, attributes, URLs, form
+values or screenshots. Compare public slider response shape/count with these
+observations before diagnosing an absent homepage hero; do not suppress the image
+assertion or replace the real application with a mock.
+
 Continuation baseline (13/11): `baseline-manifest.json` now attributes exactly three
 backend files for the two new optimizations. Hash-bound Before snapshots of image
 services retain pre-existing PNG conversion and the earlier unchanged-variant skip.
@@ -688,3 +695,15 @@ standalone portability step also passed. Compare check_standalone.py as well as
 both app trees and summarize_tests.py, and require that explicit web step success.
 The later cart failure in that run does not invalidate its completed frontend
 gates; backend changes still require a fresh full backend gate and runtime checks.
+
+
+Review AI paid-attempt journal (owner 16/11): require deterministic concurrency
+coverage (limit1 permits at most one provider call across distinct reviews), duplicate
+review suppression, provider failure/timeout still spending a reserved slot, durable
+counts after review deletion/restart, Vietnam-day rollover and zero/current setting
+limits. Verify real PostgreSQL transaction/locking and required audit failure rolling
+back before any provider call. Provider responses are test doubles only: never call
+paid AI in CI. Existing review SKIPPED/CLEAN/BLOCKED/human-precedence assertions stay.
+No separate counter table or metadata/UI semantic changes. Document conservative
+legacy-count handling and a cutover at a new Vietnam day after old workers drain;
+previous unjournaled calls cannot be retroactively certified or reset to zero.

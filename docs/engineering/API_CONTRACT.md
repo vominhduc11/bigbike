@@ -2191,6 +2191,14 @@ Evidence: `AdminRedirectController.java`, `AdminRedirectService.java`, `Internal
 
 ## Audit Log Contract
 
+Owner16/11/2026: `REVIEW_AI_ATTEMPT_RESERVED` is a SYSTEM/REVIEW journal entry
+committed before a paid moderation request, with safe version/reviewId/reservationDay
+metadata only. It survives review deletion and counts failed/timed-out attempts.
+Its resource UUID identifies the journal's review namespace, while afterData.reviewId
+retains the numeric review identifier for the existing review audit resolver.
+Admin labels this action in VI/EN; review source/verdict/checkedAt fields and their
+current display remain unchanged. No new permission, endpoint or counter table.
+
 | Endpoint | Permission | Current behavior | Status | Evidence |
 |---|---|---|---|---|
 | `GET /api/v1/admin/audit-logs` | `audit-logs.read` | Paginated list (page/size), filterable by actorType, actorId, resourceType, resourceId, action, q, from/to (LocalDate). Sorted by createdAt desc, id desc (secondary key keeps pagination stable when a batch write shares one timestamp). Enriches actor display name/email and resource display name/code. | `CONFIRMED_FROM_CODE` | `AdminAuditLogController.java`, `AdminAuditLogService.java` |

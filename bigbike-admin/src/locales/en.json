@@ -3204,6 +3204,7 @@
       "OTHER": "Other"
     },
     "action": {
+      "REVIEW_AI_ATTEMPT_RESERVED": "Reserve an AI review moderation attempt",
       "ORDER_CREATED": "Order created",
       "ORDER_UPDATED": "Order updated",
       "ORDER_CANCELLED": "Order cancelled",

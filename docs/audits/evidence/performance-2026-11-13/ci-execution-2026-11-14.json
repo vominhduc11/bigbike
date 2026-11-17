@@ -95,40 +95,36 @@
     "no_current_full_stack_latency_result": true
   },
   "current_run": {
-    "id": 43820985928,
-    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43820985928",
-    "commit": "cc59c3c4a02fd45ca7e7c19bb3cf362d30d48e59",
+    "id": 43826062280,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43826062280",
+    "commit": "24fc792aa9e27e3bd438b20cfe6dcfd53e36796e",
     "status": "completed_failure",
-    "local_backend_full_utc": {
-      "suite_files": 210,
-      "tests": 1631,
-      "passed": 1631,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 0,
-      "package": "passed"
-    },
+    "app_source": "byte-identical tocc59 full1631pass; onlyfixedsanitizeddiagnostics/tooltests/docs changed",
+    "backend": "fresh1631/1631,210suitefiles,0failure/error/skip;verify/package andrequiredPGgatespassed",
+    "frontend": "fresh rerun passed805web/1245Admin,0fail/skip;bothlint/build+standalonepassed; reuseproofunavailable led safe fallback",
     "local_helpers": {
-      "python": 80,
+      "python": 86,
       "node": 6,
-      "baseline": 3,
       "ingress": "positive/two negativecontrols passed",
-      "gitleaks_findings": 0
+      "baseline": 3,
+      "publication_gitleaks_findings": 0
     },
-    "source_fix": "genericISO-MP4refinement+realvideohandler; existingsecurity/limits/directTikapaths retained",
-    "new_acceptance_source": "renderedsearch currentpage vsAPIreference; explicitvariantcart+Merchant/landing postmeasurement, not yet runtimeverified",
-    "frontend": "source-boundremoteproof PASSED; reuse7ce805web/1245admin lint/test/build/standalone; NOTnewlyexecuted",
     "secret_artifact_guard": {
-      "id": 43820985930,
-      "status": "completed",
-      "conclusion": "success"
+      "id": 43826062310,
+      "status": "queued"
     },
+    "diagnostic_evidence": "media-diagnostic-extension-2026-11-16.json",
+    "missing_owner_decisions": [
+      "requireselectedvariantwhenvariantsexist",
+      "resendinviteforpendingSUPER_ADMIN"
+    ],
     "full_system_acceptance": false,
     "production_changes": false,
-    "backend": "freshremote210suitefiles/1631/1631;0fail/error/skip;cleanverify/package+PGschema/colorrequiredgatespassed",
-    "isolated_stack_job_id": 133146262021,
-    "isolated_stack_status": "Before stoppedprivateoriginalGET502 onsecondalpha2400PNG afterupload201; earlier323samePNGpassed; noAfter/MP4/browser/load verified",
-    "runtime_evidence": "ci-large-download-failure-2026-11-16.json"
+    "frontend_evidence": "ci-media-diagnostic-frontends-2026-11-16.json",
+    "isolated_stack_job_id": 133165139900,
+    "isolated_stack_status": "all13media passed inclvalidMP4+HTTPRange; browserfirsthome30s wait failed,results0; noAfter/load/Lighthouse/Merchant",
+    "runtime_evidence": "ci-media-runtime-browser-failure-2026-11-17.json",
+    "owner_ai_journal_decision": "approved useexistingAuditLog inclfailed/deleted, preserveReviewUI; source+57focusedtests prepared afterfrozenCI"
   },
   "previous_infrastructure_run": {
     "id": 43677437126,
@@ -250,5 +246,41 @@
     "isolated_stack_status": "real Before functional+commerce passed; media clip.mp4 POST400 after3PNG; noAfter/browser/load/Lighthouse",
     "gate_evidence": "ci-cart-access-fixed-gates-2026-11-16.json",
     "runtime_evidence": "ci-commerce-runtime-2026-11-16.json"
+  },
+  "previous_mp4_source_run": {
+    "id": 43820985928,
+    "url": "https://github.com/vominhduc11/bigbike/actions/runs/43820985928",
+    "commit": "cc59c3c4a02fd45ca7e7c19bb3cf362d30d48e59",
+    "status": "completed_failure",
+    "local_backend_full_utc": {
+      "suite_files": 210,
+      "tests": 1631,
+      "passed": 1631,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "package": "passed"
+    },
+    "local_helpers": {
+      "python": 80,
+      "node": 6,
+      "baseline": 3,
+      "ingress": "positive/two negativecontrols passed",
+      "gitleaks_findings": 0
+    },
+    "source_fix": "genericISO-MP4refinement+realvideohandler; existingsecurity/limits/directTikapaths retained",
+    "new_acceptance_source": "renderedsearch currentpage vsAPIreference; explicitvariantcart+Merchant/landing postmeasurement, not yet runtimeverified",
+    "frontend": "source-boundremoteproof PASSED; reuse7ce805web/1245admin lint/test/build/standalone; NOTnewlyexecuted",
+    "secret_artifact_guard": {
+      "id": 43820985930,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "full_system_acceptance": false,
+    "production_changes": false,
+    "backend": "freshremote210suitefiles/1631/1631;0fail/error/skip;cleanverify/package+PGschema/colorrequiredgatespassed",
+    "isolated_stack_job_id": 133146262021,
+    "isolated_stack_status": "Before stoppedprivateoriginalGET502 onsecondalpha2400PNG afterupload201; earlier323samePNGpassed; noAfter/MP4/browser/load verified",
+    "runtime_evidence": "ci-large-download-failure-2026-11-16.json"
   }
 }
