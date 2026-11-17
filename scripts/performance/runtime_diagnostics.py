@@ -54,12 +54,24 @@ PROPERTIES = frozenset(('map', 'filter', 'length', 'name', 'url', 'retailPrice',
 
 def signatures(output):
     codes = [name for name, pattern in SIGNATURES if re.search(pattern, output, re.I)]
+    # Correlate only within a single nginx log line and export fixed labels,
+    # never the request path, header value, identifier or log text.
+    for line in output.splitlines():
+        if re.search(r'/api/v1/admin/media/[a-f0-9-]+/download(?:[?\s"]|$)', line, re.I):
+            for label, pattern in (('invalid_header', r'upstream sent invalid header'),
+                                   ('duplicate_header', r'upstream sent duplicate header')):
+                if re.search(pattern, line, re.I):
+                    codes.append('media_download_proxy_' + label)
+                    for header in ('content-length', 'content-type', 'content-disposition', 'transfer-encoding'):
+                        if re.search(r'upstream sent (?:invalid|duplicate) header(?: line)?:\s*["\']'
+                                     + re.escape(header) + r'\s*:', line, re.I):
+                            codes.append('media_download_header_' + header.replace('-', '_'))
     # Only literal names from this fixed source-code vocabulary, never the
     # property/message extracted from a log or arbitrary runtime value.
     for name in sorted(PROPERTIES):
         if re.search(r"(?:reading|property) ['\"]" + re.escape(name) + r"['\"]", output):
             codes.append('undefined_property_' + name)
-    return codes
+    return list(dict.fromkeys(codes))
 
 
 def service_state(project, item):

@@ -7,6 +7,21 @@ from runtime_diagnostics import collect, service_state, signatures, transport_st
 
 
 class RuntimeDiagnosticsTest(unittest.TestCase):
+    def test_media_proxy_line_correlation_exports_only_allowlisted_codes(self):
+        private = 'private-cookie-and-header-value'
+        line = ('upstream sent duplicate header: "Content-Length: ' + private +
+                '", request: "GET /api/v1/admin/media/12345678-abcd/download HTTP/1.1"')
+        result = signatures(line)
+        self.assertIn('media_download_proxy_duplicate_header', result)
+        self.assertIn('media_download_header_content_length', result)
+        self.assertNotIn(private, json.dumps(result))
+        separate = signatures('upstream sent duplicate header\nGET /api/v1/admin/media/12345678-abcd/download HTTP/1.1')
+        self.assertNotIn('media_download_proxy_duplicate_header', separate)
+        value_only = signatures('upstream sent invalid header: "Other: Content-Length: secret", '
+                                'request: "GET /api/v1/admin/media/12345678-abcd/download?Content-Type:x HTTP/1.1"')
+        self.assertNotIn('media_download_header_content_length', value_only)
+        self.assertNotIn('media_download_header_content_type', value_only)
+
     def test_async_and_proxy_failures_are_fixed_codes_without_log_values(self):
         private = 'private-path-token-cookie-body'
         for log, expected in (
