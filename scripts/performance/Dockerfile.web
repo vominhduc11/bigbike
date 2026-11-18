@@ -6,10 +6,12 @@ RUN groupadd --system bigbike && useradd --system --gid bigbike bigbike
 COPY --chown=bigbike:bigbike bigbike-web/.next/standalone ./
 COPY --chown=bigbike:bigbike bigbike-web/.next/static /perf-static
 COPY --chown=bigbike:bigbike bigbike-web/public /perf-public
+COPY --chown=bigbike:bigbike bigbike-web/docker-entrypoint.mjs /perf-entrypoint.mjs
 RUN if [ -f /app/server.js ]; then dest=/app; elif [ -f /app/bigbike-web/server.js ]; then dest=/app/bigbike-web; else exit 1; fi; \
     mkdir -p "$dest/.next" "$dest/public"; \
     mv /perf-static "$dest/.next/static"; \
     cp -a /perf-public/. "$dest/public/"; \
+    mv /perf-entrypoint.mjs "$dest/docker-entrypoint.mjs"; \
     chown -R bigbike:bigbike /app
 COPY scripts/performance/launch-web.cjs /app/launch-web.cjs
 USER bigbike

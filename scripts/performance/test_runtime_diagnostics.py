@@ -3,10 +3,24 @@ import os
 import unittest
 from unittest.mock import Mock, patch
 
-from runtime_diagnostics import collect, service_state, signatures, transport_state
+from runtime_diagnostics import collect, media_failure_correlation, service_state, signatures, transport_state
 
 
 class RuntimeDiagnosticsTest(unittest.TestCase):
+    def test_media_502_correlation_requires_one_response_and_same_connection(self):
+        private = 'private-value'
+        line = ('2026/11/18 [error] 1#1: *7 upstream sent duplicate header: "Content-Length: ' + private +
+                '", request: "GET /api/v1/admin/media/12345678-abcd/download HTTP/1.1"')
+        observed = media_failure_correlation(line + '\nBBMEDIA 7 1 502\nBBMEDIA 8 1 200\n')
+        self.assertEqual(observed['first_request_media_502_connections'], 1)
+        self.assertEqual(observed['correlated_codes']['media_download_proxy_duplicate_header'], 1)
+        self.assertEqual(observed['correlated_codes']['media_download_header_content_length'], 1)
+        self.assertNotIn(private, json.dumps(observed))
+        self.assertEqual(media_failure_correlation(line + '\nBBMEDIA 7 1 502\nBBMEDIA 7 2 200\n')['correlated_codes'], {})
+        self.assertEqual(media_failure_correlation(line + '\nBBMEDIA 7 2 502\n')['correlated_codes'], {})
+        self.assertEqual(media_failure_correlation(line + '\nBBMEDIA 9 1 502\n')['correlated_codes'], {})
+        self.assertEqual(media_failure_correlation('BBMEDIA 7 1 502\n' + line)['correlated_codes'], {})
+
     def test_media_proxy_line_correlation_exports_only_allowlisted_codes(self):
         private = 'private-cookie-and-header-value'
         line = ('upstream sent duplicate header: "Content-Length: ' + private +

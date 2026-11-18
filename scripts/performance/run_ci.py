@@ -154,6 +154,19 @@ def wait_ready(url, seconds=180):
     raise RuntimeError('Required CI service failed readiness')
 
 
+def wait_for_web_startup(stack, seconds=75):
+    """Require the real entrypoint's startup refresh before either measured arm."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        logs = stack.compose('logs', '--no-color', '--tail', '100', 'bigbike-web')
+        if '[entrypoint] startup revalidate → HTTP 200' in logs:
+            return
+        if '[entrypoint] startup revalidate → HTTP ' in logs or '[entrypoint] startup revalidate failed' in logs or '[entrypoint] WEB_REVALIDATE_SECRET unset' in logs:
+            raise RuntimeError('Production web startup refresh failed')
+        time.sleep(1)
+    raise RuntimeError('Production web startup refresh not observed')
+
+
 class Stack:
     def __init__(self, root, directory, arm, fixtures_dir, password, jwt):
         self.root, self.directory, self.arm = root, directory, arm
@@ -238,6 +251,7 @@ class Stack:
         elif app == 'web':
             for subdir in ('.next/standalone', '.next/static', 'public'):
                 shutil.copytree(self.root / name / subdir, context / name / subdir)
+            shutil.copy2(self.root / name / 'docker-entrypoint.mjs', context / name / 'docker-entrypoint.mjs')
             launcher = context / 'scripts/performance'
             launcher.mkdir(parents=True)
             shutil.copy2(self.root / 'scripts/performance/launch-web.cjs', launcher)
@@ -522,6 +536,7 @@ def main():
                 stack.compose('up', '-d', 'bigbike-web', 'bigbike-admin')
                 wait_ready('http://localhost:13000/')
                 wait_ready('http://localhost:14000/')
+                wait_for_web_startup(stack)
                 container_ids = stack.compose('ps', '--all', '-q').split()
                 image_rows = run(['docker', 'inspect', '--format',
                     '{{index .Config.Labels "com.docker.compose.service"}}|{{.Image}}', *container_ids]).splitlines()
@@ -532,6 +547,7 @@ def main():
                     'limits': {parts[0]: {'memory_bytes': int(parts[1]), 'nano_cpus': int(parts[2])}
                               for row in limit_rows for parts in [row.split('|')]},
                     'internal_web_revalidation': 'enabled, one real owned web replica, generated shared CI secret',
+                    'web_startup_revalidation': 'production entrypoint reported HTTP 200 before measurement',
                     'host_transport': 'bounded loopback TCP byte relay to owned internal container IPv4; same extra hop in both arms; not shipping network latency',
                     'configuration_sha256': hashlib.sha256(json.dumps({key: value for key, value in stack.values.items()
                         if key not in ('PERF_TAG', 'PERF_FIXTURE_DIR', 'PERF_SCRIPT_DIR')}, sort_keys=True).encode()).hexdigest(),

@@ -74,6 +74,34 @@ def signatures(output):
     return list(dict.fromkeys(codes))
 
 
+def media_failure_correlation(output):
+    """Correlate first media request on an nginx connection; export fixed counts only."""
+    responses = {}
+    lines = output.splitlines()
+    for position, line in enumerate(lines):
+        match = re.fullmatch(r'BBMEDIA ([0-9]+) ([0-9]+) ([0-9]{3})\s*', line)
+        if match:
+            connection, ordinal, status = match.groups()
+            responses.setdefault(connection, []).append((int(ordinal), int(status), position))
+    media_errors = {}
+    for position, line in enumerate(lines):
+        match = re.search(r'\*([0-9]+)\s', line)
+        if not match or not re.search(r'/api/v1/admin/media/[a-f0-9-]+/download(?:[?\s"]|$)', line, re.I):
+            continue
+        codes = signatures(line)
+        media_errors.setdefault(match.group(1), []).append((position, {code for code in codes if code.startswith('media_download_')}))
+    counts = {}
+    for connection, statuses in responses.items():
+        if len(statuses) != 1 or statuses[0][:2] != (1, 502):
+            continue
+        codes = set().union(*(codes for position, codes in media_errors.get(connection, ()) if position < statuses[0][2]))
+        for code in codes:
+            counts[code] = counts.get(code, 0) + 1
+    return {'first_request_media_502_connections': sum(len(statuses) == 1 and statuses[0][:2] == (1, 502) for statuses in responses.values()),
+            'correlated_codes': counts,
+            'scope': 'same nginx connection and media route; first request only and error before access log; missing or reordered logs may omit evidence'}
+
+
 def service_state(project, item):
     labels = item.get('Config', {}).get('Labels') or {}
     name = labels.get('com.docker.compose.service')
@@ -155,8 +183,10 @@ def collect(stack, run, fixtures=None):
         if cid not in ids:
             raise ValueError('Docker inspection returned an unexpected container')
         if name in ('bigbike-backend', 'bigbike-web', 'api-proxy', 'minio'):
-            state['error_signature_codes'] = signatures(run(['docker', 'logs', '--since', '5m', '--tail', '400', cid],
-                                                           timeout=15, combine_output=True))
+            logs = run(['docker', 'logs', '--since', '5m', '--tail', '400', cid], timeout=15, combine_output=True)
+            state['error_signature_codes'] = signatures(logs)
+            if name == 'api-proxy':
+                state['media_502_correlation'] = media_failure_correlation(logs)
         if name == 'bigbike-web' and state['running'] and fixtures:
             products = fixtures.get('products') or []
             if len(products) > 6:
